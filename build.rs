@@ -173,7 +173,7 @@ fn svd_generate(svd: &str, f: &mut File) -> Result<()> {
         .collect::<Vec<_>>()
         .join("\n");
       w!("  reg! {{\n");
-      w!("    [0x{}]\n", hex_address);
+      w!("    [0x{}] u32\n", hex_address);
       w!("    #[doc = \"{}\"]\n", doc);
       w!("    {}\n", name);
       w!("    #[doc = \"{}\"]\n", doc);
@@ -236,7 +236,7 @@ fn svd_generate(svd: &str, f: &mut File) -> Result<()> {
             w!("    }}\n\n");
           } else {
             w!(
-              "    pub fn set_{}(&mut self, value: usize) -> &mut Self {{\n",
+              "    pub fn set_{}(&mut self, value: u32) -> &mut Self {{\n",
               name
             );
             w!("      self.set_bits({}, {}, value)\n", offset, width);
@@ -255,7 +255,7 @@ fn svd_generate(svd: &str, f: &mut File) -> Result<()> {
             w!("      self.bit({})\n", offset);
             w!("    }}\n\n");
           } else {
-            w!("    pub fn {}(&self) -> usize {{\n", name);
+            w!("    pub fn {}(&self) -> u32 {{\n", name);
             w!("      self.bits({}, {})\n", offset, width);
             w!("    }}\n\n");
           }

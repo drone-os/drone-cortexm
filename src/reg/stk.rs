@@ -3,7 +3,7 @@
 use super::prelude::*;
 
 reg! {
-  [0xE000_E010]
+  [0xE000_E010] u32
   #[doc = "SysTick control and status register"]
   Ctrl
   #[doc = "SysTick control and status register"]
@@ -49,7 +49,7 @@ impl CtrlValue {
 }
 
 reg! {
-  [0xE000_E014]
+  [0xE000_E014] u32
   #[doc = "SysTick reload value register"]
   Load
   #[doc = "SysTick reload value register"]
@@ -59,12 +59,12 @@ reg! {
 
 impl LoadValue {
   /// RELOAD value
-  pub fn reload(&self) -> usize {
+  pub fn reload(&self) -> u32 {
     self.bits(0, 24)
   }
 
   /// RELOAD value
-  pub fn set_reload(&mut self, value: usize) -> &mut Self {
+  pub fn set_reload(&mut self, value: u32) -> &mut Self {
     self.set_bits(0, 24, value)
   }
 }

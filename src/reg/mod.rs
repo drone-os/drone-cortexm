@@ -1,12 +1,7 @@
 //! Safe API for memory-mapped registers.
 
+pub mod prelude;
 pub mod stk;
-
-/// Memory-mapped registers prelude.
-pub mod prelude {
-  pub use super::{RRegBitBand, RegBitBand, RwAtomicReg, WRegBitBand};
-  pub use drone::reg::prelude::*;
-}
 
 pub use self::stk::Ctrl as StkCtrl;
 pub use self::stk::Load as StkLoad;
@@ -27,7 +22,7 @@ where
   Self: RReg<Atomic> + WReg<Atomic>,
 {
   /// Atomically modifies a register's value.
-  unsafe fn modify<F>(&mut self, f: F)
+  unsafe fn modify<F>(&self, f: F)
   where
     F: Fn(&mut Self::Value) -> &Self::Value;
 }
@@ -44,7 +39,7 @@ where
   ///
   /// If `offset` is greater than or equals to the platform's word size in bits.
   fn bit_band_addr(offset: usize) -> usize {
-    assert!(offset < size_of::<usize>() * 8);
+    assert!(offset < size_of::<<Self::Value as RegValue>::Raw>() * 8);
     BIT_BAND_BASE +
       (((Self::ADDRESS + (offset >> 3)) &
         ((0b1 << (BIT_BAND_LENGTH << 2)) - 1)) << BIT_BAND_LENGTH) +
@@ -85,26 +80,27 @@ where
   /// # Panics
   ///
   /// If `offset` is greater than or equals to the platform's word size in bits.
-  fn set_bit_band(&mut self, offset: usize, value: bool);
+  fn set_bit_band(&self, offset: usize, value: bool);
 
   /// Returns an unsafe mutable pointer to the corresponding bit-band address.
   ///
   /// # Panics
   ///
   /// If `offset` is greater than or equals to the platform's word size in bits.
-  fn bit_band_mut_ptr(&mut self, offset: usize) -> *mut usize;
+  fn bit_band_mut_ptr(&self, offset: usize) -> *mut usize;
 }
 
-impl<T> RwAtomicReg for T
+impl<T, U> RwAtomicReg for T
 where
-  T: RReg<Atomic> + WReg<Atomic>,
+  T: RReg<Atomic, Value = U> + WReg<Atomic, Value = U>,
+  U: RegValue<Raw = u32>,
 {
-  unsafe fn modify<F>(&mut self, f: F)
+  unsafe fn modify<F>(&self, f: F)
   where
     F: Fn(&mut Self::Value) -> &Self::Value,
   {
-    let mut value: usize;
-    let mut status: usize;
+    let mut value: u32;
+    let mut status: u32;
     loop {
       asm!("
         ldrex $0, [$1]
@@ -145,14 +141,14 @@ where
   T: RegBitBand<U> + WReg<U>,
   U: Flavor,
 {
-  fn set_bit_band(&mut self, offset: usize, value: bool) {
+  fn set_bit_band(&self, offset: usize, value: bool) {
     let value = if value { 1 } else { 0 };
     unsafe {
       write_volatile(self.bit_band_mut_ptr(offset), value);
     }
   }
 
-  fn bit_band_mut_ptr(&mut self, offset: usize) -> *mut usize {
+  fn bit_band_mut_ptr(&self, offset: usize) -> *mut usize {
     Self::bit_band_addr(offset) as *mut usize
   }
 }
@@ -163,8 +159,8 @@ include!(concat!(env!("OUT_DIR"), "/svd.rs"));
 mod tests {
   use super::*;
 
-  reg!([0x4000_0000] LowReg LowRegValue RegBitBand {});
-  reg!([0x400F_FFFC] HighReg HighRegValue RegBitBand {});
+  reg!([0x4000_0000] u32 LowReg LowRegValue RegBitBand {});
+  reg!([0x400F_FFFC] u32 HighReg HighRegValue RegBitBand {});
 
   type LocalLowReg = LowReg<Local>;
   type LocalHighReg = HighReg<Local>;

@@ -9,7 +9,12 @@ use core::fmt;
 #[cfg_attr(feature = "clippy", allow(empty_loop))]
 #[linkage = "weak"]
 #[lang = "panic_fmt"]
-extern "C" fn begin(args: fmt::Arguments, file: &'static str, line: u32) -> ! {
+unsafe extern "C" fn begin(
+  args: fmt::Arguments,
+  file: &'static str,
+  line: u32,
+  _col: u32,
+) -> ! {
   iprint!("panicked at '");
   itm::write_fmt(args);
   iprintln!("', {}:{}", file, line);
