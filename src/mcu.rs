@@ -1,4 +1,4 @@
-//! Utility module.
+//! A module for working with MCU.
 
 use core::ptr::write_volatile;
 

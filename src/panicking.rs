@@ -1,6 +1,6 @@
 //! Panicking support.
 
-use {itm, util};
+use {itm, mcu};
 use core::fmt;
 
 /// Panic handler.
@@ -19,6 +19,6 @@ unsafe extern "C" fn begin(
   itm::write_fmt(args);
   iprintln!("', {}:{}", file, line);
   itm::flush();
-  util::reset_request();
+  mcu::reset_request();
   loop {}
 }

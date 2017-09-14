@@ -3,7 +3,7 @@
 pub use self::port::Port;
 use core::fmt::{self, Write};
 use core::ptr::{read_volatile, write_volatile};
-use util;
+use mcu;
 
 const POST_FLUSH_WAIT: u32 = 0x400;
 const DBGMCU_CR: usize = 0xE004_2004;
@@ -59,5 +59,5 @@ pub fn write_fmt(args: fmt::Arguments) {
 /// Waits until all pending packets will be transmitted.
 pub fn flush() {
   while unsafe { read_volatile(ITMTC as *const usize) } & 0b1 << 23 != 0 {}
-  util::spin(POST_FLUSH_WAIT); // Additional wait due to asynchronous output
+  mcu::spin(POST_FLUSH_WAIT); // Additional wait due to asynchronous output
 }

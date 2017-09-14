@@ -1,6 +1,7 @@
 //! Safe API for memory-mapped registers.
 
 pub mod prelude;
+pub mod scb;
 pub mod stk;
 
 pub use self::stk::Ctrl as StkCtrl;
@@ -19,7 +20,7 @@ pub const BIT_BAND_LENGTH: usize = 5;
 /// Register that can read and write its value in a multi-threaded context.
 pub trait RwAtomicReg
 where
-  Self: RReg<Atomic> + WReg<Atomic>,
+  Self: RReg<Ar> + WReg<Ar>,
 {
   /// Atomically modifies a register's value.
   unsafe fn modify<F>(&self, f: F)
@@ -31,7 +32,7 @@ where
 pub trait RegBitBand<T>
 where
   Self: Reg<T>,
-  T: Flavor,
+  T: RegFlavor,
 {
   /// Calculates bit-band address.
   ///
@@ -51,7 +52,7 @@ where
 pub trait RRegBitBand<T>
 where
   Self: RegBitBand<T> + RReg<T>,
-  T: Flavor,
+  T: RegFlavor,
 {
   /// Reads the register's bit by `offset` through peripheral bit-band region.
   ///
@@ -72,7 +73,7 @@ where
 pub trait WRegBitBand<T>
 where
   Self: RegBitBand<T> + WReg<T>,
-  T: Flavor,
+  T: RegFlavor,
 {
   /// Atomically sets or clears the register's bit by `offset` through
   /// peripheral bit-band region.
@@ -92,7 +93,7 @@ where
 
 impl<T, U> RwAtomicReg for T
 where
-  T: RReg<Atomic, Value = U> + WReg<Atomic, Value = U>,
+  T: RReg<Ar, Value = U> + WReg<Ar, Value = U>,
   U: RegValue<Raw = u32>,
 {
   unsafe fn modify<F>(&self, f: F)
@@ -125,7 +126,7 @@ where
 impl<T, U> RRegBitBand<U> for T
 where
   T: RegBitBand<U> + RReg<U>,
-  U: Flavor,
+  U: RegFlavor,
 {
   fn bit_band(&self, offset: usize) -> bool {
     unsafe { read_volatile(self.bit_band_ptr(offset)) != 0 }
@@ -139,7 +140,7 @@ where
 impl<T, U> WRegBitBand<U> for T
 where
   T: RegBitBand<U> + WReg<U>,
-  U: Flavor,
+  U: RegFlavor,
 {
   fn set_bit_band(&self, offset: usize, value: bool) {
     let value = if value { 1 } else { 0 };
@@ -162,8 +163,8 @@ mod tests {
   reg!([0x4000_0000] u32 LowReg LowRegValue RegBitBand {});
   reg!([0x400F_FFFC] u32 HighReg HighRegValue RegBitBand {});
 
-  type LocalLowReg = LowReg<Local>;
-  type LocalHighReg = HighReg<Local>;
+  type LocalLowReg = LowReg<Lr>;
+  type LocalHighReg = HighReg<Lr>;
 
   #[test]
   fn reg_bit_band_addr() {

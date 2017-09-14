@@ -97,20 +97,24 @@ struct Field {
 quick_main!(run);
 
 fn run() -> Result<()> {
-  let mut f = File::create(Path::new(&env::var("OUT_DIR")?).join("svd.rs"))?;
-  if let Some(svd) = svd_feature() {
-    svd_generate(svd, &mut f)?;
+  let out_dir = env::var("OUT_DIR")?;
+  let out_dir = Path::new(&out_dir);
+  let mut svd_out = File::create(out_dir.join("svd.rs"))?;
+  let mut vtable_out = File::create(out_dir.join("vtable.rs"))?;
+  if let Some(svd_file) = svd_from_feature() {
+    svd_generate(&mut svd_out, &mut File::open(svd_file)?)?;
   }
+  vtable_generate(&mut vtable_out, irq_from_feature())?;
   Ok(())
 }
 
-fn svd_generate(svd: &str, f: &mut File) -> Result<()> {
+fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
   let mut xml = String::new();
-  File::open(svd)?.read_to_string(&mut xml)?;
+  input.read_to_string(&mut xml)?;
   let device: Device = serde_xml_rs::deserialize(xml.as_bytes())?;
   macro_rules! w {
     ($($x:tt)*) => {
-      f.write_all(format!($($x)*).as_bytes())?;
+      output.write_all(format!($($x)*).as_bytes())?;
     };
   }
   for peripheral in &device.peripherals.peripheral {
@@ -150,9 +154,7 @@ fn svd_generate(svd: &str, f: &mut File) -> Result<()> {
     }
     w!("pub mod {} {{\n", mod_name);
     w!("  #[allow(unused_imports)]\n");
-    w!("  use drone::reg::{{flavor, RReg, RegValue, WReg}};\n");
-    w!("  #[allow(unused_imports)]\n");
-    w!("  use reg::{{RegBitBand, RRegBitBand, WRegBitBand}};\n\n");
+    w!("  use reg::prelude::*;\n\n");
     let base_address = u32::from_str_radix(
       &peripheral.base_address.trim_left_matches("0x"),
       16,
@@ -191,7 +193,7 @@ fn svd_generate(svd: &str, f: &mut File) -> Result<()> {
       w!("\n");
       w!("  }}\n\n");
       if BIT_BAND.contains(address) {
-        w!("  impl<T: flavor::Flavor> {}<T> {{\n", name);
+        w!("  impl<T: RegFlavor> {}<T> {{\n", name);
         for field in &register.fields.field {
           let mut name = field.name.to_snake_case();
           let offset = field.bit_offset.parse::<u32>()?;
@@ -268,7 +270,40 @@ fn svd_generate(svd: &str, f: &mut File) -> Result<()> {
   Ok(())
 }
 
-fn svd_feature() -> Option<&'static str> {
+fn vtable_generate(output: &mut File, irq_count: u32) -> Result<()> {
+  macro_rules! w {
+    ($($x:tt)*) => {
+      output.write_all(format!($($x)*).as_bytes())?;
+    };
+  }
+  w!("#[doc(hidden)]\n");
+  w!("#[macro_export]\n");
+  w!("macro_rules! vtable_struct_with_irq {{\n");
+  w!("  () => {{\n");
+  w!("    vtable_struct! {{\n");
+  for i in 0..irq_count {
+    w!("      irq{},\n", i);
+  }
+  w!("    }}\n");
+  w!("  }}\n");
+  w!("}}\n");
+  w!("\n");
+  w!("#[doc(hidden)]\n");
+  w!("#[macro_export]\n");
+  w!("macro_rules! vtable_default_with_irq {{\n");
+  w!("  ($reset:ident) => {{\n");
+  w!("    vtable_default! {{\n");
+  w!("      $reset,\n");
+  for i in 0..irq_count {
+    w!("      irq{},\n", i);
+  }
+  w!("    }}\n");
+  w!("  }}\n");
+  w!("}}\n");
+  Ok(())
+}
+
+fn svd_from_feature() -> Option<&'static str> {
   #[allow(unreachable_patterns)]
   match () {
     #[cfg(feature = "stm32f100")]
@@ -292,5 +327,20 @@ fn svd_feature() -> Option<&'static str> {
     #[cfg(feature = "stm32l4x6")]
     () => Some("svd/STM32L4x6.svd"),
     _ => None,
+  }
+}
+
+fn irq_from_feature() -> u32 {
+  #[allow(unreachable_patterns)]
+  match () {
+    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+    () => 68,
+    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+    () => 240,
+    _ => 0,
   }
 }
