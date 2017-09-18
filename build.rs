@@ -202,6 +202,7 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
             for doc in field.description.lines() {
               w!("    /// {}\n", doc.trim());
             }
+            w!("    #[inline]\n");
             w!("    pub fn set_{}(&mut self, value: bool) {{\n", name);
             w!("      self.set_bit_band({}, value);\n", offset);
             w!("    }}\n\n");
@@ -213,6 +214,7 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
             for doc in field.description.lines() {
               w!("    /// {}\n", doc.trim());
             }
+            w!("    #[inline]\n");
             w!("    pub fn {}(&self) -> bool {{\n", name);
             w!("      self.bit_band({})\n", offset);
             w!("    }}\n\n");
@@ -229,6 +231,7 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
           for doc in field.description.lines() {
             w!("    /// {}\n", doc.trim());
           }
+          w!("    #[inline]\n");
           if width == 1 {
             w!(
               "    pub fn set_{}(&mut self, value: bool) -> &mut Self {{\n",
@@ -252,6 +255,7 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
           for doc in field.description.lines() {
             w!("    /// {}\n", doc.trim());
           }
+          w!("    #[inline]\n");
           if width == 1 {
             w!("    pub fn {}(&self) -> bool {{\n", name);
             w!("      self.bit({})\n", offset);

@@ -115,8 +115,8 @@ macro_rules! vtable {
       $(#[$meta])*
       pub mod $vector {
         /// The beginning of the routine chain.
-        pub static mut ROUTINE: ::drone::routine::RoutineList =
-          ::drone::routine::RoutineList::vacant();
+        pub static mut ROUTINE: ::drone::routine::Routine =
+          ::drone::routine::Routine::new();
 
         /// The routine handler.
         ///
@@ -129,9 +129,25 @@ macro_rules! vtable {
       }
 
       $(#[$meta])*
-      pub fn $vector() -> &'static mut ::drone::routine::RoutineList {
+      pub fn $vector() -> &'static mut ::drone::routine::Routine {
         unsafe { &mut $vector::ROUTINE }
       }
     )*
   };
+}
+
+#[cfg(test)]
+mod tests {
+  vtable! {
+    #[allow(dead_code)]
+    nmi,
+  }
+
+  #[test]
+  fn vtable_new() {
+    unsafe extern "C" fn reset() -> ! {
+      loop {}
+    }
+    VectorTable::new(reset);
+  }
 }

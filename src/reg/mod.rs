@@ -39,6 +39,7 @@ where
   /// # Panics
   ///
   /// If `offset` is greater than or equals to the platform's word size in bits.
+  #[inline]
   fn bit_band_addr(offset: usize) -> usize {
     assert!(offset < size_of::<<Self::Value as RegValue>::Raw>() * 8);
     BIT_BAND_BASE +
@@ -96,6 +97,7 @@ where
   T: RReg<Ar, Value = U> + WReg<Ar, Value = U>,
   U: RegValue<Raw = u32>,
 {
+  #[inline]
   unsafe fn modify<F>(&self, f: F)
   where
     F: Fn(&mut Self::Value) -> &Self::Value,
@@ -128,10 +130,12 @@ where
   T: RegBitBand<U> + RReg<U>,
   U: RegFlavor,
 {
+  #[inline]
   fn bit_band(&self, offset: usize) -> bool {
     unsafe { read_volatile(self.bit_band_ptr(offset)) != 0 }
   }
 
+  #[inline]
   fn bit_band_ptr(&self, offset: usize) -> *const usize {
     Self::bit_band_addr(offset) as *const usize
   }
@@ -142,6 +146,7 @@ where
   T: RegBitBand<U> + WReg<U>,
   U: RegFlavor,
 {
+  #[inline]
   fn set_bit_band(&self, offset: usize, value: bool) {
     let value = if value { 1 } else { 0 };
     unsafe {
@@ -149,6 +154,7 @@ where
     }
   }
 
+  #[inline]
   fn bit_band_mut_ptr(&self, offset: usize) -> *mut usize {
     Self::bit_band_addr(offset) as *mut usize
   }

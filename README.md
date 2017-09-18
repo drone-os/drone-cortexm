@@ -1,7 +1,7 @@
-drone-stm32
-===========
+drone-cortex-m
+==============
 
-[Drone][drone] RTOS bindings for **STM32** microcontrollers.
+[Drone][drone] RTOS bindings for ARM Cortex-M microcontrollers.
 
 **Warning**: It is at the early experimental stage.
 

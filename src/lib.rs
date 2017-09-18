@@ -5,7 +5,10 @@
 #![feature(linkage)]
 #![no_std]
 #![warn(missing_docs)]
+#![cfg_attr(test, feature(allocator_internals))]
 #![cfg_attr(test, feature(compiler_builtins_lib))]
+#![cfg_attr(test, feature(global_allocator))]
+#![cfg_attr(test, default_lib_allocator)]
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![cfg_attr(feature = "clippy", allow(precedence, doc_markdown))]
@@ -25,3 +28,6 @@ pub mod reg;
 pub mod mcu;
 #[macro_use]
 pub mod vtable;
+
+#[cfg(test)]
+alloc!();
