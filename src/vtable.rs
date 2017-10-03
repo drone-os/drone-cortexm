@@ -86,17 +86,17 @@ include!(concat!(env!("OUT_DIR"), "/vtable.rs"));
 ///
 /// ```rust
 /// vtable! {
-///   #[doc = "Non maskable interrupt."]
-///   nmi,
-///   #[doc = "All classes of fault."]
-///   hard_fault,
-///   #[doc = "System tick timer."]
-///   sys_tick,
+///   /// Non maskable interrupt.
+///   nmi;
+///   /// All classes of fault.
+///   hard_fault;
+///   /// System tick timer.
+///   sys_tick;
 /// }
 /// ```
 #[macro_export]
 macro_rules! vtable {
-  ($($(#[$meta:meta])* $vector:ident,)*) => {
+  ($($(#[$meta:meta])* $vector:ident $(as $alias:ident)*;)*) => {
     vtable_struct_with_irq!();
 
     impl VectorTable {
@@ -132,6 +132,10 @@ macro_rules! vtable {
       pub fn $vector() -> &'static mut ::drone::routine::Routine {
         unsafe { &mut $vector::ROUTINE }
       }
+
+      $(
+        pub use self::$vector as $alias;
+      )*
     )*
   };
 }
@@ -140,7 +144,9 @@ macro_rules! vtable {
 mod tests {
   vtable! {
     #[allow(dead_code)]
-    nmi,
+    nmi;
+    #[allow(dead_code)]
+    debug as monitor;
   }
 
   #[test]

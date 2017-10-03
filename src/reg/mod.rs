@@ -42,10 +42,10 @@ where
   #[inline]
   fn bit_band_addr(offset: usize) -> usize {
     assert!(offset < size_of::<<Self::Value as RegValue>::Raw>() * 8);
-    BIT_BAND_BASE +
-      (((Self::ADDRESS + (offset >> 3)) &
-        ((0b1 << (BIT_BAND_LENGTH << 2)) - 1)) << BIT_BAND_LENGTH) +
-      ((offset & (8 - 1)) << 2)
+    BIT_BAND_BASE
+      + (((Self::ADDRESS + (offset >> 3))
+        & ((0b1 << (BIT_BAND_LENGTH << 2)) - 1)) << BIT_BAND_LENGTH)
+      + ((offset & (8 - 1)) << 2)
   }
 }
 
@@ -165,9 +165,10 @@ include!(concat!(env!("OUT_DIR"), "/svd.rs"));
 #[cfg(test)]
 mod tests {
   use super::*;
+  use drone_macros::reg;
 
-  reg!([0x4000_0000] u32 LowReg LowRegValue RegBitBand {});
-  reg!([0x400F_FFFC] u32 HighReg HighRegValue RegBitBand {});
+  reg!(0x4000_0000 0x20 LowReg RegBitBand);
+  reg!(0x400F_FFFC 0x20 HighReg RegBitBand);
 
   type LocalLowReg = LowReg<Lr>;
   type LocalHighReg = HighReg<Lr>;

@@ -1,17 +1,16 @@
 //! System control block
 
 use super::prelude::*;
+use drone_macros::reg;
 
 reg! {
-  [0xE000_ED10] u32
-  #[doc = "System control register"]
+  //! System control register
+  0xE000_ED10 0x20
   Scr
-  #[doc = "System control register"]
-  ScrValue
-  RReg {} WReg {}
+  RReg WReg
 }
 
-impl ScrValue {
+impl ScrVal {
   /// Send Event on Pending bit
   #[inline]
   pub fn seveonpend(&self) -> bool {

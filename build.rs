@@ -154,41 +154,36 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
     }
     w!("pub mod {} {{\n", mod_name);
     w!("  #[allow(unused_imports)]\n");
-    w!("  use reg::prelude::*;\n\n");
+    w!("  use reg::prelude::*;\n");
+    w!("  use drone_macros::reg;\n\n");
     let base_address = u32::from_str_radix(
       &peripheral.base_address.trim_left_matches("0x"),
       16,
     )?;
     for register in &registers.register {
       let name = register.name.to_class_case();
-      let address = base_address +
-        u32::from_str_radix(
+      let address = base_address
+        + u32::from_str_radix(
           &register.address_offset.trim_left_matches("0x"),
           16,
         )?;
       let mut hex_address = format!("{:08X}", address);
       hex_address.insert(4, '_');
-      let doc = register
-        .description
-        .lines()
-        .map(str::trim)
-        .collect::<Vec<_>>()
-        .join("\n");
       w!("  reg! {{\n");
-      w!("    [0x{}] u32\n", hex_address);
-      w!("    #[doc = \"{}\"]\n", doc);
+      for doc in register.description.lines() {
+        w!("    //! {}\n", doc.trim());
+      }
+      w!("    0x{} 0x20\n", hex_address);
       w!("    {}\n", name);
-      w!("    #[doc = \"{}\"]\n", doc);
-      w!("    {}Value\n", name);
       w!("   ");
       if register.access != "write-only" {
-        w!(" RReg {{}}");
+        w!(" RReg");
       }
       if register.access != "read-only" {
-        w!(" WReg {{}}");
+        w!(" WReg");
       }
       if BIT_BAND.contains(address) {
-        w!(" RegBitBand {{}}");
+        w!(" RegBitBand");
       }
       w!("\n");
       w!("  }}\n\n");
@@ -222,7 +217,7 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
         }
         w!("  }}\n\n");
       }
-      w!("  impl {}Value {{\n", name);
+      w!("  impl {}Val {{\n", name);
       for field in &register.fields.field {
         let mut name = field.name.to_snake_case();
         let offset = field.bit_offset.parse::<u32>()?;

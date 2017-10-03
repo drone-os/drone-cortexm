@@ -1,17 +1,16 @@
 //! SysTick timer
 
 use super::prelude::*;
+use drone_macros::reg;
 
 reg! {
-  [0xE000_E010] u32
-  #[doc = "SysTick control and status register"]
+  //! SysTick control and status register
+  0xE000_E010 0x20
   Ctrl
-  #[doc = "SysTick control and status register"]
-  CtrlValue
-  RReg {} WReg {}
+  RReg WReg
 }
 
-impl CtrlValue {
+impl CtrlVal {
   /// Returns `true` if timer counted to `0` since last time this was read
   #[inline]
   pub fn countflag(&self) -> bool {
@@ -56,15 +55,13 @@ impl CtrlValue {
 }
 
 reg! {
-  [0xE000_E014] u32
-  #[doc = "SysTick reload value register"]
+  //! SysTick reload value register
+  0xE000_E014 0x20
   Load
-  #[doc = "SysTick reload value register"]
-  LoadValue
-  RReg {} WReg {}
+  RReg WReg
 }
 
-impl LoadValue {
+impl LoadVal {
   /// RELOAD value
   #[inline]
   pub fn reload(&self) -> u32 {

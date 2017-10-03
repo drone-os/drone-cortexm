@@ -19,6 +19,7 @@
   "panic-strategy": "abort",
   "pre-link-args": ["-nostartfiles"],
   "relocation-model": "static",
+  "target-c-int-width": "32",
   "target-endian": "little",
   "target-pointer-width": "32",
   "vendor": ""
