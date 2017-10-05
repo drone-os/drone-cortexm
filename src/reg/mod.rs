@@ -165,7 +165,7 @@ include!(concat!(env!("OUT_DIR"), "/svd.rs"));
 #[cfg(test)]
 mod tests {
   use super::*;
-  use drone_macros::reg;
+  use drone::reg;
 
   reg!(0x4000_0000 0x20 LowReg RegBitBand);
   reg!(0x400F_FFFC 0x20 HighReg RegBitBand);

@@ -1,0 +1,18 @@
+[package]
+name = "drone-cortex-m-macros"
+version = "0.5.0"
+authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
+description = "Drone Cortex-M auxiliary macros."
+readme = "README.md"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/valff/drone-cortex-m"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "0.3"
+
+[dependencies.syn]
+version = "0.11"
+features = ["full", "parsing", "printing"]

@@ -1,7 +1,7 @@
 //! System control block
 
 use super::prelude::*;
-use drone_macros::reg;
+use drone::reg;
 
 reg! {
   //! System control register

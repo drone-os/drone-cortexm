@@ -1,4 +1,5 @@
 //! *Drone* bindings for *STM32* microcontrollers.
+#![feature(decl_macro)]
 #![feature(asm)]
 #![feature(const_fn)]
 #![feature(lang_items)]
@@ -22,7 +23,7 @@ extern crate alloc;
 #[cfg(test)]
 extern crate compiler_builtins;
 extern crate drone;
-extern crate drone_macros;
+extern crate drone_cortex_m_macros;
 #[cfg(test)]
 #[macro_use]
 extern crate test;
@@ -32,10 +33,11 @@ pub mod itm;
 pub mod panicking;
 pub mod reg;
 pub mod mcu;
-#[macro_use]
 pub mod vtable;
 
+pub use vtable::vtable;
+
 #[cfg(test)]
-drone_macros::heap! {
+drone::heap! {
   #![global_allocator]
 }
