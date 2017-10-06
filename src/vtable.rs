@@ -1,4 +1,37 @@
-//! The vector table of interrupt service routines.
+//! The vector table of support.
+//!
+//! # Configuration
+//!
+//! The vector table is configured by [`vtable!`] macro.
+//!
+//! ```rust
+//! vtable! {
+//!   //! The vector table.
+//!
+//!   /// Non maskable interrupt.
+//!   nmi;
+//!   /// All classes of fault.
+//!   hard_fault;
+//!   /// System tick timer.
+//!   sys_tick;
+//!   /// RCC global interrupt.
+//!   5: rcc; // Give IRQ5 a name
+//! }
+//! ```
+//!
+//! # Preconfigured Exceptions
+//!
+//! * `nmi` - Non maskable interrupt.
+//! * `hard_fault` - All classes of fault.
+//! * `mem_manage` - Memory management.
+//! * `bus_fault` - Pre-fetch fault, memory access fault.
+//! * `usage_fault` - Undefined instruction or illegal state.
+//! * `sv_call` - System service call via SWI instruction.
+//! * `debug` - Monitor.
+//! * `pend_sv` - Pendable request for system service.
+//! * `sys_tick` - System tick timer.
+//!
+//! [`vtable!`]: ../macro.vtable.html
 
 pub use drone_cortex_m_macros::vtable_imp;
 
@@ -16,34 +49,11 @@ pub enum Reserved {
   Vector = 0,
 }
 
-/// Initialize a vector table.
+/// Configure a vector table.
 ///
-/// # Arguments
+/// See the [`module-level documentation`] for more details.
 ///
-/// * `nmi` - Non maskable interrupt.
-/// * `hard_fault` - All classes of fault.
-/// * `mem_manage` - Memory management.
-/// * `bus_fault` - Pre-fetch fault, memory access fault.
-/// * `usage_fault` - Undefined instruction or illegal state.
-/// * `sv_call` - System service call via SWI instruction.
-/// * `debug` - Monitor.
-/// * `pend_sv` - Pendable request for system service.
-/// * `sys_tick` - System tick timer.
-/// * `irqN` - External interrupt `N`. The number of external interrupts depends
-///   on the MCU model.
-///
-/// # Examples
-///
-/// ```rust
-/// vtable! {
-///   /// Non maskable interrupt.
-///   nmi;
-///   /// All classes of fault.
-///   hard_fault;
-///   /// System tick timer.
-///   sys_tick;
-/// }
-/// ```
+/// [`module-level documentation`]: vtable/index.html
 pub macro vtable($($tokens:tt)*) {
   $crate::vtable::vtable_imp!($($tokens)*);
 }

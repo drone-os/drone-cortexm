@@ -1,4 +1,4 @@
-//! Safe API for memory-mapped registers.
+//! Memory-mapped registers support.
 
 pub mod prelude;
 pub mod scb;
