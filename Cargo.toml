@@ -3,12 +3,12 @@ members = ["macros"]
 
 [package]
 name = "drone-cortex-m"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 description = "Drone for ARM Cortex-M."
 readme = "README.md"
 license = "MIT/Apache-2.0"
-repository = "https://github.com/valff/drone-cortex-m"
+repository = "https://github.com/drone-os/drone-cortex-m"
 
 [features]
 default = []
@@ -24,7 +24,7 @@ stm32l4x5 = []
 stm32l4x6 = []
 
 [dependencies.drone-cortex-m-macros]
-version = "0.5"
+version = "0.5.1"
 path = "macros"
 
 [dependencies.drone]

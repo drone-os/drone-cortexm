@@ -1,11 +1,11 @@
 [package]
 name = "drone-cortex-m-macros"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 description = "Drone for ARM Cortex-M procedural macros."
 readme = "README.md"
 license = "MIT/Apache-2.0"
-repository = "https://github.com/valff/drone-cortex-m"
+repository = "https://github.com/drone-os/drone-cortex-m"
 
 [lib]
 proc-macro = true

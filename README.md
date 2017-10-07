@@ -1,5 +1,7 @@
 # drone-cortex-m
 
+## [Documentation](https://docs.rs/drone-cortex-m)
+
 [Drone] implementation for ARM Cortex-M microcontrollers.
 
 ## Installation
@@ -25,7 +27,7 @@ $ sudo udevadm trigger
 because repository package is outdated and doesn't contain configuration for
 newer chips and boards.
 
-[Drone]: https://github.com/valff/drone
+[Drone]: https://github.com/drone-os/drone
 [OpenOCD]: http://openocd.org/
 [rules.d]: https://github.com/texane/stlink/tree/master/etc/udev/rules.d
 
