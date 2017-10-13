@@ -2,7 +2,9 @@
 #![feature(allocator_api)]
 #![feature(allocator_internals)]
 #![feature(compiler_builtins_lib)]
+#![feature(const_cell_new)]
 #![feature(const_fn)]
+#![feature(const_ptr_null_mut)]
 #![feature(global_allocator)]
 #![feature(proc_macro)]
 #![feature(slice_get_slice)]
@@ -21,7 +23,11 @@ drone::heap! {
 }
 
 mod vtable1 {
-  ::drone_cortex_m::vtable! {
+  use super::*;
+
+  drone::thread::thread_local!();
+
+  drone_cortex_m::vtable! {
     //! Test doc attribute
     #![doc = "test attribute"]
     /// Test doc attribute
@@ -40,7 +46,11 @@ mod vtable1 {
 }
 
 mod vtable2 {
-  ::drone_cortex_m::vtable!();
+  use super::*;
+
+  drone::thread::thread_local!();
+
+  drone_cortex_m::vtable!();
 }
 
 #[test]

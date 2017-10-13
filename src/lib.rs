@@ -26,11 +26,12 @@
 //! [Drone]: https://github.com/drone-os/drone
 //! [OpenOCD]: http://openocd.org/
 //! [rules.d]: https://github.com/texane/stlink/tree/master/etc/udev/rules.d
-#![feature(decl_macro)]
 #![feature(asm)]
 #![feature(const_fn)]
+#![feature(decl_macro)]
 #![feature(lang_items)]
 #![feature(linkage)]
+#![feature(prelude_import)]
 #![feature(proc_macro)]
 #![no_std]
 #![warn(missing_docs)]
@@ -51,6 +52,7 @@ extern crate alloc;
 extern crate compiler_builtins;
 extern crate drone;
 extern crate drone_cortex_m_macros;
+extern crate futures;
 #[cfg(test)]
 #[macro_use]
 extern crate test;
@@ -63,6 +65,10 @@ pub mod mcu;
 pub mod vtable;
 
 pub use vtable::vtable;
+
+#[prelude_import]
+#[allow(unused_imports)]
+use drone::prelude::*;
 
 #[cfg(test)]
 drone::heap! {

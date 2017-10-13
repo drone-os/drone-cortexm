@@ -1,4 +1,4 @@
-//! Memory-mapped registers support.
+//! Memory-mapped registers.
 
 pub mod prelude;
 pub mod scb;
@@ -6,6 +6,7 @@ pub mod stk;
 
 pub use self::stk::Ctrl as StkCtrl;
 pub use self::stk::Load as StkLoad;
+pub use drone::reg::bind;
 
 use core::mem::size_of;
 use core::ptr::{read_volatile, write_volatile};
@@ -149,9 +150,7 @@ where
   #[inline]
   fn set_bit_band(&self, offset: usize, value: bool) {
     let value = if value { 1 } else { 0 };
-    unsafe {
-      write_volatile(self.bit_band_mut_ptr(offset), value);
-    }
+    unsafe { write_volatile(self.bit_band_mut_ptr(offset), value) };
   }
 
   #[inline]

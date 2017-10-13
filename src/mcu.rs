@@ -6,9 +6,7 @@ const AIRCR: usize = 0xE000_ED0C;
 
 /// Wait for Interrupt.
 pub fn wait_for_interrupt() {
-  unsafe {
-    asm!("wfi" :::: "volatile");
-  }
+  unsafe { asm!("wfi" :::: "volatile") };
 }
 
 /// Performs a system reset request.
@@ -16,9 +14,7 @@ pub fn wait_for_interrupt() {
 /// This function writes to the application interrupt and reset control register
 /// (`AIRCR`).
 pub fn reset_request() {
-  unsafe {
-    write_volatile(AIRCR as *mut usize, 0x05FA_0004);
-  }
+  unsafe { write_volatile(AIRCR as *mut usize, 0x05FA_0004) };
 }
 
 /// Spins a specified amount of CPU cycles.

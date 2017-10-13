@@ -1,4 +1,4 @@
-//! The vector table of support.
+//! The vector table.
 //!
 //! # Configuration
 //!
@@ -19,7 +19,7 @@
 //! }
 //! ```
 //!
-//! # Preconfigured Exceptions
+//! # Preconfigured exceptions
 //!
 //! * `nmi` - Non maskable interrupt.
 //! * `hard_fault` - All classes of fault.
@@ -35,10 +35,10 @@
 
 pub use drone_cortex_m_macros::vtable_imp;
 
-/// Pointer to an exception routine.
+/// Pointer to an exception handler.
 pub type Handler = unsafe extern "C" fn();
 
-/// Pointer to a reset routine.
+/// Pointer to a reset handler.
 pub type ResetHandler = unsafe extern "C" fn() -> !;
 
 /// Reserved pointer in a vector table.

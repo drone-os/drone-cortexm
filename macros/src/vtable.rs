@@ -5,9 +5,11 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
   let input = syn::parse_token_trees(&input.to_string()).unwrap();
   let mut input = input.into_iter();
   let mut attributes = Vec::new();
-  let mut exception_name = Vec::new();
-  let mut exception_number = Vec::new();
-  let mut exception_attributes = Vec::new();
+  let mut thread_id = Vec::new();
+  let mut thread_name = Vec::new();
+  let mut thread_number = Vec::new();
+  let mut thread_attributes = Vec::new();
+  let mut thread_count = 0usize;
   'outer: loop {
     let mut inner_attributes = Vec::new();
     loop {
@@ -38,9 +40,11 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
             Some(syn::TokenTree::Token(syn::Token::Semi)) => (),
             token => panic!("Invalid token after `{}`: {:?}", name, token),
           }
-          exception_attributes.push(inner_attributes);
-          exception_number.push(None);
-          exception_name.push(name);
+          thread_id.push(thread_count);
+          thread_name.push(name);
+          thread_number.push(None);
+          thread_attributes.push(inner_attributes);
+          thread_count += 1;
           break;
         }
         Some(
@@ -60,19 +64,19 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
             Some(syn::TokenTree::Token(syn::Token::Semi)) => (),
             token => panic!("Invalid token after `{}`: {:?}", name, token),
           }
-          exception_attributes.push(inner_attributes);
-          exception_number.push(Some(number));
-          exception_name.push(name);
+          thread_id.push(thread_count);
+          thread_name.push(name);
+          thread_number.push(Some(number));
+          thread_attributes.push(inner_attributes);
+          thread_count += 1;
           break;
         }
-        None => {
-          break 'outer;
-        }
+        None => break 'outer,
         token => panic!("Invalid token: {:?}", token),
       }
     }
   }
-  let irq_number = exception_number
+  let irq_number = thread_number
     .iter()
     .cloned()
     .filter_map(|x| x)
@@ -82,20 +86,23 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
   let mut irq_name = (0..irq_number)
     .map(|n| syn::Ident::new(format!("_irq{}", n)))
     .collect::<Vec<_>>();
-  exception_number
+  thread_number
     .iter()
-    .zip(exception_name.iter())
+    .zip(thread_name.iter())
     .filter_map(|(number, name)| {
       number.map(|number| (number as usize, name))
     })
     .for_each(|(number, name)| {
       irq_name[number] = name.clone();
     });
-  let exception_name2 = exception_name.clone();
-  let exception_name3 = exception_name.clone();
-  let exception_name4 = exception_name.clone();
-  let exception_name5 = exception_name.clone();
-  let exception_attributes2 = exception_attributes.clone();
+  let thread_handler = thread_name
+    .iter()
+    .map(|name| syn::Ident::new(format!("__{}_handler", name)))
+    .collect::<Vec<_>>();
+  let thread_id2 = thread_id.clone();
+  let thread_id3 = thread_id.clone();
+  let thread_name2 = thread_name.clone();
+  let thread_handler2 = thread_handler.clone();
   let irq_name2 = irq_name.clone();
 
   let output = quote! {
@@ -122,11 +129,11 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
     }
 
     impl VectorTable {
-      /// Constructs a `VectorTable`.
+      /// Creates an empty `VectorTable` with `reset` handler.
       pub const fn new(reset: ResetHandler) -> VectorTable {
         VectorTable {
           #(
-            #exception_name: Some(#exception_name2::handler),
+            #thread_name: Some(#thread_handler),
           )*
           ..VectorTable {
             reset,
@@ -149,27 +156,24 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
       }
     }
 
+    #[allow(dead_code)]
+    static mut THREADS: [ThreadLocal; #thread_count] = [
+      #(
+        ThreadLocal::new(#thread_id),
+      )*
+    ];
+
     #(
-      #(#exception_attributes)*
-      pub mod #exception_name3 {
-        use drone::routine::Routine;
-
-        /// The routine chain.
-        pub static mut ROUTINE: Routine = Routine::new();
-
-        /// The routine handler.
-        ///
-        /// # Safety
-        ///
-        /// Should be called only by hardware.
-        pub unsafe extern "C" fn handler() {
-          ROUTINE.invoke();
-        }
+      #[doc(hidden)]
+      pub unsafe extern "C" fn #thread_handler2() {
+        const THREAD_ID: usize = #thread_id2;
+        THREADS.get_unchecked_mut(THREAD_ID).run(THREAD_ID);
       }
 
-      #(#exception_attributes2)*
-      pub fn #exception_name4() -> &'static mut ::drone::routine::Routine {
-        unsafe { &mut #exception_name5::ROUTINE }
+      #(#thread_attributes)*
+      #[inline]
+      pub fn #thread_name2() -> &'static ThreadLocal {
+        unsafe { ThreadLocal::get_unchecked(#thread_id3) }
       }
     )*
   };

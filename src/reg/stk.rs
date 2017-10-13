@@ -1,7 +1,7 @@
 //! SysTick timer
 
-use super::prelude::*;
 use drone::reg;
+use reg::prelude::*;
 
 reg! {
   //! SysTick control and status register

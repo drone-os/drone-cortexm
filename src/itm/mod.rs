@@ -1,4 +1,4 @@
-//! Instrumentation Trace Macrocell support.
+//! Instrumentation Trace Macrocell.
 
 pub use self::port::Port;
 use core::fmt::{self, Write};
@@ -23,7 +23,7 @@ pub mod macros;
 /// # Safety
 ///
 /// Must be called exactly once and as early as possible.
-pub unsafe fn itm_init() {
+pub unsafe fn init() {
   // Trace pin assignment control.
   write_volatile(DBGMCU_CR as *mut usize, 0x0000_0020);
   // Global enable for all DWT and ITM features.
