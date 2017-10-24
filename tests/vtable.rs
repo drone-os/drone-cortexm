@@ -23,6 +23,8 @@ drone::heap! {
 }
 
 mod vtable1 {
+  #![allow(dead_code)]
+
   use super::*;
 
   drone::thread::thread_local!();
@@ -46,6 +48,8 @@ mod vtable1 {
 }
 
 mod vtable2 {
+  #![allow(dead_code)]
+
   use super::*;
 
   drone::thread::thread_local!();

@@ -1,3 +1,4 @@
+#![feature(decl_macro)]
 #![feature(range_contains)]
 
 #[macro_use]
@@ -110,10 +111,8 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
   let mut xml = String::new();
   input.read_to_string(&mut xml)?;
   let device: Device = serde_xml_rs::deserialize(xml.as_bytes())?;
-  macro_rules! w {
-    ($($x:tt)*) => {
-      output.write_all(format!($($x)*).as_bytes())?;
-    };
+  macro w($($x:tt)*) {
+    output.write_all(format!($($x)*).as_bytes())?;
   }
   for peripheral in &device.peripherals.peripheral {
     let derived = if let Some(ref derived_from) = peripheral.derived_from {
