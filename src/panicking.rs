@@ -15,9 +15,9 @@ unsafe extern "C" fn begin(
   line: u32,
   _col: u32,
 ) -> ! {
-  iprint!("panicked at '");
+  print!("panicked at '");
   itm::write_fmt(args);
-  iprintln!("', {}:{}", file, line);
+  println!("', {}:{}", file, line);
   itm::flush();
   mcu::reset_request();
   loop {}

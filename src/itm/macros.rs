@@ -2,7 +2,7 @@
 
 /// Macro for printing through ITM.
 #[macro_export]
-macro_rules! iprint {
+macro_rules! print {
   ($str:expr) => {
     $crate::itm::write_str($str);
   };
@@ -14,16 +14,16 @@ macro_rules! iprint {
 
 /// Macro for printing through ITM, with a newline.
 #[macro_export]
-macro_rules! iprintln {
+macro_rules! println {
   () => {
-    iprint!("\n");
+    print!("\n");
   };
 
   ($fmt:expr) => {
-    iprint!(concat!($fmt, "\n"));
+    print!(concat!($fmt, "\n"));
   };
 
   ($fmt:expr, $($arg:tt)*) => {
-    iprint!(concat!($fmt, "\n"), $($arg)*);
+    print!(concat!($fmt, "\n"), $($arg)*);
   };
 }

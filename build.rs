@@ -195,8 +195,8 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
               w!("    /// {}\n", doc.trim());
             }
             w!("    #[inline]\n");
-            w!("    pub fn set_{}(&mut self, value: bool) {{\n", name);
-            w!("      self.set_bit_band({}, value);\n", offset);
+            w!("    pub fn set_{}(&self, value: bool) {{\n", name);
+            w!("      unsafe {{ self.set_bit_band({}, value) }};\n", offset);
             w!("    }}\n\n");
           }
           if register.access != "write-only" && width == 1 {
@@ -208,7 +208,7 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
             }
             w!("    #[inline]\n");
             w!("    pub fn {}(&self) -> bool {{\n", name);
-            w!("      self.bit_band({})\n", offset);
+            w!("      unsafe {{ self.bit_band({}) }}\n", offset);
             w!("    }}\n\n");
           }
         }
@@ -225,18 +225,16 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
           }
           w!("    #[inline]\n");
           if width == 1 {
-            w!(
-              "    pub fn set_{}(&mut self, value: bool) -> &mut Self {{\n",
-              name
-            );
-            w!("      self.set_bit({}, value)\n", offset);
+            w!("    pub fn set_{}(self, value: bool) -> Self {{\n", name);
+            w!("      unsafe {{ self.set_bit({}, value) }}\n", offset);
             w!("    }}\n\n");
           } else {
+            w!("    pub fn set_{}(self, value: u32) -> Self {{\n", name);
             w!(
-              "    pub fn set_{}(&mut self, value: u32) -> &mut Self {{\n",
-              name
+              "      unsafe {{ self.set_bits({}, {}, value) }}\n",
+              offset,
+              width
             );
-            w!("      self.set_bits({}, {}, value)\n", offset, width);
             w!("    }}\n\n");
           }
         }
@@ -249,12 +247,12 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
           }
           w!("    #[inline]\n");
           if width == 1 {
-            w!("    pub fn {}(&self) -> bool {{\n", name);
-            w!("      self.bit({})\n", offset);
+            w!("    pub fn {}(self) -> bool {{\n", name);
+            w!("      unsafe {{ self.bit({}) }}\n", offset);
             w!("    }}\n\n");
           } else {
-            w!("    pub fn {}(&self) -> u32 {{\n", name);
-            w!("      self.bits({}, {})\n", offset, width);
+            w!("    pub fn {}(self) -> u32 {{\n", name);
+            w!("      unsafe {{ self.bits({}, {}) }}\n", offset, width);
             w!("    }}\n\n");
           }
         }

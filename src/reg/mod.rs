@@ -19,14 +19,15 @@ pub const BIT_BAND_BASE: usize = 0x4200_0000;
 pub const BIT_BAND_LENGTH: usize = 5;
 
 /// Register that can read and write its value in a multi-threaded context.
-pub trait RwAtomicReg
+pub trait URegShared<T>
 where
-  Self: RReg<Ar> + WReg<Ar>,
+  Self: RReg<T> + WReg<T>,
+  T: RegShared,
 {
-  /// Atomically modifies a register's value.
-  unsafe fn modify<F>(&self, f: F)
+  /// Atomically updates a register's value.
+  fn update<F>(&self, f: F)
   where
-    F: Fn(&mut Self::Value) -> &Self::Value;
+    F: Fn(Self::Value) -> Self::Value;
 }
 
 /// Register that falls into peripheral bit-band region.
@@ -42,7 +43,7 @@ where
   /// If `offset` is greater than or equals to the platform's word size in bits.
   #[inline]
   fn bit_band_addr(offset: usize) -> usize {
-    assert!(offset < size_of::<<Self::Value as RegValue>::Raw>() * 8);
+    assert!(offset < size_of::<<Self::Value as RegVal>::Raw>() * 8);
     BIT_BAND_BASE
       + (((Self::ADDRESS + (offset >> 3))
         & ((0b1 << (BIT_BAND_LENGTH << 2)) - 1)) << BIT_BAND_LENGTH)
@@ -61,7 +62,7 @@ where
   /// # Panics
   ///
   /// If `offset` is greater than or equals to the platform's word size in bits.
-  fn bit_band(&self, offset: usize) -> bool;
+  unsafe fn bit_band(&self, offset: usize) -> bool;
 
   /// Returns an unsafe constant pointer to the corresponding bit-band address.
   ///
@@ -83,7 +84,7 @@ where
   /// # Panics
   ///
   /// If `offset` is greater than or equals to the platform's word size in bits.
-  fn set_bit_band(&self, offset: usize, value: bool);
+  unsafe fn set_bit_band(&self, offset: usize, value: bool);
 
   /// Returns an unsafe mutable pointer to the corresponding bit-band address.
   ///
@@ -93,34 +94,37 @@ where
   fn bit_band_mut_ptr(&self, offset: usize) -> *mut usize;
 }
 
-impl<T, U> RwAtomicReg for T
+impl<T, U, V> URegShared<T> for U
 where
-  T: RReg<Ar, Value = U> + WReg<Ar, Value = U>,
-  U: RegValue<Raw = u32>,
+  T: RegShared,
+  U: RReg<T, Value = V> + WReg<T, Value = V>,
+  V: RegVal<Raw = u32>,
 {
   #[inline]
-  unsafe fn modify<F>(&self, f: F)
+  fn update<F>(&self, f: F)
   where
-    F: Fn(&mut Self::Value) -> &Self::Value,
+    F: Fn(Self::Value) -> Self::Value,
   {
     let mut value: u32;
     let mut status: u32;
-    loop {
-      asm!("
-        ldrex $0, [$1]
-      " : "=r"(value)
-        : "r"(Self::ADDRESS)
-        :
-        : "volatile");
-      value = f(&mut Self::Value::new(value)).raw();
-      asm!("
-        strex $0, $1, [$2]
-      " : "=r"(status)
-        : "r"(value), "r"(Self::ADDRESS)
-        :
-        : "volatile");
-      if status == 0 {
-        break;
+    unsafe {
+      loop {
+        asm!("
+          ldrex $0, [$1]
+        " : "=r"(value)
+          : "r"(Self::ADDRESS)
+          :
+          : "volatile");
+        value = f(value.into()).into_raw();
+        asm!("
+          strex $0, $1, [$2]
+        " : "=r"(status)
+          : "r"(value), "r"(Self::ADDRESS)
+          :
+          : "volatile");
+        if status == 0 {
+          break;
+        }
       }
     }
   }
@@ -132,8 +136,8 @@ where
   U: RegFlavor,
 {
   #[inline]
-  fn bit_band(&self, offset: usize) -> bool {
-    unsafe { read_volatile(self.bit_band_ptr(offset)) != 0 }
+  unsafe fn bit_band(&self, offset: usize) -> bool {
+    read_volatile(self.bit_band_ptr(offset)) != 0
   }
 
   #[inline]
@@ -148,9 +152,9 @@ where
   U: RegFlavor,
 {
   #[inline]
-  fn set_bit_band(&self, offset: usize, value: bool) {
+  unsafe fn set_bit_band(&self, offset: usize, value: bool) {
     let value = if value { 1 } else { 0 };
-    unsafe { write_volatile(self.bit_band_mut_ptr(offset), value) };
+    write_volatile(self.bit_band_mut_ptr(offset), value);
   }
 
   #[inline]

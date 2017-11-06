@@ -42,7 +42,7 @@ pub unsafe fn init() {
 
 /// Prints `str` to the ITM port #0.
 ///
-/// See [iprint](../macro.iprint.html) and [iprintln](../macro.iprintln.html)
+/// See [print](../macro.print.html) and [println](../macro.println.html)
 /// macros.
 pub fn write_str(string: &str) {
   Port::new(0).write_str(string).unwrap();
@@ -50,7 +50,7 @@ pub fn write_str(string: &str) {
 
 /// Prints `core::fmt::Arguments` to the ITM port #0.
 ///
-/// See [iprint](../macro.iprint.html) and [iprintln](../macro.iprintln.html)
+/// See [print](../macro.print.html) and [println](../macro.println.html)
 /// macros.
 pub fn write_fmt(args: fmt::Arguments) {
   Port::new(0).write_fmt(args).unwrap();
