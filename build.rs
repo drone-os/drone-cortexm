@@ -78,7 +78,9 @@ struct Register {
   name: String,
   description: String,
   #[serde(rename = "addressOffset")] address_offset: String,
+  size: String,
   #[serde(default)] access: String,
+  #[serde(rename = "resetValue")] reset_value: String,
   fields: Fields,
 }
 
@@ -166,11 +168,22 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
         )?;
       let mut hex_address = format!("{:08X}", address);
       hex_address.insert(4, '_');
+      let reset = u32::from_str_radix(
+        &register
+          .reset_value
+          .trim_left_matches("0x")
+          .trim_left_matches("0X"),
+        16,
+      )?;
+      let mut hex_reset = format!("{:08X}", reset);
+      hex_reset.insert(4, '_');
       w!("  reg! {{\n");
       for doc in register.description.lines() {
         w!("    //! {}\n", doc.trim());
       }
-      w!("    0x{} 0x20\n", hex_address);
+      w!("    0x{}\n", hex_address);
+      w!("    {}\n", register.size);
+      w!("    0x{}\n", hex_reset);
       w!("    {}\n", name);
       w!("   ");
       if register.access != "write-only" {

@@ -5,7 +5,7 @@ use reg::prelude::*;
 
 reg! {
   //! SysTick control and status register
-  0xE000_E010 0x20
+  0xE000_E010 0x20 0x0000_0000
   Ctrl
   RReg WReg
 }
@@ -56,7 +56,7 @@ impl CtrlVal {
 
 reg! {
   //! SysTick reload value register
-  0xE000_E014 0x20
+  0xE000_E014 0x20 0x0000_0000
   Load
   RReg WReg
 }
@@ -77,7 +77,7 @@ impl LoadVal {
 
 reg! {
   //! SysTick current value register
-  0xE000_E018 0x20
+  0xE000_E018 0x20 0x0000_0000
   Val
   RReg WReg
 }
@@ -98,7 +98,7 @@ impl ValVal {
 
 reg! {
   //! SysTick calibration value register
-  0xE000_E01C 0x20
+  0xE000_E01C 0x20 0x0000_0000
   Calib
   RReg
 }

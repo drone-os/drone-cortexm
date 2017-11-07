@@ -5,7 +5,7 @@ use reg::prelude::*;
 
 reg! {
   //! System control register
-  0xE000_ED10 0x20
+  0xE000_ED10 0x20 0x0000_0000
   Scr
   RReg WReg
 }
