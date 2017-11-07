@@ -33,7 +33,7 @@
 //!
 //! [`vtable!`]: ../macro.vtable.html
 
-pub use drone_cortex_m_macros::vtable_imp;
+pub use drone_cortex_m_macros::vtable_impl;
 
 /// Pointer to an exception handler.
 pub type Handler = unsafe extern "C" fn();
@@ -55,5 +55,5 @@ pub enum Reserved {
 ///
 /// [`module-level documentation`]: vtable/index.html
 pub macro vtable($($tokens:tt)*) {
-  $crate::vtable::vtable_imp!($($tokens)*);
+  $crate::vtable::vtable_impl!($($tokens)*);
 }

@@ -1,8 +1,10 @@
+use errors::*;
 use proc_macro::TokenStream;
-use syn;
+use quote::Tokens;
+use syn::{parse_token_trees, Ident, IntTy, Lit, Token, TokenTree};
 
-pub(crate) fn vtable(input: TokenStream) -> TokenStream {
-  let input = syn::parse_token_trees(&input.to_string()).unwrap();
+pub(crate) fn vtable(input: TokenStream) -> Result<Tokens> {
+  let input = parse_token_trees(&input.to_string())?;
   let mut input = input.into_iter();
   let mut attributes = Vec::new();
   let mut thread_id = Vec::new();
@@ -14,7 +16,7 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
     let mut inner_attributes = Vec::new();
     loop {
       match input.next() {
-        Some(syn::TokenTree::Token(syn::Token::DocComment(string))) => {
+        Some(TokenTree::Token(Token::DocComment(string))) => {
           if string.starts_with("//!") {
             let string = string.trim_left_matches("//!");
             attributes.push(quote!(#[doc = #string]));
@@ -23,22 +25,22 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
             inner_attributes.push(quote!(#[doc = #string]));
           }
         }
-        Some(syn::TokenTree::Token(syn::Token::Pound)) => match input.next() {
-          Some(syn::TokenTree::Token(syn::Token::Not)) => match input.next() {
-            Some(syn::TokenTree::Delimited(delimited)) => {
+        Some(TokenTree::Token(Token::Pound)) => match input.next() {
+          Some(TokenTree::Token(Token::Not)) => match input.next() {
+            Some(TokenTree::Delimited(delimited)) => {
               attributes.push(quote!(# #delimited))
             }
-            token => panic!("Invalid tokens after `#!`: {:?}", token),
+            token => bail!("Invalid tokens after `#!`: {:?}", token),
           },
-          Some(syn::TokenTree::Delimited(delimited)) => {
+          Some(TokenTree::Delimited(delimited)) => {
             inner_attributes.push(quote!(# #delimited))
           }
-          token => panic!("Invalid tokens after `#`: {:?}", token),
+          token => bail!("Invalid tokens after `#`: {:?}", token),
         },
-        Some(syn::TokenTree::Token(syn::Token::Ident(name))) => {
+        Some(TokenTree::Token(Token::Ident(name))) => {
           match input.next() {
-            Some(syn::TokenTree::Token(syn::Token::Semi)) => (),
-            token => panic!("Invalid token after `{}`: {:?}", name, token),
+            Some(TokenTree::Token(Token::Semi)) => (),
+            token => bail!("Invalid token after `{}`: {:?}", name, token),
           }
           thread_id.push(thread_count);
           thread_name.push(name);
@@ -47,22 +49,20 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
           thread_count += 1;
           break;
         }
-        Some(
-          syn::TokenTree::Token(
-            syn::Token::Literal(syn::Lit::Int(number, syn::IntTy::Unsuffixed)),
-          ),
-        ) => {
+        Some(TokenTree::Token(
+          Token::Literal(Lit::Int(number, IntTy::Unsuffixed)),
+        )) => {
           match input.next() {
-            Some(syn::TokenTree::Token(syn::Token::Colon)) => (),
-            token => panic!("Invalid token after `{}`: {:?}", number, token),
+            Some(TokenTree::Token(Token::Colon)) => (),
+            token => bail!("Invalid token after `{}`: {:?}", number, token),
           }
           let name = match input.next() {
-            Some(syn::TokenTree::Token(syn::Token::Ident(name))) => name,
-            token => panic!("Invalid token after `{}:`: {:?}", number, token),
+            Some(TokenTree::Token(Token::Ident(name))) => name,
+            token => bail!("Invalid token after `{}:`: {:?}", number, token),
           };
           match input.next() {
-            Some(syn::TokenTree::Token(syn::Token::Semi)) => (),
-            token => panic!("Invalid token after `{}`: {:?}", name, token),
+            Some(TokenTree::Token(Token::Semi)) => (),
+            token => bail!("Invalid token after `{}`: {:?}", name, token),
           }
           thread_id.push(thread_count);
           thread_name.push(name);
@@ -72,7 +72,7 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
           break;
         }
         None => break 'outer,
-        token => panic!("Invalid token: {:?}", token),
+        token => bail!("Invalid token: {:?}", token),
       }
     }
   }
@@ -84,7 +84,7 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
     .map(|x| x + 1)
     .unwrap_or(0);
   let mut irq_name = (0..irq_number)
-    .map(|n| syn::Ident::new(format!("_irq{}", n)))
+    .map(|n| Ident::new(format!("_irq{}", n)))
     .collect::<Vec<_>>();
   thread_number
     .iter()
@@ -97,7 +97,7 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
     });
   let thread_handler = thread_name
     .iter()
-    .map(|name| syn::Ident::new(format!("__{}_handler", name)))
+    .map(|name| Ident::new(format!("__{}_handler", name)))
     .collect::<Vec<_>>();
   let thread_id2 = thread_id.clone();
   let thread_id3 = thread_id.clone();
@@ -105,7 +105,7 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
   let thread_handler2 = thread_handler.clone();
   let irq_name2 = irq_name.clone();
 
-  let output = quote! {
+  Ok(quote! {
     use drone_cortex_m::vtable::{Handler, ResetHandler, Reserved};
 
     #(#attributes)*
@@ -176,6 +176,5 @@ pub(crate) fn vtable(input: TokenStream) -> TokenStream {
         unsafe { ThreadLocal::get_unchecked(#thread_id3) }
       }
     )*
-  };
-  output.parse().unwrap()
+  })
 }

@@ -1,12 +1,14 @@
 //! Memory-mapped registers.
 
 pub mod prelude;
+
 pub mod scb;
 pub mod stk;
 
+pub use drone::reg::bind;
+
 pub use self::stk::Ctrl as StkCtrl;
 pub use self::stk::Load as StkLoad;
-pub use drone::reg::bind;
 
 use core::mem::size_of;
 use core::ptr::{read_volatile, write_volatile};
@@ -173,8 +175,8 @@ mod tests {
   reg!(0x4000_0000 0x20 LowReg RegBitBand);
   reg!(0x400F_FFFC 0x20 HighReg RegBitBand);
 
-  type LocalLowReg = LowReg<Lr>;
-  type LocalHighReg = HighReg<Lr>;
+  type LocalLowReg = LowReg<Ur>;
+  type LocalHighReg = HighReg<Ur>;
 
   #[test]
   fn reg_bit_band_addr() {
