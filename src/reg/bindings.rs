@@ -1,16 +1,16 @@
+use drone::reg_block;
+use reg::prelude::*;
+
 include!(concat!(env!("OUT_DIR"), "/svd.rs"));
 
-pub use self::scb::Scr as ScbScr;
-
-/// System control block
-pub mod scb {
-  use drone::reg;
-  use reg::prelude::*;
+reg_block! {
+  //! System control block
+  SCB
 
   reg! {
     //! System control register
-    0xE000_ED10 0x20 0x0000_0000
     SCR
+    0xE000_ED10 0x20 0x0000_0000
     RReg WReg
     /// Send Event on Pending bit
     SEVEONPEND { 4 1 }
@@ -22,18 +22,14 @@ pub mod scb {
   }
 }
 
-pub use self::stk::Ctrl as StkCtrl;
-pub use self::stk::Load as StkLoad;
-
-/// SysTick timer
-pub mod stk {
-  use drone::reg;
-  use reg::prelude::*;
+reg_block! {
+  //! SysTick timer
+  STK
 
   reg! {
     //! SysTick control and status register
-    0xE000_E010 0x20 0x0000_0000
     CTRL
+    0xE000_E010 0x20 0x0000_0000
     RReg WReg
     /// Returns `true` if timer counted to `0` since last time this was read
     COUNTFLAG { 16 1 }
@@ -47,8 +43,8 @@ pub mod stk {
 
   reg! {
     //! SysTick reload value register
-    0xE000_E014 0x20 0x0000_0000
     LOAD
+    0xE000_E014 0x20 0x0000_0000
     RReg WReg
     /// RELOAD value
     RELOAD { 0 24 }
@@ -56,8 +52,8 @@ pub mod stk {
 
   reg! {
     //! SysTick current value register
-    0xE000_E018 0x20 0x0000_0000
     VAL
+    0xE000_E018 0x20 0x0000_0000
     RReg WReg
     /// Current counter value
     CURRENT { 0 24 }
@@ -65,8 +61,8 @@ pub mod stk {
 
   reg! {
     //! SysTick calibration value register
-    0xE000_E01C 0x20 0x0000_0000
     CALIB
+    0xE000_E01C 0x20 0x0000_0000
     RReg
     /// NOREF flag
     NOREF { 31 1 }

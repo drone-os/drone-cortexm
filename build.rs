@@ -3,7 +3,6 @@
 
 #[macro_use]
 extern crate error_chain;
-extern crate inflector;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_xml_rs;
@@ -23,7 +22,6 @@ mod errors {
 }
 
 use errors::*;
-use inflector::Inflector;
 use std::env;
 use std::fs::File;
 use std::io::Read;
@@ -112,8 +110,6 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
     } else {
       None
     };
-    let mod_name = peripheral.name.to_snake_case();
-    let mod_prefix = peripheral.name.to_pascal_case();
     let doc = peripheral
       .description
       .as_ref()
@@ -124,22 +120,11 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
       .as_ref()
       .or_else(|| derived.and_then(|x| x.registers.as_ref()))
       .ok_or("registers not found")?;
-    for register in &registers.register {
-      w!(
-        "pub use self::{0}::{2} as {1}{2};\n",
-        mod_name,
-        mod_prefix,
-        register.name.to_pascal_case()
-      );
-    }
-    w!("\n");
+    w!("reg_block! {{\n");
     for doc in doc.lines() {
-      w!("/// {}\n", doc.trim());
+      w!("  //! {}\n", doc.trim());
     }
-    w!("pub mod {} {{\n", mod_name);
-    w!("  #[allow(unused_imports)]\n");
-    w!("  use drone::reg;\n");
-    w!("  use reg::prelude::*;\n\n");
+    w!("  {}\n", peripheral.name);
     let base_address = u32::from_str_radix(
       &peripheral.base_address.trim_left_matches("0x"),
       16,
@@ -161,14 +146,15 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
       )?;
       let mut hex_reset = format!("{:08X}", reset);
       hex_reset.insert(4, '_');
+      w!("\n");
       w!("  reg! {{\n");
       for doc in register.description.lines() {
         w!("    //! {}\n", doc.trim());
       }
+      w!("    {}\n", register.name);
       w!("    0x{}\n", hex_address);
       w!("    {}\n", register.size);
       w!("    0x{}\n", hex_reset);
-      w!("    {}\n", register.name);
       w!("   ");
       if register.access != "write-only" {
         w!(" RReg");
@@ -188,7 +174,7 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
         let width = field.bit_width.parse::<u32>()?;
         w!("    {} {{ {} {} }}\n", field.name, offset, width);
       }
-      w!("  }}\n\n");
+      w!("  }}\n");
     }
     w!("}}\n\n");
   }

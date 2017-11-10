@@ -167,12 +167,12 @@ mod tests {
 
   reg! {
     #![allow(dead_code)]
-    0x4000_0000 0x20 0x0000_0000 LOW_REG RegBitBand
+    LOW_REG 0x4000_0000 0x20 0x0000_0000 RegBitBand
   }
 
   reg! {
     #![allow(dead_code)]
-    0x400F_FFFC 0x20 0x0000_0000 HIGH_REG RegBitBand
+    HIGH_REG 0x400F_FFFC 0x20 0x0000_0000 RegBitBand
   }
 
   type LocalLowReg = LowReg<Ur>;
