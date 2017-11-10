@@ -18,6 +18,7 @@ extern crate syn;
 mod errors;
 mod vtable;
 
+use errors::*;
 use proc_macro::TokenStream;
 
 #[doc(hidden)]
@@ -29,6 +30,7 @@ pub fn vtable_impl(input: TokenStream) -> TokenStream {
 macro tokens($tokens:expr) {
   match $tokens {
     Ok(tokens) => tokens.parse().unwrap(),
-    Err(message) => panic!(message),
+    Err(Error(ErrorKind::Msg(message), _)) => panic!(message),
+    Err(_) => unreachable!(),
   }
 }

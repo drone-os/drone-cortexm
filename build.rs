@@ -5,9 +5,6 @@
 extern crate error_chain;
 extern crate inflector;
 #[macro_use]
-extern crate lazy_static;
-extern crate regex;
-#[macro_use]
 extern crate serde_derive;
 extern crate serde_xml_rs;
 
@@ -27,7 +24,6 @@ mod errors {
 
 use errors::*;
 use inflector::Inflector;
-use regex::Regex;
 use std::env;
 use std::fs::File;
 use std::io::Read;
@@ -36,17 +32,6 @@ use std::ops::Range;
 use std::path::Path;
 
 const BIT_BAND: Range<u32> = 0x4000_0000..0x4010_0000;
-
-lazy_static! {
-  static ref RESERVED: Regex = Regex::new(r"(?x)
-    ^ ( as | break | const | continue | crate | else | enum | extern | false |
-    fn | for | if | impl | in | let | loop | match | mod | move | mut | pub |
-    ref | return | Self | self | static | struct | super | trait | true | type |
-    unsafe | use | where | while | abstract | alignof | become | box | do |
-    final | macro | offsetof | override | priv | proc | pure | sizeof | typeof |
-    unsized | virtual | yield ) $
-  ").unwrap();
-}
 
 #[derive(Debug, Deserialize)]
 struct Device {
@@ -128,7 +113,7 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
       None
     };
     let mod_name = peripheral.name.to_snake_case();
-    let mod_prefix = peripheral.name.to_class_case();
+    let mod_prefix = peripheral.name.to_pascal_case();
     let doc = peripheral
       .description
       .as_ref()
@@ -144,7 +129,7 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
         "pub use self::{0}::{2} as {1}{2};\n",
         mod_name,
         mod_prefix,
-        register.name.to_class_case()
+        register.name.to_pascal_case()
       );
     }
     w!("\n");
@@ -160,7 +145,6 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
       16,
     )?;
     for register in &registers.register {
-      let name = register.name.to_class_case();
       let address = base_address
         + u32::from_str_radix(
           &register.address_offset.trim_left_matches("0x"),
@@ -184,7 +168,7 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
       w!("    0x{}\n", hex_address);
       w!("    {}\n", register.size);
       w!("    0x{}\n", hex_reset);
-      w!("    {}\n", name);
+      w!("    {}\n", register.name);
       w!("   ");
       if register.access != "write-only" {
         w!(" RReg");
@@ -196,81 +180,15 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
         w!(" RegBitBand");
       }
       w!("\n");
-      w!("  }}\n\n");
-      if BIT_BAND.contains(address) {
-        w!("  impl<T: RegFlavor> {}<T> {{\n", name);
-        for field in &register.fields.field {
-          let mut name = field.name.to_snake_case();
-          let offset = field.bit_offset.parse::<u32>()?;
-          let width = field.bit_width.parse::<u32>()?;
-          if register.access != "read-only" && width == 1 {
-            for doc in field.description.lines() {
-              w!("    /// {}\n", doc.trim());
-            }
-            w!("    #[inline]\n");
-            w!("    pub fn set_{}(&self, value: bool) {{\n", name);
-            w!("      unsafe {{ self.set_bit_band({}, value) }};\n", offset);
-            w!("    }}\n\n");
-          }
-          if register.access != "write-only" && width == 1 {
-            if RESERVED.is_match(&name) {
-              name.insert(0, '_');
-            }
-            for doc in field.description.lines() {
-              w!("    /// {}\n", doc.trim());
-            }
-            w!("    #[inline]\n");
-            w!("    pub fn {}(&self) -> bool {{\n", name);
-            w!("      unsafe {{ self.bit_band({}) }}\n", offset);
-            w!("    }}\n\n");
-          }
-        }
-        w!("  }}\n\n");
-      }
-      w!("  impl {}Val {{\n", name);
       for field in &register.fields.field {
-        let mut name = field.name.to_snake_case();
+        for doc in field.description.lines() {
+          w!("    /// {}\n", doc.trim());
+        }
         let offset = field.bit_offset.parse::<u32>()?;
         let width = field.bit_width.parse::<u32>()?;
-        if register.access != "read-only" {
-          for doc in field.description.lines() {
-            w!("    /// {}\n", doc.trim());
-          }
-          w!("    #[inline]\n");
-          if width == 1 {
-            w!("    pub fn set_{}(self, value: bool) -> Self {{\n", name);
-            w!("      unsafe {{ self.set_bit({}, value) }}\n", offset);
-            w!("    }}\n\n");
-          } else {
-            w!("    pub fn set_{}(self, value: u32) -> Self {{\n", name);
-            w!(
-              "      unsafe {{ self.set_bits({}, {}, value) }}\n",
-              offset,
-              width
-            );
-            w!("    }}\n\n");
-          }
-        }
-        if register.access != "write-only" {
-          if RESERVED.is_match(&name) {
-            name.insert(0, '_');
-          }
-          for doc in field.description.lines() {
-            w!("    /// {}\n", doc.trim());
-          }
-          w!("    #[inline]\n");
-          if width == 1 {
-            w!("    pub fn {}(self) -> bool {{\n", name);
-            w!("      unsafe {{ self.bit({}) }}\n", offset);
-            w!("    }}\n\n");
-          } else {
-            w!("    pub fn {}(self) -> u32 {{\n", name);
-            w!("      unsafe {{ self.bits({}, {}) }}\n", offset, width);
-            w!("    }}\n\n");
-          }
-        }
+        w!("    {} {{ {} {} }}\n", field.name, offset, width);
       }
-      w!("  }}\n");
+      w!("  }}\n\n");
     }
     w!("}}\n\n");
   }
