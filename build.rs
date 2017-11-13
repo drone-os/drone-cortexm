@@ -62,7 +62,7 @@ struct Register {
   description: String,
   #[serde(rename = "addressOffset")] address_offset: String,
   size: String,
-  #[serde(default)] access: String,
+  access: Option<String>,
   #[serde(rename = "resetValue")] reset_value: String,
   fields: Fields,
 }
@@ -78,6 +78,7 @@ struct Field {
   description: String,
   #[serde(rename = "bitOffset")] bit_offset: String,
   #[serde(rename = "bitWidth")] bit_width: String,
+  access: Option<String>,
 }
 
 quick_main!(run);
@@ -155,12 +156,27 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
       w!("    0x{}\n", hex_address);
       w!("    {}\n", register.size);
       w!("    0x{}\n", hex_reset);
-      w!("   ");
-      if register.access != "write-only" {
-        w!(" RReg");
-      }
-      if register.access != "read-only" {
-        w!(" WReg");
+      match register.access {
+        Some(ref access) if access == "write-only" => {
+          w!("    WReg WoReg");
+        }
+        Some(ref access) if access == "read-only" => {
+          w!("    RReg RoReg");
+        }
+        Some(ref access) if access == "read-write" => {
+          w!("    RReg WReg");
+        }
+        None => {
+          w!("    RReg WReg");
+        }
+        Some(ref access) => {
+          bail!(
+            "Unknown register access `{}` for `{}->{}`",
+            access,
+            peripheral.name,
+            register.name
+          );
+        }
       }
       if BIT_BAND.contains(address) {
         w!(" RegBitBand");
@@ -172,7 +188,31 @@ fn svd_generate(output: &mut File, input: &mut File) -> Result<()> {
         }
         let offset = field.bit_offset.parse::<u32>()?;
         let width = field.bit_width.parse::<u32>()?;
-        w!("    {} {{ {} {} }}\n", field.name, offset, width);
+        w!("    {} {{ {} {}", field.name, offset, width);
+        match field.access.as_ref().or(register.access.as_ref()) {
+          Some(access) if access == "write-only" => {
+            w!(" WRegField WoRegField");
+          }
+          Some(access) if access == "read-only" => {
+            w!(" RRegField RoRegField");
+          }
+          Some(access) if access == "read-write" => {
+            w!(" RRegField WRegField");
+          }
+          None => {
+            w!(" RRegField WRegField");
+          }
+          Some(access) => {
+            bail!(
+              "Unknown field access `{}` for `{}->{}->{}`",
+              access,
+              peripheral.name,
+              register.name,
+              field.name
+            );
+          }
+        }
+        w!(" }}\n");
       }
       w!("  }}\n");
     }
