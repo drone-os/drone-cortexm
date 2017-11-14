@@ -2,7 +2,7 @@ use drone::reg_block;
 #[allow(unused_imports)]
 use reg::prelude::*;
 
-include!(concat!(env!("OUT_DIR"), "/svd.rs"));
+include!(concat!(env!("OUT_DIR"), "/svd_bindings.rs"));
 
 reg_block! {
   //! System control block

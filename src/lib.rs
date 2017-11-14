@@ -44,7 +44,7 @@
 #![cfg_attr(test, default_lib_allocator)]
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
-#![cfg_attr(feature = "clippy", allow(precedence, doc_markdown))]
+#![cfg_attr(feature = "clippy", allow(precedence, doc_markdown, inline_always))]
 
 #[cfg(test)]
 extern crate alloc;

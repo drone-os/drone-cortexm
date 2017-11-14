@@ -1,6 +1,4 @@
-use core::mem::size_of;
 use core::ptr::{read_volatile, write_volatile};
-use drone::reg::RegHoldValRaw;
 use drone::reg::prelude::*;
 
 /// Peripheral bit-band alias start.
@@ -17,12 +15,12 @@ where
 {
   /// Calculates bit-band address.
   ///
-  /// # Panics
+  /// # Safety
   ///
-  /// If `offset` is greater than or equals to the platform's word size in bits.
-  #[inline]
-  fn bit_band_addr(offset: usize) -> usize {
-    assert!(offset < size_of::<RegHoldValRaw<'a, T, Self>>() * 8);
+  /// `offset` must be greater than or equals to the platform's word size in
+  /// bits.
+  #[inline(always)]
+  unsafe fn bit_band_addr(offset: usize) -> usize {
     BIT_BAND_BASE
       + (((Self::ADDRESS + (offset >> 3))
         & ((0b1 << (BIT_BAND_WIDTH << 2)) - 1)) << BIT_BAND_WIDTH)
@@ -67,14 +65,14 @@ where
   U: RegFieldBit<'a, T>,
   U::Reg: RegBitBand<'a, T> + RReg<'a, T>,
 {
-  #[inline]
+  #[inline(always)]
   fn read_bit(&self) -> bool {
     unsafe { read_volatile(self.bit_band_ptr()) != 0 }
   }
 
-  #[inline]
+  #[inline(always)]
   fn bit_band_ptr(&self) -> *const usize {
-    Self::Reg::bit_band_addr(Self::OFFSET) as *const usize
+    unsafe { Self::Reg::bit_band_addr(Self::OFFSET) as *const usize }
   }
 }
 
@@ -84,19 +82,19 @@ where
   U: RegFieldBit<'a, T>,
   U::Reg: RegBitBand<'a, T> + WReg<'a, T>,
 {
-  #[inline]
+  #[inline(always)]
   fn set_bit(&self) {
     unsafe { write_volatile(self.bit_band_mut_ptr(), 1) };
   }
 
-  #[inline]
+  #[inline(always)]
   fn clear_bit(&self) {
     unsafe { write_volatile(self.bit_band_mut_ptr(), 0) };
   }
 
-  #[inline]
+  #[inline(always)]
   fn bit_band_mut_ptr(&self) -> *mut usize {
-    Self::Reg::bit_band_addr(Self::OFFSET) as *mut usize
+    unsafe { Self::Reg::bit_band_addr(Self::OFFSET) as *mut usize }
   }
 }
 
@@ -127,10 +125,12 @@ mod tests {
 
   #[test]
   fn reg_bit_band_addr() {
-    assert_eq!(LocalLowReg::bit_band_addr(0), 0x4200_0000);
-    assert_eq!(LocalLowReg::bit_band_addr(7), 0x4200_001C);
-    assert_eq!(LocalLowReg::bit_band_addr(31), 0x4200_007C);
-    assert_eq!(LocalHighReg::bit_band_addr(24), 0x43FF_FFE0);
-    assert_eq!(LocalHighReg::bit_band_addr(31), 0x43FF_FFFC);
+    unsafe {
+      assert_eq!(LocalLowReg::bit_band_addr(0), 0x4200_0000);
+      assert_eq!(LocalLowReg::bit_band_addr(7), 0x4200_001C);
+      assert_eq!(LocalLowReg::bit_band_addr(31), 0x4200_007C);
+      assert_eq!(LocalHighReg::bit_band_addr(24), 0x43FF_FFE0);
+      assert_eq!(LocalHighReg::bit_band_addr(31), 0x43FF_FFFC);
+    }
   }
 }

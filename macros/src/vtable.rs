@@ -173,7 +173,7 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens> {
       }
 
       #(#thread_attributes)*
-      #[inline]
+      #[inline(always)]
       pub fn #thread_name2() -> &'static ThreadLocal {
         unsafe { ThreadLocal::get_unchecked(#thread_id3) }
       }

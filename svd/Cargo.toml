@@ -1,0 +1,16 @@
+[package]
+name = "drone-cortex-m-svd"
+version = "0.7.0"
+authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
+description = "Drone for ARM Cortex-M bindings generator."
+readme = "README.md"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/drone-os/drone-cortex-m"
+
+[dependencies]
+error-chain = "0.11"
+serde = "1"
+serde_derive = "1"
+serde-xml-rs = "0.2"
+quote = "0.3"
+syn = "0.11"

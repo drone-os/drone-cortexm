@@ -1,5 +1,6 @@
 use core::ops::{Deref, DerefMut};
-use drone::reg::{RegFieldRegHoldVal, RegHoldVal, RegRaw};
+use drone::reg::{RegFieldRegHoldVal, RegFieldRegHoldValRaw, RegHoldVal,
+                 RegHoldValRaw, RegRaw};
 use drone::reg::prelude::*;
 
 /// A wrapper for a value loaded with `ldrex` instruction.
@@ -8,19 +9,15 @@ pub struct RegExcl<T> {
 }
 
 /// Raw shared register value type.
-pub trait RegRawShared<T, U>
+pub trait RegRawShared
 where
   Self: Sized,
 {
   /// Loads the value with `ldrex` instruction.
-  unsafe fn load<F>(address: usize, f: F) -> Self
-  where
-    F: FnOnce(U) -> T;
+  unsafe fn load_excl(address: usize) -> Self;
 
   /// Stores the value with `strex` instruction.
-  unsafe fn store<F>(self, address: usize, f: F) -> bool
-  where
-    F: FnOnce(Self) -> U;
+  unsafe fn store_excl(self, address: usize) -> bool;
 }
 
 /// Register that can read and write its value in a multi-threaded context.
@@ -41,9 +38,8 @@ where
     F: Fn(&mut Self::Hold) -> &mut Self::Hold;
 }
 
-/// Register field that can write to read-write register in multi-threaded
-/// context.
-pub trait RwRegFieldShared<'a, T>
+/// Write-only field of write-only register.
+pub trait WRwRegFieldShared<'a, T>
 where
   Self: WRegField<'a, T>,
   Self::Reg: RwRegShared<'a, T>,
@@ -64,27 +60,26 @@ where
 impl<'a, T, U, V, W, X> RwRegShared<'a, T> for U
 where
   T: RegShared + 'a,
-  U: RReg<'a, T, Hold = V> + WReg<'a, T, Hold = V>,
+  U: Reg<'a, T, Hold = V> + RReg<'a, T> + WReg<'a, T>,
   V: RegHold<'a, T, Self, Val = W>,
   W: RegVal<Raw = X>,
-  X: RegRaw,
-  RegExcl<V>: RegRawShared<V, X>,
+  X: RegRaw + RegRawShared,
 {
-  #[inline]
+  #[inline(always)]
   fn load_excl(&'a self) -> RegExcl<Self::Hold> {
     unsafe {
-      RegExcl::load(Self::ADDRESS, |raw| {
-        self.hold(RegHoldVal::<'a, T, Self>::from_raw(raw))
-      })
+      RegExcl::new(self.hold(RegHoldVal::<'a, T, Self>::from_raw(
+        RegHoldValRaw::<'a, T, Self>::load_excl(Self::ADDRESS),
+      )))
     }
   }
 
-  #[inline]
+  #[inline(always)]
   fn store_excl(&self, val: RegExcl<Self::Hold>) -> bool {
-    unsafe { val.store(Self::ADDRESS, |val| val.into_inner().val().raw()) }
+    unsafe { val.into_inner().val().raw().store_excl(Self::ADDRESS) }
   }
 
-  #[inline]
+  #[inline(always)]
   fn update<F>(&'a self, f: F)
   where
     F: Fn(&mut Self::Hold) -> &mut Self::Hold,
@@ -99,31 +94,30 @@ where
   }
 }
 
-impl<'a, T, U, V, W, X> RwRegFieldShared<'a, T> for U
+impl<'a, T, U, V, W, X> WRwRegFieldShared<'a, T> for U
 where
   T: RegShared + 'a,
   U: WRegField<'a, T>,
-  U::Reg: RwRegShared<'a, T, Hold = V>,
+  U::Reg: Reg<'a, T, Hold = V> + RwRegShared<'a, T>,
   V: RegHold<'a, T, U::Reg, Val = W>,
   W: RegVal<Raw = X>,
-  X: RegRaw,
-  RegExcl<W>: RegRawShared<W, X>,
+  X: RegRaw + RegRawShared,
 {
-  #[inline]
+  #[inline(always)]
   fn load_excl(&'a self) -> RegExcl<RegFieldRegHoldVal<'a, T, Self>> {
     unsafe {
-      RegExcl::load(Self::Reg::ADDRESS, |raw| {
-        RegFieldRegHoldVal::<'a, T, Self>::from_raw(raw)
-      })
+      RegExcl::new(RegFieldRegHoldVal::<'a, T, Self>::from_raw(
+        RegFieldRegHoldValRaw::<'a, T, Self>::load_excl(Self::Reg::ADDRESS),
+      ))
     }
   }
 
-  #[inline]
+  #[inline(always)]
   fn store_excl(&self, val: RegExcl<RegFieldRegHoldVal<'a, T, Self>>) -> bool {
-    unsafe { val.store(Self::Reg::ADDRESS, |val| val.into_inner().raw()) }
+    unsafe { val.into_inner().raw().store_excl(Self::Reg::ADDRESS) }
   }
 
-  #[inline]
+  #[inline(always)]
   fn update<F>(&'a self, f: F)
   where
     F: Fn(&mut RegFieldRegHoldVal<'a, T, Self>),
@@ -141,32 +135,35 @@ where
 impl<T> Deref for RegExcl<T> {
   type Target = T;
 
-  #[inline]
+  #[inline(always)]
   fn deref(&self) -> &T {
     &self.inner
   }
 }
 
 impl<T> DerefMut for RegExcl<T> {
-  #[inline]
+  #[inline(always)]
   fn deref_mut(&mut self) -> &mut T {
     &mut self.inner
   }
 }
 
 impl<T> RegExcl<T> {
-  #[inline]
+  #[inline(always)]
+  fn new(inner: T) -> Self {
+    Self { inner }
+  }
+
+  #[inline(always)]
   fn into_inner(self) -> T {
     self.inner
   }
 }
 
-pub macro impl_reg_raw_shared($type:ty, $ldrex:expr, $strex:expr) {
-  impl<T> RegRawShared<T, $type> for RegExcl<T> {
-    #[inline]
-    unsafe fn load<F>(address: usize, f: F) -> Self
-    where
-      F: FnOnce($type) -> T,
+macro impl_reg_raw_shared($type:ty, $ldrex:expr, $strex:expr) {
+  impl RegRawShared for $type {
+    #[inline(always)]
+    unsafe fn load_excl(address: usize) -> Self
     {
       let raw: $type;
       asm!($ldrex
@@ -174,18 +171,16 @@ pub macro impl_reg_raw_shared($type:ty, $ldrex:expr, $strex:expr) {
         : "r"(address)
         :
         : "volatile");
-      Self { inner: f(raw) }
+      raw
     }
 
-    #[inline]
-    unsafe fn store<F>(self, address: usize, f: F) -> bool
-    where
-      F: FnOnce(Self) -> $type,
+    #[inline(always)]
+    unsafe fn store_excl(self, address: usize) -> bool
     {
       let status: $type;
       asm!($strex
         : "=r"(status)
-        : "r"(f(self)), "r"(address)
+        : "r"(self), "r"(address)
         :
         : "volatile");
       status == 0

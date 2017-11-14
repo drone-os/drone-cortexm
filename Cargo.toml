@@ -1,5 +1,5 @@
 [workspace]
-members = ["macros"]
+members = ["macros", "svd"]
 
 [package]
 name = "drone-cortex-m"
@@ -46,6 +46,7 @@ path = "../drone-test"
 
 [build-dependencies]
 error-chain = "0.11"
-serde = "1"
-serde_derive = "1"
-serde-xml-rs = "0.2"
+
+[build-dependencies.drone-cortex-m-svd]
+version = "0.7.0"
+path = "svd"
