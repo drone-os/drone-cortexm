@@ -40,10 +40,10 @@ mod vtable1 {
     sys_tick;
     /// Test doc attribute
     #[allow(dead_code)]
-    10: exti4;
+    10: EXTI4;
     /// Test doc attribute
     #[allow(dead_code)]
-    5: rcc;
+    5: RCC;
   }
 }
 

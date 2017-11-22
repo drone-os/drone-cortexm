@@ -8,8 +8,7 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![cfg_attr(feature = "clippy", allow(precedence, doc_markdown))]
 
-#[macro_use]
-extern crate error_chain;
+extern crate failure;
 #[macro_use]
 extern crate quote;
 extern crate serde;
@@ -18,17 +17,15 @@ extern crate serde_derive;
 extern crate serde_xml_rs;
 extern crate syn;
 
-pub mod errors;
-
 mod device;
 
 use device::Device;
-use errors::*;
+use failure::Error;
 use std::fs::File;
 use std::io::Read;
 
 /// Generate bindings from SVD.
-pub fn svd_generate(input: &mut File, output: &mut File) -> Result<()> {
+pub fn svd_generate(input: &mut File, output: &mut File) -> Result<(), Error> {
   let mut xml = String::new();
   input.read_to_string(&mut xml)?;
   let device: Device = serde_xml_rs::deserialize(xml.as_bytes())?;

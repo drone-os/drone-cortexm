@@ -59,16 +59,19 @@ extern crate test;
 
 #[macro_use]
 pub mod itm;
-pub mod panicking;
-pub mod reg;
 pub mod mcu;
+pub mod panicking;
+pub mod peripherals;
+pub mod prelude;
+pub mod reg;
+pub mod task;
 pub mod vtable;
 
-pub use vtable::vtable;
+pub use drone_cortex_m_macros::vtable;
 
 #[prelude_import]
 #[allow(unused_imports)]
-use drone::prelude::*;
+use prelude::*;
 
 #[cfg(test)]
 drone::heap! {

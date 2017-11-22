@@ -33,8 +33,6 @@
 //!
 //! [`vtable!`]: ../macro.vtable.html
 
-pub use drone_cortex_m_macros::vtable_impl;
-
 /// Pointer to an exception handler.
 pub type Handler = unsafe extern "C" fn();
 
@@ -47,13 +45,4 @@ pub type ResetHandler = unsafe extern "C" fn() -> !;
 pub enum Reserved {
   /// The only allowed zero-value.
   Vector = 0,
-}
-
-/// Configure a vector table.
-///
-/// See the [`module-level documentation`] for more details.
-///
-/// [`module-level documentation`]: vtable/index.html
-pub macro vtable($($tokens:tt)*) {
-  $crate::vtable::vtable_impl!($($tokens)*);
 }

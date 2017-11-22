@@ -1,11 +1,10 @@
-use errors::*;
+use failure::{err_msg, Error};
 use quote::Tokens;
 use serde::de::{self, Deserialize, Deserializer};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Write;
 use std::ops::Range;
-use std::result;
 use syn::{Ident, IntTy, Lit};
 
 const BIT_BAND: Range<u32> = 0x4000_0000..0x4010_0000;
@@ -76,7 +75,7 @@ enum Access {
 }
 
 impl Device {
-  pub fn generate(self, output: &mut File) -> Result<()> {
+  pub fn generate(self, output: &mut File) -> Result<(), Error> {
     for peripheral in self.peripherals.peripheral.values() {
       let tokens = peripheral.to_tokens(&self.peripherals)?;
       output.write_all(tokens.as_str().as_bytes())?;
@@ -86,12 +85,12 @@ impl Device {
 }
 
 impl Peripheral {
-  fn to_tokens(&self, peripherals: &Peripherals) -> Result<Tokens> {
+  fn to_tokens(&self, peripherals: &Peripherals) -> Result<Tokens, Error> {
     let parent = if let Some(ref derived_from) = self.derived_from {
       Some(peripherals
         .peripheral
         .get(derived_from)
-        .ok_or("Peripheral `derivedFrom` not found")?)
+        .ok_or_else(|| err_msg("Peripheral `derivedFrom` not found"))?)
     } else {
       None
     };
@@ -99,18 +98,18 @@ impl Peripheral {
       .description
       .as_ref()
       .or_else(|| parent.and_then(|x| x.description.as_ref()))
-      .ok_or("Peripheral description not found")?;
+      .ok_or_else(|| err_msg("Peripheral description not found"))?;
     let peripheral_name = Ident::new(self.name.to_owned());
     let registers = self
       .registers
       .as_ref()
       .or_else(|| parent.and_then(|x| x.registers.as_ref()))
-      .ok_or("Peripheral registers not found")?
+      .ok_or_else(|| err_msg("Peripheral registers not found"))?
       .to_tokens(self);
     Ok(quote! {
-      reg_block! {
+      reg! {
         #![doc = #peripheral_description]
-        #peripheral_name
+        reg::#peripheral_name
         #(#registers)*
       }
     })
@@ -149,9 +148,9 @@ impl Registers {
         let address = Lit::Int(address as u64, IntTy::Unsuffixed);
         let fields = register.fields.to_tokens(register);
         quote! {
-          reg! {
-            #![doc = #description]
-            #name #address #size #reset
+          #[doc = #description]
+          #name {
+            #address #size #reset
             #(#traits)*
             #(#fields)*
           }
@@ -200,7 +199,7 @@ impl Fields {
 
 fn deserialize_peripheral<'de, D>(
   deserializer: D,
-) -> result::Result<BTreeMap<String, Peripheral>, D::Error>
+) -> Result<BTreeMap<String, Peripheral>, D::Error>
 where
   D: Deserializer<'de>,
 {
@@ -212,7 +211,7 @@ where
   Ok((map))
 }
 
-fn deserialize_hex<'de, D>(deserializer: D) -> result::Result<u32, D::Error>
+fn deserialize_hex<'de, D>(deserializer: D) -> Result<u32, D::Error>
 where
   D: Deserializer<'de>,
 {

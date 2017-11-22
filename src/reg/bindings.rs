@@ -1,16 +1,14 @@
-use drone::reg_block;
-#[allow(unused_imports)]
+use drone::reg;
 use reg::prelude::*;
 
 include!(concat!(env!("OUT_DIR"), "/svd_bindings.rs"));
 
-reg_block! {
+reg! {
   //! System control block
-  SCB
+  reg::SCB
 
-  reg! {
-    //! System control register
-    SCR
+  /// System control register
+  SCR {
     0xE000_ED10 0x20 0x0000_0000
     RReg WReg
     /// Send Event on Pending bit
@@ -23,13 +21,12 @@ reg_block! {
   }
 }
 
-reg_block! {
+reg! {
   //! SysTick timer
-  STK
+  reg::STK
 
-  reg! {
-    //! SysTick control and status register
-    CTRL
+  /// SysTick control and status register
+  CTRL {
     0xE000_E010 0x20 0x0000_0000
     RReg WReg
     /// Returns `true` if timer counted to `0` since last time this was read
@@ -42,27 +39,24 @@ reg_block! {
     ENABLE { 0 1 RRegField WRegField }
   }
 
-  reg! {
-    //! SysTick reload value register
-    LOAD
+  /// SysTick reload value register
+  LOAD {
     0xE000_E014 0x20 0x0000_0000
     RReg WReg
     /// RELOAD value
     RELOAD { 0 24 RRegField WRegField }
   }
 
-  reg! {
-    //! SysTick current value register
-    VAL
+  /// SysTick current value register
+  VAL {
     0xE000_E018 0x20 0x0000_0000
     RReg WReg
     /// Current counter value
     CURRENT { 0 24 RRegField WRegField }
   }
 
-  reg! {
-    //! SysTick calibration value register
-    CALIB
+  /// SysTick calibration value register
+  CALIB {
     0xE000_E01C 0x20 0x0000_0000
     RReg RoReg
     /// NOREF flag

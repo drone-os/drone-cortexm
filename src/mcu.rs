@@ -1,8 +1,6 @@
 //! A module for working with MCU.
 
 use core::ptr::write_volatile;
-use drone::thread::Executor;
-use futures::{Async, Future};
 
 const AIRCR: usize = 0xE000_ED0C;
 
@@ -30,20 +28,5 @@ pub fn spin(mut _cycles: u32) {
       :
       : "cc"
       : "volatile");
-  }
-}
-
-/// Blocks the current thread until the `future` is resolved.
-pub fn wait_for<R, E, F>(future: F) -> Result<R, E>
-where
-  F: Future<Item = R, Error = E>,
-{
-  let mut executor = Executor::new(future);
-  loop {
-    match executor.poll() {
-      Ok(Async::NotReady) => wait_for_interrupt(),
-      Ok(Async::Ready(ready)) => break Ok(ready),
-      Err(err) => break Err(err),
-    }
   }
 }

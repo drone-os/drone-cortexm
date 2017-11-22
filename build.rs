@@ -1,29 +1,21 @@
 extern crate drone_cortex_m_svd;
-#[macro_use]
-extern crate error_chain;
+extern crate failure;
 
 use drone_cortex_m_svd::svd_generate;
-use errors::*;
+use failure::Error;
 use std::env;
 use std::fs::File;
 use std::path::Path;
+use std::process;
 
-mod errors {
-  use drone_cortex_m_svd;
-  use std;
-
-  error_chain! {
-    foreign_links {
-      Io(std::io::Error);
-      Env(std::env::VarError);
-      Svd(drone_cortex_m_svd::errors::Error);
-    }
+fn main() {
+  if let Err(error) = run() {
+    eprintln!("{}", error);
+    process::exit(1);
   }
 }
 
-quick_main!(run);
-
-fn run() -> Result<()> {
+fn run() -> Result<(), Error> {
   let out_dir = env::var("OUT_DIR")?;
   let out_dir = Path::new(&out_dir);
   let mut svd_out = File::create(out_dir.join("svd_bindings.rs"))?;

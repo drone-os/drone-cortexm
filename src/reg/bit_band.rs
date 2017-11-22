@@ -102,20 +102,20 @@ where
 mod tests {
   use self::test_block::*;
   use super::*;
-  use drone::{reg, reg_block};
+  use drone::reg;
 
-  reg_block! {
+  reg! {
     TEST_BLOCK
 
-    reg! {
-      #![allow(dead_code)]
-      LOW_REG 0x4000_0000 0x20 0x0000_0000 RegBitBand
+    #[allow(dead_code)]
+    LOW_REG {
+      0x4000_0000 0x20 0x0000_0000 RegBitBand
       TEST_BIT { 0 1 }
     }
 
-    reg! {
-      #![allow(dead_code)]
-      HIGH_REG 0x400F_FFFC 0x20 0x0000_0000 RegBitBand
+    #[allow(dead_code)]
+    HIGH_REG {
+      0x400F_FFFC 0x20 0x0000_0000 RegBitBand
       TEST_BIT { 0 1 }
     }
   }

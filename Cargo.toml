@@ -45,7 +45,7 @@ features = []
 path = "../drone-test"
 
 [build-dependencies]
-error-chain = "0.11"
+failure = "0.1"
 
 [build-dependencies.drone-cortex-m-svd]
 version = "0.7.0"

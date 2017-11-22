@@ -9,28 +9,26 @@
 #![cfg_attr(feature = "clippy", allow(precedence, doc_markdown))]
 
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
+extern crate inflector;
 extern crate proc_macro;
 #[macro_use]
 extern crate quote;
 extern crate syn;
 
-mod errors;
 mod vtable;
 
-use errors::*;
 use proc_macro::TokenStream;
 
 #[doc(hidden)]
 #[proc_macro]
-pub fn vtable_impl(input: TokenStream) -> TokenStream {
+pub fn vtable(input: TokenStream) -> TokenStream {
   tokens!(vtable::vtable(input))
 }
 
 macro tokens($tokens:expr) {
   match $tokens {
     Ok(tokens) => tokens.parse().unwrap(),
-    Err(Error(ErrorKind::Msg(message), _)) => panic!(message),
-    Err(_) => unreachable!(),
+    Err(error) => panic!("{}", error),
   }
 }

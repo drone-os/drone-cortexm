@@ -160,6 +160,7 @@ impl<T> RegExcl<T> {
   }
 }
 
+#[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
 macro impl_reg_raw_shared($type:ty, $ldrex:expr, $strex:expr) {
   impl RegRawShared for $type {
     #[inline(always)]
