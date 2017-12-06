@@ -1,11 +1,20 @@
 use core::ops::{Deref, DerefMut};
-use drone::reg::{RegFieldRegHoldVal, RegFieldRegHoldValRaw, RegHoldVal,
-                 RegHoldValRaw, RegRaw};
 use drone::reg::prelude::*;
 
 /// A wrapper for a value loaded with `ldrex` instruction.
 pub struct RegExcl<T> {
   inner: T,
+}
+
+/// `RegExl` for `RegHold`.
+pub trait RegHoldExcl<T, U>
+where
+  Self: Sized,
+  T: RegShared,
+  U: Reg<T>,
+{
+  /// Downgrades to the underlying value.
+  fn val(self) -> RegExcl<U::Val>;
 }
 
 /// Raw shared register value type.
@@ -21,68 +30,152 @@ where
 }
 
 /// Register that can read and write its value in a multi-threaded context.
-pub trait RwRegShared<'a, T>
+pub trait RwRegShared<T>
 where
-  Self: RReg<'a, T> + WReg<'a, T>,
-  T: RegShared + 'a,
+  Self: RReg<T> + WReg<T>,
+  T: RegShared,
 {
   /// Loads the value with `ldrex` instruction.
-  fn load_excl(&'a self) -> RegExcl<Self::Hold>;
+  fn load_excl<'a>(&'a self) -> RegExcl<<Self as RegRef<'a, T>>::Hold>
+  where
+    Self: RegRef<'a, T>;
 
   /// Stores `val` with `strex` instruction.
-  fn store_excl(&self, val: RegExcl<Self::Hold>) -> bool;
-
-  /// Atomically updates a register's value.
-  fn update<F>(&'a self, f: F)
-  where
-    F: Fn(&mut Self::Hold) -> &mut Self::Hold;
+  fn store_excl(&self, val: RegExcl<Self::Val>) -> bool;
 }
 
-/// Write-only field of write-only register.
-pub trait WRwRegFieldShared<'a, T>
+/// Register that can update its value in a multi-threaded context.
+// FIXME https://github.com/rust-lang/rust/issues/46397
+pub trait RwRegSharedRef<'a, T>
 where
-  Self: WRegField<'a, T>,
-  Self::Reg: RwRegShared<'a, T>,
-  T: RegShared + 'a,
+  Self: RwRegShared<T> + WRegShared<'a, T> + RegRef<'a, T>,
+  T: RegShared,
+{
+  /// Atomically updates the register's value.
+  fn update<F>(&'a self, f: F)
+  where
+    F: for<'b> Fn(&'b mut <Self as RegRef<'a, T>>::Hold)
+      -> &'b mut <Self as RegRef<'a, T>>::Hold;
+}
+
+/// Write field of shared read-write register.
+pub trait WRwRegFieldShared<T>
+where
+  Self: WRegField<T>,
+  Self::Reg: RwRegShared<T>,
+  T: RegShared,
 {
   /// Loads the value with `ldrex` instruction.
-  fn load_excl(&'a self) -> RegExcl<RegFieldRegHoldVal<'a, T, Self>>;
+  fn load_excl(&self) -> RegExcl<<Self::Reg as Reg<T>>::Val>;
 
   /// Stores `val` with `strex` instruction.
-  fn store_excl(&self, val: RegExcl<RegFieldRegHoldVal<'a, T, Self>>) -> bool;
+  fn store_excl(&self, val: RegExcl<<Self::Reg as Reg<T>>::Val>) -> bool;
 
   /// Atomically updates a register's value.
-  fn update<F>(&'a self, f: F)
+  fn update<F>(&self, f: F)
   where
-    F: Fn(&mut RegFieldRegHoldVal<'a, T, Self>);
+    F: Fn(&mut <Self::Reg as Reg<T>>::Val);
 }
 
-impl<'a, T, U, V, W, X> RwRegShared<'a, T> for U
+/// Single-bit write field of shared read-write register.
+pub trait WRwRegFieldBitShared<T>
 where
-  T: RegShared + 'a,
-  U: Reg<'a, T, Hold = V> + RReg<'a, T> + WReg<'a, T>,
-  V: RegHold<'a, T, Self, Val = W>,
-  W: RegVal<Raw = X>,
-  X: RegRaw + RegRawShared,
+  Self: WRwRegFieldShared<T> + RegFieldBit<T>,
+  Self::Reg: RwRegShared<T>,
+  T: RegShared,
+{
+  /// Sets the bit in memory.
+  fn set_bit(&self);
+
+  /// Clears the bit in memory.
+  fn clear_bit(&self);
+
+  /// Toggles the bit in memory.
+  fn toggle_bit(&self);
+}
+
+/// Multiple-bits write field of shared read-write register.
+pub trait WRwRegFieldBitsShared<T>
+where
+  Self: WRwRegFieldShared<T> + RegFieldBits<T>,
+  Self::Reg: RwRegShared<T>,
+  T: RegShared,
+{
+  /// Sets the bit in memory.
+  fn write_bits(&self, bits: <<Self::Reg as Reg<T>>::Val as RegVal>::Raw);
+}
+
+impl<T, U> RwRegShared<T> for U
+where
+  T: RegShared,
+  U: RReg<T> + WReg<T>,
+  <U::Val as RegVal>::Raw: RegRawShared,
 {
   #[inline(always)]
-  fn load_excl(&'a self) -> RegExcl<Self::Hold> {
+  fn load_excl<'a>(&'a self) -> RegExcl<<Self as RegRef<'a, T>>::Hold>
+  where
+    Self: RegRef<'a, T>,
+  {
     unsafe {
-      RegExcl::new(self.hold(RegHoldVal::<'a, T, Self>::from_raw(
-        RegHoldValRaw::<'a, T, Self>::load_excl(Self::ADDRESS),
+      RegExcl::new(self.hold(U::Val::from_raw(
+        <U::Val as RegVal>::Raw::load_excl(Self::ADDRESS),
       )))
     }
   }
 
   #[inline(always)]
-  fn store_excl(&self, val: RegExcl<Self::Hold>) -> bool {
-    unsafe { val.into_inner().val().raw().store_excl(Self::ADDRESS) }
+  fn store_excl(&self, val: RegExcl<U::Val>) -> bool {
+    unsafe { val.into_inner().raw().store_excl(Self::ADDRESS) }
   }
+}
 
+impl<'a, T, U> RwRegSharedRef<'a, T> for U
+where
+  T: RegShared,
+  U: RReg<T> + WRegShared<'a, T> + RegRef<'a, T>,
+  <U::Val as RegVal>::Raw: RegRawShared,
+{
   #[inline(always)]
   fn update<F>(&'a self, f: F)
   where
-    F: Fn(&mut Self::Hold) -> &mut Self::Hold,
+    F: for<'b> Fn(&'b mut <U as RegRef<'a, T>>::Hold)
+      -> &'b mut <U as RegRef<'a, T>>::Hold,
+  {
+    loop {
+      let mut val = self.load_excl();
+      f(&mut val);
+      if self.store_excl(val.val()) {
+        break;
+      }
+    }
+  }
+}
+
+impl<T, U> WRwRegFieldShared<T> for U
+where
+  T: RegShared,
+  U: WRegField<T>,
+  U::Reg: RwRegShared<T>,
+  <<U::Reg as Reg<T>>::Val as RegVal>::Raw: RegRawShared,
+{
+  #[inline(always)]
+  fn load_excl(&self) -> RegExcl<<U::Reg as Reg<T>>::Val> {
+    unsafe {
+      RegExcl::new(<U::Reg as Reg<T>>::Val::from_raw(
+        <<U::Reg as Reg<T>>::Val as RegVal>::Raw::load_excl(Self::Reg::ADDRESS),
+      ))
+    }
+  }
+
+  #[inline(always)]
+  fn store_excl(&self, val: RegExcl<<U::Reg as Reg<T>>::Val>) -> bool {
+    unsafe { val.into_inner().raw().store_excl(Self::Reg::ADDRESS) }
+  }
+
+  #[inline(always)]
+  fn update<F>(&self, f: F)
+  where
+    F: Fn(&mut <U::Reg as Reg<T>>::Val),
   {
     loop {
       let mut val = self.load_excl();
@@ -94,41 +187,45 @@ where
   }
 }
 
-impl<'a, T, U, V, W, X> WRwRegFieldShared<'a, T> for U
+impl<T, U> WRwRegFieldBitShared<T> for U
 where
-  T: RegShared + 'a,
-  U: WRegField<'a, T>,
-  U::Reg: Reg<'a, T, Hold = V> + RwRegShared<'a, T>,
-  V: RegHold<'a, T, U::Reg, Val = W>,
-  W: RegVal<Raw = X>,
-  X: RegRaw + RegRawShared,
+  T: RegShared,
+  U: WRwRegFieldShared<T> + RegFieldBit<T>,
+  U::Reg: RwRegShared<T>,
 {
   #[inline(always)]
-  fn load_excl(&'a self) -> RegExcl<RegFieldRegHoldVal<'a, T, Self>> {
-    unsafe {
-      RegExcl::new(RegFieldRegHoldVal::<'a, T, Self>::from_raw(
-        RegFieldRegHoldValRaw::<'a, T, Self>::load_excl(Self::Reg::ADDRESS),
-      ))
-    }
+  fn set_bit(&self) {
+    self.update(|val| {
+      self.set(val);
+    });
   }
 
   #[inline(always)]
-  fn store_excl(&self, val: RegExcl<RegFieldRegHoldVal<'a, T, Self>>) -> bool {
-    unsafe { val.into_inner().raw().store_excl(Self::Reg::ADDRESS) }
+  fn clear_bit(&self) {
+    self.update(|val| {
+      self.clear(val);
+    });
   }
 
   #[inline(always)]
-  fn update<F>(&'a self, f: F)
-  where
-    F: Fn(&mut RegFieldRegHoldVal<'a, T, Self>),
-  {
-    loop {
-      let mut val = self.load_excl();
-      f(&mut val);
-      if self.store_excl(val) {
-        break;
-      }
-    }
+  fn toggle_bit(&self) {
+    self.update(|val| {
+      self.toggle(val);
+    });
+  }
+}
+
+impl<T, U> WRwRegFieldBitsShared<T> for U
+where
+  T: RegShared,
+  U: WRwRegFieldShared<T> + RegFieldBits<T>,
+  U::Reg: RwRegShared<T>,
+{
+  #[inline(always)]
+  fn write_bits(&self, bits: <<U::Reg as Reg<T>>::Val as RegVal>::Raw) {
+    self.update(|val| {
+      self.write(val, bits);
+    });
   }
 }
 
@@ -157,6 +254,17 @@ impl<T> RegExcl<T> {
   #[inline(always)]
   fn into_inner(self) -> T {
     self.inner
+  }
+}
+
+impl<'a, T, U, V> RegHoldExcl<T, U> for RegExcl<V>
+where
+  T: RegShared,
+  U: Reg<T>,
+  V: RegHold<'a, T, U>,
+{
+  fn val(self) -> RegExcl<U::Val> {
+    RegExcl::new(self.into_inner().val())
   }
 }
 

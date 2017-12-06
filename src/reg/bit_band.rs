@@ -8,10 +8,10 @@ pub const BIT_BAND_BASE: usize = 0x4200_0000;
 pub const BIT_BAND_WIDTH: usize = 5;
 
 /// Register that falls into peripheral bit-band region.
-pub trait RegBitBand<'a, T>
+pub trait RegBitBand<T>
 where
-  Self: Reg<'a, T>,
-  T: RegTag + 'a,
+  Self: Reg<T>,
+  T: RegTag,
 {
   /// Calculates bit-band address.
   ///
@@ -29,44 +29,44 @@ where
 }
 
 /// Register field that can read bits through peripheral bit-band region.
-pub trait RRegFieldBitBand<'a, T>
+pub trait RRegFieldBitBand<T>
 where
-  Self: RegFieldBit<'a, T>,
-  Self::Reg: RegBitBand<'a, T> + RReg<'a, T>,
-  T: RegTag + 'a,
+  Self: RegFieldBit<T>,
+  Self::Reg: RegBitBand<T> + RReg<T>,
+  T: RegTag,
 {
   /// Reads the state of the bit through peripheral bit-band region.
-  fn read_bit(&self) -> bool;
+  fn read_bit_band(&self) -> bool;
 
   /// Returns an unsafe constant pointer to the corresponding bit-band address.
   fn bit_band_ptr(&self) -> *const usize;
 }
 
 /// Register field that can write bits through peripheral bit-band region.
-pub trait WRegFieldBitBand<'a, T>
+pub trait WRegFieldBitBand<T>
 where
-  Self: RegFieldBit<'a, T>,
-  Self::Reg: RegBitBand<'a, T> + WReg<'a, T>,
-  T: RegTag + 'a,
+  Self: RegFieldBit<T>,
+  Self::Reg: RegBitBand<T> + WReg<T>,
+  T: RegTag,
 {
   /// Sets the bit through peripheral bit-band region.
-  fn set_bit(&self);
+  fn set_bit_band(&self);
 
   /// Clears the bit through peripheral bit-band region.
-  fn clear_bit(&self);
+  fn clear_bit_band(&self);
 
   /// Returns an unsafe mutable pointer to the corresponding bit-band address.
   fn bit_band_mut_ptr(&self) -> *mut usize;
 }
 
-impl<'a, T, U> RRegFieldBitBand<'a, T> for U
+impl<T, U> RRegFieldBitBand<T> for U
 where
-  T: RegTag + 'a,
-  U: RegFieldBit<'a, T>,
-  U::Reg: RegBitBand<'a, T> + RReg<'a, T>,
+  T: RegTag,
+  U: RegFieldBit<T>,
+  U::Reg: RegBitBand<T> + RReg<T>,
 {
   #[inline(always)]
-  fn read_bit(&self) -> bool {
+  fn read_bit_band(&self) -> bool {
     unsafe { read_volatile(self.bit_band_ptr()) != 0 }
   }
 
@@ -76,19 +76,19 @@ where
   }
 }
 
-impl<'a, T, U> WRegFieldBitBand<'a, T> for U
+impl<T, U> WRegFieldBitBand<T> for U
 where
-  T: RegTag + 'a,
-  U: RegFieldBit<'a, T>,
-  U::Reg: RegBitBand<'a, T> + WReg<'a, T>,
+  T: RegTag,
+  U: RegFieldBit<T>,
+  U::Reg: RegBitBand<T> + WReg<T>,
 {
   #[inline(always)]
-  fn set_bit(&self) {
+  fn set_bit_band(&self) {
     unsafe { write_volatile(self.bit_band_mut_ptr(), 1) };
   }
 
   #[inline(always)]
-  fn clear_bit(&self) {
+  fn clear_bit_band(&self) {
     unsafe { write_volatile(self.bit_band_mut_ptr(), 0) };
   }
 
@@ -120,8 +120,8 @@ mod tests {
     }
   }
 
-  type LocalLowReg = LowReg<Ur>;
-  type LocalHighReg = HighReg<Ur>;
+  type LocalLowReg = LowReg<Urt>;
+  type LocalHighReg = HighReg<Urt>;
 
   #[test]
   fn reg_bit_band_addr() {

@@ -6,6 +6,7 @@
 #![feature(const_fn)]
 #![feature(const_ptr_null_mut)]
 #![feature(global_allocator)]
+#![feature(prelude_import)]
 #![feature(proc_macro)]
 #![feature(slice_get_slice)]
 #![no_std]
@@ -15,6 +16,10 @@ extern crate compiler_builtins;
 extern crate drone;
 extern crate drone_cortex_m;
 extern crate test;
+
+#[prelude_import]
+#[allow(unused_imports)]
+use drone_cortex_m::prelude::*;
 
 use core::mem::size_of;
 

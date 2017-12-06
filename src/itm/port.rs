@@ -39,7 +39,9 @@ impl Port {
     end += start;
     if rem != 0 {
       rem = 0b100 - rem;
-      self.write_all(unsafe { slice::from_raw_parts(start as *const u8, rem) });
+      self.write_all(unsafe {
+        slice::from_raw_parts(start as *const u8, rem)
+      });
       start += rem;
     }
     rem = end & 0b11;
@@ -47,7 +49,9 @@ impl Port {
     self.write_all(unsafe {
       slice::from_raw_parts(start as *const u32, end - start >> 2)
     });
-    self.write_all(unsafe { slice::from_raw_parts(end as *const u8, rem) });
+    self.write_all(unsafe {
+      slice::from_raw_parts(end as *const u8, rem)
+    });
   }
 
   /// Writes an entire buffer in chunks of `size_of::<T>() * 8` bits.

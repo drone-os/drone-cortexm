@@ -18,7 +18,7 @@ fn main() {
 fn run() -> Result<(), Error> {
   let out_dir = env::var("OUT_DIR")?;
   let out_dir = Path::new(&out_dir);
-  let mut svd_out = File::create(out_dir.join("svd_bindings.rs"))?;
+  let mut svd_out = File::create(out_dir.join("svd_map.rs"))?;
   if let Some(svd_file) = svd_from_feature() {
     let mut svd_in = File::open(svd_file)?;
     svd_generate(&mut svd_in, &mut svd_out)?;
@@ -49,6 +49,6 @@ fn svd_from_feature() -> Option<&'static str> {
     () => Some("svd_files/STM32L4x5.svd"),
     #[cfg(feature = "stm32l4x6")]
     () => Some("svd_files/STM32L4x6.svd"),
-    _ => None,
+    () => None,
   }
 }

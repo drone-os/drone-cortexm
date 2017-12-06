@@ -59,9 +59,10 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
           thread_count += 1;
           break;
         }
-        Some(TokenTree::Token(
-          Token::Literal(Lit::Int(number, IntTy::Unsuffixed)),
-        )) => {
+        Some(TokenTree::Token(Token::Literal(Lit::Int(
+          number,
+          IntTy::Unsuffixed,
+        )))) => {
           match input.next() {
             Some(TokenTree::Token(Token::Colon)) => (),
             token => {
@@ -108,9 +109,7 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
   thread_number
     .iter()
     .zip(thread_name.iter())
-    .filter_map(|(number, name)| {
-      number.map(|number| (number as usize, name))
-    })
+    .filter_map(|(number, name)| number.map(|number| (number as usize, name)))
     .for_each(|(number, name)| {
       irq_name[number] = name.clone();
     });

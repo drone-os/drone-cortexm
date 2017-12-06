@@ -27,12 +27,17 @@
 //! [OpenOCD]: http://openocd.org/
 //! [rules.d]: https://github.com/texane/stlink/tree/master/etc/udev/rules.d
 #![feature(asm)]
+#![feature(conservative_impl_trait)]
 #![feature(const_fn)]
 #![feature(decl_macro)]
+#![feature(generators)]
 #![feature(lang_items)]
 #![feature(linkage)]
 #![feature(prelude_import)]
 #![feature(proc_macro)]
+#![feature(range_contains)]
+#![feature(unreachable)]
+#![feature(untagged_unions)]
 #![no_std]
 #![warn(missing_docs)]
 #![cfg_attr(test, feature(alloc))]

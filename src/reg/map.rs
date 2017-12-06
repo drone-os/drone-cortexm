@@ -1,7 +1,7 @@
 use drone::reg;
 use reg::prelude::*;
 
-include!(concat!(env!("OUT_DIR"), "/svd_bindings.rs"));
+include!(concat!(env!("OUT_DIR"), "/svd_map.rs"));
 
 reg! {
   //! System control block
