@@ -75,17 +75,25 @@ enum Access {
 }
 
 impl Device {
-  pub fn generate(self, output: &mut File) -> Result<(), Error> {
+  pub fn generate(
+    self,
+    mappings: &mut File,
+    bindings: &mut File,
+  ) -> Result<(), Error> {
     for peripheral in self.peripherals.peripheral.values() {
-      let tokens = peripheral.to_tokens(&self.peripherals)?;
-      output.write_all(tokens.as_str().as_bytes())?;
+      let (x, y) = peripheral.to_tokens(&self.peripherals)?;
+      mappings.write_all(x.as_str().as_bytes())?;
+      bindings.write_all(y.as_str().as_bytes())?;
     }
     Ok(())
   }
 }
 
 impl Peripheral {
-  fn to_tokens(&self, peripherals: &Peripherals) -> Result<Tokens, Error> {
+  fn to_tokens(
+    &self,
+    peripherals: &Peripherals,
+  ) -> Result<(Tokens, Tokens), Error> {
     let parent = if let Some(ref derived_from) = self.derived_from {
       Some(peripherals
         .peripheral
@@ -100,24 +108,31 @@ impl Peripheral {
       .or_else(|| parent.and_then(|x| x.description.as_ref()))
       .ok_or_else(|| err_msg("Peripheral description not found"))?;
     let peripheral_name = Ident::new(self.name.to_owned());
-    let registers = self
+    let (mappings, bindings) = self
       .registers
       .as_ref()
       .or_else(|| parent.and_then(|x| x.registers.as_ref()))
       .ok_or_else(|| err_msg("Peripheral registers not found"))?
       .to_tokens(self);
-    Ok(quote! {
-      reg! {
-        #![doc = #peripheral_description]
-        reg::#peripheral_name
-        #(#registers)*
-      }
-    })
+    Ok((
+      quote! {
+        mappings! {
+          #![doc = #peripheral_description]
+          #peripheral_name
+          #(#mappings)*
+        }
+      },
+      quote! {
+        reg::#peripheral_name {
+          #(#bindings)*
+        }
+      },
+    ))
   }
 }
 
 impl Registers {
-  fn to_tokens(&self, peripheral: &Peripheral) -> Vec<Tokens> {
+  fn to_tokens(&self, peripheral: &Peripheral) -> (Vec<Tokens>, Vec<Tokens>) {
     self
       .register
       .iter()
@@ -146,22 +161,30 @@ impl Registers {
           traits.push(Ident::new("RegBitBand"));
         }
         let address = Lit::Int(address as u64, IntTy::Unsuffixed);
-        let fields = register.fields.to_tokens(register);
-        quote! {
-          #[doc = #description]
-          #name {
-            #address #size #reset
-            #(#traits)*
-            #(#fields)*
-          }
-        }
+        let (fields, field_names) = register.fields.to_tokens(register);
+        (
+          quote! {
+            #[doc = #description]
+            #name {
+              #address #size #reset
+              #(#traits)*
+              #(#fields)*
+            }
+          },
+          quote! {
+            #[doc = #description]
+            #name {
+              #(#field_names)*
+            }
+          },
+        )
       })
-      .collect()
+      .unzip()
   }
 }
 
 impl Fields {
-  fn to_tokens(&self, register: &Register) -> Vec<Tokens> {
+  fn to_tokens(&self, register: &Register) -> (Vec<Tokens>, Vec<Ident>) {
     self
       .field
       .iter()
@@ -185,15 +208,18 @@ impl Fields {
             traits.push(Ident::new("WRegField"));
           }
         }
-        quote! {
-          #[doc = #description]
-          #name {
-            #offset #width
-            #(#traits)*
-          }
-        }
+        (
+          quote! {
+            #[doc = #description]
+            #name {
+              #offset #width
+              #(#traits)*
+            }
+          },
+          name,
+        )
       })
-      .collect()
+      .unzip()
   }
 }
 

@@ -1,47 +1,43 @@
-//! SysTick timer.
-
-pub use self::build as Driver;
-
 use reg::prelude::*;
 use reg::stk;
 
 /// SysTick timer.
-pub struct Driver {
-  ctrl: stk::Ctrl<Drt>,
-  load: stk::Load<Srt>,
-  val: stk::Val<Srt>,
+pub struct SysTick {
+  ctrl: stk::Ctrl<Fbt>,
+  load: stk::Load<Sbt>,
+  val: stk::Val<Sbt>,
 }
 
-/// SysTick timer.
-#[allow(missing_docs)]
-pub struct Builder {
-  pub stk_ctrl: stk::Ctrl<Srt>,
-  pub stk_load: stk::Load<Srt>,
-  pub stk_val: stk::Val<Srt>,
+/// SysTick timer items.
+pub macro SysTick($bindings:ident) {
+  $crate::peripherals::timer::SysTick::compose(
+    $bindings.stk_ctrl,
+    $bindings.stk_load,
+    $bindings.stk_val,
+  )
 }
 
-impl Builder {
-  /// Creates a new `Driver`.
+impl SysTick {
+  /// Composes a new `SysTick` from pieces.
   #[inline(always)]
-  pub fn build(self) -> Driver {
-    Driver {
-      ctrl: self.stk_ctrl.upgrade(),
-      load: self.stk_load,
-      val: self.stk_val,
+  pub fn compose(
+    stk_ctrl: stk::Ctrl<Sbt>,
+    stk_load: stk::Load<Sbt>,
+    stk_val: stk::Val<Sbt>,
+  ) -> Self {
+    Self {
+      ctrl: stk_ctrl.into(),
+      load: stk_load,
+      val: stk_val,
     }
   }
-}
 
-/// SysTick timer.
-pub macro build($bindings:ident) {
-  $crate::peripherals::timer::sys_tick::Builder {
-    stk_ctrl: $bindings.stk_ctrl,
-    stk_load: $bindings.stk_load,
-    stk_val: $bindings.stk_val,
-  }.build()
-}
+  /// Decomposes the `SpiDma` into pieces.
+  #[inline(always)]
+  pub fn decompose(self) -> (stk::Ctrl<Fbt>, stk::Load<Sbt>, stk::Val<Sbt>) {
+    (self.ctrl, self.load, self.val)
+  }
 
-impl Driver {
   /// Schedules SysTick event. The event will be triggering in periods of
   /// `duration` ticks.
   #[inline(always)]
@@ -66,69 +62,56 @@ impl Driver {
 
   /// Returns a future, which resolves after `duration` ticks.
   #[inline]
-  pub fn timeout<T>(
+  pub fn timeout<T: Thread>(
     mut self,
     duration: u32,
-    ctrl: stk::ctrl::Val,
+    mut ctrl_val: stk::ctrl::Val,
     thread: &T,
-  ) -> impl Future<Item = Self, Error = ()>
-  where
-    T: Thread,
-  {
-    let (disable, enable) = {
-      let mut ctrl = self.ctrl.hold(ctrl);
-      let disable = disable(&mut ctrl).val();
-      let enable = enable(&mut ctrl).val();
-      (disable, enable)
-    };
-    self.ctrl.store_val(disable);
+  ) -> impl Future<Item = Self, Error = ()> {
+    ctrl_val = disable(&mut self.ctrl.hold(ctrl_val)).val();
+    self.ctrl.store_val(ctrl_val);
     self.schedule(duration);
-    let ctrl = self.ctrl.clone();
+    let ctrl = self.ctrl.fork();
     let future = thread.future_fn(move || {
-      self.ctrl.store_val(disable);
+      self.ctrl.store_val(ctrl_val);
       Ok(self)
     });
-    ctrl.store_val(enable);
+    ctrl_val = enable(&mut ctrl.hold(ctrl_val)).val();
+    ctrl.store_val(ctrl_val);
     future
   }
 
   /// Returns a reference to the binding.
   #[inline(always)]
-  pub fn ctrl(&self) -> &stk::Ctrl<Drt> {
+  pub fn ctrl(&self) -> &stk::Ctrl<Fbt> {
     &self.ctrl
   }
 
   /// Returns a reference to the binding.
   #[inline(always)]
-  pub fn load(&self) -> &stk::Load<Srt> {
+  pub fn load(&self) -> &stk::Load<Sbt> {
     &self.load
   }
 
   /// Returns a reference to the binding.
   #[inline(always)]
-  pub fn val(&self) -> &stk::Val<Srt> {
+  pub fn val(&self) -> &stk::Val<Sbt> {
     &self.val
   }
 }
 
 #[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
 #[inline(always)]
-fn enable<'a, 'b, T>(
+fn enable<'a, 'b, T: RegTag>(
   ctrl: &'a mut stk::ctrl::Hold<'b, T>,
-) -> &'a mut stk::ctrl::Hold<'b, T>
-where
-  T: RegTag,
-{
+) -> &'a mut stk::ctrl::Hold<'b, T> {
   ctrl.set_enable().set_tickint()
 }
 
 #[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
 #[inline(always)]
-fn disable<'a, 'b, T>(
+fn disable<'a, 'b, T: RegTag>(
   ctrl: &'a mut stk::ctrl::Hold<'b, T>,
-) -> &'a mut stk::ctrl::Hold<'b, T>
-where
-  T: RegTag,
-{
+) -> &'a mut stk::ctrl::Hold<'b, T> {
   ctrl.clear_enable().clear_tickint()
 }

@@ -1,5 +1,6 @@
 //! Timers and watchdogs.
 
-pub mod sys_tick;
+#[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
+mod sys_tick;
 
-pub use self::sys_tick::Driver as SysTick;
+pub use self::sys_tick::SysTick;

@@ -18,10 +18,11 @@ fn main() {
 fn run() -> Result<(), Error> {
   let out_dir = env::var("OUT_DIR")?;
   let out_dir = Path::new(&out_dir);
-  let mut svd_out = File::create(out_dir.join("svd_map.rs"))?;
+  let mut mappings = File::create(out_dir.join("svd_mappings.rs"))?;
+  let mut bindings = File::create(out_dir.join("svd_bindings.rs"))?;
   if let Some(svd_file) = svd_from_feature() {
-    let mut svd_in = File::open(svd_file)?;
-    svd_generate(&mut svd_in, &mut svd_out)?;
+    let mut input = File::open(svd_file)?;
+    svd_generate(&mut input, &mut mappings, &mut bindings)?;
   }
   Ok(())
 }

@@ -8,10 +8,7 @@ pub trait DroneFuture: Future {
   fn wait(self) -> Result<Self::Item, Self::Error>;
 }
 
-impl<T> DroneFuture for T
-where
-  T: Future,
-{
+impl<T: Future> DroneFuture for T {
   fn wait(self) -> Result<Self::Item, Self::Error> {
     let mut executor = executor::spawn(self);
     loop {

@@ -7,21 +7,13 @@ pub struct RegExcl<T> {
 }
 
 /// `RegExl` for `RegHold`.
-pub trait RegHoldExcl<T, U>
-where
-  Self: Sized,
-  T: RegShared,
-  U: Reg<T>,
-{
+pub trait RegHoldExcl<T: RegShared, U: Reg<T>>: Sized {
   /// Downgrades to the underlying value.
   fn val(self) -> RegExcl<U::Val>;
 }
 
 /// Raw shared register value type.
-pub trait RegRawShared
-where
-  Self: Sized,
-{
+pub trait RegRawShared: Sized {
   /// Loads the value with `ldrex` instruction.
   unsafe fn load_excl(address: usize) -> Self;
 
@@ -30,11 +22,7 @@ where
 }
 
 /// Register that can read and write its value in a multi-threaded context.
-pub trait RwRegShared<T>
-where
-  Self: RReg<T> + WReg<T>,
-  T: RegShared,
-{
+pub trait RwRegShared<T: RegShared>: RReg<T> + WReg<T> {
   /// Loads the value with `ldrex` instruction.
   fn load_excl<'a>(&'a self) -> RegExcl<<Self as RegRef<'a, T>>::Hold>
   where
@@ -46,24 +34,22 @@ where
 
 /// Register that can update its value in a multi-threaded context.
 // FIXME https://github.com/rust-lang/rust/issues/46397
-pub trait RwRegSharedRef<'a, T>
+pub trait RwRegSharedRef<'a, T: RegShared>
 where
   Self: RwRegShared<T> + WRegShared<'a, T> + RegRef<'a, T>,
-  T: RegShared,
 {
   /// Atomically updates the register's value.
-  fn update<F>(&'a self, f: F)
+  fn modify<F>(&'a self, f: F)
   where
     F: for<'b> Fn(&'b mut <Self as RegRef<'a, T>>::Hold)
       -> &'b mut <Self as RegRef<'a, T>>::Hold;
 }
 
 /// Write field of shared read-write register.
-pub trait WRwRegFieldShared<T>
+pub trait WRwRegFieldShared<T: RegShared>
 where
   Self: WRegField<T>,
   Self::Reg: RwRegShared<T>,
-  T: RegShared,
 {
   /// Loads the value with `ldrex` instruction.
   fn load_excl(&self) -> RegExcl<<Self::Reg as Reg<T>>::Val>;
@@ -72,17 +58,16 @@ where
   fn store_excl(&self, val: RegExcl<<Self::Reg as Reg<T>>::Val>) -> bool;
 
   /// Atomically updates a register's value.
-  fn update<F>(&self, f: F)
+  fn modify<F>(&self, f: F)
   where
     F: Fn(&mut <Self::Reg as Reg<T>>::Val);
 }
 
 /// Single-bit write field of shared read-write register.
-pub trait WRwRegFieldBitShared<T>
+pub trait WRwRegFieldBitShared<T: RegShared>
 where
   Self: WRwRegFieldShared<T> + RegFieldBit<T>,
   Self::Reg: RwRegShared<T>,
-  T: RegShared,
 {
   /// Sets the bit in memory.
   fn set_bit(&self);
@@ -95,11 +80,10 @@ where
 }
 
 /// Multiple-bits write field of shared read-write register.
-pub trait WRwRegFieldBitsShared<T>
+pub trait WRwRegFieldBitsShared<T: RegShared>
 where
   Self: WRwRegFieldShared<T> + RegFieldBits<T>,
   Self::Reg: RwRegShared<T>,
-  T: RegShared,
 {
   /// Sets the bit in memory.
   fn write_bits(&self, bits: <<Self::Reg as Reg<T>>::Val as RegVal>::Raw);
@@ -136,7 +120,7 @@ where
   <U::Val as RegVal>::Raw: RegRawShared,
 {
   #[inline(always)]
-  fn update<F>(&'a self, f: F)
+  fn modify<F>(&'a self, f: F)
   where
     F: for<'b> Fn(&'b mut <U as RegRef<'a, T>>::Hold)
       -> &'b mut <U as RegRef<'a, T>>::Hold,
@@ -173,7 +157,7 @@ where
   }
 
   #[inline(always)]
-  fn update<F>(&self, f: F)
+  fn modify<F>(&self, f: F)
   where
     F: Fn(&mut <U::Reg as Reg<T>>::Val),
   {
@@ -195,21 +179,21 @@ where
 {
   #[inline(always)]
   fn set_bit(&self) {
-    self.update(|val| {
+    self.modify(|val| {
       self.set(val);
     });
   }
 
   #[inline(always)]
   fn clear_bit(&self) {
-    self.update(|val| {
+    self.modify(|val| {
       self.clear(val);
     });
   }
 
   #[inline(always)]
   fn toggle_bit(&self) {
-    self.update(|val| {
+    self.modify(|val| {
       self.toggle(val);
     });
   }
@@ -223,7 +207,7 @@ where
 {
   #[inline(always)]
   fn write_bits(&self, bits: <<U::Reg as Reg<T>>::Val as RegVal>::Raw) {
-    self.update(|val| {
+    self.modify(|val| {
       self.write(val, bits);
     });
   }
@@ -269,7 +253,7 @@ where
 }
 
 #[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
-macro impl_reg_raw_shared($type:ty, $ldrex:expr, $strex:expr) {
+macro reg_raw_shared($type:ty, $ldrex:expr, $strex:expr) {
   impl RegRawShared for $type {
     #[inline(always)]
     unsafe fn load_excl(address: usize) -> Self
@@ -297,6 +281,6 @@ macro impl_reg_raw_shared($type:ty, $ldrex:expr, $strex:expr) {
   }
 }
 
-impl_reg_raw_shared!(u32, "ldrex $0, [$1]", "strex $0, $1, [$2]");
-impl_reg_raw_shared!(u16, "ldrexh $0, [$1]", "strexh $0, $1, [$2]");
-impl_reg_raw_shared!(u8, "ldrexb $0, [$1]", "strexb $0, $1, [$2]");
+reg_raw_shared!(u32, "ldrex $0, [$1]", "strex $0, $1, [$2]");
+reg_raw_shared!(u16, "ldrexh $0, [$1]", "strexh $0, $1, [$2]");
+reg_raw_shared!(u8, "ldrexb $0, [$1]", "strexb $0, $1, [$2]");

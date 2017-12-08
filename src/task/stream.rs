@@ -17,10 +17,7 @@ pub trait DroneStream: Stream {
     Self: Sized;
 }
 
-impl<T> DroneStream for T
-where
-  T: Stream,
-{
+impl<T: Stream> DroneStream for T {
   fn wait(self) -> StreamWait<Self>
   where
     Self: Sized,
@@ -29,20 +26,14 @@ where
   }
 }
 
-impl<T> StreamWait<T>
-where
-  T: Stream,
-{
+impl<T: Stream> StreamWait<T> {
   fn new(stream: T) -> Self {
     let executor = executor::spawn(stream);
     Self { executor }
   }
 }
 
-impl<T> Iterator for StreamWait<T>
-where
-  T: Stream,
-{
+impl<T: Stream> Iterator for StreamWait<T> {
   type Item = Result<T::Item, T::Error>;
 
   fn next(&mut self) -> Option<Self::Item> {

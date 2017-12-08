@@ -6,26 +6,32 @@ use reg::prelude::*;
 
 /// Generic DMA.
 #[allow(missing_docs)]
-pub trait Dma
-where
-  Self: Sized,
-{
-  type Ccr: Reg<Srt>;
-  type Cmar: Reg<Srt>;
-  type Cndtr: Reg<Srt>;
-  type Cpar: Reg<Srt>;
+pub trait Dma: Sized {
+  /// Concrete DMA items.
+  type Items;
+
+  type Ccr: Reg<Sbt>;
+  type Cmar: Reg<Sbt>;
+  type Cndtr: Reg<Sbt>;
+  type Cpar: Reg<Sbt>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  type CselrCs: RegField<Srt>;
-  type IfcrCgif: RegField<Srt>;
-  type IfcrChtif: RegField<Srt>;
-  type IfcrCtcif: RegField<Srt>;
-  type IfcrCteif: RegField<Srt>;
-  type IsrGif: RegField<Srt>;
-  type IsrHtif: RegField<Srt>;
-  type IsrTcif: RegField<Srt>;
-  type IsrTeif: RegField<Srt>;
+  type CselrCs: RegField<Sbt>;
+  type IfcrCgif: RegField<Sbt>;
+  type IfcrChtif: RegField<Sbt>;
+  type IfcrCtcif: RegField<Sbt>;
+  type IfcrCteif: RegField<Sbt>;
+  type IsrGif: RegField<Sbt>;
+  type IsrHtif: RegField<Sbt>;
+  type IsrTcif: RegField<Sbt>;
+  type IsrTeif: RegField<Sbt>;
+
+  /// Composes a new `Dma` from pieces.
+  fn compose(items: Self::Items) -> Self;
+
+  /// Decomposes the `Dma` into pieces.
+  fn decompose(self) -> Self::Items;
 
   fn ccr(&self) -> &Self::Ccr;
   fn cmar(&self) -> &Self::Cmar;
@@ -45,25 +51,23 @@ where
   fn isr_teif(&self) -> &Self::IsrTeif;
 
   /// Returns a future, which resolves on DMA transfer complete event.
-  fn transfer_complete<T>(self, thread: &T) -> RoutineFuture<Self, Self>
-  where
-    T: Thread;
+  fn transfer_complete<T: Thread>(
+    self,
+    thread: &T,
+  ) -> RoutineFuture<Self, Self>;
 
   /// Returns a future, which resolves on DMA half transfer event.
-  fn half_transfer<T>(self, thread: &T) -> RoutineFuture<Self, Self>
-  where
-    T: Thread;
+  fn half_transfer<T: Thread>(self, thread: &T) -> RoutineFuture<Self, Self>;
 }
 
 impl<I> Dma for I
 where
   I: imp::Dma,
   I: Send + 'static,
-  <I::IfcrCgif as RegField<Srt>>::Reg: WReg<Srt> + RegBitBand<Srt>,
-  <I::IsrHtif as RegField<Srt>>::Reg: RReg<Srt> + RegBitBand<Srt>,
-  <I::IsrTcif as RegField<Srt>>::Reg: RReg<Srt> + RegBitBand<Srt>,
-  <I::IsrTeif as RegField<Srt>>::Reg: RReg<Srt> + RegBitBand<Srt>,
+  <I::IfcrCgif as RegField<Sbt>>::Reg: WReg<Sbt> + RegBitBand<Sbt>,
+  <I::IsrGif as RegField<Sbt>>::Reg: RReg<Sbt> + RegBitBand<Sbt>,
 {
+  type Items = I::Items;
   type Ccr = I::Ccr;
   type Cmar = I::Cmar;
   type Cndtr = I::Cndtr;
@@ -80,6 +84,16 @@ where
   type IsrHtif = I::IsrHtif;
   type IsrTcif = I::IsrTcif;
   type IsrTeif = I::IsrTeif;
+
+  #[inline(always)]
+  fn compose(items: Self::Items) -> Self {
+    Self::_compose(items)
+  }
+
+  #[inline(always)]
+  fn decompose(self) -> Self::Items {
+    self._decompose()
+  }
 
   #[inline(always)]
   fn ccr(&self) -> &Self::Ccr {
@@ -150,10 +164,10 @@ where
   }
 
   #[inline]
-  fn transfer_complete<T>(self, thread: &T) -> RoutineFuture<Self, Self>
-  where
-    T: Thread,
-  {
+  fn transfer_complete<T: Thread>(
+    self,
+    thread: &T,
+  ) -> RoutineFuture<Self, Self> {
     thread.future(move || {
       loop {
         if self._isr_teif().read_bit_band() {
@@ -170,10 +184,7 @@ where
   }
 
   #[inline]
-  fn half_transfer<T>(self, thread: &T) -> RoutineFuture<Self, Self>
-  where
-    T: Thread,
-  {
+  fn half_transfer<T: Thread>(self, thread: &T) -> RoutineFuture<Self, Self> {
     thread.future(move || {
       loop {
         if self._isr_teif().read_bit_band() {
@@ -196,28 +207,35 @@ mod imp {
 
   pub trait Dma
   where
-    <Self::IfcrCgif as RegField<Srt>>::Reg: WReg<Srt> + RegBitBand<Srt>,
-    <Self::IsrHtif as RegField<Srt>>::Reg: RReg<Srt> + RegBitBand<Srt>,
-    <Self::IsrTcif as RegField<Srt>>::Reg: RReg<Srt> + RegBitBand<Srt>,
-    <Self::IsrTeif as RegField<Srt>>::Reg: RReg<Srt> + RegBitBand<Srt>,
+    <Self::IfcrCgif as RegField<Sbt>>::Reg: WReg<Sbt> + RegBitBand<Sbt>,
+    <Self::IsrGif as RegField<Sbt>>::Reg: RReg<Sbt> + RegBitBand<Sbt>,
   {
-    type Ccr: Reg<Srt>;
-    type Cmar: Reg<Srt>;
-    type Cndtr: Reg<Srt>;
-    type Cpar: Reg<Srt>;
+    type Items;
+    type Ccr: Reg<Sbt>;
+    type Cmar: Reg<Sbt>;
+    type Cndtr: Reg<Sbt>;
+    type Cpar: Reg<Sbt>;
     #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
               feature = "stm32l4x3", feature = "stm32l4x5",
               feature = "stm32l4x6"))]
-    type CselrCs: RegField<Srt>;
-    type IfcrCgif: WRegFieldBitBand<Srt>;
-    type IfcrChtif: RegField<Srt>;
-    type IfcrCtcif: RegField<Srt>;
-    type IfcrCteif: RegField<Srt>;
-    type IsrGif: RegField<Srt>;
-    type IsrHtif: RRegFieldBitBand<Srt>;
-    type IsrTcif: RRegFieldBitBand<Srt>;
-    type IsrTeif: RRegFieldBitBand<Srt>;
+    type CselrCs: RegField<Sbt>;
+    type IfcrCgif: WRegFieldBitBand<Sbt>;
+    type IfcrChtif: RegField<Sbt, Reg = <Self::IfcrCgif as RegField<Sbt>>::Reg>
+      + RegField<Sbt>;
+    type IfcrCtcif: RegField<Sbt, Reg = <Self::IfcrCgif as RegField<Sbt>>::Reg>
+      + RegField<Sbt>;
+    type IfcrCteif: RegField<Sbt, Reg = <Self::IfcrCgif as RegField<Sbt>>::Reg>
+      + RegField<Sbt>;
+    type IsrGif: RegField<Sbt>;
+    type IsrHtif: RegField<Sbt, Reg = <Self::IsrGif as RegField<Sbt>>::Reg>
+      + RRegFieldBitBand<Sbt>;
+    type IsrTcif: RegField<Sbt, Reg = <Self::IsrGif as RegField<Sbt>>::Reg>
+      + RRegFieldBitBand<Sbt>;
+    type IsrTeif: RegField<Sbt, Reg = <Self::IsrGif as RegField<Sbt>>::Reg>
+      + RRegFieldBitBand<Sbt>;
 
+    fn _compose(items: Self::Items) -> Self;
+    fn _decompose(self) -> Self::Items;
     fn _ccr(&self) -> &Self::Ccr;
     fn _cmar(&self) -> &Self::Cmar;
     fn _cndtr(&self) -> &Self::Cndtr;
@@ -238,13 +256,11 @@ mod imp {
 }
 
 #[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
-macro impl_dma_ch(
+macro dma_ch(
   $doc:expr,
   $name:ident,
-  $driver:ident,
-  $builder:ident,
-  $build:ident,
-  $mod_name:ident,
+  $doc_items:expr,
+  $name_items:ident,
   $ccr_ty:ident,
   $cmar_ty:ident,
   $cndtr_ty:ident,
@@ -285,109 +301,54 @@ macro impl_dma_ch(
   $tcif:ident,
   $teif:ident,
 ) {
-  pub use self::$mod_name::$driver as $name;
-
   #[doc = $doc]
-  pub mod $mod_name {
-    pub use self::$build as $driver;
-
-    use super::imp;
-    use reg::prelude::*;
-
-    #[doc = $doc]
-    pub struct $driver {
-      ccr: $dma::$ccr_ty<Srt>,
-      cmar: $dma::$cmar_ty<Srt>,
-      cndtr: $dma::$cndtr_ty<Srt>,
-      cpar: $dma::$cpar_ty<Srt>,
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      cselr_cs: $dma::cselr::$cs_ty<Srt>,
-      ifcr_cgif: $dma::ifcr::$cgif_ty<Srt>,
-      ifcr_chtif: $dma::ifcr::$chtif_ty<Srt>,
-      ifcr_ctcif: $dma::ifcr::$ctcif_ty<Srt>,
-      ifcr_cteif: $dma::ifcr::$cteif_ty<Srt>,
-      isr_gif: $dma::isr::$gif_ty<Srt>,
-      isr_htif: $dma::isr::$htif_ty<Srt>,
-      isr_tcif: $dma::isr::$tcif_ty<Srt>,
-      isr_teif: $dma::isr::$teif_ty<Srt>,
-    }
-
-    #[doc = $doc]
-    #[allow(missing_docs)]
-    pub struct $builder {
-      pub $dma_ccr: $dma::$ccr_ty<Srt>,
-      pub $dma_cmar: $dma::$cmar_ty<Srt>,
-      pub $dma_cndtr: $dma::$cndtr_ty<Srt>,
-      pub $dma_cpar: $dma::$cpar_ty<Srt>,
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      pub $dma_cselr_cs: $dma::cselr::$cs_ty<Srt>,
-      pub $dma_ifcr_cgif: $dma::ifcr::$cgif_ty<Srt>,
-      pub $dma_ifcr_chtif: $dma::ifcr::$chtif_ty<Srt>,
-      pub $dma_ifcr_ctcif: $dma::ifcr::$ctcif_ty<Srt>,
-      pub $dma_ifcr_cteif: $dma::ifcr::$cteif_ty<Srt>,
-      pub $dma_isr_gif: $dma::isr::$gif_ty<Srt>,
-      pub $dma_isr_htif: $dma::isr::$htif_ty<Srt>,
-      pub $dma_isr_tcif: $dma::isr::$tcif_ty<Srt>,
-      pub $dma_isr_teif: $dma::isr::$teif_ty<Srt>,
-    }
-
-    impl $builder {
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      /// Creates a new `Driver`.
-      #[inline(always)]
-      pub fn build(self) -> $driver {
-        $driver {
-          ccr: self.$dma_ccr,
-          cmar: self.$dma_cmar,
-          cndtr: self.$dma_cndtr,
-          cpar: self.$dma_cpar,
-          cselr_cs: self.$dma_cselr_cs,
-          ifcr_cgif: self.$dma_ifcr_cgif,
-          ifcr_chtif: self.$dma_ifcr_chtif,
-          ifcr_ctcif: self.$dma_ifcr_ctcif,
-          ifcr_cteif: self.$dma_ifcr_cteif,
-          isr_gif: self.$dma_isr_gif,
-          isr_htif: self.$dma_isr_htif,
-          isr_tcif: self.$dma_isr_tcif,
-          isr_teif: self.$dma_isr_teif,
-        }
-      }
-
-      #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                    feature = "stm32l4x3", feature = "stm32l4x5",
-                    feature = "stm32l4x6")))]
-      /// Creates a new `Driver`.
-      #[inline(always)]
-      pub fn build(self) -> $driver {
-        $driver {
-          ccr: self.$dma_ccr,
-          cmar: self.$dma_cmar,
-          cndtr: self.$dma_cndtr,
-          cpar: self.$dma_cpar,
-          ifcr_cgif: self.$dma_ifcr_cgif,
-          ifcr_chtif: self.$dma_ifcr_chtif,
-          ifcr_ctcif: self.$dma_ifcr_ctcif,
-          ifcr_cteif: self.$dma_ifcr_cteif,
-          isr_gif: self.$dma_isr_gif,
-          isr_htif: self.$dma_isr_htif,
-          isr_tcif: self.$dma_isr_tcif,
-          isr_teif: self.$dma_isr_teif,
-        }
-      }
-    }
-
+  pub struct $name {
+    ccr: $dma::$ccr_ty<Sbt>,
+    cmar: $dma::$cmar_ty<Sbt>,
+    cndtr: $dma::$cndtr_ty<Sbt>,
+    cpar: $dma::$cpar_ty<Sbt>,
     #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
               feature = "stm32l4x3", feature = "stm32l4x5",
               feature = "stm32l4x6"))]
-    #[doc = $doc]
-    pub macro $build($bindings:ident) {
-      $crate::peripherals::dma::$mod_name::$builder {
+    cselr_cs: $dma::cselr::$cs_ty<Sbt>,
+    ifcr_cgif: $dma::ifcr::$cgif_ty<Sbt>,
+    ifcr_chtif: $dma::ifcr::$chtif_ty<Sbt>,
+    ifcr_ctcif: $dma::ifcr::$ctcif_ty<Sbt>,
+    ifcr_cteif: $dma::ifcr::$cteif_ty<Sbt>,
+    isr_gif: $dma::isr::$gif_ty<Sbt>,
+    isr_htif: $dma::isr::$htif_ty<Sbt>,
+    isr_tcif: $dma::isr::$tcif_ty<Sbt>,
+    isr_teif: $dma::isr::$teif_ty<Sbt>,
+  }
+
+  #[doc = $doc_items]
+  #[allow(missing_docs)]
+  pub struct $name_items {
+    pub $dma_ccr: $dma::$ccr_ty<Sbt>,
+    pub $dma_cmar: $dma::$cmar_ty<Sbt>,
+    pub $dma_cndtr: $dma::$cndtr_ty<Sbt>,
+    pub $dma_cpar: $dma::$cpar_ty<Sbt>,
+    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+              feature = "stm32l4x3", feature = "stm32l4x5",
+              feature = "stm32l4x6"))]
+    pub $dma_cselr_cs: $dma::cselr::$cs_ty<Sbt>,
+    pub $dma_ifcr_cgif: $dma::ifcr::$cgif_ty<Sbt>,
+    pub $dma_ifcr_chtif: $dma::ifcr::$chtif_ty<Sbt>,
+    pub $dma_ifcr_ctcif: $dma::ifcr::$ctcif_ty<Sbt>,
+    pub $dma_ifcr_cteif: $dma::ifcr::$cteif_ty<Sbt>,
+    pub $dma_isr_gif: $dma::isr::$gif_ty<Sbt>,
+    pub $dma_isr_htif: $dma::isr::$htif_ty<Sbt>,
+    pub $dma_isr_tcif: $dma::isr::$tcif_ty<Sbt>,
+    pub $dma_isr_teif: $dma::isr::$teif_ty<Sbt>,
+  }
+
+  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+            feature = "stm32l4x3", feature = "stm32l4x5",
+            feature = "stm32l4x6"))]
+  /// Composes a new `Dma` from pieces.
+  pub macro $name($bindings:ident) {
+    $crate::peripherals::dma::Dma::compose(
+      $crate::peripherals::dma::$name_items {
         $dma_ccr: $bindings.$dma_ccr,
         $dma_cmar: $bindings.$dma_cmar,
         $dma_cndtr: $bindings.$dma_cndtr,
@@ -401,15 +362,17 @@ macro impl_dma_ch(
         $dma_isr_htif: $bindings.$dma_isr.$htif,
         $dma_isr_tcif: $bindings.$dma_isr.$tcif,
         $dma_isr_teif: $bindings.$dma_isr.$teif,
-      }.build()
-    }
+      }
+    )
+  }
 
-    #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                  feature = "stm32l4x3", feature = "stm32l4x5",
-                  feature = "stm32l4x6")))]
-    #[doc = $doc]
-    pub macro $build($bindings:ident) {
-      $crate::peripherals::dma::$mod_name::$builder {
+  #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6")))]
+  /// Composes a new `Dma` from pieces.
+  pub macro $name($bindings:ident) {
+    $crate::peripherals::dma::Dma::compose(
+      $crate::peripherals::dma::$name_items {
         $dma_ccr: $bindings.$dma_ccr,
         $dma_cmar: $bindings.$dma_cmar,
         $dma_cndtr: $bindings.$dma_cndtr,
@@ -422,105 +385,190 @@ macro impl_dma_ch(
         $dma_isr_htif: $bindings.$dma_isr.$htif,
         $dma_isr_tcif: $bindings.$dma_isr.$tcif,
         $dma_isr_teif: $bindings.$dma_isr.$teif,
-      }.build()
+      }
+    )
+  }
+
+  impl imp::Dma for $name {
+    type Items = $name_items;
+    type Ccr = $dma::$ccr_ty<Sbt>;
+    type Cmar = $dma::$cmar_ty<Sbt>;
+    type Cndtr = $dma::$cndtr_ty<Sbt>;
+    type Cpar = $dma::$cpar_ty<Sbt>;
+    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+              feature = "stm32l4x3", feature = "stm32l4x5",
+              feature = "stm32l4x6"))]
+    type CselrCs = $dma::cselr::$cs_ty<Sbt>;
+    type IfcrCgif = $dma::ifcr::$cgif_ty<Sbt>;
+    type IfcrChtif = $dma::ifcr::$chtif_ty<Sbt>;
+    type IfcrCtcif = $dma::ifcr::$ctcif_ty<Sbt>;
+    type IfcrCteif = $dma::ifcr::$cteif_ty<Sbt>;
+    type IsrGif = $dma::isr::$gif_ty<Sbt>;
+    type IsrHtif = $dma::isr::$htif_ty<Sbt>;
+    type IsrTcif = $dma::isr::$tcif_ty<Sbt>;
+    type IsrTeif = $dma::isr::$teif_ty<Sbt>;
+
+    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+              feature = "stm32l4x3", feature = "stm32l4x5",
+              feature = "stm32l4x6"))]
+    #[inline(always)]
+    fn _compose(items: Self::Items) -> Self {
+      Self {
+        ccr: items.$dma_ccr,
+        cmar: items.$dma_cmar,
+        cndtr: items.$dma_cndtr,
+        cpar: items.$dma_cpar,
+        cselr_cs: items.$dma_cselr_cs,
+        ifcr_cgif: items.$dma_ifcr_cgif,
+        ifcr_chtif: items.$dma_ifcr_chtif,
+        ifcr_ctcif: items.$dma_ifcr_ctcif,
+        ifcr_cteif: items.$dma_ifcr_cteif,
+        isr_gif: items.$dma_isr_gif,
+        isr_htif: items.$dma_isr_htif,
+        isr_tcif: items.$dma_isr_tcif,
+        isr_teif: items.$dma_isr_teif,
+      }
     }
 
-    impl imp::Dma for $driver {
-      type Ccr = $dma::$ccr_ty<Srt>;
-      type Cmar = $dma::$cmar_ty<Srt>;
-      type Cndtr = $dma::$cndtr_ty<Srt>;
-      type Cpar = $dma::$cpar_ty<Srt>;
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      type CselrCs = $dma::cselr::$cs_ty<Srt>;
-      type IfcrCgif = $dma::ifcr::$cgif_ty<Srt>;
-      type IfcrChtif = $dma::ifcr::$chtif_ty<Srt>;
-      type IfcrCtcif = $dma::ifcr::$ctcif_ty<Srt>;
-      type IfcrCteif = $dma::ifcr::$cteif_ty<Srt>;
-      type IsrGif = $dma::isr::$gif_ty<Srt>;
-      type IsrHtif = $dma::isr::$htif_ty<Srt>;
-      type IsrTcif = $dma::isr::$tcif_ty<Srt>;
-      type IsrTeif = $dma::isr::$teif_ty<Srt>;
-
-      #[inline(always)]
-      fn _ccr(&self) -> &Self::Ccr {
-        &self.ccr
+    #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                  feature = "stm32l4x3", feature = "stm32l4x5",
+                  feature = "stm32l4x6")))]
+    #[inline(always)]
+    fn _compose(items: Self::Items) -> Self {
+      Self {
+        ccr: items.$dma_ccr,
+        cmar: items.$dma_cmar,
+        cndtr: items.$dma_cndtr,
+        cpar: items.$dma_cpar,
+        ifcr_cgif: items.$dma_ifcr_cgif,
+        ifcr_chtif: items.$dma_ifcr_chtif,
+        ifcr_ctcif: items.$dma_ifcr_ctcif,
+        ifcr_cteif: items.$dma_ifcr_cteif,
+        isr_gif: items.$dma_isr_gif,
+        isr_htif: items.$dma_isr_htif,
+        isr_tcif: items.$dma_isr_tcif,
+        isr_teif: items.$dma_isr_teif,
       }
+    }
 
-      #[inline(always)]
-      fn _cmar(&self) -> &Self::Cmar {
-        &self.cmar
+    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+              feature = "stm32l4x3", feature = "stm32l4x5",
+              feature = "stm32l4x6"))]
+    #[inline(always)]
+    fn _decompose(self) -> Self::Items {
+      Self::Items {
+        $dma_ccr: self.ccr,
+        $dma_cmar: self.cmar,
+        $dma_cndtr: self.cndtr,
+        $dma_cpar: self.cpar,
+        $dma_cselr_cs: self.cselr_cs,
+        $dma_ifcr_cgif: self.ifcr_cgif,
+        $dma_ifcr_chtif: self.ifcr_chtif,
+        $dma_ifcr_ctcif: self.ifcr_ctcif,
+        $dma_ifcr_cteif: self.ifcr_cteif,
+        $dma_isr_gif: self.isr_gif,
+        $dma_isr_htif: self.isr_htif,
+        $dma_isr_tcif: self.isr_tcif,
+        $dma_isr_teif: self.isr_teif,
       }
+    }
 
-      #[inline(always)]
-      fn _cndtr(&self) -> &Self::Cndtr {
-        &self.cndtr
+    #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                  feature = "stm32l4x3", feature = "stm32l4x5",
+                  feature = "stm32l4x6")))]
+    #[inline(always)]
+    fn _decompose(self) -> Self::Items {
+      Self::Items {
+        $dma_ccr: self.ccr,
+        $dma_cmar: self.cmar,
+        $dma_cndtr: self.cndtr,
+        $dma_cpar: self.cpar,
+        $dma_ifcr_cgif: self.ifcr_cgif,
+        $dma_ifcr_chtif: self.ifcr_chtif,
+        $dma_ifcr_ctcif: self.ifcr_ctcif,
+        $dma_ifcr_cteif: self.ifcr_cteif,
+        $dma_isr_gif: self.isr_gif,
+        $dma_isr_htif: self.isr_htif,
+        $dma_isr_tcif: self.isr_tcif,
+        $dma_isr_teif: self.isr_teif,
       }
+    }
 
-      #[inline(always)]
-      fn _cpar(&self) -> &Self::Cpar {
-        &self.cpar
-      }
+    #[inline(always)]
+    fn _ccr(&self) -> &Self::Ccr {
+      &self.ccr
+    }
 
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn _cselr_cs(&self) -> &Self::CselrCs {
-        &self.cselr_cs
-      }
+    #[inline(always)]
+    fn _cmar(&self) -> &Self::Cmar {
+      &self.cmar
+    }
 
-      #[inline(always)]
-      fn _ifcr_cgif(&self) -> &Self::IfcrCgif {
-        &self.ifcr_cgif
-      }
+    #[inline(always)]
+    fn _cndtr(&self) -> &Self::Cndtr {
+      &self.cndtr
+    }
 
-      #[inline(always)]
-      fn _ifcr_chtif(&self) -> &Self::IfcrChtif {
-        &self.ifcr_chtif
-      }
+    #[inline(always)]
+    fn _cpar(&self) -> &Self::Cpar {
+      &self.cpar
+    }
 
-      #[inline(always)]
-      fn _ifcr_ctcif(&self) -> &Self::IfcrCtcif {
-        &self.ifcr_ctcif
-      }
+    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+              feature = "stm32l4x3", feature = "stm32l4x5",
+              feature = "stm32l4x6"))]
+    #[inline(always)]
+    fn _cselr_cs(&self) -> &Self::CselrCs {
+      &self.cselr_cs
+    }
 
-      #[inline(always)]
-      fn _ifcr_cteif(&self) -> &Self::IfcrCteif {
-        &self.ifcr_cteif
-      }
+    #[inline(always)]
+    fn _ifcr_cgif(&self) -> &Self::IfcrCgif {
+      &self.ifcr_cgif
+    }
 
-      #[inline(always)]
-      fn _isr_gif(&self) -> &Self::IsrGif {
-        &self.isr_gif
-      }
+    #[inline(always)]
+    fn _ifcr_chtif(&self) -> &Self::IfcrChtif {
+      &self.ifcr_chtif
+    }
 
-      #[inline(always)]
-      fn _isr_htif(&self) -> &Self::IsrHtif {
-        &self.isr_htif
-      }
+    #[inline(always)]
+    fn _ifcr_ctcif(&self) -> &Self::IfcrCtcif {
+      &self.ifcr_ctcif
+    }
 
-      #[inline(always)]
-      fn _isr_tcif(&self) -> &Self::IsrTcif {
-        &self.isr_tcif
-      }
+    #[inline(always)]
+    fn _ifcr_cteif(&self) -> &Self::IfcrCteif {
+      &self.ifcr_cteif
+    }
 
-      #[inline(always)]
-      fn _isr_teif(&self) -> &Self::IsrTeif {
-        &self.isr_teif
-      }
+    #[inline(always)]
+    fn _isr_gif(&self) -> &Self::IsrGif {
+      &self.isr_gif
+    }
+
+    #[inline(always)]
+    fn _isr_htif(&self) -> &Self::IsrHtif {
+      &self.isr_htif
+    }
+
+    #[inline(always)]
+    fn _isr_tcif(&self) -> &Self::IsrTcif {
+      &self.isr_tcif
+    }
+
+    #[inline(always)]
+    fn _isr_teif(&self) -> &Self::IsrTeif {
+      &self.isr_teif
     }
   }
 }
 
-impl_dma_ch! {
+dma_ch! {
   "DMA1 Channel 1.",
   Dma1Ch1,
-  Driver,
-  Builder,
-  build,
-  dma1_ch1,
+  "DMA1 Channel 1 items.",
+  Dma1Ch1Items,
   Ccr1,
   Cmar1,
   Cndtr1,
@@ -562,13 +610,11 @@ impl_dma_ch! {
   teif1,
 }
 
-impl_dma_ch! {
+dma_ch! {
   "DMA1 Channel 2.",
   Dma1Ch2,
-  Driver,
-  Builder,
-  build,
-  dma1_ch2,
+  "DMA1 Channel 2 items.",
+  Dma1Ch2Items,
   Ccr2,
   Cmar2,
   Cndtr2,
@@ -610,13 +656,11 @@ impl_dma_ch! {
   teif2,
 }
 
-impl_dma_ch! {
+dma_ch! {
   "DMA1 Channel 3.",
   Dma1Ch3,
-  Driver,
-  Builder,
-  build,
-  dma1_ch3,
+  "DMA1 Channel 3 items.",
+  Dma1Ch3Items,
   Ccr3,
   Cmar3,
   Cndtr3,
@@ -658,13 +702,11 @@ impl_dma_ch! {
   teif3,
 }
 
-impl_dma_ch! {
+dma_ch! {
   "DMA1 Channel 4.",
   Dma1Ch4,
-  Driver,
-  Builder,
-  build,
-  dma1_ch4,
+  "DMA1 Channel 4 items.",
+  Dma1Ch4Items,
   Ccr4,
   Cmar4,
   Cndtr4,
@@ -706,13 +748,11 @@ impl_dma_ch! {
   teif4,
 }
 
-impl_dma_ch! {
+dma_ch! {
   "DMA1 Channel 5.",
   Dma1Ch5,
-  Driver,
-  Builder,
-  build,
-  dma1_ch5,
+  "DMA1 Channel 5 items.",
+  Dma1Ch5Items,
   Ccr5,
   Cmar5,
   Cndtr5,
@@ -754,13 +794,11 @@ impl_dma_ch! {
   teif5,
 }
 
-impl_dma_ch! {
+dma_ch! {
   "DMA1 Channel 6.",
   Dma1Ch6,
-  Driver,
-  Builder,
-  build,
-  dma1_ch6,
+  "DMA1 Channel 6 items.",
+  Dma1Ch6Items,
   Ccr6,
   Cmar6,
   Cndtr6,
@@ -802,13 +840,11 @@ impl_dma_ch! {
   teif6,
 }
 
-impl_dma_ch! {
+dma_ch! {
   "DMA1 Channel 7.",
   Dma1Ch7,
-  Driver,
-  Builder,
-  build,
-  dma1_ch7,
+  "DMA1 Channel 7 items.",
+  Dma1Ch7Items,
   Ccr7,
   Cmar7,
   Cndtr7,
@@ -850,13 +886,11 @@ impl_dma_ch! {
   teif7,
 }
 
-impl_dma_ch! {
+dma_ch! {
   "DMA2 Channel 1.",
   Dma2Ch1,
-  Driver,
-  Builder,
-  build,
-  dma2_ch1,
+  "DMA2 Channel 1 items.",
+  Dma2Ch1Items,
   Ccr1,
   Cmar1,
   Cndtr1,
@@ -898,13 +932,11 @@ impl_dma_ch! {
   teif1,
 }
 
-impl_dma_ch! {
+dma_ch! {
   "DMA2 Channel 2.",
   Dma2Ch2,
-  Driver,
-  Builder,
-  build,
-  dma2_ch2,
+  "DMA2 Channel 2 items.",
+  Dma2Ch2Items,
   Ccr2,
   Cmar2,
   Cndtr2,
@@ -946,13 +978,11 @@ impl_dma_ch! {
   teif2,
 }
 
-impl_dma_ch! {
+dma_ch! {
   "DMA2 Channel 3.",
   Dma2Ch3,
-  Driver,
-  Builder,
-  build,
-  dma2_ch3,
+  "DMA2 Channel 3 items.",
+  Dma2Ch3Items,
   Ccr3,
   Cmar3,
   Cndtr3,
@@ -994,13 +1024,11 @@ impl_dma_ch! {
   teif3,
 }
 
-impl_dma_ch! {
+dma_ch! {
   "DMA2 Channel 4.",
   Dma2Ch4,
-  Driver,
-  Builder,
-  build,
-  dma2_ch4,
+  "DMA2 Channel 4 items.",
+  Dma2Ch4Items,
   Ccr4,
   Cmar4,
   Cndtr4,
@@ -1042,13 +1070,11 @@ impl_dma_ch! {
   teif4,
 }
 
-impl_dma_ch! {
+dma_ch! {
   "DMA2 Channel 5.",
   Dma2Ch5,
-  Driver,
-  Builder,
-  build,
-  dma2_ch5,
+  "DMA2 Channel 5 items.",
+  Dma2Ch5Items,
   Ccr5,
   Cmar5,
   Cndtr5,
@@ -1093,13 +1119,11 @@ impl_dma_ch! {
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
-impl_dma_ch! {
+dma_ch! {
   "DMA2 Channel 6.",
   Dma2Ch6,
-  Driver,
-  Builder,
-  build,
-  dma2_ch6,
+  "DMA2 Channel 6 items.",
+  Dma2Ch6Items,
   Ccr6,
   Cmar6,
   Cndtr6,
@@ -1144,13 +1168,11 @@ impl_dma_ch! {
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
-impl_dma_ch! {
+dma_ch! {
   "DMA2 Channel 7.",
   Dma2Ch7,
-  Driver,
-  Builder,
-  build,
-  dma2_ch7,
+  "DMA2 Channel 7 items.",
+  Dma2Ch7Items,
   Ccr7,
   Cmar7,
   Cndtr7,

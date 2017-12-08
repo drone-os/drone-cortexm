@@ -22,12 +22,16 @@ mod device;
 use device::Device;
 use failure::Error;
 use std::fs::File;
-use std::io::Read;
+use std::io::prelude::*;
 
 /// Generate bindings from SVD.
-pub fn svd_generate(input: &mut File, output: &mut File) -> Result<(), Error> {
+pub fn svd_generate(
+  input: &mut File,
+  mappings: &mut File,
+  bindings: &mut File,
+) -> Result<(), Error> {
   let mut xml = String::new();
   input.read_to_string(&mut xml)?;
   let device: Device = serde_xml_rs::deserialize(xml.as_bytes())?;
-  device.generate(output)
+  device.generate(mappings, bindings)
 }

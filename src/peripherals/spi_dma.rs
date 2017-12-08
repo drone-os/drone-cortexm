@@ -1,21 +1,18 @@
-//! SPI through DMA.
+//! SPI with DMA.
 
 use core::mem;
 use drone::thread::RoutineFuture;
-use peripherals::dma::{Dma, dma1_ch2, dma1_ch3, dma1_ch4, dma1_ch5, dma2_ch1,
-                       dma2_ch2};
+use peripherals::dma::{Dma, Dma1Ch2, Dma1Ch3, Dma1Ch4, Dma1Ch5, Dma2Ch1,
+                       Dma2Ch2};
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
-use peripherals::dma::{dma2_ch3, dma2_ch4};
-use peripherals::spi::{Spi, spi1, spi2, spi3};
+use peripherals::dma::{Dma2Ch3, Dma2Ch4};
+use peripherals::spi::{Spi, Spi1, Spi2, Spi3};
 use reg::prelude::*;
 
-/// Generic SPI through DMA.
-pub trait SpiDma
-where
-  Self: Sized,
-{
+/// Generic SPI with duplex DMA.
+pub trait SpiDma: Sized {
   /// SPI.
   type Spi: Spi;
 
@@ -25,15 +22,14 @@ where
   /// DMA receiving channel.
   type DmaRx: Dma;
 
-  /// Creates a new `SpiDma`.
-  fn integrate(
-    spi: Self::Spi,
-    dma_tx: Self::DmaTx,
-    dma_rx: Self::DmaRx,
-  ) -> Self;
+  /// Composes a new `SpiDma` from pieces.
+  fn compose(spi: Self::Spi, dma_tx: Self::DmaTx, dma_rx: Self::DmaRx) -> Self;
 
-  /// Frees underlying resources.
-  fn disintegrate(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx);
+  /// Decomposes the `SpiDma` into pieces.
+  fn decompose(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx);
+
+  /// Initializes DMA to use with SPI.
+  fn dma_init(&self);
 
   /// Returns SPI.
   fn spi(&self) -> &Self::Spi;
@@ -46,39 +42,85 @@ where
 
   /// Returns a future, which resolves on both DMA transmit and receive
   /// complete.
-  fn complete<T>(
+  fn transfer_complete<T: Thread>(
     self,
-    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Drt>>::Val,
-    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Drt>>::Val,
+    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Fbt>>::Val,
+    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Fbt>>::Val,
     dma_tx_thread: &T,
     dma_rx_thread: &T,
-  ) -> SpiDmaComplete<Self>
-  where
-    T: Thread;
+  ) -> SpiDmaTransferComplete<Self>;
+}
+
+/// Generic SPI with transmit-only DMA.
+pub trait SpiDmaTx: Sized {
+  /// SPI.
+  type Spi: Spi;
+
+  /// DMA transmitting channel.
+  type DmaTx: Dma;
+
+  /// Composes a new `SpiDmaTx` from pieces.
+  fn compose(spi: Self::Spi, dma_tx: Self::DmaTx) -> Self;
+
+  /// Decomposes the `SpiDmaTx` into pieces.
+  fn decompose(self) -> (Self::Spi, Self::DmaTx);
+
+  /// Initializes DMA to use with SPI.
+  fn dma_init(&self);
+
+  /// Returns SPI.
+  fn spi(&self) -> &Self::Spi;
+
+  /// Returns DMA transmitting channel.
+  fn dma_tx(&self) -> &Self::DmaTx;
 
   /// Returns a future, which resolves on DMA transmit complete.
-  fn tx_complete<T>(
+  fn transfer_complete<T: Thread>(
     self,
-    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Drt>>::Val,
-    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Drt>>::Val,
+    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Fbt>>::Val,
+    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Fbt>>::Val,
     dma_tx_thread: &T,
-  ) -> SpiDmaTxComplete<Self>
-  where
-    T: Thread;
+  ) -> SpiDmaTxTransferComplete<Self>;
+}
+
+/// Generic SPI with receive-only DMA.
+pub trait SpiDmaRx: Sized {
+  /// SPI.
+  type Spi: Spi;
+
+  /// DMA receiving channel.
+  type DmaRx: Dma;
+
+  /// Composes a new `SpiDmaRx` from pieces.
+  fn compose(spi: Self::Spi, dma_rx: Self::DmaRx) -> Self;
+
+  /// Decomposes the `SpiDmaRx` into pieces.
+  fn decompose(self) -> (Self::Spi, Self::DmaRx);
+
+  /// Initializes DMA to use with SPI.
+  fn dma_init(&self);
+
+  /// Returns SPI.
+  fn spi(&self) -> &Self::Spi;
+
+  /// Returns DMA receiving channel.
+  fn dma_rx(&self) -> &Self::DmaRx;
+
+  /// Returns a future, which resolves on DMA receive complete.
+  fn transfer_complete<T: Thread>(
+    self,
+    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Fbt>>::Val,
+    dma_rx_thread: &T,
+  ) -> SpiDmaRxTransferComplete<Self>;
 }
 
 /// Future created by [`SpiDma::complete`] method.
 ///
 /// [`SpiDma::complete`]: trait.SpiDma.html#method.complete
 #[must_use]
-pub struct SpiDmaComplete<T>(CompleteState<T>)
-where
-  T: SpiDma;
+pub struct SpiDmaTransferComplete<T: SpiDma>(CompleteState<T>);
 
-enum CompleteState<T>
-where
-  T: SpiDma,
-{
+enum CompleteState<T: SpiDma> {
   Tx(
     T::Spi,
     RoutineFuture<T::DmaTx, T::DmaTx>,
@@ -96,38 +138,42 @@ where
 ///
 /// [`SpiDma::tx_complete`]: trait.SpiDma.html#method.tx_complete
 #[must_use]
-pub struct SpiDmaTxComplete<T>(TxCompleteState<T>)
-where
-  T: SpiDma;
+pub struct SpiDmaTxTransferComplete<T: SpiDmaTx>(TxCompleteState<T>);
 
-enum TxCompleteState<T>
-where
-  T: SpiDma,
-{
-  Tx(T::Spi, RoutineFuture<T::DmaTx, T::DmaTx>, T::DmaRx),
+enum TxCompleteState<T: SpiDmaTx> {
+  Tx(T::Spi, RoutineFuture<T::DmaTx, T::DmaTx>),
   Poisoned,
 }
 
-impl<I> SpiDma for I
-where
-  I: imp::SpiDma,
-{
+/// Future created by [`SpiDma::rx_complete`] method.
+///
+/// [`SpiDma::rx_complete`]: trait.SpiDma.html#method.rx_complete
+#[must_use]
+pub struct SpiDmaRxTransferComplete<T: SpiDmaRx>(RxCompleteState<T>);
+
+enum RxCompleteState<T: SpiDmaRx> {
+  Rx(T::Spi, RoutineFuture<T::DmaRx, T::DmaRx>),
+  Poisoned,
+}
+
+impl<I: imp::SpiDma> SpiDma for I {
   type Spi = I::Spi;
   type DmaTx = I::DmaTx;
   type DmaRx = I::DmaRx;
 
   #[inline(always)]
-  fn integrate(
-    spi: Self::Spi,
-    dma_tx: Self::DmaTx,
-    dma_rx: Self::DmaRx,
-  ) -> Self {
-    Self::_integrate(spi, dma_tx, dma_rx)
+  fn compose(spi: Self::Spi, dma_tx: Self::DmaTx, dma_rx: Self::DmaRx) -> Self {
+    Self::_compose(spi, dma_tx, dma_rx)
   }
 
   #[inline(always)]
-  fn disintegrate(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx) {
-    self._disintegrate()
+  fn decompose(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx) {
+    self._decompose()
+  }
+
+  #[inline(always)]
+  fn dma_init(&self) {
+    self._dma_init()
   }
 
   #[inline(always)]
@@ -146,64 +192,114 @@ where
   }
 
   #[inline]
-  fn complete<T>(
+  fn transfer_complete<T: Thread>(
     self,
-    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Drt>>::Val,
-    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Drt>>::Val,
+    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Fbt>>::Val,
+    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Fbt>>::Val,
     dma_tx_thread: &T,
     dma_rx_thread: &T,
-  ) -> SpiDmaComplete<Self>
-  where
-    T: Thread,
-  {
-    let (spi, dma_tx, dma_rx) = self._disintegrate();
+  ) -> SpiDmaTransferComplete<Self> {
+    let (spi, dma_tx, dma_rx) = self._decompose();
     spi.spe_for(cr1, move |spi| {
       spi.txdmaen_for(cr2, move |spi| {
         let dma_tx = dma_tx.transfer_complete(dma_tx_thread);
         let dma_rx = dma_rx.transfer_complete(dma_rx_thread);
-        SpiDmaComplete::new(spi, dma_tx, dma_rx)
+        SpiDmaTransferComplete(CompleteState::Tx(spi, dma_tx, dma_rx))
       })
     })
+  }
+}
+
+impl<I: imp::SpiDmaTx> SpiDmaTx for I {
+  type Spi = I::Spi;
+  type DmaTx = I::DmaTx;
+
+  #[inline(always)]
+  fn compose(spi: Self::Spi, dma_tx: Self::DmaTx) -> Self {
+    Self::_compose(spi, dma_tx)
+  }
+
+  #[inline(always)]
+  fn decompose(self) -> (Self::Spi, Self::DmaTx) {
+    self._decompose()
+  }
+
+  #[inline(always)]
+  fn dma_init(&self) {
+    self._dma_init()
+  }
+
+  #[inline(always)]
+  fn spi(&self) -> &Self::Spi {
+    self._spi()
+  }
+
+  #[inline(always)]
+  fn dma_tx(&self) -> &Self::DmaTx {
+    self._dma_tx()
   }
 
   #[inline]
-  fn tx_complete<T>(
+  fn transfer_complete<T: Thread>(
     self,
-    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Drt>>::Val,
-    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Drt>>::Val,
+    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Fbt>>::Val,
+    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Fbt>>::Val,
     dma_tx_thread: &T,
-  ) -> SpiDmaTxComplete<Self>
-  where
-    T: Thread,
-  {
-    let (spi, dma_tx, dma_rx) = self._disintegrate();
+  ) -> SpiDmaTxTransferComplete<Self> {
+    let (spi, dma_tx) = self._decompose();
     spi.spe_for(cr1, move |spi| {
       spi.txdmaen_for(cr2, move |spi| {
         let dma_tx = dma_tx.transfer_complete(dma_tx_thread);
-        SpiDmaTxComplete::new(spi, dma_tx, dma_rx)
+        SpiDmaTxTransferComplete(TxCompleteState::Tx(spi, dma_tx))
       })
     })
   }
 }
 
-impl<T> SpiDmaComplete<T>
-where
-  T: SpiDma,
-{
+impl<I: imp::SpiDmaRx> SpiDmaRx for I {
+  type Spi = I::Spi;
+  type DmaRx = I::DmaRx;
+
   #[inline(always)]
-  fn new(
-    spi: T::Spi,
-    dma_tx: RoutineFuture<T::DmaTx, T::DmaTx>,
-    dma_rx: RoutineFuture<T::DmaRx, T::DmaRx>,
-  ) -> Self {
-    SpiDmaComplete(CompleteState::Tx(spi, dma_tx, dma_rx))
+  fn compose(spi: Self::Spi, dma_rx: Self::DmaRx) -> Self {
+    Self::_compose(spi, dma_rx)
+  }
+
+  #[inline(always)]
+  fn decompose(self) -> (Self::Spi, Self::DmaRx) {
+    self._decompose()
+  }
+
+  #[inline(always)]
+  fn dma_init(&self) {
+    self._dma_init()
+  }
+
+  #[inline(always)]
+  fn spi(&self) -> &Self::Spi {
+    self._spi()
+  }
+
+  #[inline(always)]
+  fn dma_rx(&self) -> &Self::DmaRx {
+    self._dma_rx()
+  }
+
+  #[inline]
+  fn transfer_complete<T: Thread>(
+    self,
+    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Fbt>>::Val,
+    dma_rx_thread: &T,
+  ) -> SpiDmaRxTransferComplete<Self> {
+    let (spi, dma_rx) = self._decompose();
+    spi.spe_for(cr1, move |spi| {
+      let dma_rx = dma_rx.transfer_complete(dma_rx_thread);
+      SpiDmaRxTransferComplete(RxCompleteState::Rx(spi, dma_rx))
+    })
   }
 }
 
-impl<T> Future for SpiDmaComplete<T>
-where
-  T: SpiDma,
-{
+impl<T: SpiDma> Future for SpiDmaTransferComplete<T> {
   type Item = T;
   type Error = T;
 
@@ -239,11 +335,11 @@ where
             Ok(Async::NotReady)
           }
           Ok(Async::Ready(dma_rx)) => match dma_tx {
-            Ok(dma_tx) => Ok(Async::Ready(T::integrate(spi, dma_tx, dma_rx))),
-            Err(dma_tx) => Err(T::integrate(spi, dma_tx, dma_rx)),
+            Ok(dma_tx) => Ok(Async::Ready(T::compose(spi, dma_tx, dma_rx))),
+            Err(dma_tx) => Err(T::compose(spi, dma_tx, dma_rx)),
           },
           Err(dma_rx) => match dma_tx {
-            Ok(dma_tx) | Err(dma_tx) => Err(T::integrate(spi, dma_tx, dma_rx)),
+            Ok(dma_tx) | Err(dma_tx) => Err(T::compose(spi, dma_tx, dma_rx)),
           },
         }
       }
@@ -251,11 +347,11 @@ where
         let dma_rx = unsafe { advance.dma_rx };
         match dma_rx {
           Ok(dma_rx) => match dma_tx {
-            Ok(dma_tx) => Ok(Async::Ready(T::integrate(spi, dma_tx, dma_rx))),
-            Err(dma_tx) => Err(T::integrate(spi, dma_tx, dma_rx)),
+            Ok(dma_tx) => Ok(Async::Ready(T::compose(spi, dma_tx, dma_rx))),
+            Err(dma_tx) => Err(T::compose(spi, dma_tx, dma_rx)),
           },
           Err(dma_rx) => match dma_tx {
-            Ok(dma_tx) | Err(dma_tx) => Err(T::integrate(spi, dma_tx, dma_rx)),
+            Ok(dma_tx) | Err(dma_tx) => Err(T::compose(spi, dma_tx, dma_rx)),
           },
         }
       }
@@ -264,30 +360,13 @@ where
   }
 }
 
-impl<T> SpiDmaTxComplete<T>
-where
-  T: SpiDma,
-{
-  #[inline(always)]
-  fn new(
-    spi: T::Spi,
-    dma_tx: RoutineFuture<T::DmaTx, T::DmaTx>,
-    dma_rx: T::DmaRx,
-  ) -> Self {
-    SpiDmaTxComplete(TxCompleteState::Tx(spi, dma_tx, dma_rx))
-  }
-}
-
-impl<T> Future for SpiDmaTxComplete<T>
-where
-  T: SpiDma,
-{
+impl<T: SpiDmaTx> Future for SpiDmaTxTransferComplete<T> {
   type Item = T;
   type Error = T;
 
   fn poll(&mut self) -> Poll<T, T> {
     let dma_tx = match self.0 {
-      TxCompleteState::Tx(_, ref mut dma_tx, _) => match dma_tx.poll() {
+      TxCompleteState::Tx(_, ref mut dma_tx) => match dma_tx.poll() {
         Ok(Async::NotReady) => return Ok(Async::NotReady),
         Ok(Async::Ready(dma_tx)) => Ok(dma_tx),
         Err(dma_tx) => Err(dma_tx),
@@ -295,11 +374,34 @@ where
       TxCompleteState::Poisoned => panic!("cannot poll a future twice"),
     };
     match mem::replace(&mut self.0, TxCompleteState::Poisoned) {
-      TxCompleteState::Tx(spi, _, dma_rx) => match dma_tx {
-        Ok(dma_tx) => Ok(Async::Ready(T::integrate(spi, dma_tx, dma_rx))),
-        Err(dma_tx) => Err(T::integrate(spi, dma_tx, dma_rx)),
+      TxCompleteState::Tx(spi, _) => match dma_tx {
+        Ok(dma_tx) => Ok(Async::Ready(T::compose(spi, dma_tx))),
+        Err(dma_tx) => Err(T::compose(spi, dma_tx)),
       },
       TxCompleteState::Poisoned => unsafe { mem::unreachable() },
+    }
+  }
+}
+
+impl<T: SpiDmaRx> Future for SpiDmaRxTransferComplete<T> {
+  type Item = T;
+  type Error = T;
+
+  fn poll(&mut self) -> Poll<T, T> {
+    let dma_rx = match self.0 {
+      RxCompleteState::Rx(_, ref mut dma_rx) => match dma_rx.poll() {
+        Ok(Async::NotReady) => return Ok(Async::NotReady),
+        Ok(Async::Ready(dma_rx)) => Ok(dma_rx),
+        Err(dma_rx) => Err(dma_rx),
+      },
+      RxCompleteState::Poisoned => panic!("cannot poll a future twice"),
+    };
+    match mem::replace(&mut self.0, RxCompleteState::Poisoned) {
+      RxCompleteState::Rx(spi, _) => match dma_rx {
+        Ok(dma_rx) => Ok(Async::Ready(T::compose(spi, dma_rx))),
+        Err(dma_rx) => Err(T::compose(spi, dma_rx)),
+      },
+      RxCompleteState::Poisoned => unsafe { mem::unreachable() },
     }
   }
 }
@@ -309,131 +411,302 @@ mod imp {
   use peripherals::dma::Dma;
   use peripherals::spi::Spi;
 
-  pub trait SpiDma
-  where
-    Self: Sized,
-  {
+  pub trait SpiDma: Sized {
     type Spi: Spi;
     type DmaTx: Dma;
     type DmaRx: Dma;
 
-    fn _integrate(
+    fn _compose(
       spi: Self::Spi,
       dma_tx: Self::DmaTx,
       dma_rx: Self::DmaRx,
     ) -> Self;
 
-    fn _disintegrate(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx);
+    fn _decompose(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx);
+
+    fn _dma_init(&self);
 
     fn _spi(&self) -> &Self::Spi;
     fn _dma_tx(&self) -> &Self::DmaTx;
     fn _dma_rx(&self) -> &Self::DmaRx;
   }
+
+  pub trait SpiDmaTx: Sized {
+    type Spi: Spi;
+    type DmaTx: Dma;
+
+    fn _compose(spi: Self::Spi, dma_tx: Self::DmaTx) -> Self;
+
+    fn _decompose(self) -> (Self::Spi, Self::DmaTx);
+
+    fn _dma_init(&self);
+
+    fn _spi(&self) -> &Self::Spi;
+    fn _dma_tx(&self) -> &Self::DmaTx;
+  }
+
+  pub trait SpiDmaRx: Sized {
+    type Spi: Spi;
+    type DmaRx: Dma;
+
+    fn _compose(spi: Self::Spi, dma_rx: Self::DmaRx) -> Self;
+
+    fn _decompose(self) -> (Self::Spi, Self::DmaRx);
+
+    fn _dma_init(&self);
+
+    fn _spi(&self) -> &Self::Spi;
+    fn _dma_rx(&self) -> &Self::DmaRx;
+  }
 }
 
 #[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
-macro impl_spi_dma(
+macro spi_dma(
   $doc:expr,
   $name:ident,
-  $driver:ident,
-  $mod_name:ident,
+  $doc_tx:expr,
+  $name_tx:ident,
+  $doc_rx:expr,
+  $name_rx:ident,
   $spi:ident,
   $dma_tx:ident,
   $dma_rx:ident,
+  $dma_tx_cs:expr,
+  $dma_rx_cs:expr,
 ) {
-  pub use self::$mod_name::$driver as $name;
-
   #[doc = $doc]
-  pub mod $mod_name {
-    use super::imp;
+  pub struct $name {
+    spi: $spi,
+    dma_tx: $dma_tx,
+    dma_rx: $dma_rx,
+  }
 
-    #[doc = $doc]
-    pub struct $driver {
-      spi: $spi::Driver,
-      dma_tx: $dma_tx::Driver,
-      dma_rx: $dma_rx::Driver,
+  #[doc = $doc_tx]
+  pub struct $name_tx {
+    spi: $spi,
+    dma_tx: $dma_tx,
+  }
+
+  #[doc = $doc_rx]
+  pub struct $name_rx {
+    spi: $spi,
+    dma_rx: $dma_rx,
+  }
+
+  impl $name {
+    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+              feature = "stm32l4x3", feature = "stm32l4x5",
+              feature = "stm32l4x6"))]
+    #[inline(always)]
+    fn select_channel(&self) {
+      self.dma_tx.cselr_cs().modify(|r| {
+        self.dma_tx.cselr_cs().write(r, $dma_tx_cs);
+        self.dma_rx.cselr_cs().write(r, $dma_rx_cs);
+      });
     }
 
-    impl imp::SpiDma for $driver {
-      type Spi = $spi::Driver;
-      type DmaTx = $dma_tx::Driver;
-      type DmaRx = $dma_rx::Driver;
+    #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                  feature = "stm32l4x3", feature = "stm32l4x5",
+                  feature = "stm32l4x6")))]
+    #[inline(always)]
+    fn select_channel(&self) {}
+  }
 
-      #[inline(always)]
-      fn _integrate(
-        spi: Self::Spi,
-        dma_tx: Self::DmaTx,
-        dma_rx: Self::DmaRx,
-      ) -> Self {
-        Self {
-          spi,
-          dma_tx,
-          dma_rx,
-        }
-      }
+  impl $name_tx {
+    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+              feature = "stm32l4x3", feature = "stm32l4x5",
+              feature = "stm32l4x6"))]
+    #[inline(always)]
+    fn select_channel(&self) {
+      self.dma_tx.cselr_cs().write_bits($dma_tx_cs);
+    }
 
-      #[inline(always)]
-      fn _disintegrate(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx) {
-        (self.spi, self.dma_tx, self.dma_rx)
-      }
+    #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                  feature = "stm32l4x3", feature = "stm32l4x5",
+                  feature = "stm32l4x6")))]
+    #[inline(always)]
+    fn select_channel(&self) {}
+  }
 
-      #[inline(always)]
-      fn _spi(&self) -> &Self::Spi {
-        &self.spi
-      }
+  impl $name_rx {
+    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+              feature = "stm32l4x3", feature = "stm32l4x5",
+              feature = "stm32l4x6"))]
+    #[inline(always)]
+    fn select_channel(&self) {
+      self.dma_rx.cselr_cs().write_bits($dma_rx_cs);
+    }
 
-      #[inline(always)]
-      fn _dma_tx(&self) -> &Self::DmaTx {
-        &self.dma_tx
-      }
+    #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                  feature = "stm32l4x3", feature = "stm32l4x5",
+                  feature = "stm32l4x6")))]
+    #[inline(always)]
+    fn select_channel(&self) {}
+  }
 
-      #[inline(always)]
-      fn _dma_rx(&self) -> &Self::DmaRx {
-        &self.dma_rx
-      }
+  impl imp::SpiDma for $name {
+    type Spi = $spi;
+    type DmaTx = $dma_tx;
+    type DmaRx = $dma_rx;
+
+    #[inline(always)]
+    fn _compose(
+      spi: Self::Spi,
+      dma_tx: Self::DmaTx,
+      dma_rx: Self::DmaRx,
+    ) -> Self {
+      Self { spi, dma_tx, dma_rx }
+    }
+
+    #[inline(always)]
+    fn _decompose(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx) {
+      (self.spi, self.dma_tx, self.dma_rx)
+    }
+
+    #[inline(always)]
+    fn _dma_init(&self) {
+      let dr = self.spi.dr();
+      self.dma_rx.cpar().reset(|r| r.write_pa(dr.to_ptr() as u32));
+      self.dma_tx.cpar().reset(|r| r.write_pa(dr.to_mut_ptr() as u32));
+      self.select_channel();
+    }
+
+    #[inline(always)]
+    fn _spi(&self) -> &Self::Spi {
+      &self.spi
+    }
+
+    #[inline(always)]
+    fn _dma_tx(&self) -> &Self::DmaTx {
+      &self.dma_tx
+    }
+
+    #[inline(always)]
+    fn _dma_rx(&self) -> &Self::DmaRx {
+      &self.dma_rx
+    }
+  }
+
+  impl imp::SpiDmaTx for $name_tx {
+    type Spi = $spi;
+    type DmaTx = $dma_tx;
+
+    #[inline(always)]
+    fn _compose(spi: Self::Spi, dma_tx: Self::DmaTx) -> Self {
+      Self { spi, dma_tx }
+    }
+
+    #[inline(always)]
+    fn _decompose(self) -> (Self::Spi, Self::DmaTx) {
+      (self.spi, self.dma_tx)
+    }
+
+    #[inline(always)]
+    fn _dma_init(&self) {
+      let dr = self.spi.dr();
+      self.dma_tx.cpar().reset(|r| r.write_pa(dr.to_mut_ptr() as u32));
+      self.select_channel();
+    }
+
+    #[inline(always)]
+    fn _spi(&self) -> &Self::Spi {
+      &self.spi
+    }
+
+    #[inline(always)]
+    fn _dma_tx(&self) -> &Self::DmaTx {
+      &self.dma_tx
+    }
+  }
+
+  impl imp::SpiDmaRx for $name_rx {
+    type Spi = $spi;
+    type DmaRx = $dma_rx;
+
+    #[inline(always)]
+    fn _compose(spi: Self::Spi, dma_rx: Self::DmaRx) -> Self {
+      Self { spi, dma_rx }
+    }
+
+    #[inline(always)]
+    fn _decompose(self) -> (Self::Spi, Self::DmaRx) {
+      (self.spi, self.dma_rx)
+    }
+
+    #[inline(always)]
+    fn _dma_init(&self) {
+      let dr = self.spi.dr();
+      self.dma_rx.cpar().reset(|r| r.write_pa(dr.to_ptr() as u32));
+      self.select_channel();
+    }
+
+    #[inline(always)]
+    fn _spi(&self) -> &Self::Spi {
+      &self.spi
+    }
+
+    #[inline(always)]
+    fn _dma_rx(&self) -> &Self::DmaRx {
+      &self.dma_rx
     }
   }
 }
 
-impl_spi_dma! {
-  "SPI1 over DMA1",
+spi_dma! {
+  "SPI1 with duplex DMA1",
   Spi1Dma1,
-  Driver,
-  spi1_dma1,
-  spi1,
-  dma1_ch3,
-  dma1_ch2,
+  "SPI1 with transmit-only DMA1",
+  Spi1Dma1Tx,
+  "SPI1 with receive-only DMA1",
+  Spi1Dma1Rx,
+  Spi1,
+  Dma1Ch3,
+  Dma1Ch2,
+  0b0001,
+  0b0001,
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
-impl_spi_dma! {
-  "SPI1 over DMA2",
+spi_dma! {
+  "SPI1 with duplex DMA2",
   Spi1Dma2,
-  Driver,
-  spi1_dma2,
-  spi1,
-  dma2_ch4,
-  dma2_ch3,
+  "SPI1 with transmit-only DMA2",
+  Spi1Dma2Tx,
+  "SPI1 with receive-only DMA2",
+  Spi1Dma2Rx,
+  Spi1,
+  Dma2Ch4,
+  Dma2Ch3,
+  0b0100,
+  0b0100,
 }
 
-impl_spi_dma! {
-  "SPI2 over DMA1",
+spi_dma! {
+  "SPI2 with duplex DMA1",
   Spi2Dma1,
-  Driver,
-  spi2_dma1,
-  spi2,
-  dma1_ch5,
-  dma1_ch4,
+  "SPI2 with transmit-only DMA1",
+  Spi2Dma1Tx,
+  "SPI2 with receive-only DMA1",
+  Spi2Dma1Rx,
+  Spi2,
+  Dma1Ch5,
+  Dma1Ch4,
+  0b0001,
+  0b0001,
 }
 
-impl_spi_dma! {
-  "SPI3 over DMA2",
+spi_dma! {
+  "SPI3 with duplex DMA2",
   Spi3Dma2,
-  Driver,
-  spi3_dma2,
-  spi3,
-  dma2_ch2,
-  dma2_ch1,
+  "SPI3 with transmit-only DMA2",
+  Spi3Dma2Tx,
+  "SPI3 with receive-only DMA2",
+  Spi3Dma2Rx,
+  Spi3,
+  Dma2Ch2,
+  Dma2Ch1,
+  0b0011,
+  0b0011,
 }

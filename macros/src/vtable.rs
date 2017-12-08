@@ -113,7 +113,7 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
     .for_each(|(number, name)| {
       irq_name[number] = name.clone();
     });
-  let thread_handler = thread_name
+  let thread_handler = &thread_name
     .iter()
     .map(|name| Ident::new(format!("__{}_handler", name)))
     .collect::<Vec<_>>();
@@ -125,9 +125,8 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
   let mut thread_id_with_reset = thread_id.clone();
   thread_id_with_reset.insert(0, Lit::Int(0, IntTy::Unsuffixed));
   let thread_id2 = thread_id.clone();
-  let thread_name2 = thread_name.clone();
-  let thread_handler2 = thread_handler.clone();
-  let irq_name2 = irq_name.clone();
+  let thread_name = &thread_name;
+  let irq_name = &irq_name;
 
   let thread_number = thread_number
     .into_iter()
@@ -191,7 +190,7 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
             pend_sv: None,
             sys_tick: None,
             #(
-              #irq_name2: None,
+              #irq_name: None,
             )*
           }
         }
@@ -207,14 +206,14 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
 
     #(
       #[doc(hidden)]
-      pub unsafe extern "C" fn #thread_handler2() {
+      pub unsafe extern "C" fn #thread_handler() {
         const THREAD_ID: usize = #thread_id;
         THREADS.get_unchecked_mut(THREAD_ID).resume(THREAD_ID);
       }
 
       #(#thread_attributes)*
       #[inline(always)]
-      pub fn #thread_name2() -> &'static ThreadLocal {
+      pub fn #thread_name() -> &'static ThreadLocal {
         unsafe { ThreadLocal::get_unchecked(#thread_id2) }
       }
 

@@ -8,11 +8,7 @@ pub const BIT_BAND_BASE: usize = 0x4200_0000;
 pub const BIT_BAND_WIDTH: usize = 5;
 
 /// Register that falls into peripheral bit-band region.
-pub trait RegBitBand<T>
-where
-  Self: Reg<T>,
-  T: RegTag,
-{
+pub trait RegBitBand<T: RegTag>: Reg<T> {
   /// Calculates bit-band address.
   ///
   /// # Safety
@@ -29,11 +25,10 @@ where
 }
 
 /// Register field that can read bits through peripheral bit-band region.
-pub trait RRegFieldBitBand<T>
+pub trait RRegFieldBitBand<T: RegTag>
 where
   Self: RegFieldBit<T>,
   Self::Reg: RegBitBand<T> + RReg<T>,
-  T: RegTag,
 {
   /// Reads the state of the bit through peripheral bit-band region.
   fn read_bit_band(&self) -> bool;
@@ -43,11 +38,10 @@ where
 }
 
 /// Register field that can write bits through peripheral bit-band region.
-pub trait WRegFieldBitBand<T>
+pub trait WRegFieldBitBand<T: RegTag>
 where
   Self: RegFieldBit<T>,
   Self::Reg: RegBitBand<T> + WReg<T>,
-  T: RegTag,
 {
   /// Sets the bit through peripheral bit-band region.
   fn set_bit_band(&self);
@@ -102,9 +96,9 @@ where
 mod tests {
   use self::test_block::*;
   use super::*;
-  use drone::reg;
+  use drone::reg::mappings;
 
-  reg! {
+  mappings! {
     TEST_BLOCK
 
     #[allow(dead_code)]
@@ -120,8 +114,8 @@ mod tests {
     }
   }
 
-  type LocalLowReg = LowReg<Urt>;
-  type LocalHighReg = HighReg<Urt>;
+  type LocalLowReg = LowReg<Ubt>;
+  type LocalHighReg = HighReg<Ubt>;
 
   #[test]
   fn reg_bit_band_addr() {
