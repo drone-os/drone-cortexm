@@ -156,149 +156,6 @@ enum RxCompleteState<T: SpiDmaRx> {
   Poisoned,
 }
 
-impl<I: imp::SpiDma> SpiDma for I {
-  type Spi = I::Spi;
-  type DmaTx = I::DmaTx;
-  type DmaRx = I::DmaRx;
-
-  #[inline(always)]
-  fn compose(spi: Self::Spi, dma_tx: Self::DmaTx, dma_rx: Self::DmaRx) -> Self {
-    Self::_compose(spi, dma_tx, dma_rx)
-  }
-
-  #[inline(always)]
-  fn decompose(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx) {
-    self._decompose()
-  }
-
-  #[inline(always)]
-  fn dma_init(&self) {
-    self._dma_init()
-  }
-
-  #[inline(always)]
-  fn spi(&self) -> &Self::Spi {
-    self._spi()
-  }
-
-  #[inline(always)]
-  fn dma_tx(&self) -> &Self::DmaTx {
-    self._dma_tx()
-  }
-
-  #[inline(always)]
-  fn dma_rx(&self) -> &Self::DmaRx {
-    self._dma_rx()
-  }
-
-  #[inline]
-  fn transfer_complete<T: Thread>(
-    self,
-    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Fbt>>::Val,
-    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Fbt>>::Val,
-    dma_tx_thread: &T,
-    dma_rx_thread: &T,
-  ) -> SpiDmaTransferComplete<Self> {
-    let (spi, dma_tx, dma_rx) = self._decompose();
-    spi.spe_for(cr1, move |spi| {
-      spi.txdmaen_for(cr2, move |spi| {
-        let dma_tx = dma_tx.transfer_complete(dma_tx_thread);
-        let dma_rx = dma_rx.transfer_complete(dma_rx_thread);
-        SpiDmaTransferComplete(CompleteState::Tx(spi, dma_tx, dma_rx))
-      })
-    })
-  }
-}
-
-impl<I: imp::SpiDmaTx> SpiDmaTx for I {
-  type Spi = I::Spi;
-  type DmaTx = I::DmaTx;
-
-  #[inline(always)]
-  fn compose(spi: Self::Spi, dma_tx: Self::DmaTx) -> Self {
-    Self::_compose(spi, dma_tx)
-  }
-
-  #[inline(always)]
-  fn decompose(self) -> (Self::Spi, Self::DmaTx) {
-    self._decompose()
-  }
-
-  #[inline(always)]
-  fn dma_init(&self) {
-    self._dma_init()
-  }
-
-  #[inline(always)]
-  fn spi(&self) -> &Self::Spi {
-    self._spi()
-  }
-
-  #[inline(always)]
-  fn dma_tx(&self) -> &Self::DmaTx {
-    self._dma_tx()
-  }
-
-  #[inline]
-  fn transfer_complete<T: Thread>(
-    self,
-    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Fbt>>::Val,
-    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Fbt>>::Val,
-    dma_tx_thread: &T,
-  ) -> SpiDmaTxTransferComplete<Self> {
-    let (spi, dma_tx) = self._decompose();
-    spi.spe_for(cr1, move |spi| {
-      spi.txdmaen_for(cr2, move |spi| {
-        let dma_tx = dma_tx.transfer_complete(dma_tx_thread);
-        SpiDmaTxTransferComplete(TxCompleteState::Tx(spi, dma_tx))
-      })
-    })
-  }
-}
-
-impl<I: imp::SpiDmaRx> SpiDmaRx for I {
-  type Spi = I::Spi;
-  type DmaRx = I::DmaRx;
-
-  #[inline(always)]
-  fn compose(spi: Self::Spi, dma_rx: Self::DmaRx) -> Self {
-    Self::_compose(spi, dma_rx)
-  }
-
-  #[inline(always)]
-  fn decompose(self) -> (Self::Spi, Self::DmaRx) {
-    self._decompose()
-  }
-
-  #[inline(always)]
-  fn dma_init(&self) {
-    self._dma_init()
-  }
-
-  #[inline(always)]
-  fn spi(&self) -> &Self::Spi {
-    self._spi()
-  }
-
-  #[inline(always)]
-  fn dma_rx(&self) -> &Self::DmaRx {
-    self._dma_rx()
-  }
-
-  #[inline]
-  fn transfer_complete<T: Thread>(
-    self,
-    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Fbt>>::Val,
-    dma_rx_thread: &T,
-  ) -> SpiDmaRxTransferComplete<Self> {
-    let (spi, dma_rx) = self._decompose();
-    spi.spe_for(cr1, move |spi| {
-      let dma_rx = dma_rx.transfer_complete(dma_rx_thread);
-      SpiDmaRxTransferComplete(RxCompleteState::Rx(spi, dma_rx))
-    })
-  }
-}
-
 impl<T: SpiDma> Future for SpiDmaTransferComplete<T> {
   type Item = T;
   type Error = T;
@@ -406,60 +263,6 @@ impl<T: SpiDmaRx> Future for SpiDmaRxTransferComplete<T> {
   }
 }
 
-#[doc(hidden)]
-mod imp {
-  use peripherals::dma::Dma;
-  use peripherals::spi::Spi;
-
-  pub trait SpiDma: Sized {
-    type Spi: Spi;
-    type DmaTx: Dma;
-    type DmaRx: Dma;
-
-    fn _compose(
-      spi: Self::Spi,
-      dma_tx: Self::DmaTx,
-      dma_rx: Self::DmaRx,
-    ) -> Self;
-
-    fn _decompose(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx);
-
-    fn _dma_init(&self);
-
-    fn _spi(&self) -> &Self::Spi;
-    fn _dma_tx(&self) -> &Self::DmaTx;
-    fn _dma_rx(&self) -> &Self::DmaRx;
-  }
-
-  pub trait SpiDmaTx: Sized {
-    type Spi: Spi;
-    type DmaTx: Dma;
-
-    fn _compose(spi: Self::Spi, dma_tx: Self::DmaTx) -> Self;
-
-    fn _decompose(self) -> (Self::Spi, Self::DmaTx);
-
-    fn _dma_init(&self);
-
-    fn _spi(&self) -> &Self::Spi;
-    fn _dma_tx(&self) -> &Self::DmaTx;
-  }
-
-  pub trait SpiDmaRx: Sized {
-    type Spi: Spi;
-    type DmaRx: Dma;
-
-    fn _compose(spi: Self::Spi, dma_rx: Self::DmaRx) -> Self;
-
-    fn _decompose(self) -> (Self::Spi, Self::DmaRx);
-
-    fn _dma_init(&self);
-
-    fn _spi(&self) -> &Self::Spi;
-    fn _dma_rx(&self) -> &Self::DmaRx;
-  }
-}
-
 #[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
 macro spi_dma(
   $doc:expr,
@@ -498,7 +301,7 @@ macro spi_dma(
               feature = "stm32l4x3", feature = "stm32l4x5",
               feature = "stm32l4x6"))]
     #[inline(always)]
-    fn select_channel(&self) {
+    fn select_channels(&self) {
       self.dma_tx.cselr_cs().modify(|r| {
         self.dma_tx.cselr_cs().write(r, $dma_tx_cs);
         self.dma_rx.cselr_cs().write(r, $dma_rx_cs);
@@ -509,7 +312,7 @@ macro spi_dma(
                   feature = "stm32l4x3", feature = "stm32l4x5",
                   feature = "stm32l4x6")))]
     #[inline(always)]
-    fn select_channel(&self) {}
+    fn select_channels(&self) {}
   }
 
   impl $name_tx {
@@ -544,13 +347,13 @@ macro spi_dma(
     fn select_channel(&self) {}
   }
 
-  impl imp::SpiDma for $name {
+  impl SpiDma for $name {
     type Spi = $spi;
     type DmaTx = $dma_tx;
     type DmaRx = $dma_rx;
 
     #[inline(always)]
-    fn _compose(
+    fn compose(
       spi: Self::Spi,
       dma_tx: Self::DmaTx,
       dma_rx: Self::DmaRx,
@@ -559,95 +362,142 @@ macro spi_dma(
     }
 
     #[inline(always)]
-    fn _decompose(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx) {
+    fn decompose(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx) {
       (self.spi, self.dma_tx, self.dma_rx)
     }
 
     #[inline(always)]
-    fn _dma_init(&self) {
+    fn dma_init(&self) {
       let dr = self.spi.dr();
       self.dma_rx.cpar().reset(|r| r.write_pa(dr.to_ptr() as u32));
       self.dma_tx.cpar().reset(|r| r.write_pa(dr.to_mut_ptr() as u32));
-      self.select_channel();
+      self.select_channels();
     }
 
     #[inline(always)]
-    fn _spi(&self) -> &Self::Spi {
+    fn spi(&self) -> &Self::Spi {
       &self.spi
     }
 
     #[inline(always)]
-    fn _dma_tx(&self) -> &Self::DmaTx {
+    fn dma_tx(&self) -> &Self::DmaTx {
       &self.dma_tx
     }
 
     #[inline(always)]
-    fn _dma_rx(&self) -> &Self::DmaRx {
+    fn dma_rx(&self) -> &Self::DmaRx {
       &self.dma_rx
+    }
+
+    #[inline]
+    fn transfer_complete<T: Thread>(
+      self,
+      cr1: <<Self::Spi as Spi>::Cr1 as Reg<Fbt>>::Val,
+      cr2: <<Self::Spi as Spi>::Cr2 as Reg<Fbt>>::Val,
+      dma_tx_thread: &T,
+      dma_rx_thread: &T,
+    ) -> SpiDmaTransferComplete<Self> {
+      let Self { spi, dma_tx, dma_rx } = self;
+      spi.spe_for(cr1, move |spi| {
+        spi.txdmaen_for(cr2, move |spi| {
+          let dma_tx = dma_tx.transfer_complete(dma_tx_thread);
+          let dma_rx = dma_rx.transfer_complete(dma_rx_thread);
+          SpiDmaTransferComplete(CompleteState::Tx(spi, dma_tx, dma_rx))
+        })
+      })
     }
   }
 
-  impl imp::SpiDmaTx for $name_tx {
+  impl SpiDmaTx for $name_tx {
     type Spi = $spi;
     type DmaTx = $dma_tx;
 
     #[inline(always)]
-    fn _compose(spi: Self::Spi, dma_tx: Self::DmaTx) -> Self {
+    fn compose(spi: Self::Spi, dma_tx: Self::DmaTx) -> Self {
       Self { spi, dma_tx }
     }
 
     #[inline(always)]
-    fn _decompose(self) -> (Self::Spi, Self::DmaTx) {
+    fn decompose(self) -> (Self::Spi, Self::DmaTx) {
       (self.spi, self.dma_tx)
     }
 
     #[inline(always)]
-    fn _dma_init(&self) {
+    fn dma_init(&self) {
       let dr = self.spi.dr();
       self.dma_tx.cpar().reset(|r| r.write_pa(dr.to_mut_ptr() as u32));
       self.select_channel();
     }
 
     #[inline(always)]
-    fn _spi(&self) -> &Self::Spi {
+    fn spi(&self) -> &Self::Spi {
       &self.spi
     }
 
     #[inline(always)]
-    fn _dma_tx(&self) -> &Self::DmaTx {
+    fn dma_tx(&self) -> &Self::DmaTx {
       &self.dma_tx
+    }
+
+    #[inline]
+    fn transfer_complete<T: Thread>(
+      self,
+      cr1: <<Self::Spi as Spi>::Cr1 as Reg<Fbt>>::Val,
+      cr2: <<Self::Spi as Spi>::Cr2 as Reg<Fbt>>::Val,
+      dma_tx_thread: &T,
+    ) -> SpiDmaTxTransferComplete<Self> {
+      let Self { spi, dma_tx } = self;
+      spi.spe_for(cr1, move |spi| {
+        spi.txdmaen_for(cr2, move |spi| {
+          let dma_tx = dma_tx.transfer_complete(dma_tx_thread);
+          SpiDmaTxTransferComplete(TxCompleteState::Tx(spi, dma_tx))
+        })
+      })
     }
   }
 
-  impl imp::SpiDmaRx for $name_rx {
+  impl SpiDmaRx for $name_rx {
     type Spi = $spi;
     type DmaRx = $dma_rx;
 
     #[inline(always)]
-    fn _compose(spi: Self::Spi, dma_rx: Self::DmaRx) -> Self {
+    fn compose(spi: Self::Spi, dma_rx: Self::DmaRx) -> Self {
       Self { spi, dma_rx }
     }
 
     #[inline(always)]
-    fn _decompose(self) -> (Self::Spi, Self::DmaRx) {
+    fn decompose(self) -> (Self::Spi, Self::DmaRx) {
       (self.spi, self.dma_rx)
     }
 
     #[inline(always)]
-    fn _dma_init(&self) {
+    fn dma_init(&self) {
       let dr = self.spi.dr();
       self.dma_rx.cpar().reset(|r| r.write_pa(dr.to_ptr() as u32));
       self.select_channel();
     }
 
     #[inline(always)]
-    fn _spi(&self) -> &Self::Spi {
+    fn spi(&self) -> &Self::Spi {
       &self.spi
     }
 
     #[inline(always)]
-    fn _dma_rx(&self) -> &Self::DmaRx {
+    fn dma_rx(&self) -> &Self::DmaRx {
       &self.dma_rx
+    }
+
+    #[inline]
+    fn transfer_complete<T: Thread>(
+      self,
+      cr1: <<Self::Spi as Spi>::Cr1 as Reg<Fbt>>::Val,
+      dma_rx_thread: &T,
+    ) -> SpiDmaRxTransferComplete<Self> {
+      let Self { spi, dma_rx } = self;
+      spi.spe_for(cr1, move |spi| {
+        let dma_rx = dma_rx.transfer_complete(dma_rx_thread);
+        SpiDmaRxTransferComplete(RxCompleteState::Rx(spi, dma_rx))
+      })
     }
   }
 }

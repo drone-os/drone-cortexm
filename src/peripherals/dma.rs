@@ -60,201 +60,6 @@ pub trait Dma: Sized {
   fn half_transfer<T: Thread>(self, thread: &T) -> RoutineFuture<Self, Self>;
 }
 
-impl<I> Dma for I
-where
-  I: imp::Dma,
-  I: Send + 'static,
-  <I::IfcrCgif as RegField<Sbt>>::Reg: WReg<Sbt> + RegBitBand<Sbt>,
-  <I::IsrGif as RegField<Sbt>>::Reg: RReg<Sbt> + RegBitBand<Sbt>,
-{
-  type Items = I::Items;
-  type Ccr = I::Ccr;
-  type Cmar = I::Cmar;
-  type Cndtr = I::Cndtr;
-  type Cpar = I::Cpar;
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
-  type CselrCs = I::CselrCs;
-  type IfcrCgif = I::IfcrCgif;
-  type IfcrChtif = I::IfcrChtif;
-  type IfcrCtcif = I::IfcrCtcif;
-  type IfcrCteif = I::IfcrCteif;
-  type IsrGif = I::IsrGif;
-  type IsrHtif = I::IsrHtif;
-  type IsrTcif = I::IsrTcif;
-  type IsrTeif = I::IsrTeif;
-
-  #[inline(always)]
-  fn compose(items: Self::Items) -> Self {
-    Self::_compose(items)
-  }
-
-  #[inline(always)]
-  fn decompose(self) -> Self::Items {
-    self._decompose()
-  }
-
-  #[inline(always)]
-  fn ccr(&self) -> &Self::Ccr {
-    self._ccr()
-  }
-
-  #[inline(always)]
-  fn cmar(&self) -> &Self::Cmar {
-    self._cmar()
-  }
-
-  #[inline(always)]
-  fn cndtr(&self) -> &Self::Cndtr {
-    self._cndtr()
-  }
-
-  #[inline(always)]
-  fn cpar(&self) -> &Self::Cpar {
-    self._cpar()
-  }
-
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
-  #[inline(always)]
-  fn cselr_cs(&self) -> &Self::CselrCs {
-    self._cselr_cs()
-  }
-
-  #[inline(always)]
-  fn ifcr_cgif(&self) -> &Self::IfcrCgif {
-    self._ifcr_cgif()
-  }
-
-  #[inline(always)]
-  fn ifcr_chtif(&self) -> &Self::IfcrChtif {
-    self._ifcr_chtif()
-  }
-
-  #[inline(always)]
-  fn ifcr_ctcif(&self) -> &Self::IfcrCtcif {
-    self._ifcr_ctcif()
-  }
-
-  #[inline(always)]
-  fn ifcr_cteif(&self) -> &Self::IfcrCteif {
-    self._ifcr_cteif()
-  }
-
-  #[inline(always)]
-  fn isr_gif(&self) -> &Self::IsrGif {
-    self._isr_gif()
-  }
-
-  #[inline(always)]
-  fn isr_htif(&self) -> &Self::IsrHtif {
-    self._isr_htif()
-  }
-
-  #[inline(always)]
-  fn isr_tcif(&self) -> &Self::IsrTcif {
-    self._isr_tcif()
-  }
-
-  #[inline(always)]
-  fn isr_teif(&self) -> &Self::IsrTeif {
-    self._isr_teif()
-  }
-
-  #[inline]
-  fn transfer_complete<T: Thread>(
-    self,
-    thread: &T,
-  ) -> RoutineFuture<Self, Self> {
-    thread.future(move || {
-      loop {
-        if self._isr_teif().read_bit_band() {
-          self._ifcr_cgif().set_bit_band();
-          break Err(self);
-        }
-        if self._isr_tcif().read_bit_band() {
-          self._ifcr_cgif().set_bit_band();
-          break Ok(self);
-        }
-        yield;
-      }
-    })
-  }
-
-  #[inline]
-  fn half_transfer<T: Thread>(self, thread: &T) -> RoutineFuture<Self, Self> {
-    thread.future(move || {
-      loop {
-        if self._isr_teif().read_bit_band() {
-          self._ifcr_cgif().set_bit_band();
-          break Err(self);
-        }
-        if self._isr_htif().read_bit_band() {
-          self._ifcr_cgif().set_bit_band();
-          break Ok(self);
-        }
-        yield;
-      }
-    })
-  }
-}
-
-#[doc(hidden)]
-mod imp {
-  use reg::prelude::*;
-
-  pub trait Dma
-  where
-    <Self::IfcrCgif as RegField<Sbt>>::Reg: WReg<Sbt> + RegBitBand<Sbt>,
-    <Self::IsrGif as RegField<Sbt>>::Reg: RReg<Sbt> + RegBitBand<Sbt>,
-  {
-    type Items;
-    type Ccr: Reg<Sbt>;
-    type Cmar: Reg<Sbt>;
-    type Cndtr: Reg<Sbt>;
-    type Cpar: Reg<Sbt>;
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    type CselrCs: RegField<Sbt>;
-    type IfcrCgif: WRegFieldBitBand<Sbt>;
-    type IfcrChtif: RegField<Sbt, Reg = <Self::IfcrCgif as RegField<Sbt>>::Reg>
-      + RegField<Sbt>;
-    type IfcrCtcif: RegField<Sbt, Reg = <Self::IfcrCgif as RegField<Sbt>>::Reg>
-      + RegField<Sbt>;
-    type IfcrCteif: RegField<Sbt, Reg = <Self::IfcrCgif as RegField<Sbt>>::Reg>
-      + RegField<Sbt>;
-    type IsrGif: RegField<Sbt>;
-    type IsrHtif: RegField<Sbt, Reg = <Self::IsrGif as RegField<Sbt>>::Reg>
-      + RRegFieldBitBand<Sbt>;
-    type IsrTcif: RegField<Sbt, Reg = <Self::IsrGif as RegField<Sbt>>::Reg>
-      + RRegFieldBitBand<Sbt>;
-    type IsrTeif: RegField<Sbt, Reg = <Self::IsrGif as RegField<Sbt>>::Reg>
-      + RRegFieldBitBand<Sbt>;
-
-    fn _compose(items: Self::Items) -> Self;
-    fn _decompose(self) -> Self::Items;
-    fn _ccr(&self) -> &Self::Ccr;
-    fn _cmar(&self) -> &Self::Cmar;
-    fn _cndtr(&self) -> &Self::Cndtr;
-    fn _cpar(&self) -> &Self::Cpar;
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    fn _cselr_cs(&self) -> &Self::CselrCs;
-    fn _ifcr_cgif(&self) -> &Self::IfcrCgif;
-    fn _ifcr_chtif(&self) -> &Self::IfcrChtif;
-    fn _ifcr_ctcif(&self) -> &Self::IfcrCtcif;
-    fn _ifcr_cteif(&self) -> &Self::IfcrCteif;
-    fn _isr_gif(&self) -> &Self::IsrGif;
-    fn _isr_htif(&self) -> &Self::IsrHtif;
-    fn _isr_tcif(&self) -> &Self::IsrTcif;
-    fn _isr_teif(&self) -> &Self::IsrTeif;
-  }
-}
-
 #[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
 macro dma_ch(
   $doc:expr,
@@ -389,7 +194,7 @@ macro dma_ch(
     )
   }
 
-  impl imp::Dma for $name {
+  impl Dma for $name {
     type Items = $name_items;
     type Ccr = $dma::$ccr_ty<Sbt>;
     type Cmar = $dma::$cmar_ty<Sbt>;
@@ -412,7 +217,7 @@ macro dma_ch(
               feature = "stm32l4x3", feature = "stm32l4x5",
               feature = "stm32l4x6"))]
     #[inline(always)]
-    fn _compose(items: Self::Items) -> Self {
+    fn compose(items: Self::Items) -> Self {
       Self {
         ccr: items.$dma_ccr,
         cmar: items.$dma_cmar,
@@ -434,7 +239,7 @@ macro dma_ch(
                   feature = "stm32l4x3", feature = "stm32l4x5",
                   feature = "stm32l4x6")))]
     #[inline(always)]
-    fn _compose(items: Self::Items) -> Self {
+    fn compose(items: Self::Items) -> Self {
       Self {
         ccr: items.$dma_ccr,
         cmar: items.$dma_cmar,
@@ -455,7 +260,7 @@ macro dma_ch(
               feature = "stm32l4x3", feature = "stm32l4x5",
               feature = "stm32l4x6"))]
     #[inline(always)]
-    fn _decompose(self) -> Self::Items {
+    fn decompose(self) -> Self::Items {
       Self::Items {
         $dma_ccr: self.ccr,
         $dma_cmar: self.cmar,
@@ -477,7 +282,7 @@ macro dma_ch(
                   feature = "stm32l4x3", feature = "stm32l4x5",
                   feature = "stm32l4x6")))]
     #[inline(always)]
-    fn _decompose(self) -> Self::Items {
+    fn decompose(self) -> Self::Items {
       Self::Items {
         $dma_ccr: self.ccr,
         $dma_cmar: self.cmar,
@@ -495,22 +300,22 @@ macro dma_ch(
     }
 
     #[inline(always)]
-    fn _ccr(&self) -> &Self::Ccr {
+    fn ccr(&self) -> &Self::Ccr {
       &self.ccr
     }
 
     #[inline(always)]
-    fn _cmar(&self) -> &Self::Cmar {
+    fn cmar(&self) -> &Self::Cmar {
       &self.cmar
     }
 
     #[inline(always)]
-    fn _cndtr(&self) -> &Self::Cndtr {
+    fn cndtr(&self) -> &Self::Cndtr {
       &self.cndtr
     }
 
     #[inline(always)]
-    fn _cpar(&self) -> &Self::Cpar {
+    fn cpar(&self) -> &Self::Cpar {
       &self.cpar
     }
 
@@ -518,48 +323,81 @@ macro dma_ch(
               feature = "stm32l4x3", feature = "stm32l4x5",
               feature = "stm32l4x6"))]
     #[inline(always)]
-    fn _cselr_cs(&self) -> &Self::CselrCs {
+    fn cselr_cs(&self) -> &Self::CselrCs {
       &self.cselr_cs
     }
 
     #[inline(always)]
-    fn _ifcr_cgif(&self) -> &Self::IfcrCgif {
+    fn ifcr_cgif(&self) -> &Self::IfcrCgif {
       &self.ifcr_cgif
     }
 
     #[inline(always)]
-    fn _ifcr_chtif(&self) -> &Self::IfcrChtif {
+    fn ifcr_chtif(&self) -> &Self::IfcrChtif {
       &self.ifcr_chtif
     }
 
     #[inline(always)]
-    fn _ifcr_ctcif(&self) -> &Self::IfcrCtcif {
+    fn ifcr_ctcif(&self) -> &Self::IfcrCtcif {
       &self.ifcr_ctcif
     }
 
     #[inline(always)]
-    fn _ifcr_cteif(&self) -> &Self::IfcrCteif {
+    fn ifcr_cteif(&self) -> &Self::IfcrCteif {
       &self.ifcr_cteif
     }
 
     #[inline(always)]
-    fn _isr_gif(&self) -> &Self::IsrGif {
+    fn isr_gif(&self) -> &Self::IsrGif {
       &self.isr_gif
     }
 
     #[inline(always)]
-    fn _isr_htif(&self) -> &Self::IsrHtif {
+    fn isr_htif(&self) -> &Self::IsrHtif {
       &self.isr_htif
     }
 
     #[inline(always)]
-    fn _isr_tcif(&self) -> &Self::IsrTcif {
+    fn isr_tcif(&self) -> &Self::IsrTcif {
       &self.isr_tcif
     }
 
     #[inline(always)]
-    fn _isr_teif(&self) -> &Self::IsrTeif {
+    fn isr_teif(&self) -> &Self::IsrTeif {
       &self.isr_teif
+    }
+
+    #[inline]
+    fn transfer_complete<T: Thread>(
+      self,
+      thread: &T,
+    ) -> RoutineFuture<Self, Self> {
+      thread.future(move || loop {
+        if self.isr_teif.read_bit_band() {
+          self.ifcr_cgif.set_bit_band();
+          break Err(self);
+        }
+        if self.isr_tcif.read_bit_band() {
+          self.ifcr_cgif.set_bit_band();
+          break Ok(self);
+        }
+        yield;
+      })
+    }
+
+    #[inline]
+    fn half_transfer<T: Thread>(self, thread: &T) -> RoutineFuture<Self, Self> {
+      thread.future(move || loop {
+        if self.isr_teif.read_bit_band() {
+          self.ifcr_cgif.set_bit_band();
+          break Err(self);
+        }
+        if self.isr_htif.read_bit_band() {
+          self.ifcr_cgif.set_bit_band();
+          break Ok(self);
+        }
+        yield;
+      })
     }
   }
 }

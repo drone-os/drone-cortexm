@@ -161,7 +161,7 @@ impl Registers {
           traits.push(Ident::new("RegBitBand"));
         }
         let address = Lit::Int(address as u64, IntTy::Unsuffixed);
-        let (fields, field_names) = register.fields.to_tokens(register);
+        let fields = register.fields.to_tokens(register);
         (
           quote! {
             #[doc = #description]
@@ -173,9 +173,7 @@ impl Registers {
           },
           quote! {
             #[doc = #description]
-            #name {
-              #(#field_names)*
-            }
+            #name;
           },
         )
       })
@@ -184,7 +182,7 @@ impl Registers {
 }
 
 impl Fields {
-  fn to_tokens(&self, register: &Register) -> (Vec<Tokens>, Vec<Ident>) {
+  fn to_tokens(&self, register: &Register) -> Vec<Tokens> {
     self
       .field
       .iter()
@@ -208,18 +206,15 @@ impl Fields {
             traits.push(Ident::new("WRegField"));
           }
         }
-        (
-          quote! {
-            #[doc = #description]
-            #name {
-              #offset #width
-              #(#traits)*
-            }
-          },
-          name,
-        )
+        quote! {
+          #[doc = #description]
+          #name {
+            #offset #width
+            #(#traits)*
+          }
+        }
       })
-      .unzip()
+      .collect()
   }
 }
 

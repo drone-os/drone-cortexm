@@ -12,43 +12,23 @@ bindings! {
   #![cfg_attr(feature = "stm32l4x3", doc = "Register bindings for STM32L4x3")]
   #![cfg_attr(feature = "stm32l4x5", doc = "Register bindings for STM32L4x5")]
   #![cfg_attr(feature = "stm32l4x6", doc = "Register bindings for STM32L4x6")]
-  Bindings
+  Bindings;
 
   include!(concat!(env!("OUT_DIR"), "/svd_bindings.rs"));
 
   reg::SCB {
     /// System control register.
-    SCR {
-      SEVEONPEND
-      SLEEPDEEP
-      SLEEPONEXIT
-    }
+    SCR;
   }
 
   reg::STK {
     /// SysTick control and status register.
-    CTRL {
-      COUNTFLAG
-      CLKSOURCE
-      TICKINT
-      ENABLE
-    }
-
+    CTRL;
     /// SysTick reload value register.
-    LOAD {
-      RELOAD
-    }
-
+    LOAD;
     /// SysTick current value register.
-    VAL {
-      CURRENT
-    }
-
+    VAL;
     /// SysTick calibration value register.
-    CALIB {
-      NOREF
-      SKEW
-      TENMS
-    }
+    CALIB;
   }
 }
