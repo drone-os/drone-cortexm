@@ -1,5 +1,10 @@
 //! General-purpose I/O.
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 use reg::{gpioa, gpiob, gpioc, gpiod, gpioe};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
@@ -141,558 +146,569 @@ pub trait GpioAscrPin<T: RegTag>: GpioPin<T> {
   fn ascr_mut(&mut self) -> &mut Self::Ascr;
 }
 
-#[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
-macro gpio_pin(
-  $doc:expr,
-  $name:ident,
-  $doc_items:expr,
-  $name_items:ident,
-  $gpio:ident,
-  $afr_mod:ident,
-  $cr_mod:ident,
-  $afr_ty:ident,
-  ($($asc_ty:ident)*),
-  $br_ty:ident,
-  $bs_ty:ident,
-  $cnf_ty:ident,
-  $mode_ty:ident,
-  $idr_ty:ident,
-  $lck_ty:ident,
-  $moder_ty:ident,
-  $odr_ty:ident,
-  $ospeedr_ty:ident,
-  $ot_ty:ident,
-  $pupdr_ty:ident,
-  $gpio_afr_afr:ident,
-  ($($gpio_ascr_asc:ident)*),
-  $gpio_brr_br:ident,
-  $gpio_bsrr_br:ident,
-  $gpio_bsrr_bs:ident,
-  $gpio_cr_cnf:ident,
-  $gpio_cr_mode:ident,
-  $gpio_idr_idr:ident,
-  $gpio_lckr_lck:ident,
-  $gpio_moder_moder:ident,
-  $gpio_odr_odr:ident,
-  $gpio_ospeedr_ospeedr:ident,
-  $gpio_otyper_ot:ident,
-  $gpio_pupdr_pupdr:ident,
-  $gpio_afr:ident,
-  $gpio_ascr:ident,
-  $gpio_brr:ident,
-  $gpio_bsrr:ident,
-  $gpio_cr:ident,
-  $gpio_idr:ident,
-  $gpio_lckr:ident,
-  $gpio_moder:ident,
-  $gpio_odr:ident,
-  $gpio_ospeedr:ident,
-  $gpio_otyper:ident,
-  $gpio_pupdr:ident,
-  $afr:ident,
-  $asc:ident,
-  $br:ident,
-  $bs:ident,
-  $cnf:ident,
-  $mode:ident,
-  $idr:ident,
-  $lck:ident,
-  $moder:ident,
-  $odr:ident,
-  $ospeedr:ident,
-  $ot:ident,
-  $pupdr:ident,
-) {
-  #[doc = $doc]
-  pub struct $name<T: RegTag> {
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    afr: $gpio::$afr_mod::$afr_ty<T>,
-    $(
-      #[cfg(any(feature = "stm32l4x6"))]
-      ascr: $gpio::ascr::$asc_ty<T>,
-    )*
-    brr: $gpio::brr::$br_ty<T>,
-    bsrr_br: $gpio::bsrr::$br_ty<T>,
-    bsrr_bs: $gpio::bsrr::$bs_ty<T>,
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107"))]
-    cr_cnf: $gpio::$cr_mod::$cnf_ty<T>,
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107"))]
-    cr_mode: $gpio::$cr_mod::$mode_ty<T>,
-    idr: $gpio::idr::$idr_ty<T>,
-    lckr: $gpio::lckr::$lck_ty<T>,
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    moder: $gpio::moder::$moder_ty<T>,
-    odr: $gpio::odr::$odr_ty<T>,
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    ospeedr: $gpio::ospeedr::$ospeedr_ty<T>,
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    otyper: $gpio::otyper::$ot_ty<T>,
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    pupdr: $gpio::pupdr::$pupdr_ty<T>,
-  }
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
+macro_rules! gpio_pin {
+  (
+    $doc:expr,
+    $name:ident,
+    $doc_items:expr,
+    $name_items:ident,
+    $gpio:ident,
+    $afr_mod:ident,
+    $cr_mod:ident,
+    $afr_ty:ident,
+    ($($asc_ty:ident)*),
+    $br_ty:ident,
+    $bs_ty:ident,
+    $cnf_ty:ident,
+    $mode_ty:ident,
+    $idr_ty:ident,
+    $lck_ty:ident,
+    $moder_ty:ident,
+    $odr_ty:ident,
+    $ospeedr_ty:ident,
+    $ot_ty:ident,
+    $pupdr_ty:ident,
+    $gpio_afr_afr:ident,
+    ($($gpio_ascr_asc:ident)*),
+    $gpio_brr_br:ident,
+    $gpio_bsrr_br:ident,
+    $gpio_bsrr_bs:ident,
+    $gpio_cr_cnf:ident,
+    $gpio_cr_mode:ident,
+    $gpio_idr_idr:ident,
+    $gpio_lckr_lck:ident,
+    $gpio_moder_moder:ident,
+    $gpio_odr_odr:ident,
+    $gpio_ospeedr_ospeedr:ident,
+    $gpio_otyper_ot:ident,
+    $gpio_pupdr_pupdr:ident,
+    $gpio_afr:ident,
+    $gpio_ascr:ident,
+    $gpio_brr:ident,
+    $gpio_bsrr:ident,
+    $gpio_cr:ident,
+    $gpio_idr:ident,
+    $gpio_lckr:ident,
+    $gpio_moder:ident,
+    $gpio_odr:ident,
+    $gpio_ospeedr:ident,
+    $gpio_otyper:ident,
+    $gpio_pupdr:ident,
+    $afr:ident,
+    $asc:ident,
+    $br:ident,
+    $bs:ident,
+    $cnf:ident,
+    $mode:ident,
+    $idr:ident,
+    $lck:ident,
+    $moder:ident,
+    $odr:ident,
+    $ospeedr:ident,
+    $ot:ident,
+    $pupdr:ident,
+  ) => {
+    #[doc = $doc]
+    pub struct $name<T: RegTag> {
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      afr: $gpio::$afr_mod::$afr_ty<T>,
+      $(
+        #[cfg(any(feature = "stm32l4x6"))]
+        ascr: $gpio::ascr::$asc_ty<T>,
+      )*
+      brr: $gpio::brr::$br_ty<T>,
+      bsrr_br: $gpio::bsrr::$br_ty<T>,
+      bsrr_bs: $gpio::bsrr::$bs_ty<T>,
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      cr_cnf: $gpio::$cr_mod::$cnf_ty<T>,
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      cr_mode: $gpio::$cr_mod::$mode_ty<T>,
+      idr: $gpio::idr::$idr_ty<T>,
+      lckr: $gpio::lckr::$lck_ty<T>,
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      moder: $gpio::moder::$moder_ty<T>,
+      odr: $gpio::odr::$odr_ty<T>,
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      ospeedr: $gpio::ospeedr::$ospeedr_ty<T>,
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      otyper: $gpio::otyper::$ot_ty<T>,
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      pupdr: $gpio::pupdr::$pupdr_ty<T>,
+    }
 
-  #[doc = $doc_items]
-  #[allow(missing_docs)]
-  pub struct $name_items<T: RegTag> {
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    pub $gpio_afr_afr: $gpio::$afr_mod::$afr_ty<T>,
-    $(
-      #[cfg(any(feature = "stm32l4x6"))]
-      pub $gpio_ascr_asc: $gpio::ascr::$asc_ty<T>,
-    )*
-    pub $gpio_brr_br: $gpio::brr::$br_ty<T>,
-    pub $gpio_bsrr_br: $gpio::bsrr::$br_ty<T>,
-    pub $gpio_bsrr_bs: $gpio::bsrr::$bs_ty<T>,
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107"))]
-    pub $gpio_cr_cnf: $gpio::$cr_mod::$cnf_ty<T>,
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107"))]
-    pub $gpio_cr_mode: $gpio::$cr_mod::$mode_ty<T>,
-    pub $gpio_idr_idr: $gpio::idr::$idr_ty<T>,
-    pub $gpio_lckr_lck: $gpio::lckr::$lck_ty<T>,
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    pub $gpio_moder_moder: $gpio::moder::$moder_ty<T>,
-    pub $gpio_odr_odr: $gpio::odr::$odr_ty<T>,
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    pub $gpio_ospeedr_ospeedr: $gpio::ospeedr::$ospeedr_ty<T>,
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    pub $gpio_otyper_ot: $gpio::otyper::$ot_ty<T>,
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    pub $gpio_pupdr_pupdr: $gpio::pupdr::$pupdr_ty<T>,
-  }
-
-  #[cfg(any(feature = "stm32l4x6"))]
-  /// Composes a new `GpioPin` from pieces.
-  pub macro $name($bindings:ident) {
-    $crate::peripherals::gpio::GpioPin::compose(
-      $crate::peripherals::gpio::$name_items {
-        $gpio_afr_afr: $bindings.$gpio_afr.$afr,
-        $(
-          $gpio_ascr_asc: $bindings.$gpio_ascr.$asc,
-        )*
-        $gpio_brr_br: $bindings.$gpio_brr.$br,
-        $gpio_bsrr_br: $bindings.$gpio_bsrr.$br,
-        $gpio_bsrr_bs: $bindings.$gpio_bsrr.$bs,
-        $gpio_idr_idr: $bindings.$gpio_idr.$idr,
-        $gpio_lckr_lck: $bindings.$gpio_lckr.$lck,
-        $gpio_moder_moder: $bindings.$gpio_moder.$moder,
-        $gpio_odr_odr: $bindings.$gpio_odr.$odr,
-        $gpio_ospeedr_ospeedr: $bindings.$gpio_ospeedr.$ospeedr,
-        $gpio_otyper_ot: $bindings.$gpio_otyper.$ot,
-        $gpio_pupdr_pupdr: $bindings.$gpio_pupdr.$pupdr,
-      }
-    )
-  }
-
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5"))]
-  /// Composes a new `GpioPin` from pieces.
-  pub macro $name($bindings:ident) {
-    $crate::peripherals::gpio::GpioPin::compose(
-      $crate::peripherals::gpio::$name_items {
-        $gpio_afr_afr: $bindings.$gpio_afr.$afr,
-        $gpio_brr_br: $bindings.$gpio_brr.$br,
-        $gpio_bsrr_br: $bindings.$gpio_bsrr.$br,
-        $gpio_bsrr_bs: $bindings.$gpio_bsrr.$bs,
-        $gpio_idr_idr: $bindings.$gpio_idr.$idr,
-        $gpio_lckr_lck: $bindings.$gpio_lckr.$lck,
-        $gpio_moder_moder: $bindings.$gpio_moder.$moder,
-        $gpio_odr_odr: $bindings.$gpio_odr.$odr,
-        $gpio_ospeedr_ospeedr: $bindings.$gpio_ospeedr.$ospeedr,
-        $gpio_otyper_ot: $bindings.$gpio_otyper.$ot,
-        $gpio_pupdr_pupdr: $bindings.$gpio_pupdr.$pupdr,
-      }
-    )
-  }
-
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107"))]
-  /// Composes a new `GpioPin` from pieces.
-  pub macro $name($bindings:ident) {
-    $crate::peripherals::gpio::GpioPin::compose(
-      $crate::peripherals::gpio::$name_items {
-        $gpio_brr_br: $bindings.$gpio_brr_br,
-        $gpio_bsrr_br: $bindings.$gpio_bsrr_br,
-        $gpio_bsrr_bs: $bindings.$gpio_bsrr_bs,
-        $gpio_cr_cnf: $bindings.$gpio_cr_cnf,
-        $gpio_cr_mode: $bindings.$gpio_cr_mode,
-        $gpio_idr_idr: $bindings.$gpio_idr_idr,
-        $gpio_lckr_lck: $bindings.$gpio_lckr_lck,
-        $gpio_odr_odr: $bindings.$gpio_odr_odr,
-      }
-    )
-  }
-
-  impl<T: RegTag> GpioPin<T> for $name<T> {
-    type Items = $name_items<T>;
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    type Afr = $gpio::$afr_mod::$afr_ty<T>;
-    type Brr = $gpio::brr::$br_ty<T>;
-    type BsrrBr = $gpio::bsrr::$br_ty<T>;
-    type BsrrBs = $gpio::bsrr::$bs_ty<T>;
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107"))]
-    type CrCnf = $gpio::$cr_mod::$cnf_ty<T>;
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107"))]
-    type CrMode = $gpio::$cr_mod::$mode_ty<T>;
-    type Idr = $gpio::idr::$idr_ty<T>;
-    type Lckr = $gpio::lckr::$lck_ty<T>;
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    type Moder = $gpio::moder::$moder_ty<T>;
-    type Odr = $gpio::odr::$odr_ty<T>;
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    type Ospeedr = $gpio::ospeedr::$ospeedr_ty<T>;
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    type Otyper = $gpio::otyper::$ot_ty<T>;
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    type Pupdr = $gpio::pupdr::$pupdr_ty<T>;
+    #[doc = $doc_items]
+    #[allow(missing_docs)]
+    pub struct $name_items<T: RegTag> {
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      pub $gpio_afr_afr: $gpio::$afr_mod::$afr_ty<T>,
+      $(
+        #[cfg(any(feature = "stm32l4x6"))]
+        pub $gpio_ascr_asc: $gpio::ascr::$asc_ty<T>,
+      )*
+      pub $gpio_brr_br: $gpio::brr::$br_ty<T>,
+      pub $gpio_bsrr_br: $gpio::bsrr::$br_ty<T>,
+      pub $gpio_bsrr_bs: $gpio::bsrr::$bs_ty<T>,
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      pub $gpio_cr_cnf: $gpio::$cr_mod::$cnf_ty<T>,
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      pub $gpio_cr_mode: $gpio::$cr_mod::$mode_ty<T>,
+      pub $gpio_idr_idr: $gpio::idr::$idr_ty<T>,
+      pub $gpio_lckr_lck: $gpio::lckr::$lck_ty<T>,
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      pub $gpio_moder_moder: $gpio::moder::$moder_ty<T>,
+      pub $gpio_odr_odr: $gpio::odr::$odr_ty<T>,
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      pub $gpio_ospeedr_ospeedr: $gpio::ospeedr::$ospeedr_ty<T>,
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      pub $gpio_otyper_ot: $gpio::otyper::$ot_ty<T>,
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      pub $gpio_pupdr_pupdr: $gpio::pupdr::$pupdr_ty<T>,
+    }
 
     #[cfg(any(feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn compose(items: Self::Items) -> Self {
-      Self {
-        afr: items.$gpio_afr_afr,
-        $(
-          ascr: items.$gpio_ascr_asc,
-        )*
-        brr: items.$gpio_brr_br,
-        bsrr_br: items.$gpio_bsrr_br,
-        bsrr_bs: items.$gpio_bsrr_bs,
-        idr: items.$gpio_idr_idr,
-        lckr: items.$gpio_lckr_lck,
-        moder: items.$gpio_moder_moder,
-        odr: items.$gpio_odr_odr,
-        ospeedr: items.$gpio_ospeedr_ospeedr,
-        otyper: items.$gpio_otyper_ot,
-        pupdr: items.$gpio_pupdr_pupdr,
-      }
+    /// Composes a new `GpioPin` from pieces.
+    pub macro $name($regs:ident) {
+      $crate::peripherals::gpio::GpioPin::compose(
+        $crate::peripherals::gpio::$name_items {
+          $gpio_afr_afr: $regs.$gpio_afr.$afr,
+          $(
+            $gpio_ascr_asc: $regs.$gpio_ascr.$asc,
+          )*
+          $gpio_brr_br: $regs.$gpio_brr.$br,
+          $gpio_bsrr_br: $regs.$gpio_bsrr.$br,
+          $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs,
+          $gpio_idr_idr: $regs.$gpio_idr.$idr,
+          $gpio_lckr_lck: $regs.$gpio_lckr.$lck,
+          $gpio_moder_moder: $regs.$gpio_moder.$moder,
+          $gpio_odr_odr: $regs.$gpio_odr.$odr,
+          $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr,
+          $gpio_otyper_ot: $regs.$gpio_otyper.$ot,
+          $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr,
+        }
+      )
     }
 
     #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
               feature = "stm32l4x3", feature = "stm32l4x5"))]
-    #[inline(always)]
-    fn compose(items: Self::Items) -> Self {
-      Self {
-        afr: items.$gpio_afr_afr,
-        brr: items.$gpio_brr_br,
-        bsrr_br: items.$gpio_bsrr_br,
-        bsrr_bs: items.$gpio_bsrr_bs,
-        idr: items.$gpio_idr_idr,
-        lckr: items.$gpio_lckr_lck,
-        moder: items.$gpio_moder_moder,
-        odr: items.$gpio_odr_odr,
-        ospeedr: items.$gpio_ospeedr_ospeedr,
-        otyper: items.$gpio_otyper_ot,
-        pupdr: items.$gpio_pupdr_pupdr,
+    /// Composes a new `GpioPin` from pieces.
+    pub macro $name($regs:ident) {
+      $crate::peripherals::gpio::GpioPin::compose(
+        $crate::peripherals::gpio::$name_items {
+          $gpio_afr_afr: $regs.$gpio_afr.$afr,
+          $gpio_brr_br: $regs.$gpio_brr.$br,
+          $gpio_bsrr_br: $regs.$gpio_bsrr.$br,
+          $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs,
+          $gpio_idr_idr: $regs.$gpio_idr.$idr,
+          $gpio_lckr_lck: $regs.$gpio_lckr.$lck,
+          $gpio_moder_moder: $regs.$gpio_moder.$moder,
+          $gpio_odr_odr: $regs.$gpio_odr.$odr,
+          $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr,
+          $gpio_otyper_ot: $regs.$gpio_otyper.$ot,
+          $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr,
+        }
+      )
+    }
+
+    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+              feature = "stm32f102", feature = "stm32f103",
+              feature = "stm32f107"))]
+    /// Composes a new `GpioPin` from pieces.
+    pub macro $name($regs:ident) {
+      $crate::peripherals::gpio::GpioPin::compose(
+        $crate::peripherals::gpio::$name_items {
+          $gpio_brr_br: $regs.$gpio_brr_br,
+          $gpio_bsrr_br: $regs.$gpio_bsrr_br,
+          $gpio_bsrr_bs: $regs.$gpio_bsrr_bs,
+          $gpio_cr_cnf: $regs.$gpio_cr_cnf,
+          $gpio_cr_mode: $regs.$gpio_cr_mode,
+          $gpio_idr_idr: $regs.$gpio_idr_idr,
+          $gpio_lckr_lck: $regs.$gpio_lckr_lck,
+          $gpio_odr_odr: $regs.$gpio_odr_odr,
+        }
+      )
+    }
+
+    impl<T: RegTag> GpioPin<T> for $name<T> {
+      type Items = $name_items<T>;
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      type Afr = $gpio::$afr_mod::$afr_ty<T>;
+      type Brr = $gpio::brr::$br_ty<T>;
+      type BsrrBr = $gpio::bsrr::$br_ty<T>;
+      type BsrrBs = $gpio::bsrr::$bs_ty<T>;
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      type CrCnf = $gpio::$cr_mod::$cnf_ty<T>;
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      type CrMode = $gpio::$cr_mod::$mode_ty<T>;
+      type Idr = $gpio::idr::$idr_ty<T>;
+      type Lckr = $gpio::lckr::$lck_ty<T>;
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      type Moder = $gpio::moder::$moder_ty<T>;
+      type Odr = $gpio::odr::$odr_ty<T>;
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      type Ospeedr = $gpio::ospeedr::$ospeedr_ty<T>;
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      type Otyper = $gpio::otyper::$ot_ty<T>;
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      type Pupdr = $gpio::pupdr::$pupdr_ty<T>;
+
+      #[cfg(any(feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn compose(items: Self::Items) -> Self {
+        Self {
+          afr: items.$gpio_afr_afr,
+          $(
+            ascr: items.$gpio_ascr_asc,
+          )*
+          brr: items.$gpio_brr_br,
+          bsrr_br: items.$gpio_bsrr_br,
+          bsrr_bs: items.$gpio_bsrr_bs,
+          idr: items.$gpio_idr_idr,
+          lckr: items.$gpio_lckr_lck,
+          moder: items.$gpio_moder_moder,
+          odr: items.$gpio_odr_odr,
+          ospeedr: items.$gpio_ospeedr_ospeedr,
+          otyper: items.$gpio_otyper_ot,
+          pupdr: items.$gpio_pupdr_pupdr,
+        }
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5"))]
+      #[inline(always)]
+      fn compose(items: Self::Items) -> Self {
+        Self {
+          afr: items.$gpio_afr_afr,
+          brr: items.$gpio_brr_br,
+          bsrr_br: items.$gpio_bsrr_br,
+          bsrr_bs: items.$gpio_bsrr_bs,
+          idr: items.$gpio_idr_idr,
+          lckr: items.$gpio_lckr_lck,
+          moder: items.$gpio_moder_moder,
+          odr: items.$gpio_odr_odr,
+          ospeedr: items.$gpio_ospeedr_ospeedr,
+          otyper: items.$gpio_otyper_ot,
+          pupdr: items.$gpio_pupdr_pupdr,
+        }
+      }
+
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      #[inline(always)]
+      fn compose(items: Self::Items) -> Self {
+        Self {
+          brr: items.$gpio_brr_br,
+          bsrr_br: items.$gpio_bsrr_br,
+          bsrr_bs: items.$gpio_bsrr_bs,
+          cr_cnf: items.$gpio_cr_cnf,
+          cr_mode: items.$gpio_cr_mode,
+          idr: items.$gpio_idr_idr,
+          lckr: items.$gpio_lckr_lck,
+          odr: items.$gpio_odr_odr,
+        }
+      }
+
+      #[cfg(any(feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn decompose(self) -> Self::Items {
+        Self::Items {
+          $gpio_afr_afr: self.afr,
+          $(
+            $gpio_ascr_asc: self.ascr,
+          )*
+          $gpio_brr_br: self.brr,
+          $gpio_bsrr_br: self.bsrr_br,
+          $gpio_bsrr_bs: self.bsrr_bs,
+          $gpio_idr_idr: self.idr,
+          $gpio_lckr_lck: self.lckr,
+          $gpio_moder_moder: self.moder,
+          $gpio_odr_odr: self.odr,
+          $gpio_ospeedr_ospeedr: self.ospeedr,
+          $gpio_otyper_ot: self.otyper,
+          $gpio_pupdr_pupdr: self.pupdr,
+        }
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5"))]
+      #[inline(always)]
+      fn decompose(self) -> Self::Items {
+        Self::Items {
+          $gpio_afr_afr: self.afr,
+          $gpio_brr_br: self.brr,
+          $gpio_bsrr_br: self.bsrr_br,
+          $gpio_bsrr_bs: self.bsrr_bs,
+          $gpio_idr_idr: self.idr,
+          $gpio_lckr_lck: self.lckr,
+          $gpio_moder_moder: self.moder,
+          $gpio_odr_odr: self.odr,
+          $gpio_ospeedr_ospeedr: self.ospeedr,
+          $gpio_otyper_ot: self.otyper,
+          $gpio_pupdr_pupdr: self.pupdr,
+        }
+      }
+
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      #[inline(always)]
+      fn decompose(self) -> Self::Items {
+        Self::Items {
+          $gpio_brr_br: self.brr,
+          $gpio_bsrr_br: self.bsrr_br,
+          $gpio_bsrr_bs: self.bsrr_bs,
+          $gpio_cr_cnf: self.cr_cnf,
+          $gpio_cr_mode: self.cr_mode,
+          $gpio_idr_idr: self.idr,
+          $gpio_lckr_lck: self.lckr,
+          $gpio_odr_odr: self.odr,
+        }
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn afr(&self) -> &Self::Afr {
+        &self.afr
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn afr_mut(&mut self) -> &mut Self::Afr {
+        &mut self.afr
+      }
+
+      #[inline(always)]
+      fn brr(&self) -> &Self::Brr {
+        &self.brr
+      }
+
+      #[inline(always)]
+      fn brr_mut(&mut self) -> &mut Self::Brr {
+        &mut self.brr
+      }
+
+      #[inline(always)]
+      fn bsrr_br(&self) -> &Self::BsrrBr {
+        &self.bsrr_br
+      }
+
+      #[inline(always)]
+      fn bsrr_br_mut(&mut self) -> &mut Self::BsrrBr {
+        &mut self.bsrr_br
+      }
+
+      #[inline(always)]
+      fn bsrr_bs(&self) -> &Self::BsrrBs {
+        &self.bsrr_bs
+      }
+
+      #[inline(always)]
+      fn bsrr_bs_mut(&mut self) -> &mut Self::BsrrBs {
+        &mut self.bsrr_bs
+      }
+
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      #[inline(always)]
+      fn cr_cnf(&self) -> &Self::CrCnf {
+        &self.cr_cnf
+      }
+
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      #[inline(always)]
+      fn cr_cnf_mut(&mut self) -> &mut Self::CrCnf {
+        &mut self.cr_cnf
+      }
+
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      #[inline(always)]
+      fn cr_mode(&self) -> &Self::CrMode {
+        &self.cr_mode
+      }
+
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      #[inline(always)]
+      fn cr_mode_mut(&mut self) -> &mut Self::CrMode {
+        &mut self.cr_mode
+      }
+
+      #[inline(always)]
+      fn idr(&self) -> &Self::Idr {
+        &self.idr
+      }
+
+      #[inline(always)]
+      fn idr_mut(&mut self) -> &mut Self::Idr {
+        &mut self.idr
+      }
+
+      #[inline(always)]
+      fn lckr(&self) -> &Self::Lckr {
+        &self.lckr
+      }
+
+      #[inline(always)]
+      fn lckr_mut(&mut self) -> &mut Self::Lckr {
+        &mut self.lckr
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn moder(&self) -> &Self::Moder {
+        &self.moder
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn moder_mut(&mut self) -> &mut Self::Moder {
+        &mut self.moder
+      }
+
+      #[inline(always)]
+      fn odr(&self) -> &Self::Odr {
+        &self.odr
+      }
+
+      #[inline(always)]
+      fn odr_mut(&mut self) -> &mut Self::Odr {
+        &mut self.odr
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn ospeedr(&self) -> &Self::Ospeedr {
+        &self.ospeedr
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn ospeedr_mut(&mut self) -> &mut Self::Ospeedr {
+        &mut self.ospeedr
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn otyper(&self) -> &Self::Otyper {
+        &self.otyper
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn otyper_mut(&mut self) -> &mut Self::Otyper {
+        &mut self.otyper
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn pupdr(&self) -> &Self::Pupdr {
+        &self.pupdr
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn pupdr_mut(&mut self) -> &mut Self::Pupdr {
+        &mut self.pupdr
       }
     }
 
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107"))]
-    #[inline(always)]
-    fn compose(items: Self::Items) -> Self {
-      Self {
-        brr: items.$gpio_brr_br,
-        bsrr_br: items.$gpio_bsrr_br,
-        bsrr_bs: items.$gpio_bsrr_bs,
-        cr_cnf: items.$gpio_cr_cnf,
-        cr_mode: items.$gpio_cr_mode,
-        idr: items.$gpio_idr_idr,
-        lckr: items.$gpio_lckr_lck,
-        odr: items.$gpio_odr_odr,
+    $(
+      #[cfg(any(feature = "stm32l4x6"))]
+      impl<T: RegTag> GpioAscrPin<T> for $name<T> {
+        type Ascr = $gpio::ascr::$asc_ty<T>;
+
+        #[inline(always)]
+        fn ascr(&self) -> &Self::Ascr {
+          &self.ascr
+        }
+
+        #[inline(always)]
+        fn ascr_mut(&mut self) -> &mut Self::Ascr {
+          &mut self.ascr
+        }
       }
-    }
-
-    #[cfg(any(feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn decompose(self) -> Self::Items {
-      Self::Items {
-        $gpio_afr_afr: self.afr,
-        $(
-          $gpio_ascr_asc: self.ascr,
-        )*
-        $gpio_brr_br: self.brr,
-        $gpio_bsrr_br: self.bsrr_br,
-        $gpio_bsrr_bs: self.bsrr_bs,
-        $gpio_idr_idr: self.idr,
-        $gpio_lckr_lck: self.lckr,
-        $gpio_moder_moder: self.moder,
-        $gpio_odr_odr: self.odr,
-        $gpio_ospeedr_ospeedr: self.ospeedr,
-        $gpio_otyper_ot: self.otyper,
-        $gpio_pupdr_pupdr: self.pupdr,
-      }
-    }
-
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5"))]
-    #[inline(always)]
-    fn decompose(self) -> Self::Items {
-      Self::Items {
-        $gpio_afr_afr: self.afr,
-        $gpio_brr_br: self.brr,
-        $gpio_bsrr_br: self.bsrr_br,
-        $gpio_bsrr_bs: self.bsrr_bs,
-        $gpio_idr_idr: self.idr,
-        $gpio_lckr_lck: self.lckr,
-        $gpio_moder_moder: self.moder,
-        $gpio_odr_odr: self.odr,
-        $gpio_ospeedr_ospeedr: self.ospeedr,
-        $gpio_otyper_ot: self.otyper,
-        $gpio_pupdr_pupdr: self.pupdr,
-      }
-    }
-
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107"))]
-    #[inline(always)]
-    fn decompose(self) -> Self::Items {
-      Self::Items {
-        $gpio_brr_br: self.brr,
-        $gpio_bsrr_br: self.bsrr_br,
-        $gpio_bsrr_bs: self.bsrr_bs,
-        $gpio_cr_cnf: self.cr_cnf,
-        $gpio_cr_mode: self.cr_mode,
-        $gpio_idr_idr: self.idr,
-        $gpio_lckr_lck: self.lckr,
-        $gpio_odr_odr: self.odr,
-      }
-    }
-
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn afr(&self) -> &Self::Afr {
-      &self.afr
-    }
-
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn afr_mut(&mut self) -> &mut Self::Afr {
-      &mut self.afr
-    }
-
-    #[inline(always)]
-    fn brr(&self) -> &Self::Brr {
-      &self.brr
-    }
-
-    #[inline(always)]
-    fn brr_mut(&mut self) -> &mut Self::Brr {
-      &mut self.brr
-    }
-
-    #[inline(always)]
-    fn bsrr_br(&self) -> &Self::BsrrBr {
-      &self.bsrr_br
-    }
-
-    #[inline(always)]
-    fn bsrr_br_mut(&mut self) -> &mut Self::BsrrBr {
-      &mut self.bsrr_br
-    }
-
-    #[inline(always)]
-    fn bsrr_bs(&self) -> &Self::BsrrBs {
-      &self.bsrr_bs
-    }
-
-    #[inline(always)]
-    fn bsrr_bs_mut(&mut self) -> &mut Self::BsrrBs {
-      &mut self.bsrr_bs
-    }
-
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107"))]
-    #[inline(always)]
-    fn cr_cnf(&self) -> &Self::CrCnf {
-      &self.cr_cnf
-    }
-
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107"))]
-    #[inline(always)]
-    fn cr_cnf_mut(&mut self) -> &mut Self::CrCnf {
-      &mut self.cr_cnf
-    }
-
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107"))]
-    #[inline(always)]
-    fn cr_mode(&self) -> &Self::CrMode {
-      &self.cr_mode
-    }
-
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107"))]
-    #[inline(always)]
-    fn cr_mode_mut(&mut self) -> &mut Self::CrMode {
-      &mut self.cr_mode
-    }
-
-    #[inline(always)]
-    fn idr(&self) -> &Self::Idr {
-      &self.idr
-    }
-
-    #[inline(always)]
-    fn idr_mut(&mut self) -> &mut Self::Idr {
-      &mut self.idr
-    }
-
-    #[inline(always)]
-    fn lckr(&self) -> &Self::Lckr {
-      &self.lckr
-    }
-
-    #[inline(always)]
-    fn lckr_mut(&mut self) -> &mut Self::Lckr {
-      &mut self.lckr
-    }
-
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn moder(&self) -> &Self::Moder {
-      &self.moder
-    }
-
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn moder_mut(&mut self) -> &mut Self::Moder {
-      &mut self.moder
-    }
-
-    #[inline(always)]
-    fn odr(&self) -> &Self::Odr {
-      &self.odr
-    }
-
-    #[inline(always)]
-    fn odr_mut(&mut self) -> &mut Self::Odr {
-      &mut self.odr
-    }
-
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn ospeedr(&self) -> &Self::Ospeedr {
-      &self.ospeedr
-    }
-
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn ospeedr_mut(&mut self) -> &mut Self::Ospeedr {
-      &mut self.ospeedr
-    }
-
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn otyper(&self) -> &Self::Otyper {
-      &self.otyper
-    }
-
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn otyper_mut(&mut self) -> &mut Self::Otyper {
-      &mut self.otyper
-    }
-
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn pupdr(&self) -> &Self::Pupdr {
-      &self.pupdr
-    }
-
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn pupdr_mut(&mut self) -> &mut Self::Pupdr {
-      &mut self.pupdr
-    }
+    )*
   }
-
-  $(
-    #[cfg(any(feature = "stm32l4x6"))]
-    impl<T: RegTag> GpioAscrPin<T> for $name<T> {
-      type Ascr = $gpio::ascr::$asc_ty<T>;
-
-      #[inline(always)]
-      fn ascr(&self) -> &Self::Ascr {
-        &self.ascr
-      }
-
-      #[inline(always)]
-      fn ascr_mut(&mut self) -> &mut Self::Ascr {
-        &mut self.ascr
-      }
-    }
-  )*
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 0.",
   Gpioa0,
@@ -755,6 +771,11 @@ gpio_pin! {
   pupdr0,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 1.",
   Gpioa1,
@@ -817,6 +838,11 @@ gpio_pin! {
   pupdr1,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 2.",
   Gpioa2,
@@ -879,6 +905,11 @@ gpio_pin! {
   pupdr2,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 3.",
   Gpioa3,
@@ -941,6 +972,11 @@ gpio_pin! {
   pupdr3,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 4.",
   Gpioa4,
@@ -1003,6 +1039,11 @@ gpio_pin! {
   pupdr4,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 5.",
   Gpioa5,
@@ -1065,6 +1106,11 @@ gpio_pin! {
   pupdr5,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 6.",
   Gpioa6,
@@ -1127,6 +1173,11 @@ gpio_pin! {
   pupdr6,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 7.",
   Gpioa7,
@@ -1189,6 +1240,11 @@ gpio_pin! {
   pupdr7,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 8.",
   Gpioa8,
@@ -1251,6 +1307,11 @@ gpio_pin! {
   pupdr8,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 9.",
   Gpioa9,
@@ -1313,6 +1374,11 @@ gpio_pin! {
   pupdr9,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 10.",
   Gpioa10,
@@ -1375,6 +1441,11 @@ gpio_pin! {
   pupdr10,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 11.",
   Gpioa11,
@@ -1437,6 +1508,11 @@ gpio_pin! {
   pupdr11,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 12.",
   Gpioa12,
@@ -1499,6 +1575,11 @@ gpio_pin! {
   pupdr12,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 13.",
   Gpioa13,
@@ -1561,6 +1642,11 @@ gpio_pin! {
   pupdr13,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 14.",
   Gpioa14,
@@ -1623,6 +1709,11 @@ gpio_pin! {
   pupdr14,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 15.",
   Gpioa15,
@@ -1685,6 +1776,11 @@ gpio_pin! {
   pupdr15,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 0.",
   Gpiob0,
@@ -1747,6 +1843,11 @@ gpio_pin! {
   pupdr0,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 1.",
   Gpiob1,
@@ -1809,6 +1910,11 @@ gpio_pin! {
   pupdr1,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 2.",
   Gpiob2,
@@ -1871,6 +1977,11 @@ gpio_pin! {
   pupdr2,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 3.",
   Gpiob3,
@@ -1933,6 +2044,11 @@ gpio_pin! {
   pupdr3,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 4.",
   Gpiob4,
@@ -1995,6 +2111,11 @@ gpio_pin! {
   pupdr4,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 5.",
   Gpiob5,
@@ -2057,6 +2178,11 @@ gpio_pin! {
   pupdr5,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 6.",
   Gpiob6,
@@ -2119,6 +2245,11 @@ gpio_pin! {
   pupdr6,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 7.",
   Gpiob7,
@@ -2181,6 +2312,11 @@ gpio_pin! {
   pupdr7,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 8.",
   Gpiob8,
@@ -2243,6 +2379,11 @@ gpio_pin! {
   pupdr8,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 9.",
   Gpiob9,
@@ -2305,6 +2446,11 @@ gpio_pin! {
   pupdr9,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 10.",
   Gpiob10,
@@ -2367,6 +2513,11 @@ gpio_pin! {
   pupdr10,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 11.",
   Gpiob11,
@@ -2429,6 +2580,11 @@ gpio_pin! {
   pupdr11,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 12.",
   Gpiob12,
@@ -2491,6 +2647,11 @@ gpio_pin! {
   pupdr12,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 13.",
   Gpiob13,
@@ -2553,6 +2714,11 @@ gpio_pin! {
   pupdr13,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 14.",
   Gpiob14,
@@ -2615,6 +2781,11 @@ gpio_pin! {
   pupdr14,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 15.",
   Gpiob15,
@@ -2677,6 +2848,11 @@ gpio_pin! {
   pupdr15,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 0.",
   Gpioc0,
@@ -2739,6 +2915,11 @@ gpio_pin! {
   pupdr0,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 1.",
   Gpioc1,
@@ -2801,6 +2982,11 @@ gpio_pin! {
   pupdr1,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 2.",
   Gpioc2,
@@ -2863,6 +3049,11 @@ gpio_pin! {
   pupdr2,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 3.",
   Gpioc3,
@@ -2925,6 +3116,11 @@ gpio_pin! {
   pupdr3,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 4.",
   Gpioc4,
@@ -2987,6 +3183,11 @@ gpio_pin! {
   pupdr4,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 5.",
   Gpioc5,
@@ -3049,6 +3250,11 @@ gpio_pin! {
   pupdr5,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 6.",
   Gpioc6,
@@ -3111,6 +3317,11 @@ gpio_pin! {
   pupdr6,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 7.",
   Gpioc7,
@@ -3173,6 +3384,11 @@ gpio_pin! {
   pupdr7,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 8.",
   Gpioc8,
@@ -3235,6 +3451,11 @@ gpio_pin! {
   pupdr8,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 9.",
   Gpioc9,
@@ -3297,6 +3518,11 @@ gpio_pin! {
   pupdr9,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 10.",
   Gpioc10,
@@ -3359,6 +3585,11 @@ gpio_pin! {
   pupdr10,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 11.",
   Gpioc11,
@@ -3421,6 +3652,11 @@ gpio_pin! {
   pupdr11,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 12.",
   Gpioc12,
@@ -3483,6 +3719,11 @@ gpio_pin! {
   pupdr12,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 13.",
   Gpioc13,
@@ -3545,6 +3786,11 @@ gpio_pin! {
   pupdr13,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 14.",
   Gpioc14,
@@ -3607,6 +3853,11 @@ gpio_pin! {
   pupdr14,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 15.",
   Gpioc15,
@@ -3669,6 +3920,11 @@ gpio_pin! {
   pupdr15,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 0.",
   Gpiod0,
@@ -3731,6 +3987,11 @@ gpio_pin! {
   pupdr0,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 1.",
   Gpiod1,
@@ -3793,6 +4054,11 @@ gpio_pin! {
   pupdr1,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 2.",
   Gpiod2,
@@ -3855,6 +4121,11 @@ gpio_pin! {
   pupdr2,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 3.",
   Gpiod3,
@@ -3917,6 +4188,11 @@ gpio_pin! {
   pupdr3,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 4.",
   Gpiod4,
@@ -3979,6 +4255,11 @@ gpio_pin! {
   pupdr4,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 5.",
   Gpiod5,
@@ -4041,6 +4322,11 @@ gpio_pin! {
   pupdr5,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 6.",
   Gpiod6,
@@ -4103,6 +4389,11 @@ gpio_pin! {
   pupdr6,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 7.",
   Gpiod7,
@@ -4165,6 +4456,11 @@ gpio_pin! {
   pupdr7,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 8.",
   Gpiod8,
@@ -4227,6 +4523,11 @@ gpio_pin! {
   pupdr8,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 9.",
   Gpiod9,
@@ -4289,6 +4590,11 @@ gpio_pin! {
   pupdr9,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 10.",
   Gpiod10,
@@ -4351,6 +4657,11 @@ gpio_pin! {
   pupdr10,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 11.",
   Gpiod11,
@@ -4413,6 +4724,11 @@ gpio_pin! {
   pupdr11,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 12.",
   Gpiod12,
@@ -4475,6 +4791,11 @@ gpio_pin! {
   pupdr12,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 13.",
   Gpiod13,
@@ -4537,6 +4858,11 @@ gpio_pin! {
   pupdr13,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 14.",
   Gpiod14,
@@ -4599,6 +4925,11 @@ gpio_pin! {
   pupdr14,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 15.",
   Gpiod15,
@@ -4661,6 +4992,11 @@ gpio_pin! {
   pupdr15,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 0.",
   Gpioe0,
@@ -4723,6 +5059,11 @@ gpio_pin! {
   pupdr0,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 1.",
   Gpioe1,
@@ -4785,6 +5126,11 @@ gpio_pin! {
   pupdr1,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 2.",
   Gpioe2,
@@ -4847,6 +5193,11 @@ gpio_pin! {
   pupdr2,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 3.",
   Gpioe3,
@@ -4909,6 +5260,11 @@ gpio_pin! {
   pupdr3,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 4.",
   Gpioe4,
@@ -4971,6 +5327,11 @@ gpio_pin! {
   pupdr4,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 5.",
   Gpioe5,
@@ -5033,6 +5394,11 @@ gpio_pin! {
   pupdr5,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 6.",
   Gpioe6,
@@ -5095,6 +5461,11 @@ gpio_pin! {
   pupdr6,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 7.",
   Gpioe7,
@@ -5157,6 +5528,11 @@ gpio_pin! {
   pupdr7,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 8.",
   Gpioe8,
@@ -5219,6 +5595,11 @@ gpio_pin! {
   pupdr8,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 9.",
   Gpioe9,
@@ -5281,6 +5662,11 @@ gpio_pin! {
   pupdr9,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 10.",
   Gpioe10,
@@ -5343,6 +5729,11 @@ gpio_pin! {
   pupdr10,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 11.",
   Gpioe11,
@@ -5405,6 +5796,11 @@ gpio_pin! {
   pupdr11,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 12.",
   Gpioe12,
@@ -5467,6 +5863,11 @@ gpio_pin! {
   pupdr12,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 13.",
   Gpioe13,
@@ -5529,6 +5930,11 @@ gpio_pin! {
   pupdr13,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 14.",
   Gpioe14,
@@ -5591,6 +5997,11 @@ gpio_pin! {
   pupdr14,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 15.",
   Gpioe15,

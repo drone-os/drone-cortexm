@@ -9,6 +9,8 @@
 #![cfg_attr(feature = "clippy", allow(precedence, doc_markdown))]
 
 #[macro_use]
+extern crate drone_macros_core;
+#[macro_use]
 extern crate failure;
 extern crate inflector;
 extern crate proc_macro;
@@ -16,19 +18,19 @@ extern crate proc_macro;
 extern crate quote;
 extern crate syn;
 
+mod interrupt;
 mod vtable;
 
 use proc_macro::TokenStream;
 
 #[doc(hidden)]
 #[proc_macro]
-pub fn vtable(input: TokenStream) -> TokenStream {
-  tokens!(vtable::vtable(input))
+pub fn interrupt(input: TokenStream) -> TokenStream {
+  tokens!(interrupt::interrupt(input))
 }
 
-macro tokens($tokens:expr) {
-  match $tokens {
-    Ok(tokens) => tokens.parse().unwrap(),
-    Err(error) => panic!("{}", error),
-  }
+#[doc(hidden)]
+#[proc_macro]
+pub fn vtable(input: TokenStream) -> TokenStream {
+  tokens!(vtable::vtable(input))
 }

@@ -4,8 +4,8 @@ use reg::prelude::*;
 include!(concat!(env!("OUT_DIR"), "/svd_mappings.rs"));
 
 mappings! {
-  //! System control block.
-  SCB
+  /// System control block.
+  SCB;
 
   /// System control register.
   SCR {
@@ -23,8 +23,8 @@ mappings! {
 }
 
 mappings! {
-  //! SysTick timer.
-  STK
+  /// SysTick timer.
+  STK;
 
   /// SysTick control and status register.
   CTRL {

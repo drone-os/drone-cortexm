@@ -24,7 +24,9 @@ use drone_cortex_m::prelude::*;
 use core::mem::size_of;
 
 drone::heap! {
-  #![global_allocator]
+  Heap;
+  #[global_allocator]
+  ALLOC;
 }
 
 mod vtable1 {
@@ -32,22 +34,34 @@ mod vtable1 {
 
   use super::*;
 
-  drone::thread::thread_local!();
+  drone::thread::thread_local!(ThreadLocal; THREADS);
+
+  trait Irq10<T> {}
+  trait Irq5<T> {}
 
   drone_cortex_m::vtable! {
-    //! Test doc attribute
-    #![doc = "test attribute"]
     /// Test doc attribute
-    #[allow(dead_code)]
-    nmi;
+    #[doc = "test attribute"]
+    VectorTable;
     /// Test doc attribute
-    #[allow(dead_code)]
-    sys_tick;
+    #[doc = "test attribute"]
+    Bindings;
     /// Test doc attribute
-    #[allow(dead_code)]
+    #[doc = "test attribute"]
+    THREADS;
+    ThreadLocal;
+
+    /// Test doc attribute
+    #[doc = "test attribute"]
+    NMI;
+    /// Test doc attribute
+    #[doc = "test attribute"]
+    SYS_TICK;
+    /// Test doc attribute
+    #[doc = "test attribute"]
     10: EXTI4;
     /// Test doc attribute
-    #[allow(dead_code)]
+    #[doc = "test attribute"]
     5: RCC;
   }
 }
@@ -57,9 +71,8 @@ mod vtable2 {
 
   use super::*;
 
-  drone::thread::thread_local!();
-
-  drone_cortex_m::vtable!();
+  drone::thread::thread_local!(ThreadLocal; THREADS);
+  drone_cortex_m::vtable!(VectorTable; Bindings; THREADS; ThreadLocal);
 }
 
 #[test]

@@ -29,9 +29,10 @@ pub fn svd_generate(
   input: &mut File,
   mappings: &mut File,
   bindings: &mut File,
+  interrupts: &mut File,
 ) -> Result<(), Error> {
   let mut xml = String::new();
   input.read_to_string(&mut xml)?;
   let device: Device = serde_xml_rs::deserialize(xml.as_bytes())?;
-  device.generate(mappings, bindings)
+  device.generate(mappings, bindings, interrupts)
 }

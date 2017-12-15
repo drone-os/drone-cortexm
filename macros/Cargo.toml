@@ -15,6 +15,10 @@ failure = "0.1"
 quote = "0.3"
 Inflector = "0.11"
 
+[dependencies.drone-macros-core]
+version = "0.7"
+path = "../../drone/macros-core"
+
 [dependencies.syn]
 version = "0.11"
 features = ["full", "parsing", "printing"]

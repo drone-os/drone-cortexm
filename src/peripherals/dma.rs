@@ -1,12 +1,52 @@
 //! Direct memory access controller.
 
+#[allow(unused_imports)]
+use core::marker::PhantomData;
 use drone::thread::RoutineFuture;
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 use reg::{dma1, dma2};
 use reg::prelude::*;
+#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+          feature = "stm32l4x6"))]
+use thread::interrupts::{IrqDma1Ch1, IrqDma1Ch2, IrqDma1Ch3, IrqDma1Ch4,
+                         IrqDma1Ch5, IrqDma1Ch6, IrqDma1Ch7, IrqDma2Ch1,
+                         IrqDma2Ch2, IrqDma2Ch3, IrqDma2Ch4, IrqDma2Ch5,
+                         IrqDma2Ch6, IrqDma2Ch7};
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x3",
+          feature = "stm32l4x5"))]
+use thread::interrupts::{IrqDma1Channel1 as IrqDma1Ch1,
+                         IrqDma1Channel2 as IrqDma1Ch2,
+                         IrqDma1Channel3 as IrqDma1Ch3,
+                         IrqDma1Channel4 as IrqDma1Ch4,
+                         IrqDma1Channel5 as IrqDma1Ch5,
+                         IrqDma1Channel6 as IrqDma1Ch6,
+                         IrqDma1Channel7 as IrqDma1Ch7,
+                         IrqDma2Channel1 as IrqDma2Ch1,
+                         IrqDma2Channel2 as IrqDma2Ch2,
+                         IrqDma2Channel3 as IrqDma2Ch3};
+#[cfg(any(feature = "stm32f107", feature = "stm32l4x3",
+          feature = "stm32l4x5"))]
+use thread::interrupts::{IrqDma2Channel4 as IrqDma2Ch4,
+                         IrqDma2Channel5 as IrqDma2Ch5};
+#[cfg(any(feature = "stm32l4x3", feature = "stm32l4x5"))]
+use thread::interrupts::{IrqDma2Channel6 as IrqDma2Ch6,
+                         IrqDma2Channel7 as IrqDma2Ch7};
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103"))]
+use thread::interrupts::IrqDma2Channel45 as IrqDma2Ch4;
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103"))]
+use thread::interrupts::IrqDma2Channel45 as IrqDma2Ch5;
 
 /// Generic DMA.
 #[allow(missing_docs)]
-pub trait Dma: Sized {
+pub trait Dma<T: Thread, I: ThreadBinding<T>>: Sized {
   /// Concrete DMA items.
   type Items;
 
@@ -33,6 +73,7 @@ pub trait Dma: Sized {
   /// Decomposes the `Dma` into pieces.
   fn decompose(self) -> Self::Items;
 
+  fn irq(&self) -> I;
   fn ccr(&self) -> &Self::Ccr;
   fn cmar(&self) -> &Self::Cmar;
   fn cndtr(&self) -> &Self::Cndtr;
@@ -51,362 +92,393 @@ pub trait Dma: Sized {
   fn isr_teif(&self) -> &Self::IsrTeif;
 
   /// Returns a future, which resolves on DMA transfer complete event.
-  fn transfer_complete<T: Thread>(
-    self,
-    thread: &T,
-  ) -> RoutineFuture<Self, Self>;
+  fn transfer_complete(self) -> RoutineFuture<Self, Self>;
 
   /// Returns a future, which resolves on DMA half transfer event.
-  fn half_transfer<T: Thread>(self, thread: &T) -> RoutineFuture<Self, Self>;
+  fn half_transfer(self) -> RoutineFuture<Self, Self>;
 }
 
-#[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
-macro dma_ch(
-  $doc:expr,
-  $name:ident,
-  $doc_items:expr,
-  $name_items:ident,
-  $ccr_ty:ident,
-  $cmar_ty:ident,
-  $cndtr_ty:ident,
-  $cpar_ty:ident,
-  $cs_ty:ident,
-  $cgif_ty:ident,
-  $chtif_ty:ident,
-  $ctcif_ty:ident,
-  $cteif_ty:ident,
-  $gif_ty:ident,
-  $htif_ty:ident,
-  $tcif_ty:ident,
-  $teif_ty:ident,
-  $dma:ident,
-  $dma_ccr:ident,
-  $dma_cmar:ident,
-  $dma_cndtr:ident,
-  $dma_cpar:ident,
-  $dma_cselr:ident,
-  $dma_ifcr:ident,
-  $dma_isr:ident,
-  $dma_cselr_cs:ident,
-  $dma_ifcr_cgif:ident,
-  $dma_ifcr_chtif:ident,
-  $dma_ifcr_ctcif:ident,
-  $dma_ifcr_cteif:ident,
-  $dma_isr_gif:ident,
-  $dma_isr_htif:ident,
-  $dma_isr_tcif:ident,
-  $dma_isr_teif:ident,
-  $cs:ident,
-  $cgif:ident,
-  $chtif:ident,
-  $ctcif:ident,
-  $cteif:ident,
-  $gif:ident,
-  $htif:ident,
-  $tcif:ident,
-  $teif:ident,
-) {
-  #[doc = $doc]
-  pub struct $name {
-    ccr: $dma::$ccr_ty<Sbt>,
-    cmar: $dma::$cmar_ty<Sbt>,
-    cndtr: $dma::$cndtr_ty<Sbt>,
-    cpar: $dma::$cpar_ty<Sbt>,
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    cselr_cs: $dma::cselr::$cs_ty<Sbt>,
-    ifcr_cgif: $dma::ifcr::$cgif_ty<Sbt>,
-    ifcr_chtif: $dma::ifcr::$chtif_ty<Sbt>,
-    ifcr_ctcif: $dma::ifcr::$ctcif_ty<Sbt>,
-    ifcr_cteif: $dma::ifcr::$cteif_ty<Sbt>,
-    isr_gif: $dma::isr::$gif_ty<Sbt>,
-    isr_htif: $dma::isr::$htif_ty<Sbt>,
-    isr_tcif: $dma::isr::$tcif_ty<Sbt>,
-    isr_teif: $dma::isr::$teif_ty<Sbt>,
-  }
-
-  #[doc = $doc_items]
-  #[allow(missing_docs)]
-  pub struct $name_items {
-    pub $dma_ccr: $dma::$ccr_ty<Sbt>,
-    pub $dma_cmar: $dma::$cmar_ty<Sbt>,
-    pub $dma_cndtr: $dma::$cndtr_ty<Sbt>,
-    pub $dma_cpar: $dma::$cpar_ty<Sbt>,
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    pub $dma_cselr_cs: $dma::cselr::$cs_ty<Sbt>,
-    pub $dma_ifcr_cgif: $dma::ifcr::$cgif_ty<Sbt>,
-    pub $dma_ifcr_chtif: $dma::ifcr::$chtif_ty<Sbt>,
-    pub $dma_ifcr_ctcif: $dma::ifcr::$ctcif_ty<Sbt>,
-    pub $dma_ifcr_cteif: $dma::ifcr::$cteif_ty<Sbt>,
-    pub $dma_isr_gif: $dma::isr::$gif_ty<Sbt>,
-    pub $dma_isr_htif: $dma::isr::$htif_ty<Sbt>,
-    pub $dma_isr_tcif: $dma::isr::$tcif_ty<Sbt>,
-    pub $dma_isr_teif: $dma::isr::$teif_ty<Sbt>,
-  }
-
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
-  /// Composes a new `Dma` from pieces.
-  pub macro $name($bindings:ident) {
-    $crate::peripherals::dma::Dma::compose(
-      $crate::peripherals::dma::$name_items {
-        $dma_ccr: $bindings.$dma_ccr,
-        $dma_cmar: $bindings.$dma_cmar,
-        $dma_cndtr: $bindings.$dma_cndtr,
-        $dma_cpar: $bindings.$dma_cpar,
-        $dma_cselr_cs: $bindings.$dma_cselr.$cs,
-        $dma_ifcr_cgif: $bindings.$dma_ifcr.$cgif,
-        $dma_ifcr_chtif: $bindings.$dma_ifcr.$chtif,
-        $dma_ifcr_ctcif: $bindings.$dma_ifcr.$ctcif,
-        $dma_ifcr_cteif: $bindings.$dma_ifcr.$cteif,
-        $dma_isr_gif: $bindings.$dma_isr.$gif,
-        $dma_isr_htif: $bindings.$dma_isr.$htif,
-        $dma_isr_tcif: $bindings.$dma_isr.$tcif,
-        $dma_isr_teif: $bindings.$dma_isr.$teif,
-      }
-    )
-  }
-
-  #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
+macro_rules! dma_ch {
+  (
+    $doc:expr,
+    $name:ident,
+    $doc_items:expr,
+    $name_items:ident,
+    $irq_ty:ident,
+    $ccr_ty:ident,
+    $cmar_ty:ident,
+    $cndtr_ty:ident,
+    $cpar_ty:ident,
+    $cs_ty:ident,
+    $cgif_ty:ident,
+    $chtif_ty:ident,
+    $ctcif_ty:ident,
+    $cteif_ty:ident,
+    $gif_ty:ident,
+    $htif_ty:ident,
+    $tcif_ty:ident,
+    $teif_ty:ident,
+    $irq:ident,
+    $dma:ident,
+    $dma_ccr:ident,
+    $dma_cmar:ident,
+    $dma_cndtr:ident,
+    $dma_cpar:ident,
+    $dma_cselr:ident,
+    $dma_ifcr:ident,
+    $dma_isr:ident,
+    $dma_cselr_cs:ident,
+    $dma_ifcr_cgif:ident,
+    $dma_ifcr_chtif:ident,
+    $dma_ifcr_ctcif:ident,
+    $dma_ifcr_cteif:ident,
+    $dma_isr_gif:ident,
+    $dma_isr_htif:ident,
+    $dma_isr_tcif:ident,
+    $dma_isr_teif:ident,
+    $cs:ident,
+    $cgif:ident,
+    $chtif:ident,
+    $ctcif:ident,
+    $cteif:ident,
+    $gif:ident,
+    $htif:ident,
+    $tcif:ident,
+    $teif:ident,
+  ) => {
+    #[doc = $doc]
+    pub struct $name<T: Thread, I: $irq_ty<T>> {
+      _thread: PhantomData<&'static T>,
+      irq: I,
+      ccr: $dma::$ccr_ty<Sbt>,
+      cmar: $dma::$cmar_ty<Sbt>,
+      cndtr: $dma::$cndtr_ty<Sbt>,
+      cpar: $dma::$cpar_ty<Sbt>,
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6")))]
-  /// Composes a new `Dma` from pieces.
-  pub macro $name($bindings:ident) {
-    $crate::peripherals::dma::Dma::compose(
-      $crate::peripherals::dma::$name_items {
-        $dma_ccr: $bindings.$dma_ccr,
-        $dma_cmar: $bindings.$dma_cmar,
-        $dma_cndtr: $bindings.$dma_cndtr,
-        $dma_cpar: $bindings.$dma_cpar,
-        $dma_ifcr_cgif: $bindings.$dma_ifcr.$cgif,
-        $dma_ifcr_chtif: $bindings.$dma_ifcr.$chtif,
-        $dma_ifcr_ctcif: $bindings.$dma_ifcr.$ctcif,
-        $dma_ifcr_cteif: $bindings.$dma_ifcr.$cteif,
-        $dma_isr_gif: $bindings.$dma_isr.$gif,
-        $dma_isr_htif: $bindings.$dma_isr.$htif,
-        $dma_isr_tcif: $bindings.$dma_isr.$tcif,
-        $dma_isr_teif: $bindings.$dma_isr.$teif,
-      }
-    )
-  }
+                feature = "stm32l4x6"))]
+      cselr_cs: $dma::cselr::$cs_ty<Sbt>,
+      ifcr_cgif: $dma::ifcr::$cgif_ty<Sbt>,
+      ifcr_chtif: $dma::ifcr::$chtif_ty<Sbt>,
+      ifcr_ctcif: $dma::ifcr::$ctcif_ty<Sbt>,
+      ifcr_cteif: $dma::ifcr::$cteif_ty<Sbt>,
+      isr_gif: $dma::isr::$gif_ty<Sbt>,
+      isr_htif: $dma::isr::$htif_ty<Sbt>,
+      isr_tcif: $dma::isr::$tcif_ty<Sbt>,
+      isr_teif: $dma::isr::$teif_ty<Sbt>,
+    }
 
-  impl Dma for $name {
-    type Items = $name_items;
-    type Ccr = $dma::$ccr_ty<Sbt>;
-    type Cmar = $dma::$cmar_ty<Sbt>;
-    type Cndtr = $dma::$cndtr_ty<Sbt>;
-    type Cpar = $dma::$cpar_ty<Sbt>;
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    type CselrCs = $dma::cselr::$cs_ty<Sbt>;
-    type IfcrCgif = $dma::ifcr::$cgif_ty<Sbt>;
-    type IfcrChtif = $dma::ifcr::$chtif_ty<Sbt>;
-    type IfcrCtcif = $dma::ifcr::$ctcif_ty<Sbt>;
-    type IfcrCteif = $dma::ifcr::$cteif_ty<Sbt>;
-    type IsrGif = $dma::isr::$gif_ty<Sbt>;
-    type IsrHtif = $dma::isr::$htif_ty<Sbt>;
-    type IsrTcif = $dma::isr::$tcif_ty<Sbt>;
-    type IsrTeif = $dma::isr::$teif_ty<Sbt>;
+    #[doc = $doc_items]
+    #[allow(missing_docs)]
+    pub struct $name_items<T: Thread, I: $irq_ty<T>> {
+      pub thread: PhantomData<&'static T>,
+      pub $irq: I,
+      pub $dma_ccr: $dma::$ccr_ty<Sbt>,
+      pub $dma_cmar: $dma::$cmar_ty<Sbt>,
+      pub $dma_cndtr: $dma::$cndtr_ty<Sbt>,
+      pub $dma_cpar: $dma::$cpar_ty<Sbt>,
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      pub $dma_cselr_cs: $dma::cselr::$cs_ty<Sbt>,
+      pub $dma_ifcr_cgif: $dma::ifcr::$cgif_ty<Sbt>,
+      pub $dma_ifcr_chtif: $dma::ifcr::$chtif_ty<Sbt>,
+      pub $dma_ifcr_ctcif: $dma::ifcr::$ctcif_ty<Sbt>,
+      pub $dma_ifcr_cteif: $dma::ifcr::$cteif_ty<Sbt>,
+      pub $dma_isr_gif: $dma::isr::$gif_ty<Sbt>,
+      pub $dma_isr_htif: $dma::isr::$htif_ty<Sbt>,
+      pub $dma_isr_tcif: $dma::isr::$tcif_ty<Sbt>,
+      pub $dma_isr_teif: $dma::isr::$teif_ty<Sbt>,
+    }
 
     #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
               feature = "stm32l4x3", feature = "stm32l4x5",
               feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn compose(items: Self::Items) -> Self {
-      Self {
-        ccr: items.$dma_ccr,
-        cmar: items.$dma_cmar,
-        cndtr: items.$dma_cndtr,
-        cpar: items.$dma_cpar,
-        cselr_cs: items.$dma_cselr_cs,
-        ifcr_cgif: items.$dma_ifcr_cgif,
-        ifcr_chtif: items.$dma_ifcr_chtif,
-        ifcr_ctcif: items.$dma_ifcr_ctcif,
-        ifcr_cteif: items.$dma_ifcr_cteif,
-        isr_gif: items.$dma_isr_gif,
-        isr_htif: items.$dma_isr_htif,
-        isr_tcif: items.$dma_isr_tcif,
-        isr_teif: items.$dma_isr_teif,
-      }
+    /// Composes a new `Dma` from pieces.
+    pub macro $name($threads:ident, $regs:ident) {
+      $crate::peripherals::dma::Dma::compose(
+        $crate::peripherals::dma::$name_items {
+          thread: $crate::peripherals::rt::PhantomData,
+          $irq: $threads.$irq,
+          $dma_ccr: $regs.$dma_ccr,
+          $dma_cmar: $regs.$dma_cmar,
+          $dma_cndtr: $regs.$dma_cndtr,
+          $dma_cpar: $regs.$dma_cpar,
+          $dma_cselr_cs: $regs.$dma_cselr.$cs,
+          $dma_ifcr_cgif: $regs.$dma_ifcr.$cgif,
+          $dma_ifcr_chtif: $regs.$dma_ifcr.$chtif,
+          $dma_ifcr_ctcif: $regs.$dma_ifcr.$ctcif,
+          $dma_ifcr_cteif: $regs.$dma_ifcr.$cteif,
+          $dma_isr_gif: $regs.$dma_isr.$gif,
+          $dma_isr_htif: $regs.$dma_isr.$htif,
+          $dma_isr_tcif: $regs.$dma_isr.$tcif,
+          $dma_isr_teif: $regs.$dma_isr.$teif,
+        }
+      )
     }
 
     #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
                   feature = "stm32l4x3", feature = "stm32l4x5",
                   feature = "stm32l4x6")))]
-    #[inline(always)]
-    fn compose(items: Self::Items) -> Self {
-      Self {
-        ccr: items.$dma_ccr,
-        cmar: items.$dma_cmar,
-        cndtr: items.$dma_cndtr,
-        cpar: items.$dma_cpar,
-        ifcr_cgif: items.$dma_ifcr_cgif,
-        ifcr_chtif: items.$dma_ifcr_chtif,
-        ifcr_ctcif: items.$dma_ifcr_ctcif,
-        ifcr_cteif: items.$dma_ifcr_cteif,
-        isr_gif: items.$dma_isr_gif,
-        isr_htif: items.$dma_isr_htif,
-        isr_tcif: items.$dma_isr_tcif,
-        isr_teif: items.$dma_isr_teif,
+    /// Composes a new `Dma` from pieces.
+    pub macro $name($threads:ident, $regs:ident) {
+      $crate::peripherals::dma::Dma::compose(
+        $crate::peripherals::dma::$name_items {
+          thread: $crate::peripherals::rt::PhantomData,
+          $irq: $threads.$irq,
+          $dma_ccr: $regs.$dma_ccr,
+          $dma_cmar: $regs.$dma_cmar,
+          $dma_cndtr: $regs.$dma_cndtr,
+          $dma_cpar: $regs.$dma_cpar,
+          $dma_ifcr_cgif: $regs.$dma_ifcr.$cgif,
+          $dma_ifcr_chtif: $regs.$dma_ifcr.$chtif,
+          $dma_ifcr_ctcif: $regs.$dma_ifcr.$ctcif,
+          $dma_ifcr_cteif: $regs.$dma_ifcr.$cteif,
+          $dma_isr_gif: $regs.$dma_isr.$gif,
+          $dma_isr_htif: $regs.$dma_isr.$htif,
+          $dma_isr_tcif: $regs.$dma_isr.$tcif,
+          $dma_isr_teif: $regs.$dma_isr.$teif,
+        }
+      )
+    }
+
+    impl<T: Thread, I: $irq_ty<T>> Dma<T, I> for $name<T, I> {
+      type Items = $name_items<T, I>;
+      type Ccr = $dma::$ccr_ty<Sbt>;
+      type Cmar = $dma::$cmar_ty<Sbt>;
+      type Cndtr = $dma::$cndtr_ty<Sbt>;
+      type Cpar = $dma::$cpar_ty<Sbt>;
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      type CselrCs = $dma::cselr::$cs_ty<Sbt>;
+      type IfcrCgif = $dma::ifcr::$cgif_ty<Sbt>;
+      type IfcrChtif = $dma::ifcr::$chtif_ty<Sbt>;
+      type IfcrCtcif = $dma::ifcr::$ctcif_ty<Sbt>;
+      type IfcrCteif = $dma::ifcr::$cteif_ty<Sbt>;
+      type IsrGif = $dma::isr::$gif_ty<Sbt>;
+      type IsrHtif = $dma::isr::$htif_ty<Sbt>;
+      type IsrTcif = $dma::isr::$tcif_ty<Sbt>;
+      type IsrTeif = $dma::isr::$teif_ty<Sbt>;
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn compose(items: Self::Items) -> Self {
+        Self {
+          _thread: PhantomData,
+          irq: items.$irq,
+          ccr: items.$dma_ccr,
+          cmar: items.$dma_cmar,
+          cndtr: items.$dma_cndtr,
+          cpar: items.$dma_cpar,
+          cselr_cs: items.$dma_cselr_cs,
+          ifcr_cgif: items.$dma_ifcr_cgif,
+          ifcr_chtif: items.$dma_ifcr_chtif,
+          ifcr_ctcif: items.$dma_ifcr_ctcif,
+          ifcr_cteif: items.$dma_ifcr_cteif,
+          isr_gif: items.$dma_isr_gif,
+          isr_htif: items.$dma_isr_htif,
+          isr_tcif: items.$dma_isr_tcif,
+          isr_teif: items.$dma_isr_teif,
+        }
       }
-    }
 
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn decompose(self) -> Self::Items {
-      Self::Items {
-        $dma_ccr: self.ccr,
-        $dma_cmar: self.cmar,
-        $dma_cndtr: self.cndtr,
-        $dma_cpar: self.cpar,
-        $dma_cselr_cs: self.cselr_cs,
-        $dma_ifcr_cgif: self.ifcr_cgif,
-        $dma_ifcr_chtif: self.ifcr_chtif,
-        $dma_ifcr_ctcif: self.ifcr_ctcif,
-        $dma_ifcr_cteif: self.ifcr_cteif,
-        $dma_isr_gif: self.isr_gif,
-        $dma_isr_htif: self.isr_htif,
-        $dma_isr_tcif: self.isr_tcif,
-        $dma_isr_teif: self.isr_teif,
+      #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                    feature = "stm32l4x3", feature = "stm32l4x5",
+                    feature = "stm32l4x6")))]
+      #[inline(always)]
+      fn compose(items: Self::Items) -> Self {
+        Self {
+          _thread: PhantomData,
+          irq: items.$irq,
+          ccr: items.$dma_ccr,
+          cmar: items.$dma_cmar,
+          cndtr: items.$dma_cndtr,
+          cpar: items.$dma_cpar,
+          ifcr_cgif: items.$dma_ifcr_cgif,
+          ifcr_chtif: items.$dma_ifcr_chtif,
+          ifcr_ctcif: items.$dma_ifcr_ctcif,
+          ifcr_cteif: items.$dma_ifcr_cteif,
+          isr_gif: items.$dma_isr_gif,
+          isr_htif: items.$dma_isr_htif,
+          isr_tcif: items.$dma_isr_tcif,
+          isr_teif: items.$dma_isr_teif,
+        }
       }
-    }
 
-    #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                  feature = "stm32l4x3", feature = "stm32l4x5",
-                  feature = "stm32l4x6")))]
-    #[inline(always)]
-    fn decompose(self) -> Self::Items {
-      Self::Items {
-        $dma_ccr: self.ccr,
-        $dma_cmar: self.cmar,
-        $dma_cndtr: self.cndtr,
-        $dma_cpar: self.cpar,
-        $dma_ifcr_cgif: self.ifcr_cgif,
-        $dma_ifcr_chtif: self.ifcr_chtif,
-        $dma_ifcr_ctcif: self.ifcr_ctcif,
-        $dma_ifcr_cteif: self.ifcr_cteif,
-        $dma_isr_gif: self.isr_gif,
-        $dma_isr_htif: self.isr_htif,
-        $dma_isr_tcif: self.isr_tcif,
-        $dma_isr_teif: self.isr_teif,
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn decompose(self) -> Self::Items {
+        Self::Items {
+          thread: PhantomData,
+          $irq: self.irq,
+          $dma_ccr: self.ccr,
+          $dma_cmar: self.cmar,
+          $dma_cndtr: self.cndtr,
+          $dma_cpar: self.cpar,
+          $dma_cselr_cs: self.cselr_cs,
+          $dma_ifcr_cgif: self.ifcr_cgif,
+          $dma_ifcr_chtif: self.ifcr_chtif,
+          $dma_ifcr_ctcif: self.ifcr_ctcif,
+          $dma_ifcr_cteif: self.ifcr_cteif,
+          $dma_isr_gif: self.isr_gif,
+          $dma_isr_htif: self.isr_htif,
+          $dma_isr_tcif: self.isr_tcif,
+          $dma_isr_teif: self.isr_teif,
+        }
       }
-    }
 
-    #[inline(always)]
-    fn ccr(&self) -> &Self::Ccr {
-      &self.ccr
-    }
-
-    #[inline(always)]
-    fn cmar(&self) -> &Self::Cmar {
-      &self.cmar
-    }
-
-    #[inline(always)]
-    fn cndtr(&self) -> &Self::Cndtr {
-      &self.cndtr
-    }
-
-    #[inline(always)]
-    fn cpar(&self) -> &Self::Cpar {
-      &self.cpar
-    }
-
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
-    #[inline(always)]
-    fn cselr_cs(&self) -> &Self::CselrCs {
-      &self.cselr_cs
-    }
-
-    #[inline(always)]
-    fn ifcr_cgif(&self) -> &Self::IfcrCgif {
-      &self.ifcr_cgif
-    }
-
-    #[inline(always)]
-    fn ifcr_chtif(&self) -> &Self::IfcrChtif {
-      &self.ifcr_chtif
-    }
-
-    #[inline(always)]
-    fn ifcr_ctcif(&self) -> &Self::IfcrCtcif {
-      &self.ifcr_ctcif
-    }
-
-    #[inline(always)]
-    fn ifcr_cteif(&self) -> &Self::IfcrCteif {
-      &self.ifcr_cteif
-    }
-
-    #[inline(always)]
-    fn isr_gif(&self) -> &Self::IsrGif {
-      &self.isr_gif
-    }
-
-    #[inline(always)]
-    fn isr_htif(&self) -> &Self::IsrHtif {
-      &self.isr_htif
-    }
-
-    #[inline(always)]
-    fn isr_tcif(&self) -> &Self::IsrTcif {
-      &self.isr_tcif
-    }
-
-    #[inline(always)]
-    fn isr_teif(&self) -> &Self::IsrTeif {
-      &self.isr_teif
-    }
-
-    #[inline]
-    fn transfer_complete<T: Thread>(
-      self,
-      thread: &T,
-    ) -> RoutineFuture<Self, Self> {
-      thread.future(move || loop {
-        if self.isr_teif.read_bit_band() {
-          self.ifcr_cgif.set_bit_band();
-          break Err(self);
+      #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                    feature = "stm32l4x3", feature = "stm32l4x5",
+                    feature = "stm32l4x6")))]
+      #[inline(always)]
+      fn decompose(self) -> Self::Items {
+        Self::Items {
+          thread: PhantomData,
+          $irq: self.irq,
+          $dma_ccr: self.ccr,
+          $dma_cmar: self.cmar,
+          $dma_cndtr: self.cndtr,
+          $dma_cpar: self.cpar,
+          $dma_ifcr_cgif: self.ifcr_cgif,
+          $dma_ifcr_chtif: self.ifcr_chtif,
+          $dma_ifcr_ctcif: self.ifcr_ctcif,
+          $dma_ifcr_cteif: self.ifcr_cteif,
+          $dma_isr_gif: self.isr_gif,
+          $dma_isr_htif: self.isr_htif,
+          $dma_isr_tcif: self.isr_tcif,
+          $dma_isr_teif: self.isr_teif,
         }
-        if self.isr_tcif.read_bit_band() {
-          self.ifcr_cgif.set_bit_band();
-          break Ok(self);
-        }
-        yield;
-      })
-    }
+      }
 
-    #[inline]
-    fn half_transfer<T: Thread>(self, thread: &T) -> RoutineFuture<Self, Self> {
-      thread.future(move || loop {
-        if self.isr_teif.read_bit_band() {
-          self.ifcr_cgif.set_bit_band();
-          break Err(self);
-        }
-        if self.isr_htif.read_bit_band() {
-          self.ifcr_cgif.set_bit_band();
-          break Ok(self);
-        }
-        yield;
-      })
+      #[inline(always)]
+      fn irq(&self) -> I {
+        self.irq
+      }
+
+      #[inline(always)]
+      fn ccr(&self) -> &Self::Ccr {
+        &self.ccr
+      }
+
+      #[inline(always)]
+      fn cmar(&self) -> &Self::Cmar {
+        &self.cmar
+      }
+
+      #[inline(always)]
+      fn cndtr(&self) -> &Self::Cndtr {
+        &self.cndtr
+      }
+
+      #[inline(always)]
+      fn cpar(&self) -> &Self::Cpar {
+        &self.cpar
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn cselr_cs(&self) -> &Self::CselrCs {
+        &self.cselr_cs
+      }
+
+      #[inline(always)]
+      fn ifcr_cgif(&self) -> &Self::IfcrCgif {
+        &self.ifcr_cgif
+      }
+
+      #[inline(always)]
+      fn ifcr_chtif(&self) -> &Self::IfcrChtif {
+        &self.ifcr_chtif
+      }
+
+      #[inline(always)]
+      fn ifcr_ctcif(&self) -> &Self::IfcrCtcif {
+        &self.ifcr_ctcif
+      }
+
+      #[inline(always)]
+      fn ifcr_cteif(&self) -> &Self::IfcrCteif {
+        &self.ifcr_cteif
+      }
+
+      #[inline(always)]
+      fn isr_gif(&self) -> &Self::IsrGif {
+        &self.isr_gif
+      }
+
+      #[inline(always)]
+      fn isr_htif(&self) -> &Self::IsrHtif {
+        &self.isr_htif
+      }
+
+      #[inline(always)]
+      fn isr_tcif(&self) -> &Self::IsrTcif {
+        &self.isr_tcif
+      }
+
+      #[inline(always)]
+      fn isr_teif(&self) -> &Self::IsrTeif {
+        &self.isr_teif
+      }
+
+      #[inline]
+      fn transfer_complete(self) -> RoutineFuture<Self, Self> {
+        let irq = self.irq;
+        irq.future(move || loop {
+          if self.isr_teif.read_bit_band() {
+            self.ifcr_cgif.set_bit_band();
+            break Err(self);
+          }
+          if self.isr_tcif.read_bit_band() {
+            self.ifcr_cgif.set_bit_band();
+            break Ok(self);
+          }
+          yield;
+        })
+      }
+
+      #[inline]
+      fn half_transfer(self) -> RoutineFuture<Self, Self> {
+        let irq = self.irq;
+        irq.future(move || loop {
+          if self.isr_teif.read_bit_band() {
+            self.ifcr_cgif.set_bit_band();
+            break Err(self);
+          }
+          if self.isr_htif.read_bit_band() {
+            self.ifcr_cgif.set_bit_band();
+            break Ok(self);
+          }
+          yield;
+        })
+      }
     }
   }
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
   "DMA1 Channel 1.",
   Dma1Ch1,
   "DMA1 Channel 1 items.",
   Dma1Ch1Items,
+  IrqDma1Ch1,
   Ccr1,
   Cmar1,
   Cndtr1,
@@ -420,6 +492,7 @@ dma_ch! {
   Htif1,
   Tcif1,
   Teif1,
+  dma1_ch1,
   dma1,
   dma1_ccr1,
   dma1_cmar1,
@@ -448,11 +521,17 @@ dma_ch! {
   teif1,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
   "DMA1 Channel 2.",
   Dma1Ch2,
   "DMA1 Channel 2 items.",
   Dma1Ch2Items,
+  IrqDma1Ch2,
   Ccr2,
   Cmar2,
   Cndtr2,
@@ -466,6 +545,7 @@ dma_ch! {
   Htif2,
   Tcif2,
   Teif2,
+  dma1_ch2,
   dma1,
   dma1_ccr2,
   dma1_cmar2,
@@ -494,11 +574,17 @@ dma_ch! {
   teif2,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
   "DMA1 Channel 3.",
   Dma1Ch3,
   "DMA1 Channel 3 items.",
   Dma1Ch3Items,
+  IrqDma1Ch3,
   Ccr3,
   Cmar3,
   Cndtr3,
@@ -512,6 +598,7 @@ dma_ch! {
   Htif3,
   Tcif3,
   Teif3,
+  dma1_ch3,
   dma1,
   dma1_ccr3,
   dma1_cmar3,
@@ -540,11 +627,17 @@ dma_ch! {
   teif3,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
   "DMA1 Channel 4.",
   Dma1Ch4,
   "DMA1 Channel 4 items.",
   Dma1Ch4Items,
+  IrqDma1Ch4,
   Ccr4,
   Cmar4,
   Cndtr4,
@@ -558,6 +651,7 @@ dma_ch! {
   Htif4,
   Tcif4,
   Teif4,
+  dma1_ch4,
   dma1,
   dma1_ccr4,
   dma1_cmar4,
@@ -586,11 +680,17 @@ dma_ch! {
   teif4,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
   "DMA1 Channel 5.",
   Dma1Ch5,
   "DMA1 Channel 5 items.",
   Dma1Ch5Items,
+  IrqDma1Ch5,
   Ccr5,
   Cmar5,
   Cndtr5,
@@ -604,6 +704,7 @@ dma_ch! {
   Htif5,
   Tcif5,
   Teif5,
+  dma1_ch5,
   dma1,
   dma1_ccr5,
   dma1_cmar5,
@@ -632,11 +733,17 @@ dma_ch! {
   teif5,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
   "DMA1 Channel 6.",
   Dma1Ch6,
   "DMA1 Channel 6 items.",
   Dma1Ch6Items,
+  IrqDma1Ch6,
   Ccr6,
   Cmar6,
   Cndtr6,
@@ -650,6 +757,7 @@ dma_ch! {
   Htif6,
   Tcif6,
   Teif6,
+  dma1_ch6,
   dma1,
   dma1_ccr6,
   dma1_cmar6,
@@ -678,11 +786,17 @@ dma_ch! {
   teif6,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
   "DMA1 Channel 7.",
   Dma1Ch7,
   "DMA1 Channel 7 items.",
   Dma1Ch7Items,
+  IrqDma1Ch7,
   Ccr7,
   Cmar7,
   Cndtr7,
@@ -696,6 +810,7 @@ dma_ch! {
   Htif7,
   Tcif7,
   Teif7,
+  dma1_ch7,
   dma1,
   dma1_ccr7,
   dma1_cmar7,
@@ -724,11 +839,17 @@ dma_ch! {
   teif7,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
   "DMA2 Channel 1.",
   Dma2Ch1,
   "DMA2 Channel 1 items.",
   Dma2Ch1Items,
+  IrqDma2Ch1,
   Ccr1,
   Cmar1,
   Cndtr1,
@@ -742,6 +863,7 @@ dma_ch! {
   Htif1,
   Tcif1,
   Teif1,
+  dma2_ch1,
   dma2,
   dma2_ccr1,
   dma2_cmar1,
@@ -770,11 +892,17 @@ dma_ch! {
   teif1,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
   "DMA2 Channel 2.",
   Dma2Ch2,
   "DMA2 Channel 2 items.",
   Dma2Ch2Items,
+  IrqDma2Ch2,
   Ccr2,
   Cmar2,
   Cndtr2,
@@ -788,6 +916,7 @@ dma_ch! {
   Htif2,
   Tcif2,
   Teif2,
+  dma2_ch2,
   dma2,
   dma2_ccr2,
   dma2_cmar2,
@@ -816,11 +945,17 @@ dma_ch! {
   teif2,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
   "DMA2 Channel 3.",
   Dma2Ch3,
   "DMA2 Channel 3 items.",
   Dma2Ch3Items,
+  IrqDma2Ch3,
   Ccr3,
   Cmar3,
   Cndtr3,
@@ -834,6 +969,7 @@ dma_ch! {
   Htif3,
   Tcif3,
   Teif3,
+  dma2_ch3,
   dma2,
   dma2_ccr3,
   dma2_cmar3,
@@ -862,11 +998,17 @@ dma_ch! {
   teif3,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
   "DMA2 Channel 4.",
   Dma2Ch4,
   "DMA2 Channel 4 items.",
   Dma2Ch4Items,
+  IrqDma2Ch4,
   Ccr4,
   Cmar4,
   Cndtr4,
@@ -880,6 +1022,7 @@ dma_ch! {
   Htif4,
   Tcif4,
   Teif4,
+  dma2_ch4,
   dma2,
   dma2_ccr4,
   dma2_cmar4,
@@ -908,11 +1051,17 @@ dma_ch! {
   teif4,
 }
 
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103",
+          feature = "stm32f107", feature = "stm32l4x1",
+          feature = "stm32l4x2", feature = "stm32l4x3",
+          feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
   "DMA2 Channel 5.",
   Dma2Ch5,
   "DMA2 Channel 5 items.",
   Dma2Ch5Items,
+  IrqDma2Ch5,
   Ccr5,
   Cmar5,
   Cndtr5,
@@ -926,6 +1075,7 @@ dma_ch! {
   Htif5,
   Tcif5,
   Teif5,
+  dma2_ch5,
   dma2,
   dma2_ccr5,
   dma2_cmar5,
@@ -962,6 +1112,7 @@ dma_ch! {
   Dma2Ch6,
   "DMA2 Channel 6 items.",
   Dma2Ch6Items,
+  IrqDma2Ch6,
   Ccr6,
   Cmar6,
   Cndtr6,
@@ -975,6 +1126,7 @@ dma_ch! {
   Htif6,
   Tcif6,
   Teif6,
+  dma2_ch6,
   dma2,
   dma2_ccr6,
   dma2_cmar6,
@@ -1011,6 +1163,7 @@ dma_ch! {
   Dma2Ch7,
   "DMA2 Channel 7 items.",
   Dma2Ch7Items,
+  IrqDma2Ch7,
   Ccr7,
   Cmar7,
   Cndtr7,
@@ -1024,6 +1177,7 @@ dma_ch! {
   Htif7,
   Tcif7,
   Teif7,
+  dma2_ch7,
   dma2,
   dma2_ccr7,
   dma2_cmar7,

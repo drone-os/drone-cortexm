@@ -6,14 +6,18 @@
 //!
 //! ```rust
 //! vtable! {
-//!   //! The vector table.
+//!   /// The vector table.
+//!   VectorTable;
+//!   /// Array of threads.
+//!   THREADS;
+//!   ThreadLocal;
 //!
 //!   /// Non maskable interrupt.
-//!   nmi;
+//!   NMI;
 //!   /// All classes of fault.
-//!   hard_fault;
+//!   HARD_FAULT;
 //!   /// System tick timer.
-//!   sys_tick;
+//!   SYS_TICK;
 //!   /// RCC global interrupt.
 //!   5: rcc; // Give IRQ5 a name
 //! }
@@ -21,17 +25,23 @@
 //!
 //! # Preconfigured exceptions
 //!
-//! * `nmi` - Non maskable interrupt.
-//! * `hard_fault` - All classes of fault.
-//! * `mem_manage` - Memory management.
-//! * `bus_fault` - Pre-fetch fault, memory access fault.
-//! * `usage_fault` - Undefined instruction or illegal state.
-//! * `sv_call` - System service call via SWI instruction.
-//! * `debug` - Monitor.
-//! * `pend_sv` - Pendable request for system service.
-//! * `sys_tick` - System tick timer.
+//! * `NMI` - Non maskable interrupt.
+//! * `HARD_FAULT` - All classes of fault.
+//! * `MEM_MANAGE` - Memory management.
+//! * `BUS_FAULT` - Pre-fetch fault, memory access fault.
+//! * `USAGE_FAULT` - Undefined instruction or illegal state.
+//! * `SV_CALL` - System service call via SWI instruction.
+//! * `DEBUG` - Monitor.
+//! * `PEND_SV` - Pendable request for system service.
+//! * `SYS_TICK` - System tick timer.
 //!
 //! [`vtable!`]: ../macro.vtable.html
+
+mod thread_interrupt;
+pub mod interrupts;
+
+pub use self::thread_interrupt::ThreadInterrupt;
+pub use drone_cortex_m_macros::interrupt;
 
 /// Pointer to an exception handler.
 pub type Handler = unsafe extern "C" fn();

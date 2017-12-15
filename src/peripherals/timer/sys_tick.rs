@@ -1,31 +1,43 @@
+use super::Timer;
+use core::marker::PhantomData;
+use drone::sync::spsc::unit;
+use drone::thread::RoutineFuture;
 use reg::prelude::*;
 use reg::stk;
+use thread::interrupts::IrqSysTick;
 
 /// SysTick timer.
-pub struct SysTick {
+pub struct SysTick<T: Thread, I: IrqSysTick<T>> {
+  _thread: PhantomData<&'static T>,
+  irq: I,
   ctrl: stk::Ctrl<Fbt>,
   load: stk::Load<Sbt>,
   val: stk::Val<Sbt>,
 }
 
 /// SysTick timer items.
-pub macro SysTick($bindings:ident) {
+pub macro SysTick($threads:ident, $regs:ident) {
   $crate::peripherals::timer::SysTick::compose(
-    $bindings.stk_ctrl,
-    $bindings.stk_load,
-    $bindings.stk_val,
+    $threads.sys_tick,
+    $regs.stk_ctrl,
+    $regs.stk_load,
+    $regs.stk_val,
   )
 }
 
-impl SysTick {
+#[allow(missing_docs)]
+impl<T: Thread, I: IrqSysTick<T>> SysTick<T, I> {
   /// Composes a new `SysTick` from pieces.
   #[inline(always)]
   pub fn compose(
+    irq: I,
     stk_ctrl: stk::Ctrl<Sbt>,
     stk_load: stk::Load<Sbt>,
     stk_val: stk::Val<Sbt>,
   ) -> Self {
     Self {
+      _thread: PhantomData,
+      irq,
       ctrl: stk_ctrl.into(),
       load: stk_load,
       val: stk_val,
@@ -38,80 +50,96 @@ impl SysTick {
     (self.ctrl, self.load, self.val)
   }
 
-  /// Schedules SysTick event. The event will be triggering in periods of
-  /// `duration` ticks.
   #[inline(always)]
-  pub fn schedule(&self, duration: u32) {
-    self.load.reset(|r| r.write_reload(duration));
-    self.val.reset(|r| r.write_current(0));
+  pub fn irq(&self) -> I {
+    self.irq
   }
 
-  /// Starts the timer.
-  #[inline(always)]
-  pub fn start(&mut self, ctrl: stk::ctrl::Val) {
-    let mut ctrl = self.ctrl.hold(ctrl);
-    self.ctrl.store_val(enable(&mut ctrl).val());
-  }
-
-  /// Stops the timer.
-  #[inline(always)]
-  pub fn stop(&mut self, ctrl: stk::ctrl::Val) {
-    let mut ctrl = self.ctrl.hold(ctrl);
-    self.ctrl.store_val(disable(&mut ctrl).val());
-  }
-
-  /// Returns a future, which resolves after `duration` ticks.
-  #[inline]
-  pub fn timeout<T: Thread>(
-    mut self,
-    duration: u32,
-    mut ctrl_val: stk::ctrl::Val,
-    thread: &T,
-  ) -> impl Future<Item = Self, Error = ()> {
-    ctrl_val = disable(&mut self.ctrl.hold(ctrl_val)).val();
-    self.ctrl.store_val(ctrl_val);
-    self.schedule(duration);
-    let ctrl = self.ctrl.fork();
-    let future = thread.future_fn(move || {
-      self.ctrl.store_val(ctrl_val);
-      Ok(self)
-    });
-    ctrl_val = enable(&mut ctrl.hold(ctrl_val)).val();
-    ctrl.store_val(ctrl_val);
-    future
-  }
-
-  /// Returns a reference to the binding.
   #[inline(always)]
   pub fn ctrl(&self) -> &stk::Ctrl<Fbt> {
     &self.ctrl
   }
 
-  /// Returns a reference to the binding.
   #[inline(always)]
   pub fn load(&self) -> &stk::Load<Sbt> {
     &self.load
   }
 
-  /// Returns a reference to the binding.
   #[inline(always)]
   pub fn val(&self) -> &stk::Val<Sbt> {
     &self.val
   }
 }
 
-#[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
+impl<T: Thread, I: IrqSysTick<T>> Timer for SysTick<T, I> {
+  type Counter = u32;
+  type CtrlVal = stk::ctrl::Val;
+
+  #[inline]
+  fn sleep(
+    &mut self,
+    duration: Self::Counter,
+    mut ctrl_val: Self::CtrlVal,
+  ) -> RoutineFuture<(), ()> {
+    ctrl_val = disable(&mut self.ctrl.hold(ctrl_val)).val();
+    self.ctrl.store_val(ctrl_val);
+    schedule(&self.load, &self.val, duration);
+    let ctrl = self.ctrl.fork();
+    let future = self.irq.future_fn(move || {
+      ctrl.store_val(ctrl_val);
+      Ok(())
+    });
+    ctrl_val = enable(&mut self.ctrl.hold(ctrl_val)).val();
+    self.ctrl.store_val(ctrl_val);
+    future
+  }
+
+  #[inline]
+  fn interval(
+    &mut self,
+    duration: Self::Counter,
+    mut ctrl_val: Self::CtrlVal,
+  ) -> unit::Receiver<()> {
+    ctrl_val = disable(&mut self.ctrl.hold(ctrl_val)).val();
+    self.ctrl.store_val(ctrl_val);
+    schedule(&self.load, &self.val, duration);
+    let stream = self.irq.stream_skip(|| loop {
+      yield Some(());
+    });
+    ctrl_val = enable(&mut self.ctrl.hold(ctrl_val)).val();
+    self.ctrl.store_val(ctrl_val);
+    stream
+  }
+
+  #[inline(always)]
+  fn stop(&mut self, mut ctrl_val: Self::CtrlVal) {
+    ctrl_val = disable(&mut self.ctrl.hold(ctrl_val)).val();
+    self.ctrl.store_val(ctrl_val);
+  }
+
+  #[inline(always)]
+  fn reset(&mut self) {
+    let ctrl_val = self.ctrl.default().val();
+    self.stop(ctrl_val);
+  }
+}
+
 #[inline(always)]
-fn enable<'a, 'b, T: RegTag>(
-  ctrl: &'a mut stk::ctrl::Hold<'b, T>,
-) -> &'a mut stk::ctrl::Hold<'b, T> {
+fn schedule(stk_load: &stk::Load<Sbt>, stk_val: &stk::Val<Sbt>, duration: u32) {
+  stk_load.reset(|r| r.write_reload(duration));
+  stk_val.reset(|r| r.write_current(0));
+}
+
+#[inline(always)]
+fn enable<'a, 'b>(
+  ctrl: &'a mut stk::ctrl::Hold<'b, Fbt>,
+) -> &'a mut stk::ctrl::Hold<'b, Fbt> {
   ctrl.set_enable().set_tickint()
 }
 
-#[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
 #[inline(always)]
-fn disable<'a, 'b, T: RegTag>(
-  ctrl: &'a mut stk::ctrl::Hold<'b, T>,
-) -> &'a mut stk::ctrl::Hold<'b, T> {
+fn disable<'a, 'b>(
+  ctrl: &'a mut stk::ctrl::Hold<'b, Fbt>,
+) -> &'a mut stk::ctrl::Hold<'b, Fbt> {
   ctrl.clear_enable().clear_tickint()
 }

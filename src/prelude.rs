@@ -19,3 +19,4 @@
 pub use drone::prelude::*;
 
 pub use task::{DroneFuture, DroneStream};
+pub use thread::ThreadInterrupt;

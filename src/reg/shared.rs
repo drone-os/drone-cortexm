@@ -252,31 +252,33 @@ where
   }
 }
 
-#[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
-macro reg_raw_shared($type:ty, $ldrex:expr, $strex:expr) {
-  impl RegRawShared for $type {
-    #[inline(always)]
-    unsafe fn load_excl(address: usize) -> Self
-    {
-      let raw: $type;
-      asm!($ldrex
-        : "=r"(raw)
-        : "r"(address)
-        :
-        : "volatile");
-      raw
-    }
+macro_rules! reg_raw_shared
+{
+  ($type:ty, $ldrex:expr, $strex:expr) => {
+    impl RegRawShared for $type {
+      #[inline(always)]
+      unsafe fn load_excl(address: usize) -> Self
+      {
+        let raw: $type;
+        asm!($ldrex
+             : "=r"(raw)
+             : "r"(address)
+             :
+             : "volatile");
+        raw
+      }
 
-    #[inline(always)]
-    unsafe fn store_excl(self, address: usize) -> bool
-    {
-      let status: $type;
-      asm!($strex
-        : "=r"(status)
-        : "r"(self), "r"(address)
-        :
-        : "volatile");
-      status == 0
+      #[inline(always)]
+      unsafe fn store_excl(self, address: usize) -> bool
+      {
+        let status: $type;
+        asm!($strex
+             : "=r"(status)
+             : "r"(self), "r"(address)
+             :
+             : "volatile");
+        status == 0
+      }
     }
   }
 }

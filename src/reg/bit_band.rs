@@ -99,7 +99,7 @@ mod tests {
   use drone::reg::mappings;
 
   mappings! {
-    TEST_BLOCK
+    TEST_BLOCK;
 
     #[allow(dead_code)]
     LOW_REG {

@@ -20,9 +20,10 @@ fn run() -> Result<(), Error> {
   let out_dir = Path::new(&out_dir);
   let mut mappings = File::create(out_dir.join("svd_mappings.rs"))?;
   let mut bindings = File::create(out_dir.join("svd_bindings.rs"))?;
+  let mut interrupts = File::create(out_dir.join("svd_interrupts.rs"))?;
   if let Some(svd_file) = svd_from_feature() {
     let mut input = File::open(svd_file)?;
-    svd_generate(&mut input, &mut mappings, &mut bindings)?;
+    svd_generate(&mut input, &mut mappings, &mut bindings, &mut interrupts)?;
   }
   Ok(())
 }

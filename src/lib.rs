@@ -30,6 +30,7 @@
 #![feature(conservative_impl_trait)]
 #![feature(const_fn)]
 #![feature(decl_macro)]
+#![feature(fused)]
 #![feature(generators)]
 #![feature(lang_items)]
 #![feature(linkage)]
@@ -55,6 +56,9 @@
 extern crate alloc;
 #[cfg(test)]
 extern crate compiler_builtins;
+#[cfg_attr(feature = "clippy", allow(useless_attribute))]
+#[allow(unused_imports)]
+#[macro_use]
 extern crate drone;
 extern crate drone_cortex_m_macros;
 extern crate futures;
@@ -70,7 +74,7 @@ pub mod peripherals;
 pub mod prelude;
 pub mod reg;
 pub mod task;
-pub mod vtable;
+pub mod thread;
 
 pub use drone_cortex_m_macros::vtable;
 
@@ -80,5 +84,7 @@ use prelude::*;
 
 #[cfg(test)]
 drone::heap! {
-  #![global_allocator]
+  Heap;
+  #[global_allocator]
+  ALLOC;
 }
