@@ -1,7 +1,7 @@
 //! Drone for ARM Cortex-M procedural macros.
 //!
 //! See `drone-cortex-m` documentation for details.
-#![feature(decl_macro)]
+
 #![feature(proc_macro)]
 #![recursion_limit = "256"]
 #![cfg_attr(feature = "clippy", feature(plugin))]

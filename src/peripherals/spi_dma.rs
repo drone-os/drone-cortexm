@@ -1,7 +1,5 @@
 //! SPI with DMA.
 
-#[allow(unused_imports)]
-use core::marker::PhantomData;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
@@ -38,24 +36,22 @@ use thread::interrupts::{IrqDma1Channel2 as IrqDma1Ch2,
 #[cfg(any(feature = "stm32l4x3", feature = "stm32l4x5"))]
 use thread::interrupts::{IrqDma2Channel3 as IrqDma2Ch3,
                          IrqDma2Channel4 as IrqDma2Ch4};
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
-use thread::interrupts::{IrqSpi1, IrqSpi2, IrqSpi3};
+use thread::prelude::*;
 
 /// Generic SPI with duplex DMA.
-pub trait SpiDma<T, IrqSpi, IrqDmaTx, IrqDmaRx>
+pub trait SpiDmaDx<T, IrqDmaTx, IrqDmaRx>
 where
   Self: Sized,
+  Self::Tokens: From<Self>,
   T: Thread,
-  IrqSpi: ThreadBinding<T>,
-  IrqDmaTx: ThreadBinding<T>,
-  IrqDmaRx: ThreadBinding<T>,
+  IrqDmaTx: ThreadNumber,
+  IrqDmaRx: ThreadNumber,
 {
+  /// Generic SPI with duplex DMA tokens.
+  type Tokens;
+
   /// SPI.
-  type Spi: Spi<T, IrqSpi>;
+  type Spi: Spi;
 
   /// DMA transmitting channel.
   type DmaTx: Dma<T, IrqDmaTx>;
@@ -63,11 +59,8 @@ where
   /// DMA receiving channel.
   type DmaRx: Dma<T, IrqDmaRx>;
 
-  /// Composes a new `SpiDma` from pieces.
-  fn compose(spi: Self::Spi, dma_tx: Self::DmaTx, dma_rx: Self::DmaRx) -> Self;
-
-  /// Decomposes the `SpiDma` into pieces.
-  fn decompose(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx);
+  /// Creates a new `SpiDmaDx` driver from provided `tokens`.
+  fn new(tokens: Self::Tokens) -> Self;
 
   /// Initializes DMA to use with SPI.
   fn dma_init(&self);
@@ -85,30 +78,30 @@ where
   /// complete.
   fn transfer_complete(
     self,
-    cr1: <<Self::Spi as Spi<T, IrqSpi>>::Cr1 as Reg<Fbt>>::Val,
-    cr2: <<Self::Spi as Spi<T, IrqSpi>>::Cr2 as Reg<Fbt>>::Val,
+    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
+    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Ftt>>::Val,
   ) -> Box<Future<Item = Self, Error = Self>>;
 }
 
 /// Generic SPI with transmit-only DMA.
-pub trait SpiDmaTx<T, IrqSpi, IrqDmaTx>
+pub trait SpiDmaTx<T, IrqDmaTx>
 where
   Self: Sized,
+  Self::Tokens: From<Self>,
   T: Thread,
-  IrqSpi: ThreadBinding<T>,
-  IrqDmaTx: ThreadBinding<T>,
+  IrqDmaTx: ThreadNumber,
 {
+  /// Generic SPI with transmit-only DMA tokens.
+  type Tokens;
+
   /// SPI.
-  type Spi: Spi<T, IrqSpi>;
+  type Spi: Spi;
 
   /// DMA transmitting channel.
   type DmaTx: Dma<T, IrqDmaTx>;
 
-  /// Composes a new `SpiDmaTx` from pieces.
-  fn compose(spi: Self::Spi, dma_tx: Self::DmaTx) -> Self;
-
-  /// Decomposes the `SpiDmaTx` into pieces.
-  fn decompose(self) -> (Self::Spi, Self::DmaTx);
+  /// Creates a new `SpiDmaTx` driver from provided `tokens`.
+  fn new(tokens: Self::Tokens) -> Self;
 
   /// Initializes DMA to use with SPI.
   fn dma_init(&self);
@@ -122,30 +115,30 @@ where
   /// Returns a future, which resolves on DMA transmit complete.
   fn transfer_complete(
     self,
-    cr1: <<Self::Spi as Spi<T, IrqSpi>>::Cr1 as Reg<Fbt>>::Val,
-    cr2: <<Self::Spi as Spi<T, IrqSpi>>::Cr2 as Reg<Fbt>>::Val,
+    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
+    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Ftt>>::Val,
   ) -> Box<Future<Item = Self, Error = Self>>;
 }
 
 /// Generic SPI with receive-only DMA.
-pub trait SpiDmaRx<T, IrqSpi, IrqDmaRx>
+pub trait SpiDmaRx<T, IrqDmaRx>
 where
   Self: Sized,
+  Self::Tokens: From<Self>,
   T: Thread,
-  IrqSpi: ThreadBinding<T>,
-  IrqDmaRx: ThreadBinding<T>,
+  IrqDmaRx: ThreadNumber,
 {
+  /// Generic SPI with receive-only DMA tokens.
+  type Tokens;
+
   /// SPI.
-  type Spi: Spi<T, IrqSpi>;
+  type Spi: Spi;
 
   /// DMA receiving channel.
   type DmaRx: Dma<T, IrqDmaRx>;
 
-  /// Composes a new `SpiDmaRx` from pieces.
-  fn compose(spi: Self::Spi, dma_rx: Self::DmaRx) -> Self;
-
-  /// Decomposes the `SpiDmaRx` into pieces.
-  fn decompose(self) -> (Self::Spi, Self::DmaRx);
+  /// Creates a new `SpiDmaRx` driver from provided `tokens`.
+  fn new(tokens: Self::Tokens) -> Self;
 
   /// Initializes DMA to use with SPI.
   fn dma_init(&self);
@@ -159,85 +152,160 @@ where
   /// Returns a future, which resolves on DMA receive complete.
   fn transfer_complete(
     self,
-    cr1: <<Self::Spi as Spi<T, IrqSpi>>::Cr1 as Reg<Fbt>>::Val,
+    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
   ) -> Box<Future<Item = Self, Error = Self>>;
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[allow(unused_macros)]
 macro_rules! spi_dma {
   (
-    $doc:expr,
-    $name:ident,
+    $doc_dx:expr,
+    $name_dx:ident,
+    $name_dx_macro:ident,
     $doc_tx:expr,
     $name_tx:ident,
+    $name_tx_macro:ident,
     $doc_rx:expr,
     $name_rx:ident,
+    $name_rx_macro:ident,
+    $doc_dx_tokens:expr,
+    $name_dx_tokens:ident,
+    $doc_tx_tokens:expr,
+    $name_tx_tokens:ident,
+    $doc_rx_tokens:expr,
+    $name_rx_tokens:ident,
     $irq_spi:ident,
     $irq_dma_tx:ident,
     $irq_dma_rx:ident,
+    $spi_ty:ident,
+    $dma_tx_ty:ident,
+    $dma_rx_ty:ident,
+    $spi_macro:ident,
+    $dma_tx_macro:ident,
+    $dma_rx_macro:ident,
     $spi:ident,
     $dma_tx:ident,
     $dma_rx:ident,
     $dma_tx_cs:expr,
     $dma_rx_cs:expr,
   ) => {
-    #[doc = $doc]
-    pub struct $name<T, IrqSpi, IrqDmaTx, IrqDmaRx>
+    #[doc = $doc_dx]
+    pub struct $name_dx<T, IrqDmaTx, IrqDmaRx>
     where
       T: Thread,
-      IrqSpi: $irq_spi<T>,
-      IrqDmaTx: $irq_dma_tx<T>,
-      IrqDmaRx: $irq_dma_rx<T>,
+      IrqDmaTx: $irq_dma_tx,
+      IrqDmaRx: $irq_dma_rx,
     {
-      _thread: PhantomData<&'static T>,
-      spi: $spi<T, IrqSpi>,
-      dma_tx: $dma_tx<T, IrqDmaTx>,
-      dma_rx: $dma_rx<T, IrqDmaRx>,
+      tokens: $name_dx_tokens<T, IrqDmaTx, IrqDmaRx>,
     }
 
     #[doc = $doc_tx]
-    pub struct $name_tx<T, IrqSpi, IrqDmaTx>
+    pub struct $name_tx<T, IrqDmaTx>
     where
       T: Thread,
-      IrqSpi: $irq_spi<T>,
-      IrqDmaTx: $irq_dma_tx<T>,
+      IrqDmaTx: $irq_dma_tx,
     {
-      _thread: PhantomData<&'static T>,
-      spi: $spi<T, IrqSpi>,
-      dma_tx: $dma_tx<T, IrqDmaTx>,
+      tokens: $name_tx_tokens<T, IrqDmaTx>,
     }
 
     #[doc = $doc_rx]
-    pub struct $name_rx<T, IrqSpi, IrqDmaRx>
+    pub struct $name_rx<T, IrqDmaRx>
     where
       T: Thread,
-      IrqSpi: $irq_spi<T>,
-      IrqDmaRx: $irq_dma_rx<T>,
+      IrqDmaRx: $irq_dma_rx,
     {
-      _thread: PhantomData<&'static T>,
-      spi: $spi<T, IrqSpi>,
-      dma_rx: $dma_rx<T, IrqDmaRx>,
+      tokens: $name_rx_tokens<T, IrqDmaRx>,
     }
 
-    impl<T, IrqSpi, IrqDmaTx, IrqDmaRx> $name<T, IrqSpi, IrqDmaTx, IrqDmaRx>
+    #[doc = $doc_dx_tokens]
+    #[allow(missing_docs)]
+    pub struct $name_dx_tokens<T, IrqDmaTx, IrqDmaRx>
     where
       T: Thread,
-      IrqSpi: $irq_spi<T>,
-      IrqDmaTx: $irq_dma_tx<T>,
-      IrqDmaRx: $irq_dma_rx<T>,
+      IrqDmaTx: $irq_dma_tx,
+      IrqDmaRx: $irq_dma_rx,
+    {
+      pub $spi: $spi_ty,
+      pub $dma_tx: $dma_tx_ty<T, IrqDmaTx>,
+      pub $dma_rx: $dma_rx_ty<T, IrqDmaRx>,
+    }
+
+    #[doc = $doc_tx_tokens]
+    #[allow(missing_docs)]
+    pub struct $name_tx_tokens<T, IrqDmaTx>
+    where
+      T: Thread,
+      IrqDmaTx: $irq_dma_tx,
+    {
+      pub $spi: $spi_ty,
+      pub $dma_tx: $dma_tx_ty<T, IrqDmaTx>,
+    }
+
+    #[doc = $doc_rx_tokens]
+    #[allow(missing_docs)]
+    pub struct $name_rx_tokens<T, IrqDmaRx>
+    where
+      T: Thread,
+      IrqDmaRx: $irq_dma_rx,
+    {
+      pub $spi: $spi_ty,
+      pub $dma_rx: $dma_rx_ty<T, IrqDmaRx>,
+    }
+
+    /// Creates a new `SpiDmaDx` driver from tokens.
+    #[macro_export]
+    macro_rules! $name_dx_macro {
+      ($thrd:ident, $regs:ident) => {
+        $crate::peripherals::spi_dma::SpiDmaDx::new(
+          $crate::peripherals::spi_dma::$name_dx_tokens {
+            $spi: $spi_macro!($regs),
+            $dma_tx: $dma_tx_macro!($thrd, $regs),
+            $dma_rx: $dma_rx_macro!($thrd, $regs),
+          }
+        )
+      }
+    }
+
+    /// Creates a new `SpiDmaTx` driver from tokens.
+    #[macro_export]
+    macro_rules! $name_tx_macro {
+      ($thrd:ident, $regs:ident) => {
+        $crate::peripherals::spi_dma::SpiDmaTx::new(
+          $crate::peripherals::spi_dma::$name_tx_tokens {
+            $spi: $spi_macro!($regs),
+            $dma_tx: $dma_tx_macro!($thrd, $regs),
+          }
+        )
+      }
+    }
+
+    /// Creates a new `SpiDmaRx` driver from tokens.
+    #[macro_export]
+    macro_rules! $name_rx_macro {
+      ($thrd:ident, $regs:ident) => {
+        $crate::peripherals::spi_dma::SpiDmaRx::new(
+          $crate::peripherals::spi_dma::$name_rx_tokens {
+            $spi: $spi_macro!($regs),
+            $dma_rx: $dma_rx_macro!($thrd, $regs),
+          }
+        )
+      }
+    }
+
+    impl<T, IrqDmaTx, IrqDmaRx> $name_dx<T, IrqDmaTx, IrqDmaRx>
+    where
+      T: Thread,
+      IrqDmaTx: $irq_dma_tx,
+      IrqDmaRx: $irq_dma_rx,
     {
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn select_channels(&self) {
-        self.dma_tx.cselr_cs().modify(|r| {
-          self.dma_tx.cselr_cs().write(r, $dma_tx_cs);
-          self.dma_rx.cselr_cs().write(r, $dma_rx_cs);
+        self.tokens.$dma_tx.cselr_cs().modify(|r| {
+          self.tokens.$dma_tx.cselr_cs().write(r, $dma_tx_cs);
+          self.tokens.$dma_rx.cselr_cs().write(r, $dma_rx_cs);
         });
       }
 
@@ -248,18 +316,17 @@ macro_rules! spi_dma {
       fn select_channels(&self) {}
     }
 
-    impl<T, IrqSpi, IrqDmaTx> $name_tx<T, IrqSpi, IrqDmaTx>
+    impl<T, IrqDmaTx> $name_tx<T, IrqDmaTx>
     where
       T: Thread,
-      IrqSpi: $irq_spi<T>,
-      IrqDmaTx: $irq_dma_tx<T>,
+      IrqDmaTx: $irq_dma_tx,
     {
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn select_channel(&self) {
-        self.dma_tx.cselr_cs().write_bits($dma_tx_cs);
+        self.tokens.$dma_tx.cselr_cs().write_bits($dma_tx_cs);
       }
 
       #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -269,18 +336,17 @@ macro_rules! spi_dma {
       fn select_channel(&self) {}
     }
 
-    impl<T, IrqSpi, IrqDmaRx> $name_rx<T, IrqSpi, IrqDmaRx>
+    impl<T, IrqDmaRx> $name_rx<T, IrqDmaRx>
     where
       T: Thread,
-      IrqSpi: $irq_spi<T>,
-      IrqDmaRx: $irq_dma_rx<T>,
+      IrqDmaRx: $irq_dma_rx,
     {
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn select_channel(&self) {
-        self.dma_rx.cselr_cs().write_bits($dma_rx_cs);
+        self.tokens.$dma_rx.cselr_cs().write_bits($dma_rx_cs);
       }
 
       #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -290,83 +356,91 @@ macro_rules! spi_dma {
       fn select_channel(&self) {}
     }
 
-    impl<T, IrqSpi, IrqDmaTx, IrqDmaRx> SpiDma<T, IrqSpi, IrqDmaTx, IrqDmaRx>
-      for $name<T, IrqSpi, IrqDmaTx, IrqDmaRx>
+    impl<T, IrqDmaTx, IrqDmaRx> From<$name_dx<T, IrqDmaTx, IrqDmaRx>>
+      for $name_dx_tokens<T, IrqDmaTx, IrqDmaRx>
     where
       T: Thread,
-      IrqSpi: $irq_spi<T>,
-      IrqDmaTx: $irq_dma_tx<T>,
-      IrqDmaRx: $irq_dma_rx<T>,
+      IrqDmaTx: $irq_dma_tx,
+      IrqDmaRx: $irq_dma_rx,
     {
-      type Spi = $spi<T, IrqSpi>;
-      type DmaTx = $dma_tx<T, IrqDmaTx>;
-      type DmaRx = $dma_rx<T, IrqDmaRx>;
-
       #[inline(always)]
-      fn compose(
-        spi: Self::Spi,
-        dma_tx: Self::DmaTx,
-        dma_rx: Self::DmaRx,
-      ) -> Self {
-        Self {
-          _thread: PhantomData,
-          spi,
-          dma_tx,
-          dma_rx,
-        }
+      fn from(spi_dma_dx: $name_dx<T, IrqDmaTx, IrqDmaRx>) -> Self {
+        spi_dma_dx.tokens
       }
+    }
+
+    impl<T, IrqDmaTx, IrqDmaRx> SpiDmaDx<T, IrqDmaTx, IrqDmaRx>
+      for $name_dx<T, IrqDmaTx, IrqDmaRx>
+    where
+      T: Thread,
+      IrqDmaTx: $irq_dma_tx,
+      IrqDmaRx: $irq_dma_rx,
+    {
+      type Tokens = $name_dx_tokens<T, IrqDmaTx, IrqDmaRx>;
+      type Spi = $spi_ty;
+      type DmaTx = $dma_tx_ty<T, IrqDmaTx>;
+      type DmaRx = $dma_rx_ty<T, IrqDmaRx>;
 
       #[inline(always)]
-      fn decompose(self) -> (Self::Spi, Self::DmaTx, Self::DmaRx) {
-        (self.spi, self.dma_tx, self.dma_rx)
+      fn new(tokens: Self::Tokens) -> Self {
+        Self { tokens }
       }
 
       #[inline(always)]
       fn dma_init(&self) {
-        let dr = self.spi.dr();
-        self.dma_rx.cpar().reset(|r| r.write_pa(dr.to_ptr() as u32));
-        self.dma_tx.cpar().reset(|r| r.write_pa(dr.to_mut_ptr() as u32));
+        let dr_ptr = self.tokens.$spi.dr().to_mut_ptr();
+        self.tokens.$dma_rx.set_peripheral_address(dr_ptr as usize);
+        self.tokens.$dma_tx.set_peripheral_address(dr_ptr as usize);
         self.select_channels();
       }
 
       #[inline(always)]
       fn spi(&self) -> &Self::Spi {
-        &self.spi
+        &self.tokens.$spi
       }
 
       #[inline(always)]
       fn dma_tx(&self) -> &Self::DmaTx {
-        &self.dma_tx
+        &self.tokens.$dma_tx
       }
 
       #[inline(always)]
       fn dma_rx(&self) -> &Self::DmaRx {
-        &self.dma_rx
+        &self.tokens.$dma_rx
       }
 
       #[inline]
       fn transfer_complete(
         self,
-        cr1: <<Self::Spi as Spi<T, IrqSpi>>::Cr1 as Reg<Fbt>>::Val,
-        cr2: <<Self::Spi as Spi<T, IrqSpi>>::Cr2 as Reg<Fbt>>::Val,
+        cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
+        cr2: <<Self::Spi as Spi>::Cr2 as Reg<Ftt>>::Val,
       ) -> Box<Future<Item = Self, Error = Self>> {
-        let Self { _thread, spi, dma_tx, dma_rx } = self;
-        spi.spe_after(cr1, move |spi| {
-          spi.txdmaen_after(cr2, move |spi| {
-            let dma_tx = dma_tx.transfer_complete();
-            let dma_rx = dma_rx.transfer_complete();
+        let Self::Tokens {
+          $spi,
+          $dma_tx,
+          $dma_rx,
+          ..
+        } = self.into();
+        $spi.spe_after(cr1, move |$spi| {
+          $spi.txdmaen_after(cr2, move |$spi| {
+            let $dma_tx = $dma_tx.transfer_complete();
+            let $dma_rx = $dma_rx.transfer_complete();
             Box::new(AsyncFuture::new(move || {
-              let dma_rx = await!(dma_rx);
-              let dma_tx = await!(dma_tx);
-              match (dma_tx, dma_rx) {
-                (Ok(dma_tx), Ok(dma_rx)) => {
-                  Ok(Self::compose(spi, dma_tx, dma_rx))
-                }
-                (Ok(dma_tx), Err(dma_rx)) |
-                (Err(dma_tx), Ok(dma_rx)) |
-                (Err(dma_tx), Err(dma_rx)) => {
-                  Err(Self::compose(spi, dma_tx, dma_rx))
-                }
+              let $dma_rx = await!($dma_rx);
+              let $dma_tx = await!($dma_tx);
+              match ($dma_tx, $dma_rx) {
+                (Ok($dma_tx), Ok($dma_rx)) => Ok(Self::new(Self::Tokens {
+                  $spi,
+                  $dma_tx,
+                  $dma_rx,
+                })),
+                (Ok($dma_tx), Err($dma_rx))
+                | (Err($dma_tx), Ok($dma_rx))
+                | (Err($dma_tx), Err($dma_rx)) => Err(Self::new(Self::Tokens {
+                  $spi,
+                  $dma_tx,
+                  $dma_rx,
+                })),
               }
             }))
           })
@@ -374,118 +448,142 @@ macro_rules! spi_dma {
       }
     }
 
-    impl<T, IrqSpi, IrqDmaTx> SpiDmaTx<T, IrqSpi, IrqDmaTx>
-      for $name_tx<T, IrqSpi, IrqDmaTx>
+    impl<T, IrqDmaTx> From<$name_tx<T, IrqDmaTx>>
+      for $name_tx_tokens<T, IrqDmaTx>
     where
       T: Thread,
-      IrqSpi: $irq_spi<T>,
-      IrqDmaTx: $irq_dma_tx<T>,
+      IrqDmaTx: $irq_dma_tx,
     {
-      type Spi = $spi<T, IrqSpi>;
-      type DmaTx = $dma_tx<T, IrqDmaTx>;
-
       #[inline(always)]
-      fn compose(spi: Self::Spi, dma_tx: Self::DmaTx) -> Self {
-        Self {
-          _thread: PhantomData,
-          spi,
-          dma_tx,
-        }
+      fn from(spi_dma_tx: $name_tx<T, IrqDmaTx>) -> Self {
+        spi_dma_tx.tokens
       }
+    }
+
+    impl<T, IrqDmaTx> SpiDmaTx<T, IrqDmaTx> for $name_tx<T, IrqDmaTx>
+    where
+      T: Thread,
+      IrqDmaTx: $irq_dma_tx,
+    {
+      type Tokens = $name_tx_tokens<T, IrqDmaTx>;
+      type Spi = $spi_ty;
+      type DmaTx = $dma_tx_ty<T, IrqDmaTx>;
 
       #[inline(always)]
-      fn decompose(self) -> (Self::Spi, Self::DmaTx) {
-        (self.spi, self.dma_tx)
+      fn new(tokens: Self::Tokens) -> Self {
+        Self { tokens }
       }
 
       #[inline(always)]
       fn dma_init(&self) {
-        let dr = self.spi.dr();
-        self.dma_tx.cpar().reset(|r| r.write_pa(dr.to_mut_ptr() as u32));
+        let dr_ptr = self.tokens.$spi.dr().to_mut_ptr();
+        self.tokens.$dma_tx.set_peripheral_address(dr_ptr as usize);
         self.select_channel();
       }
 
       #[inline(always)]
       fn spi(&self) -> &Self::Spi {
-        &self.spi
+        &self.tokens.$spi
       }
 
       #[inline(always)]
       fn dma_tx(&self) -> &Self::DmaTx {
-        &self.dma_tx
+        &self.tokens.$dma_tx
       }
 
       #[inline]
       fn transfer_complete(
         self,
-        cr1: <<Self::Spi as Spi<T, IrqSpi>>::Cr1 as Reg<Fbt>>::Val,
-        cr2: <<Self::Spi as Spi<T, IrqSpi>>::Cr2 as Reg<Fbt>>::Val,
+        cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
+        cr2: <<Self::Spi as Spi>::Cr2 as Reg<Ftt>>::Val,
       ) -> Box<Future<Item = Self, Error = Self>> {
-        let Self { _thread, spi, dma_tx } = self;
-        spi.spe_after(cr1, move |spi| {
-          spi.txdmaen_after(cr2, move |spi| {
-            let dma_tx = dma_tx.transfer_complete();
-            Box::new(AsyncFuture::new(move || match await!(dma_tx) {
-              Ok(dma_tx) => Ok(Self::compose(spi, dma_tx)),
-              Err(dma_tx) => Err(Self::compose(spi, dma_tx)),
+        let Self::Tokens {
+          $spi,
+          $dma_tx,
+          ..
+        } = self.into();
+        $spi.spe_after(cr1, move |$spi| {
+          $spi.txdmaen_after(cr2, move |$spi| {
+            let $dma_tx = $dma_tx.transfer_complete();
+            Box::new(AsyncFuture::new(move || match await!($dma_tx) {
+              Ok($dma_tx) => Ok(Self::new(Self::Tokens {
+                $spi,
+                $dma_tx,
+              })),
+              Err($dma_tx) => Err(Self::new(Self::Tokens {
+                $spi,
+                $dma_tx,
+              })),
             }))
           })
         })
       }
     }
 
-    impl<T, IrqSpi, IrqDmaRx> SpiDmaRx<T, IrqSpi, IrqDmaRx>
-      for $name_rx<T, IrqSpi, IrqDmaRx>
+    impl<T, IrqDmaRx> From<$name_rx<T, IrqDmaRx>>
+      for $name_rx_tokens<T, IrqDmaRx>
     where
       T: Thread,
-      IrqSpi: $irq_spi<T>,
-      IrqDmaRx: $irq_dma_rx<T>,
+      IrqDmaRx: $irq_dma_rx,
     {
-      type Spi = $spi<T, IrqSpi>;
-      type DmaRx = $dma_rx<T, IrqDmaRx>;
-
       #[inline(always)]
-      fn compose(spi: Self::Spi, dma_rx: Self::DmaRx) -> Self {
-        Self {
-          _thread: PhantomData,
-          spi,
-          dma_rx,
-        }
+      fn from(spi_dma_rx: $name_rx<T, IrqDmaRx>) -> Self {
+        spi_dma_rx.tokens
       }
+    }
+
+    impl<T, IrqDmaRx> SpiDmaRx<T, IrqDmaRx> for $name_rx<T, IrqDmaRx>
+    where
+      T: Thread,
+      IrqDmaRx: $irq_dma_rx,
+    {
+      type Tokens = $name_rx_tokens<T, IrqDmaRx>;
+      type Spi = $spi_ty;
+      type DmaRx = $dma_rx_ty<T, IrqDmaRx>;
 
       #[inline(always)]
-      fn decompose(self) -> (Self::Spi, Self::DmaRx) {
-        (self.spi, self.dma_rx)
+      fn new(tokens: Self::Tokens) -> Self {
+        Self { tokens }
       }
 
       #[inline(always)]
       fn dma_init(&self) {
-        let dr = self.spi.dr();
-        self.dma_rx.cpar().reset(|r| r.write_pa(dr.to_ptr() as u32));
+        let dr_ptr = self.tokens.$spi.dr().to_ptr();
+        self.tokens.$dma_rx.set_peripheral_address(dr_ptr as usize);
         self.select_channel();
       }
 
       #[inline(always)]
       fn spi(&self) -> &Self::Spi {
-        &self.spi
+        &self.tokens.$spi
       }
 
       #[inline(always)]
       fn dma_rx(&self) -> &Self::DmaRx {
-        &self.dma_rx
+        &self.tokens.$dma_rx
       }
 
       #[inline]
       fn transfer_complete(
         self,
-        cr1: <<Self::Spi as Spi<T, IrqSpi>>::Cr1 as Reg<Fbt>>::Val,
+        cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
       ) -> Box<Future<Item = Self, Error = Self>> {
-        let Self { _thread, spi, dma_rx } = self;
-        spi.spe_after(cr1, move |spi| {
-          let dma_rx = dma_rx.transfer_complete();
-          Box::new(AsyncFuture::new(move || match await!(dma_rx) {
-            Ok(dma_rx) => Ok(Self::compose(spi, dma_rx)),
-            Err(dma_rx) => Err(Self::compose(spi, dma_rx)),
+        let Self::Tokens {
+          $spi,
+          $dma_rx,
+          ..
+        } = self.into();
+        $spi.spe_after(cr1, move |$spi| {
+          let $dma_rx = $dma_rx.transfer_complete();
+          Box::new(AsyncFuture::new(move || match await!($dma_rx) {
+            Ok($dma_rx) => Ok(Self::new(Self::Tokens {
+              $spi,
+              $dma_rx,
+            })),
+            Err($dma_rx) => Err(Self::new(Self::Tokens {
+              $spi,
+              $dma_rx,
+            })),
           }))
         })
       }
@@ -500,17 +598,32 @@ macro_rules! spi_dma {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 spi_dma! {
   "SPI1 with duplex DMA1",
-  Spi1Dma1,
+  Spi1Dma1Dx,
+  peripheral_spi1_dma1_dx,
   "SPI1 with transmit-only DMA1",
   Spi1Dma1Tx,
+  peripheral_spi1_dma1_tx,
   "SPI1 with receive-only DMA1",
   Spi1Dma1Rx,
+  peripheral_spi1_dma1_rx,
+  "SPI1 with duplex DMA1 tokens",
+  Spi1Dma1DxTokens,
+  "SPI1 with transmit-only DMA1 tokens",
+  Spi1Dma1TxTokens,
+  "SPI1 with receive-only DMA1 tokens",
+  Spi1Dma1RxTokens,
   IrqSpi1,
   IrqDma1Ch3,
   IrqDma1Ch2,
   Spi1,
   Dma1Ch3,
   Dma1Ch2,
+  peripheral_spi1,
+  peripheral_dma1_ch3,
+  peripheral_dma1_ch2,
+  spi1,
+  dma1_ch3,
+  dma1_ch2,
   0b0001,
   0b0001,
 }
@@ -520,17 +633,32 @@ spi_dma! {
           feature = "stm32l4x6"))]
 spi_dma! {
   "SPI1 with duplex DMA2",
-  Spi1Dma2,
+  Spi1Dma2Dx,
+  peripheral_spi1_dma2_dx,
   "SPI1 with transmit-only DMA2",
   Spi1Dma2Tx,
+  peripheral_spi1_dma2_tx,
   "SPI1 with receive-only DMA2",
   Spi1Dma2Rx,
+  peripheral_spi1_dma2_rx,
+  "SPI1 with duplex DMA2 tokens",
+  Spi1Dma2DxTokens,
+  "SPI1 with transmit-only DMA2 tokens",
+  Spi1Dma2TxTokens,
+  "SPI1 with receive-only DMA2 tokens",
+  Spi1Dma2RxTokens,
   IrqSpi1,
   IrqDma2Ch4,
   IrqDma2Ch3,
   Spi1,
   Dma2Ch4,
   Dma2Ch3,
+  peripheral_spi1,
+  peripheral_dma2_ch4,
+  peripheral_dma2_ch3,
+  spi1,
+  dma2_ch4,
+  dma2_ch3,
   0b0100,
   0b0100,
 }
@@ -542,17 +670,32 @@ spi_dma! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 spi_dma! {
   "SPI2 with duplex DMA1",
-  Spi2Dma1,
+  Spi2Dma1Dx,
+  peripheral_spi2_dma1_dx,
   "SPI2 with transmit-only DMA1",
   Spi2Dma1Tx,
+  peripheral_spi2_dma1_tx,
   "SPI2 with receive-only DMA1",
   Spi2Dma1Rx,
+  peripheral_spi2_dma1_rx,
+  "SPI2 with duplex DMA1 tokens",
+  Spi2Dma1DxTokens,
+  "SPI2 with transmit-only DMA1 tokens",
+  Spi2Dma1TxTokens,
+  "SPI2 with receive-only DMA1 tokens",
+  Spi2Dma1RxTokens,
   IrqSpi2,
   IrqDma1Ch5,
   IrqDma1Ch4,
   Spi2,
   Dma1Ch5,
   Dma1Ch4,
+  peripheral_spi2,
+  peripheral_dma1_ch5,
+  peripheral_dma1_ch4,
+  spi2,
+  dma1_ch5,
+  dma1_ch4,
   0b0001,
   0b0001,
 }
@@ -564,17 +707,32 @@ spi_dma! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 spi_dma! {
   "SPI3 with duplex DMA2",
-  Spi3Dma2,
+  Spi3Dma2Dx,
+  peripheral_spi3_dma2_dx,
   "SPI3 with transmit-only DMA2",
   Spi3Dma2Tx,
+  peripheral_spi3_dma2_tx,
   "SPI3 with receive-only DMA2",
   Spi3Dma2Rx,
+  peripheral_spi3_dma2_rx,
+  "SPI3 with duplex DMA2 tokens",
+  Spi3Dma2DxTokens,
+  "SPI3 with transmit-only DMA2 tokens",
+  Spi3Dma2TxTokens,
+  "SPI3 with receive-only DMA2 tokens",
+  Spi3Dma2RxTokens,
   IrqSpi3,
   IrqDma2Ch2,
   IrqDma2Ch1,
   Spi3,
   Dma2Ch2,
   Dma2Ch1,
+  peripheral_spi3,
+  peripheral_dma2_ch2,
+  peripheral_dma2_ch1,
+  spi3,
+  dma2_ch2,
+  dma2_ch1,
   0b0011,
   0b0011,
 }

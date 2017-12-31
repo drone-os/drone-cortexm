@@ -2,32 +2,35 @@
 
 #[allow(unused_imports)]
 use super::interrupt;
+use drone_core::thread::ThreadNumber;
+#[allow(unused_imports)]
+use thread::prelude::*;
 
 include!(concat!(env!("OUT_DIR"), "/svd_interrupts.rs"));
 
 /// Non maskable interrupt.
-pub trait IrqNmi<T: Thread>: ThreadBinding<T> {}
+pub trait IrqNmi: ThreadNumber {}
 
 /// All classes of fault.
-pub trait IrqHardFault<T: Thread>: ThreadBinding<T> {}
+pub trait IrqHardFault: ThreadNumber {}
 
 /// Memory management.
-pub trait IrqMemManage<T: Thread>: ThreadBinding<T> {}
+pub trait IrqMemManage: ThreadNumber {}
 
 /// Pre-fetch fault, memory access fault.
-pub trait IrqBusFault<T: Thread>: ThreadBinding<T> {}
+pub trait IrqBusFault: ThreadNumber {}
 
 /// Undefined instruction or illegal state.
-pub trait IrqUsageFault<T: Thread>: ThreadBinding<T> {}
+pub trait IrqUsageFault: ThreadNumber {}
 
 /// System service call via SWI instruction.
-pub trait IrqSvCall<T: Thread>: ThreadBinding<T> {}
+pub trait IrqSvCall: ThreadNumber {}
 
 /// Monitor.
-pub trait IrqDebug<T: Thread>: ThreadBinding<T> {}
+pub trait IrqDebug: ThreadNumber {}
 
 /// Pendable request for system service.
-pub trait IrqPendSv<T: Thread>: ThreadBinding<T> {}
+pub trait IrqPendSv: ThreadNumber {}
 
 /// System tick timer.
-pub trait IrqSysTick<T: Thread>: ThreadBinding<T> {}
+pub trait IrqSysTick: ThreadNumber {}

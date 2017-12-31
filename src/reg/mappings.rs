@@ -1,4 +1,4 @@
-use drone::reg::mappings;
+use drone_core::reg::mappings;
 use reg::prelude::*;
 
 include!(concat!(env!("OUT_DIR"), "/svd_mappings.rs"));

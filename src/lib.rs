@@ -26,14 +26,15 @@
 //! [Drone]: https://github.com/drone-os/drone
 //! [OpenOCD]: http://openocd.org/
 //! [rules.d]: https://github.com/texane/stlink/tree/master/etc/udev/rules.d
+
 #![feature(asm)]
 #![feature(conservative_impl_trait)]
 #![feature(const_fn)]
-#![feature(decl_macro)]
 #![feature(fused)]
 #![feature(generators)]
 #![feature(lang_items)]
 #![feature(linkage)]
+#![feature(never_type)]
 #![feature(prelude_import)]
 #![feature(proc_macro)]
 #![feature(range_contains)]
@@ -59,7 +60,7 @@ extern crate compiler_builtins;
 #[cfg_attr(feature = "clippy", allow(useless_attribute))]
 #[allow(unused_imports)]
 #[macro_use]
-extern crate drone;
+extern crate drone_core;
 extern crate drone_cortex_m_macros;
 extern crate futures;
 #[cfg(test)]
@@ -83,7 +84,7 @@ pub use drone_cortex_m_macros::vtable;
 use prelude::*;
 
 #[cfg(test)]
-drone::heap! {
+drone_core::heap! {
   Heap;
   #[global_allocator]
   ALLOC;

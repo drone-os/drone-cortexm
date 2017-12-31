@@ -1,5 +1,5 @@
 use core::ptr::{read_volatile, write_volatile};
-use drone::reg::prelude::*;
+use drone_core::reg::prelude::*;
 
 /// Peripheral bit-band alias start.
 pub const BIT_BAND_BASE: usize = 0x4200_0000;
@@ -96,7 +96,7 @@ where
 mod tests {
   use self::test_block::*;
   use super::*;
-  use drone::reg::mappings;
+  use drone_core::reg::mappings;
 
   mappings! {
     TEST_BLOCK;
@@ -114,8 +114,8 @@ mod tests {
     }
   }
 
-  type LocalLowReg = LowReg<Ubt>;
-  type LocalHighReg = HighReg<Ubt>;
+  type LocalLowReg = LowReg<Utt>;
+  type LocalHighReg = HighReg<Utt>;
 
   #[test]
   fn reg_bit_band_addr() {

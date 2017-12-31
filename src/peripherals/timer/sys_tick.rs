@@ -1,77 +1,85 @@
 use super::Timer;
-use core::marker::PhantomData;
-use drone::sync::spsc::unit;
-use drone::thread::RoutineFuture;
+use drone_core::sync::spsc::unit;
+use drone_core::thread::RoutineFuture;
 use reg::prelude::*;
 use reg::stk;
 use thread::interrupts::IrqSysTick;
+use thread::prelude::*;
 
 /// SysTick timer.
-pub struct SysTick<T: Thread, I: IrqSysTick<T>> {
-  _thread: PhantomData<&'static T>,
-  irq: I,
-  ctrl: stk::Ctrl<Fbt>,
-  load: stk::Load<Sbt>,
-  val: stk::Val<Sbt>,
+pub struct SysTick<T: Thread, I: IrqSysTick> {
+  tokens: SysTickTokens<T, I, Ftt>,
 }
 
-/// SysTick timer items.
-pub macro SysTick($threads:ident, $regs:ident) {
-  $crate::peripherals::timer::SysTick::compose(
-    $threads.sys_tick,
-    $regs.stk_ctrl,
-    $regs.stk_load,
-    $regs.stk_val,
-  )
+/// SysTick timer tokens.
+#[allow(missing_docs)]
+pub struct SysTickTokens<T: Thread, I: IrqSysTick, R: RegTag> {
+  pub sys_tick: ThreadToken<T, I>,
+  pub stk_ctrl: stk::Ctrl<R>,
+  pub stk_load: stk::Load<Stt>,
+  pub stk_val: stk::Val<Stt>,
+}
+
+/// Creates a new `SysTick` driver from tokens.
+#[macro_export]
+macro_rules! peripheral_sys_tick {
+  ($thrd:ident, $regs:ident) => {
+    $crate::peripherals::timer::SysTick::new(
+      $crate::peripherals::timer::SysTickTokens {
+        sys_tick: $thrd.sys_tick,
+        stk_ctrl: $regs.stk_ctrl,
+        stk_load: $regs.stk_load,
+        stk_val: $regs.stk_val,
+      }
+    )
+  }
 }
 
 #[allow(missing_docs)]
-impl<T: Thread, I: IrqSysTick<T>> SysTick<T, I> {
-  /// Composes a new `SysTick` from pieces.
+impl<T: Thread, I: IrqSysTick> SysTick<T, I> {
+  /// Creates a new `SysTick` driver from provided `tokens`.
   #[inline(always)]
-  pub fn compose(
-    irq: I,
-    stk_ctrl: stk::Ctrl<Sbt>,
-    stk_load: stk::Load<Sbt>,
-    stk_val: stk::Val<Sbt>,
-  ) -> Self {
+  pub fn new(tokens: SysTickTokens<T, I, Stt>) -> Self {
     Self {
-      _thread: PhantomData,
-      irq,
-      ctrl: stk_ctrl.into(),
-      load: stk_load,
-      val: stk_val,
+      tokens: SysTickTokens {
+        sys_tick: tokens.sys_tick,
+        stk_ctrl: tokens.stk_ctrl.into(),
+        stk_load: tokens.stk_load,
+        stk_val: tokens.stk_val,
+      },
     }
   }
 
-  /// Decomposes the `SpiDma` into pieces.
   #[inline(always)]
-  pub fn decompose(self) -> (stk::Ctrl<Fbt>, stk::Load<Sbt>, stk::Val<Sbt>) {
-    (self.ctrl, self.load, self.val)
+  pub fn irq(&self) -> ThreadToken<T, I> {
+    self.tokens.sys_tick
   }
 
   #[inline(always)]
-  pub fn irq(&self) -> I {
-    self.irq
+  pub fn ctrl(&self) -> &stk::Ctrl<Ftt> {
+    &self.tokens.stk_ctrl
   }
 
   #[inline(always)]
-  pub fn ctrl(&self) -> &stk::Ctrl<Fbt> {
-    &self.ctrl
+  pub fn load(&self) -> &stk::Load<Stt> {
+    &self.tokens.stk_load
   }
 
   #[inline(always)]
-  pub fn load(&self) -> &stk::Load<Sbt> {
-    &self.load
-  }
-
-  #[inline(always)]
-  pub fn val(&self) -> &stk::Val<Sbt> {
-    &self.val
+  pub fn val(&self) -> &stk::Val<Stt> {
+    &self.tokens.stk_val
   }
 }
 
-impl<T: Thread, I: IrqSysTick<T>> Timer for SysTick<T, I> {
+impl<T: Thread, I: IrqSysTick> From<SysTick<T, I>>
+  for SysTickTokens<T, I, Ftt> {
+  #[inline(always)]
+  fn from(sys_tick: SysTick<T, I>) -> Self {
+    sys_tick.tokens
+  }
+}
+
+impl<T: Thread, I: IrqSysTick> Timer for SysTick<T, I> {
   type Counter = u32;
   type CtrlVal = stk::ctrl::Val;
 
@@ -81,16 +89,16 @@ impl<T: Thread, I: IrqSysTick<T>> Timer for SysTick<T, I> {
     duration: Self::Counter,
     mut ctrl_val: Self::CtrlVal,
   ) -> RoutineFuture<(), ()> {
-    ctrl_val = disable(&mut self.ctrl.hold(ctrl_val)).val();
-    self.ctrl.store_val(ctrl_val);
-    schedule(&self.load, &self.val, duration);
-    let ctrl = self.ctrl.fork();
-    let future = self.irq.future_fn(move || {
+    ctrl_val = disable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
+    self.tokens.stk_ctrl.store_val(ctrl_val);
+    schedule(&self.tokens.stk_load, &self.tokens.stk_val, duration);
+    let ctrl = self.tokens.stk_ctrl.fork();
+    let future = self.tokens.sys_tick.future_fn(move || {
       ctrl.store_val(ctrl_val);
       Ok(())
     });
-    ctrl_val = enable(&mut self.ctrl.hold(ctrl_val)).val();
-    self.ctrl.store_val(ctrl_val);
+    ctrl_val = enable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
+    self.tokens.stk_ctrl.store_val(ctrl_val);
     future
   }
 
@@ -100,46 +108,40 @@ impl<T: Thread, I: IrqSysTick<T>> Timer for SysTick<T, I> {
     duration: Self::Counter,
     mut ctrl_val: Self::CtrlVal,
   ) -> unit::Receiver<()> {
-    ctrl_val = disable(&mut self.ctrl.hold(ctrl_val)).val();
-    self.ctrl.store_val(ctrl_val);
-    schedule(&self.load, &self.val, duration);
-    let stream = self.irq.stream_skip(|| loop {
+    ctrl_val = disable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
+    self.tokens.stk_ctrl.store_val(ctrl_val);
+    schedule(&self.tokens.stk_load, &self.tokens.stk_val, duration);
+    let stream = self.tokens.sys_tick.stream_skip(|| loop {
       yield Some(());
     });
-    ctrl_val = enable(&mut self.ctrl.hold(ctrl_val)).val();
-    self.ctrl.store_val(ctrl_val);
+    ctrl_val = enable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
+    self.tokens.stk_ctrl.store_val(ctrl_val);
     stream
   }
 
   #[inline(always)]
   fn stop(&mut self, mut ctrl_val: Self::CtrlVal) {
-    ctrl_val = disable(&mut self.ctrl.hold(ctrl_val)).val();
-    self.ctrl.store_val(ctrl_val);
-  }
-
-  #[inline(always)]
-  fn reset(&mut self) {
-    let ctrl_val = self.ctrl.default().val();
-    self.stop(ctrl_val);
+    ctrl_val = disable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
+    self.tokens.stk_ctrl.store_val(ctrl_val);
   }
 }
 
 #[inline(always)]
-fn schedule(stk_load: &stk::Load<Sbt>, stk_val: &stk::Val<Sbt>, duration: u32) {
+fn schedule(stk_load: &stk::Load<Stt>, stk_val: &stk::Val<Stt>, duration: u32) {
   stk_load.reset(|r| r.write_reload(duration));
   stk_val.reset(|r| r.write_current(0));
 }
 
 #[inline(always)]
 fn enable<'a, 'b>(
-  ctrl: &'a mut stk::ctrl::Hold<'b, Fbt>,
-) -> &'a mut stk::ctrl::Hold<'b, Fbt> {
+  ctrl: &'a mut stk::ctrl::Hold<'b, Ftt>,
+) -> &'a mut stk::ctrl::Hold<'b, Ftt> {
   ctrl.set_enable().set_tickint()
 }
 
 #[inline(always)]
 fn disable<'a, 'b>(
-  ctrl: &'a mut stk::ctrl::Hold<'b, Fbt>,
-) -> &'a mut stk::ctrl::Hold<'b, Fbt> {
+  ctrl: &'a mut stk::ctrl::Hold<'b, Ftt>,
+) -> &'a mut stk::ctrl::Hold<'b, Ftt> {
   ctrl.clear_enable().clear_tickint()
 }

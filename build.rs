@@ -19,11 +19,11 @@ fn run() -> Result<(), Error> {
   let out_dir = env::var("OUT_DIR")?;
   let out_dir = Path::new(&out_dir);
   let mut mappings = File::create(out_dir.join("svd_mappings.rs"))?;
-  let mut bindings = File::create(out_dir.join("svd_bindings.rs"))?;
+  let mut tokens = File::create(out_dir.join("svd_tokens.rs"))?;
   let mut interrupts = File::create(out_dir.join("svd_interrupts.rs"))?;
   if let Some(svd_file) = svd_from_feature() {
     let mut input = File::open(svd_file)?;
-    svd_generate(&mut input, &mut mappings, &mut bindings, &mut interrupts)?;
+    svd_generate(&mut input, &mut mappings, &mut tokens, &mut interrupts)?;
   }
   Ok(())
 }

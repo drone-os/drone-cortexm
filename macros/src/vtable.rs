@@ -10,12 +10,12 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
   let mut input = input.into_iter();
   let mut threads = Vec::new();
   let (attrs, name) = parse_own_name(&mut input)?;
-  let (bindings_attrs, bindings_name) = parse_own_name(&mut input)?;
+  let (tokens_attrs, tokens_name) = parse_own_name(&mut input)?;
   let (static_attrs, static_name) = parse_own_name(&mut input)?;
   let thread_local = parse_extern_name(&mut input)?;
   let name =
     name.ok_or_else(|| format_err!("Unexpected end of macro invokation"))?;
-  let bindings_name = bindings_name
+  let tokens_name = tokens_name
     .ok_or_else(|| format_err!("Unexpected end of macro invokation"))?;
   let static_name = static_name
     .ok_or_else(|| format_err!("Unexpected end of macro invokation"))?;
@@ -93,32 +93,34 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
   let mut thread_tokens = Vec::new();
   let mut thread_ctor_tokens = Vec::new();
   let mut thread_static_tokens = Vec::new();
-  let mut thread_bind_struct_tokens = Vec::new();
-  let mut thread_bind_impl_tokens = Vec::new();
+  let mut thread_tokens_struct_tokens = Vec::new();
+  let mut thread_tokens_impl_tokens = Vec::new();
   thread_static_tokens.push(quote!(#thread_local::new(0)));
   for (index, thread) in threads.into_iter().enumerate() {
     let (
       tokens,
       ctor_tokens,
       static_tokens,
-      bind_struct_tokens,
-      bind_impl_tokens,
+      tokens_struct_tokens,
+      tokens_impl_tokens,
     ) = parse_thread(index, thread, &thread_local, &mut irq_name)?;
     thread_tokens.push(tokens);
     thread_ctor_tokens.push(ctor_tokens);
     thread_static_tokens.push(static_tokens);
-    thread_bind_struct_tokens.push(bind_struct_tokens);
-    thread_bind_impl_tokens.push(bind_impl_tokens);
+    thread_tokens_struct_tokens.push(tokens_struct_tokens);
+    thread_tokens_impl_tokens.push(tokens_impl_tokens);
   }
   let irq_name = &irq_name;
 
   Ok(quote! {
     #[allow(unused_imports)]
-    use ::core::ops::Deref;
-    use ::drone::thread::ThreadBindings;
+    use ::drone_core::thread::ThreadTokens;
+    #[allow(unused_imports)]
     use ::drone_cortex_m::thread::{Handler, Reserved, ResetHandler};
     #[allow(unused_imports)]
     use ::drone_cortex_m::thread::interrupts::*;
+    #[allow(unused_imports)]
+    use ::drone_cortex_m::thread::prelude::*;
 
     #(#attrs)*
     #[allow(dead_code)]
@@ -167,15 +169,15 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
       }
     }
 
-    #(#bindings_attrs)*
-    pub struct #bindings_name {
-      #(#thread_bind_struct_tokens)*
+    #(#tokens_attrs)*
+    pub struct #tokens_name {
+      #(#thread_tokens_struct_tokens),*
     }
 
-    impl ThreadBindings for #bindings_name {
+    impl ThreadTokens<#thread_local> for #tokens_name {
       unsafe fn new() -> Self {
         Self {
-          #(#thread_bind_impl_tokens)*
+          #(#thread_tokens_impl_tokens),*
         }
       }
     }
@@ -209,17 +211,17 @@ fn parse_thread(
       let irq_trait = Ident::new(format!("Irq{}", number));
       let number = Lit::Int(number, IntTy::Unsuffixed);
       quote! {
-        impl ThreadInterrupt<#thread_local> for #struct_name {
-          const POSITION: usize = #number;
+        impl InterruptNumber for #struct_name {
+          const INTERRUPT_NUMBER: usize = #number;
         }
 
-        impl #irq_trait<#thread_local> for #struct_name {}
+        impl #irq_trait for #struct_name {}
       }
     }
     None => {
       let irq_trait = Ident::new(format!("Irq{}", struct_name));
       quote! {
-        impl #irq_trait<#thread_local> for #struct_name {}
+        impl #irq_trait for #struct_name {}
       }
     }
   };
@@ -227,36 +229,26 @@ fn parse_thread(
   Ok((
     quote! {
       #(#attrs)*
-      #[derive(Clone, Copy)]
       pub struct #struct_name;
 
-      impl ThreadBinding<#thread_local> for #struct_name {
-        const INDEX: usize = #index;
-
-        #[inline(always)]
-        unsafe fn bind() -> Self {
-          #struct_name
-        }
-      }
-
-      impl Deref for #struct_name {
-        type Target = #thread_local;
-
-        fn deref(&self) -> &Self::Target {
-          self.as_thread()
-        }
+      impl ThreadNumber for #struct_name {
+        const THREAD_NUMBER: usize = #index;
       }
 
       #interrupt
     },
-    quote!(#field_name: Some(#struct_name::handler)),
-    quote!(#thread_local::new(#index)),
     quote! {
-      #(#attrs)*
-      pub #field_name: #struct_name,
+      #field_name: Some(ThreadToken::<#thread_local, #struct_name>::handler)
     },
     quote! {
-      #field_name: #struct_name::bind(),
+      #thread_local::new(#index)
+    },
+    quote! {
+      #(#attrs)*
+      pub #field_name: ThreadToken<#thread_local, #struct_name>
+    },
+    quote! {
+      #field_name: ThreadToken::<#thread_local, #struct_name>::new()
     },
   ))
 }

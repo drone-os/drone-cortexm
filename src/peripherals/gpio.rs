@@ -21,9 +21,13 @@ use reg::prelude::*;
 
 /// Generic GPIO pin.
 #[allow(missing_docs)]
-pub trait GpioPin<T: RegTag> {
-  /// Concrete GPIO items.
-  type Items;
+pub trait GpioPin<T: RegTag>
+where
+  Self: Sized,
+  Self::Tokens: From<Self>,
+{
+  /// Generic GPIO pin tokens.
+  type Tokens;
 
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
@@ -60,11 +64,8 @@ pub trait GpioPin<T: RegTag> {
             feature = "stm32l4x6"))]
   type Pupdr: RegField<T>;
 
-  /// Composes a new `GpioPin` from pieces.
-  fn compose(items: Self::Items) -> Self;
-
-  /// Decomposes the `GpioPin` into pieces.
-  fn decompose(self) -> Self::Items;
+  /// Creates a new `GpioPin` driver from provided `tokens`.
+  fn new(tokens: Self::Tokens) -> Self;
 
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
@@ -146,22 +147,18 @@ pub trait GpioAscrPin<T: RegTag>: GpioPin<T> {
   fn ascr_mut(&mut self) -> &mut Self::Ascr;
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[allow(unused_macros)]
 macro_rules! gpio_pin {
   (
     $doc:expr,
     $name:ident,
-    $doc_items:expr,
-    $name_items:ident,
+    $name_macro:ident,
+    $doc_tokens:expr,
+    $name_tokens:ident,
     $gpio:ident,
     $afr_mod:ident,
     $cr_mod:ident,
     $afr_ty:ident,
-    ($($asc_ty:ident)*),
     $br_ty:ident,
     $bs_ty:ident,
     $cnf_ty:ident,
@@ -174,7 +171,6 @@ macro_rules! gpio_pin {
     $ot_ty:ident,
     $pupdr_ty:ident,
     $gpio_afr_afr:ident,
-    ($($gpio_ascr_asc:ident)*),
     $gpio_brr_br:ident,
     $gpio_bsrr_br:ident,
     $gpio_bsrr_bs:ident,
@@ -212,52 +208,19 @@ macro_rules! gpio_pin {
     $ospeedr:ident,
     $ot:ident,
     $pupdr:ident,
+    ($((
+      $asc_ty:ident,
+      $gpio_ascr_asc:ident,
+    ))*),
   ) => {
     #[doc = $doc]
     pub struct $name<T: RegTag> {
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      afr: $gpio::$afr_mod::$afr_ty<T>,
-      $(
-        #[cfg(any(feature = "stm32l4x6"))]
-        ascr: $gpio::ascr::$asc_ty<T>,
-      )*
-      brr: $gpio::brr::$br_ty<T>,
-      bsrr_br: $gpio::bsrr::$br_ty<T>,
-      bsrr_bs: $gpio::bsrr::$bs_ty<T>,
-      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-                feature = "stm32f102", feature = "stm32f103",
-                feature = "stm32f107"))]
-      cr_cnf: $gpio::$cr_mod::$cnf_ty<T>,
-      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-                feature = "stm32f102", feature = "stm32f103",
-                feature = "stm32f107"))]
-      cr_mode: $gpio::$cr_mod::$mode_ty<T>,
-      idr: $gpio::idr::$idr_ty<T>,
-      lckr: $gpio::lckr::$lck_ty<T>,
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      moder: $gpio::moder::$moder_ty<T>,
-      odr: $gpio::odr::$odr_ty<T>,
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      ospeedr: $gpio::ospeedr::$ospeedr_ty<T>,
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      otyper: $gpio::otyper::$ot_ty<T>,
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      pupdr: $gpio::pupdr::$pupdr_ty<T>,
+      tokens: $name_tokens<T>,
     }
 
-    #[doc = $doc_items]
+    #[doc = $doc_tokens]
     #[allow(missing_docs)]
-    pub struct $name_items<T: RegTag> {
+    pub struct $name_tokens<T: RegTag> {
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
@@ -299,70 +262,86 @@ macro_rules! gpio_pin {
     }
 
     #[cfg(any(feature = "stm32l4x6"))]
-    /// Composes a new `GpioPin` from pieces.
-    pub macro $name($regs:ident) {
-      $crate::peripherals::gpio::GpioPin::compose(
-        $crate::peripherals::gpio::$name_items {
-          $gpio_afr_afr: $regs.$gpio_afr.$afr,
-          $(
-            $gpio_ascr_asc: $regs.$gpio_ascr.$asc,
-          )*
-          $gpio_brr_br: $regs.$gpio_brr.$br,
-          $gpio_bsrr_br: $regs.$gpio_bsrr.$br,
-          $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs,
-          $gpio_idr_idr: $regs.$gpio_idr.$idr,
-          $gpio_lckr_lck: $regs.$gpio_lckr.$lck,
-          $gpio_moder_moder: $regs.$gpio_moder.$moder,
-          $gpio_odr_odr: $regs.$gpio_odr.$odr,
-          $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr,
-          $gpio_otyper_ot: $regs.$gpio_otyper.$ot,
-          $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr,
-        }
-      )
+    /// Creates a new `GpioPin` driver from tokens.
+    #[macro_export]
+    macro_rules! $name_macro {
+      ($regs:ident) => {
+        $crate::peripherals::gpio::GpioPin::new(
+          $crate::peripherals::gpio::$name_tokens {
+            $gpio_afr_afr: $regs.$gpio_afr.$afr,
+            $(
+              $gpio_ascr_asc: $regs.$gpio_ascr.$asc,
+            )*
+            $gpio_brr_br: $regs.$gpio_brr.$br,
+            $gpio_bsrr_br: $regs.$gpio_bsrr.$br,
+            $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs,
+            $gpio_idr_idr: $regs.$gpio_idr.$idr,
+            $gpio_lckr_lck: $regs.$gpio_lckr.$lck,
+            $gpio_moder_moder: $regs.$gpio_moder.$moder,
+            $gpio_odr_odr: $regs.$gpio_odr.$odr,
+            $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr,
+            $gpio_otyper_ot: $regs.$gpio_otyper.$ot,
+            $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr,
+          }
+        )
+      }
     }
 
     #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
               feature = "stm32l4x3", feature = "stm32l4x5"))]
-    /// Composes a new `GpioPin` from pieces.
-    pub macro $name($regs:ident) {
-      $crate::peripherals::gpio::GpioPin::compose(
-        $crate::peripherals::gpio::$name_items {
-          $gpio_afr_afr: $regs.$gpio_afr.$afr,
-          $gpio_brr_br: $regs.$gpio_brr.$br,
-          $gpio_bsrr_br: $regs.$gpio_bsrr.$br,
-          $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs,
-          $gpio_idr_idr: $regs.$gpio_idr.$idr,
-          $gpio_lckr_lck: $regs.$gpio_lckr.$lck,
-          $gpio_moder_moder: $regs.$gpio_moder.$moder,
-          $gpio_odr_odr: $regs.$gpio_odr.$odr,
-          $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr,
-          $gpio_otyper_ot: $regs.$gpio_otyper.$ot,
-          $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr,
-        }
-      )
+    /// Creates a new `GpioPin` driver from tokens.
+    #[macro_export]
+    macro_rules! $name_macro {
+      ($regs:ident) => {
+        $crate::peripherals::gpio::GpioPin::new(
+          $crate::peripherals::gpio::$name_tokens {
+            $gpio_afr_afr: $regs.$gpio_afr.$afr,
+            $gpio_brr_br: $regs.$gpio_brr.$br,
+            $gpio_bsrr_br: $regs.$gpio_bsrr.$br,
+            $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs,
+            $gpio_idr_idr: $regs.$gpio_idr.$idr,
+            $gpio_lckr_lck: $regs.$gpio_lckr.$lck,
+            $gpio_moder_moder: $regs.$gpio_moder.$moder,
+            $gpio_odr_odr: $regs.$gpio_odr.$odr,
+            $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr,
+            $gpio_otyper_ot: $regs.$gpio_otyper.$ot,
+            $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr,
+          }
+        )
+      }
     }
 
     #[cfg(any(feature = "stm32f100", feature = "stm32f101",
               feature = "stm32f102", feature = "stm32f103",
               feature = "stm32f107"))]
-    /// Composes a new `GpioPin` from pieces.
-    pub macro $name($regs:ident) {
-      $crate::peripherals::gpio::GpioPin::compose(
-        $crate::peripherals::gpio::$name_items {
-          $gpio_brr_br: $regs.$gpio_brr_br,
-          $gpio_bsrr_br: $regs.$gpio_bsrr_br,
-          $gpio_bsrr_bs: $regs.$gpio_bsrr_bs,
-          $gpio_cr_cnf: $regs.$gpio_cr_cnf,
-          $gpio_cr_mode: $regs.$gpio_cr_mode,
-          $gpio_idr_idr: $regs.$gpio_idr_idr,
-          $gpio_lckr_lck: $regs.$gpio_lckr_lck,
-          $gpio_odr_odr: $regs.$gpio_odr_odr,
-        }
-      )
+    /// Creates a new `GpioPin` driver from tokens.
+    #[macro_export]
+    macro_rules! $name_macro {
+      ($regs:ident) => {
+        $crate::peripherals::gpio::GpioPin::new(
+          $crate::peripherals::gpio::$name_tokens {
+            $gpio_brr_br: $regs.$gpio_brr_br,
+            $gpio_bsrr_br: $regs.$gpio_bsrr_br,
+            $gpio_bsrr_bs: $regs.$gpio_bsrr_bs,
+            $gpio_cr_cnf: $regs.$gpio_cr_cnf,
+            $gpio_cr_mode: $regs.$gpio_cr_mode,
+            $gpio_idr_idr: $regs.$gpio_idr_idr,
+            $gpio_lckr_lck: $regs.$gpio_lckr_lck,
+            $gpio_odr_odr: $regs.$gpio_odr_odr,
+          }
+        )
+      }
+    }
+
+    impl<T: RegTag> From<$name<T>> for $name_tokens<T> {
+      #[inline(always)]
+      fn from(gpio_pin: $name<T>) -> Self {
+        gpio_pin.tokens
+      }
     }
 
     impl<T: RegTag> GpioPin<T> for $name<T> {
-      type Items = $name_items<T>;
+      type Tokens = $name_tokens<T>;
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
@@ -398,118 +377,9 @@ macro_rules! gpio_pin {
                 feature = "stm32l4x6"))]
       type Pupdr = $gpio::pupdr::$pupdr_ty<T>;
 
-      #[cfg(any(feature = "stm32l4x6"))]
       #[inline(always)]
-      fn compose(items: Self::Items) -> Self {
-        Self {
-          afr: items.$gpio_afr_afr,
-          $(
-            ascr: items.$gpio_ascr_asc,
-          )*
-          brr: items.$gpio_brr_br,
-          bsrr_br: items.$gpio_bsrr_br,
-          bsrr_bs: items.$gpio_bsrr_bs,
-          idr: items.$gpio_idr_idr,
-          lckr: items.$gpio_lckr_lck,
-          moder: items.$gpio_moder_moder,
-          odr: items.$gpio_odr_odr,
-          ospeedr: items.$gpio_ospeedr_ospeedr,
-          otyper: items.$gpio_otyper_ot,
-          pupdr: items.$gpio_pupdr_pupdr,
-        }
-      }
-
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5"))]
-      #[inline(always)]
-      fn compose(items: Self::Items) -> Self {
-        Self {
-          afr: items.$gpio_afr_afr,
-          brr: items.$gpio_brr_br,
-          bsrr_br: items.$gpio_bsrr_br,
-          bsrr_bs: items.$gpio_bsrr_bs,
-          idr: items.$gpio_idr_idr,
-          lckr: items.$gpio_lckr_lck,
-          moder: items.$gpio_moder_moder,
-          odr: items.$gpio_odr_odr,
-          ospeedr: items.$gpio_ospeedr_ospeedr,
-          otyper: items.$gpio_otyper_ot,
-          pupdr: items.$gpio_pupdr_pupdr,
-        }
-      }
-
-      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-                feature = "stm32f102", feature = "stm32f103",
-                feature = "stm32f107"))]
-      #[inline(always)]
-      fn compose(items: Self::Items) -> Self {
-        Self {
-          brr: items.$gpio_brr_br,
-          bsrr_br: items.$gpio_bsrr_br,
-          bsrr_bs: items.$gpio_bsrr_bs,
-          cr_cnf: items.$gpio_cr_cnf,
-          cr_mode: items.$gpio_cr_mode,
-          idr: items.$gpio_idr_idr,
-          lckr: items.$gpio_lckr_lck,
-          odr: items.$gpio_odr_odr,
-        }
-      }
-
-      #[cfg(any(feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn decompose(self) -> Self::Items {
-        Self::Items {
-          $gpio_afr_afr: self.afr,
-          $(
-            $gpio_ascr_asc: self.ascr,
-          )*
-          $gpio_brr_br: self.brr,
-          $gpio_bsrr_br: self.bsrr_br,
-          $gpio_bsrr_bs: self.bsrr_bs,
-          $gpio_idr_idr: self.idr,
-          $gpio_lckr_lck: self.lckr,
-          $gpio_moder_moder: self.moder,
-          $gpio_odr_odr: self.odr,
-          $gpio_ospeedr_ospeedr: self.ospeedr,
-          $gpio_otyper_ot: self.otyper,
-          $gpio_pupdr_pupdr: self.pupdr,
-        }
-      }
-
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5"))]
-      #[inline(always)]
-      fn decompose(self) -> Self::Items {
-        Self::Items {
-          $gpio_afr_afr: self.afr,
-          $gpio_brr_br: self.brr,
-          $gpio_bsrr_br: self.bsrr_br,
-          $gpio_bsrr_bs: self.bsrr_bs,
-          $gpio_idr_idr: self.idr,
-          $gpio_lckr_lck: self.lckr,
-          $gpio_moder_moder: self.moder,
-          $gpio_odr_odr: self.odr,
-          $gpio_ospeedr_ospeedr: self.ospeedr,
-          $gpio_otyper_ot: self.otyper,
-          $gpio_pupdr_pupdr: self.pupdr,
-        }
-      }
-
-      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-                feature = "stm32f102", feature = "stm32f103",
-                feature = "stm32f107"))]
-      #[inline(always)]
-      fn decompose(self) -> Self::Items {
-        Self::Items {
-          $gpio_brr_br: self.brr,
-          $gpio_bsrr_br: self.bsrr_br,
-          $gpio_bsrr_bs: self.bsrr_bs,
-          $gpio_cr_cnf: self.cr_cnf,
-          $gpio_cr_mode: self.cr_mode,
-          $gpio_idr_idr: self.idr,
-          $gpio_lckr_lck: self.lckr,
-          $gpio_odr_odr: self.odr,
-        }
+      fn new(tokens: Self::Tokens) -> Self {
+        Self { tokens }
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -517,7 +387,7 @@ macro_rules! gpio_pin {
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn afr(&self) -> &Self::Afr {
-        &self.afr
+        &self.tokens.$gpio_afr_afr
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -525,37 +395,37 @@ macro_rules! gpio_pin {
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn afr_mut(&mut self) -> &mut Self::Afr {
-        &mut self.afr
+        &mut self.tokens.$gpio_afr_afr
       }
 
       #[inline(always)]
       fn brr(&self) -> &Self::Brr {
-        &self.brr
+        &self.tokens.$gpio_brr_br
       }
 
       #[inline(always)]
       fn brr_mut(&mut self) -> &mut Self::Brr {
-        &mut self.brr
+        &mut self.tokens.$gpio_brr_br
       }
 
       #[inline(always)]
       fn bsrr_br(&self) -> &Self::BsrrBr {
-        &self.bsrr_br
+        &self.tokens.$gpio_bsrr_br
       }
 
       #[inline(always)]
       fn bsrr_br_mut(&mut self) -> &mut Self::BsrrBr {
-        &mut self.bsrr_br
+        &mut self.tokens.$gpio_bsrr_br
       }
 
       #[inline(always)]
       fn bsrr_bs(&self) -> &Self::BsrrBs {
-        &self.bsrr_bs
+        &self.tokens.$gpio_bsrr_bs
       }
 
       #[inline(always)]
       fn bsrr_bs_mut(&mut self) -> &mut Self::BsrrBs {
-        &mut self.bsrr_bs
+        &mut self.tokens.$gpio_bsrr_bs
       }
 
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -563,7 +433,7 @@ macro_rules! gpio_pin {
                 feature = "stm32f107"))]
       #[inline(always)]
       fn cr_cnf(&self) -> &Self::CrCnf {
-        &self.cr_cnf
+        &self.tokens.$gpio_cr_cnf
       }
 
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -571,7 +441,7 @@ macro_rules! gpio_pin {
                 feature = "stm32f107"))]
       #[inline(always)]
       fn cr_cnf_mut(&mut self) -> &mut Self::CrCnf {
-        &mut self.cr_cnf
+        &mut self.tokens.$gpio_cr_cnf
       }
 
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -579,7 +449,7 @@ macro_rules! gpio_pin {
                 feature = "stm32f107"))]
       #[inline(always)]
       fn cr_mode(&self) -> &Self::CrMode {
-        &self.cr_mode
+        &self.tokens.$gpio_cr_mode
       }
 
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -587,27 +457,27 @@ macro_rules! gpio_pin {
                 feature = "stm32f107"))]
       #[inline(always)]
       fn cr_mode_mut(&mut self) -> &mut Self::CrMode {
-        &mut self.cr_mode
+        &mut self.tokens.$gpio_cr_mode
       }
 
       #[inline(always)]
       fn idr(&self) -> &Self::Idr {
-        &self.idr
+        &self.tokens.$gpio_idr_idr
       }
 
       #[inline(always)]
       fn idr_mut(&mut self) -> &mut Self::Idr {
-        &mut self.idr
+        &mut self.tokens.$gpio_idr_idr
       }
 
       #[inline(always)]
       fn lckr(&self) -> &Self::Lckr {
-        &self.lckr
+        &self.tokens.$gpio_lckr_lck
       }
 
       #[inline(always)]
       fn lckr_mut(&mut self) -> &mut Self::Lckr {
-        &mut self.lckr
+        &mut self.tokens.$gpio_lckr_lck
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -615,7 +485,7 @@ macro_rules! gpio_pin {
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn moder(&self) -> &Self::Moder {
-        &self.moder
+        &self.tokens.$gpio_moder_moder
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -623,17 +493,17 @@ macro_rules! gpio_pin {
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn moder_mut(&mut self) -> &mut Self::Moder {
-        &mut self.moder
+        &mut self.tokens.$gpio_moder_moder
       }
 
       #[inline(always)]
       fn odr(&self) -> &Self::Odr {
-        &self.odr
+        &self.tokens.$gpio_odr_odr
       }
 
       #[inline(always)]
       fn odr_mut(&mut self) -> &mut Self::Odr {
-        &mut self.odr
+        &mut self.tokens.$gpio_odr_odr
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -641,7 +511,7 @@ macro_rules! gpio_pin {
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn ospeedr(&self) -> &Self::Ospeedr {
-        &self.ospeedr
+        &self.tokens.$gpio_ospeedr_ospeedr
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -649,7 +519,7 @@ macro_rules! gpio_pin {
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn ospeedr_mut(&mut self) -> &mut Self::Ospeedr {
-        &mut self.ospeedr
+        &mut self.tokens.$gpio_ospeedr_ospeedr
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -657,7 +527,7 @@ macro_rules! gpio_pin {
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn otyper(&self) -> &Self::Otyper {
-        &self.otyper
+        &self.tokens.$gpio_otyper_ot
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -665,7 +535,7 @@ macro_rules! gpio_pin {
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn otyper_mut(&mut self) -> &mut Self::Otyper {
-        &mut self.otyper
+        &mut self.tokens.$gpio_otyper_ot
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -673,7 +543,7 @@ macro_rules! gpio_pin {
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn pupdr(&self) -> &Self::Pupdr {
-        &self.pupdr
+        &self.tokens.$gpio_pupdr_pupdr
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -681,7 +551,7 @@ macro_rules! gpio_pin {
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn pupdr_mut(&mut self) -> &mut Self::Pupdr {
-        &mut self.pupdr
+        &mut self.tokens.$gpio_pupdr_pupdr
       }
     }
 
@@ -692,12 +562,12 @@ macro_rules! gpio_pin {
 
         #[inline(always)]
         fn ascr(&self) -> &Self::Ascr {
-          &self.ascr
+          &self.tokens.$gpio_ascr_asc
         }
 
         #[inline(always)]
         fn ascr_mut(&mut self) -> &mut Self::Ascr {
-          &mut self.ascr
+          &mut self.tokens.$gpio_ascr_asc
         }
       }
     )*
@@ -712,13 +582,13 @@ macro_rules! gpio_pin {
 gpio_pin! {
   "GPIO port A pin 0.",
   Gpioa0,
-  "GPIO port A pin 0 items.",
-  Gpioa0Items,
+  peripheral_gpioa_0,
+  "GPIO port A pin 0 tokens.",
+  Gpioa0Tokens,
   gpioa,
   afrl,
   crl,
   Afrl0,
-  (Asc0),
   Br0,
   Bs0,
   Cnf0,
@@ -731,7 +601,6 @@ gpio_pin! {
   Ot0,
   Pupdr0,
   gpioa_afrl_afrl0,
-  (gpioa_ascr_asc0),
   gpioa_brr_br0,
   gpioa_bsrr_br0,
   gpioa_bsrr_bs0,
@@ -769,6 +638,10 @@ gpio_pin! {
   ospeedr0,
   ot0,
   pupdr0,
+  ((
+    Asc0,
+    gpioa_ascr_asc0,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -779,13 +652,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 1.",
   Gpioa1,
-  "GPIO port A pin 1 items.",
-  Gpioa1Items,
+  peripheral_gpioa_1,
+  "GPIO port A pin 1 tokens.",
+  Gpioa1Tokens,
   gpioa,
   afrl,
   crl,
   Afrl1,
-  (Asc1),
   Br1,
   Bs1,
   Cnf1,
@@ -798,7 +671,6 @@ gpio_pin! {
   Ot1,
   Pupdr1,
   gpioa_afrl_afrl1,
-  (gpioa_ascr_asc1),
   gpioa_brr_br1,
   gpioa_bsrr_br1,
   gpioa_bsrr_bs1,
@@ -836,6 +708,10 @@ gpio_pin! {
   ospeedr1,
   ot1,
   pupdr1,
+  ((
+    Asc1,
+    gpioa_ascr_asc1,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -846,13 +722,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 2.",
   Gpioa2,
-  "GPIO port A pin 2 items.",
-  Gpioa2Items,
+  peripheral_gpioa_2,
+  "GPIO port A pin 2 tokens.",
+  Gpioa2Tokens,
   gpioa,
   afrl,
   crl,
   Afrl2,
-  (Asc2),
   Br2,
   Bs2,
   Cnf2,
@@ -865,7 +741,6 @@ gpio_pin! {
   Ot2,
   Pupdr2,
   gpioa_afrl_afrl2,
-  (gpioa_ascr_asc2),
   gpioa_brr_br2,
   gpioa_bsrr_br2,
   gpioa_bsrr_bs2,
@@ -903,6 +778,10 @@ gpio_pin! {
   ospeedr2,
   ot2,
   pupdr2,
+  ((
+    Asc2,
+    gpioa_ascr_asc2,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -913,13 +792,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 3.",
   Gpioa3,
-  "GPIO port A pin 3 items.",
-  Gpioa3Items,
+  peripheral_gpioa_3,
+  "GPIO port A pin 3 tokens.",
+  Gpioa3Tokens,
   gpioa,
   afrl,
   crl,
   Afrl3,
-  (Asc3),
   Br3,
   Bs3,
   Cnf3,
@@ -932,7 +811,6 @@ gpio_pin! {
   Ot3,
   Pupdr3,
   gpioa_afrl_afrl3,
-  (gpioa_ascr_asc3),
   gpioa_brr_br3,
   gpioa_bsrr_br3,
   gpioa_bsrr_bs3,
@@ -970,6 +848,10 @@ gpio_pin! {
   ospeedr3,
   ot3,
   pupdr3,
+  ((
+    Asc3,
+    gpioa_ascr_asc3,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -980,13 +862,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 4.",
   Gpioa4,
-  "GPIO port A pin 4 items.",
-  Gpioa4Items,
+  peripheral_gpioa_4,
+  "GPIO port A pin 4 tokens.",
+  Gpioa4Tokens,
   gpioa,
   afrl,
   crl,
   Afrl4,
-  (Asc4),
   Br4,
   Bs4,
   Cnf4,
@@ -999,7 +881,6 @@ gpio_pin! {
   Ot4,
   Pupdr4,
   gpioa_afrl_afrl4,
-  (gpioa_ascr_asc4),
   gpioa_brr_br4,
   gpioa_bsrr_br4,
   gpioa_bsrr_bs4,
@@ -1037,6 +918,10 @@ gpio_pin! {
   ospeedr4,
   ot4,
   pupdr4,
+  ((
+    Asc4,
+    gpioa_ascr_asc4,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1047,13 +932,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 5.",
   Gpioa5,
-  "GPIO port A pin 5 items.",
-  Gpioa5Items,
+  peripheral_gpioa_5,
+  "GPIO port A pin 5 tokens.",
+  Gpioa5Tokens,
   gpioa,
   afrl,
   crl,
   Afrl5,
-  (Asc5),
   Br5,
   Bs5,
   Cnf5,
@@ -1066,7 +951,6 @@ gpio_pin! {
   Ot5,
   Pupdr5,
   gpioa_afrl_afrl5,
-  (gpioa_ascr_asc5),
   gpioa_brr_br5,
   gpioa_bsrr_br5,
   gpioa_bsrr_bs5,
@@ -1104,6 +988,10 @@ gpio_pin! {
   ospeedr5,
   ot5,
   pupdr5,
+  ((
+    Asc5,
+    gpioa_ascr_asc5,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1114,13 +1002,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 6.",
   Gpioa6,
-  "GPIO port A pin 6 items.",
-  Gpioa6Items,
+  peripheral_gpioa_6,
+  "GPIO port A pin 6 tokens.",
+  Gpioa6Tokens,
   gpioa,
   afrl,
   crl,
   Afrl6,
-  (Asc6),
   Br6,
   Bs6,
   Cnf6,
@@ -1133,7 +1021,6 @@ gpio_pin! {
   Ot6,
   Pupdr6,
   gpioa_afrl_afrl6,
-  (gpioa_ascr_asc6),
   gpioa_brr_br6,
   gpioa_bsrr_br6,
   gpioa_bsrr_bs6,
@@ -1171,6 +1058,10 @@ gpio_pin! {
   ospeedr6,
   ot6,
   pupdr6,
+  ((
+    Asc6,
+    gpioa_ascr_asc6,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1181,13 +1072,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 7.",
   Gpioa7,
-  "GPIO port A pin 7 items.",
-  Gpioa7Items,
+  peripheral_gpioa_7,
+  "GPIO port A pin 7 tokens.",
+  Gpioa7Tokens,
   gpioa,
   afrl,
   crl,
   Afrl7,
-  (Asc7),
   Br7,
   Bs7,
   Cnf7,
@@ -1200,7 +1091,6 @@ gpio_pin! {
   Ot7,
   Pupdr7,
   gpioa_afrl_afrl7,
-  (gpioa_ascr_asc7),
   gpioa_brr_br7,
   gpioa_bsrr_br7,
   gpioa_bsrr_bs7,
@@ -1238,6 +1128,10 @@ gpio_pin! {
   ospeedr7,
   ot7,
   pupdr7,
+  ((
+    Asc7,
+    gpioa_ascr_asc7,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1248,13 +1142,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 8.",
   Gpioa8,
-  "GPIO port A pin 8 items.",
-  Gpioa8Items,
+  peripheral_gpioa_8,
+  "GPIO port A pin 8 tokens.",
+  Gpioa8Tokens,
   gpioa,
   afrh,
   crh,
   Afrh8,
-  (Asc8),
   Br8,
   Bs8,
   Cnf8,
@@ -1267,7 +1161,6 @@ gpio_pin! {
   Ot8,
   Pupdr8,
   gpioa_afrh_afrh8,
-  (gpioa_ascr_asc8),
   gpioa_brr_br8,
   gpioa_bsrr_br8,
   gpioa_bsrr_bs8,
@@ -1305,6 +1198,10 @@ gpio_pin! {
   ospeedr8,
   ot8,
   pupdr8,
+  ((
+    Asc8,
+    gpioa_ascr_asc8,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1315,13 +1212,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 9.",
   Gpioa9,
-  "GPIO port A pin 9 items.",
-  Gpioa9Items,
+  peripheral_gpioa_9,
+  "GPIO port A pin 9 tokens.",
+  Gpioa9Tokens,
   gpioa,
   afrh,
   crh,
   Afrh9,
-  (Asc9),
   Br9,
   Bs9,
   Cnf9,
@@ -1334,7 +1231,6 @@ gpio_pin! {
   Ot9,
   Pupdr9,
   gpioa_afrh_afrh9,
-  (gpioa_ascr_asc9),
   gpioa_brr_br9,
   gpioa_bsrr_br9,
   gpioa_bsrr_bs9,
@@ -1372,6 +1268,10 @@ gpio_pin! {
   ospeedr9,
   ot9,
   pupdr9,
+  ((
+    Asc9,
+    gpioa_ascr_asc9,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1382,13 +1282,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 10.",
   Gpioa10,
-  "GPIO port A pin 10 items.",
-  Gpioa10Items,
+  peripheral_gpioa_10,
+  "GPIO port A pin 10 tokens.",
+  Gpioa10Tokens,
   gpioa,
   afrh,
   crh,
   Afrh10,
-  (Asc10),
   Br10,
   Bs10,
   Cnf10,
@@ -1401,7 +1301,6 @@ gpio_pin! {
   Ot10,
   Pupdr10,
   gpioa_afrh_afrh10,
-  (gpioa_ascr_asc10),
   gpioa_brr_br10,
   gpioa_bsrr_br10,
   gpioa_bsrr_bs10,
@@ -1439,6 +1338,10 @@ gpio_pin! {
   ospeedr10,
   ot10,
   pupdr10,
+  ((
+    Asc10,
+    gpioa_ascr_asc10,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1449,13 +1352,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 11.",
   Gpioa11,
-  "GPIO port A pin 11 items.",
-  Gpioa11Items,
+  peripheral_gpioa_11,
+  "GPIO port A pin 11 tokens.",
+  Gpioa11Tokens,
   gpioa,
   afrh,
   crh,
   Afrh11,
-  (Asc11),
   Br11,
   Bs11,
   Cnf11,
@@ -1468,7 +1371,6 @@ gpio_pin! {
   Ot11,
   Pupdr11,
   gpioa_afrh_afrh11,
-  (gpioa_ascr_asc11),
   gpioa_brr_br11,
   gpioa_bsrr_br11,
   gpioa_bsrr_bs11,
@@ -1506,6 +1408,10 @@ gpio_pin! {
   ospeedr11,
   ot11,
   pupdr11,
+  ((
+    Asc11,
+    gpioa_ascr_asc11,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1516,13 +1422,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 12.",
   Gpioa12,
-  "GPIO port A pin 12 items.",
-  Gpioa12Items,
+  peripheral_gpioa_12,
+  "GPIO port A pin 12 tokens.",
+  Gpioa12Tokens,
   gpioa,
   afrh,
   crh,
   Afrh12,
-  (Asc12),
   Br12,
   Bs12,
   Cnf12,
@@ -1535,7 +1441,6 @@ gpio_pin! {
   Ot12,
   Pupdr12,
   gpioa_afrh_afrh12,
-  (gpioa_ascr_asc12),
   gpioa_brr_br12,
   gpioa_bsrr_br12,
   gpioa_bsrr_bs12,
@@ -1573,6 +1478,10 @@ gpio_pin! {
   ospeedr12,
   ot12,
   pupdr12,
+  ((
+    Asc12,
+    gpioa_ascr_asc12,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1583,13 +1492,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 13.",
   Gpioa13,
-  "GPIO port A pin 13 items.",
-  Gpioa13Items,
+  peripheral_gpioa_13,
+  "GPIO port A pin 13 tokens.",
+  Gpioa13Tokens,
   gpioa,
   afrh,
   crh,
   Afrh13,
-  (Asc13),
   Br13,
   Bs13,
   Cnf13,
@@ -1602,7 +1511,6 @@ gpio_pin! {
   Ot13,
   Pupdr13,
   gpioa_afrh_afrh13,
-  (gpioa_ascr_asc13),
   gpioa_brr_br13,
   gpioa_bsrr_br13,
   gpioa_bsrr_bs13,
@@ -1640,6 +1548,10 @@ gpio_pin! {
   ospeedr13,
   ot13,
   pupdr13,
+  ((
+    Asc13,
+    gpioa_ascr_asc13,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1650,13 +1562,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 14.",
   Gpioa14,
-  "GPIO port A pin 14 items.",
-  Gpioa14Items,
+  peripheral_gpioa_14,
+  "GPIO port A pin 14 tokens.",
+  Gpioa14Tokens,
   gpioa,
   afrh,
   crh,
   Afrh14,
-  (Asc14),
   Br14,
   Bs14,
   Cnf14,
@@ -1669,7 +1581,6 @@ gpio_pin! {
   Ot14,
   Pupdr14,
   gpioa_afrh_afrh14,
-  (gpioa_ascr_asc14),
   gpioa_brr_br14,
   gpioa_bsrr_br14,
   gpioa_bsrr_bs14,
@@ -1707,6 +1618,10 @@ gpio_pin! {
   ospeedr14,
   ot14,
   pupdr14,
+  ((
+    Asc14,
+    gpioa_ascr_asc14,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1717,13 +1632,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 15.",
   Gpioa15,
-  "GPIO port A pin 15 items.",
-  Gpioa15Items,
+  peripheral_gpioa_15,
+  "GPIO port A pin 15 tokens.",
+  Gpioa15Tokens,
   gpioa,
   afrh,
   crh,
   Afrh15,
-  (Asc15),
   Br15,
   Bs15,
   Cnf15,
@@ -1736,7 +1651,6 @@ gpio_pin! {
   Ot15,
   Pupdr15,
   gpioa_afrh_afrh15,
-  (gpioa_ascr_asc15),
   gpioa_brr_br15,
   gpioa_bsrr_br15,
   gpioa_bsrr_bs15,
@@ -1774,6 +1688,10 @@ gpio_pin! {
   ospeedr15,
   ot15,
   pupdr15,
+  ((
+    Asc15,
+    gpioa_ascr_asc15,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1784,13 +1702,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 0.",
   Gpiob0,
-  "GPIO port B pin 0 items.",
-  Gpiob0Items,
+  peripheral_gpiob_0,
+  "GPIO port B pin 0 tokens.",
+  Gpiob0Tokens,
   gpiob,
   afrl,
   crl,
   Afrl0,
-  (Asc0),
   Br0,
   Bs0,
   Cnf0,
@@ -1803,7 +1721,6 @@ gpio_pin! {
   Ot0,
   Pupdr0,
   gpiob_afrl_afrl0,
-  (gpiob_ascr_asc0),
   gpiob_brr_br0,
   gpiob_bsrr_br0,
   gpiob_bsrr_bs0,
@@ -1841,6 +1758,10 @@ gpio_pin! {
   ospeedr0,
   ot0,
   pupdr0,
+  ((
+    Asc0,
+    gpiob_ascr_asc0,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1851,13 +1772,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 1.",
   Gpiob1,
-  "GPIO port B pin 1 items.",
-  Gpiob1Items,
+  peripheral_gpiob_1,
+  "GPIO port B pin 1 tokens.",
+  Gpiob1Tokens,
   gpiob,
   afrl,
   crl,
   Afrl1,
-  (Asc1),
   Br1,
   Bs1,
   Cnf1,
@@ -1870,7 +1791,6 @@ gpio_pin! {
   Ot1,
   Pupdr1,
   gpiob_afrl_afrl1,
-  (gpiob_ascr_asc1),
   gpiob_brr_br1,
   gpiob_bsrr_br1,
   gpiob_bsrr_bs1,
@@ -1908,6 +1828,10 @@ gpio_pin! {
   ospeedr1,
   ot1,
   pupdr1,
+  ((
+    Asc1,
+    gpiob_ascr_asc1,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1918,13 +1842,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 2.",
   Gpiob2,
-  "GPIO port B pin 2 items.",
-  Gpiob2Items,
+  peripheral_gpiob_2,
+  "GPIO port B pin 2 tokens.",
+  Gpiob2Tokens,
   gpiob,
   afrl,
   crl,
   Afrl2,
-  (Asc2),
   Br2,
   Bs2,
   Cnf2,
@@ -1937,7 +1861,6 @@ gpio_pin! {
   Ot2,
   Pupdr2,
   gpiob_afrl_afrl2,
-  (gpiob_ascr_asc2),
   gpiob_brr_br2,
   gpiob_bsrr_br2,
   gpiob_bsrr_bs2,
@@ -1975,6 +1898,10 @@ gpio_pin! {
   ospeedr2,
   ot2,
   pupdr2,
+  ((
+    Asc2,
+    gpiob_ascr_asc2,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -1985,13 +1912,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 3.",
   Gpiob3,
-  "GPIO port B pin 3 items.",
-  Gpiob3Items,
+  peripheral_gpiob_3,
+  "GPIO port B pin 3 tokens.",
+  Gpiob3Tokens,
   gpiob,
   afrl,
   crl,
   Afrl3,
-  (Asc3),
   Br3,
   Bs3,
   Cnf3,
@@ -2004,7 +1931,6 @@ gpio_pin! {
   Ot3,
   Pupdr3,
   gpiob_afrl_afrl3,
-  (gpiob_ascr_asc3),
   gpiob_brr_br3,
   gpiob_bsrr_br3,
   gpiob_bsrr_bs3,
@@ -2042,6 +1968,10 @@ gpio_pin! {
   ospeedr3,
   ot3,
   pupdr3,
+  ((
+    Asc3,
+    gpiob_ascr_asc3,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2052,13 +1982,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 4.",
   Gpiob4,
-  "GPIO port B pin 4 items.",
-  Gpiob4Items,
+  peripheral_gpiob_4,
+  "GPIO port B pin 4 tokens.",
+  Gpiob4Tokens,
   gpiob,
   afrl,
   crl,
   Afrl4,
-  (Asc4),
   Br4,
   Bs4,
   Cnf4,
@@ -2071,7 +2001,6 @@ gpio_pin! {
   Ot4,
   Pupdr4,
   gpiob_afrl_afrl4,
-  (gpiob_ascr_asc4),
   gpiob_brr_br4,
   gpiob_bsrr_br4,
   gpiob_bsrr_bs4,
@@ -2109,6 +2038,10 @@ gpio_pin! {
   ospeedr4,
   ot4,
   pupdr4,
+  ((
+    Asc4,
+    gpiob_ascr_asc4,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2119,13 +2052,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 5.",
   Gpiob5,
-  "GPIO port B pin 5 items.",
-  Gpiob5Items,
+  peripheral_gpiob_5,
+  "GPIO port B pin 5 tokens.",
+  Gpiob5Tokens,
   gpiob,
   afrl,
   crl,
   Afrl5,
-  (Asc5),
   Br5,
   Bs5,
   Cnf5,
@@ -2138,7 +2071,6 @@ gpio_pin! {
   Ot5,
   Pupdr5,
   gpiob_afrl_afrl5,
-  (gpiob_ascr_asc5),
   gpiob_brr_br5,
   gpiob_bsrr_br5,
   gpiob_bsrr_bs5,
@@ -2176,6 +2108,10 @@ gpio_pin! {
   ospeedr5,
   ot5,
   pupdr5,
+  ((
+    Asc5,
+    gpiob_ascr_asc5,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2186,13 +2122,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 6.",
   Gpiob6,
-  "GPIO port B pin 6 items.",
-  Gpiob6Items,
+  peripheral_gpiob_6,
+  "GPIO port B pin 6 tokens.",
+  Gpiob6Tokens,
   gpiob,
   afrl,
   crl,
   Afrl6,
-  (Asc6),
   Br6,
   Bs6,
   Cnf6,
@@ -2205,7 +2141,6 @@ gpio_pin! {
   Ot6,
   Pupdr6,
   gpiob_afrl_afrl6,
-  (gpiob_ascr_asc6),
   gpiob_brr_br6,
   gpiob_bsrr_br6,
   gpiob_bsrr_bs6,
@@ -2243,6 +2178,10 @@ gpio_pin! {
   ospeedr6,
   ot6,
   pupdr6,
+  ((
+    Asc6,
+    gpiob_ascr_asc6,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2253,13 +2192,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 7.",
   Gpiob7,
-  "GPIO port B pin 7 items.",
-  Gpiob7Items,
+  peripheral_gpiob_7,
+  "GPIO port B pin 7 tokens.",
+  Gpiob7Tokens,
   gpiob,
   afrl,
   crl,
   Afrl7,
-  (Asc7),
   Br7,
   Bs7,
   Cnf7,
@@ -2272,7 +2211,6 @@ gpio_pin! {
   Ot7,
   Pupdr7,
   gpiob_afrl_afrl7,
-  (gpiob_ascr_asc7),
   gpiob_brr_br7,
   gpiob_bsrr_br7,
   gpiob_bsrr_bs7,
@@ -2310,6 +2248,10 @@ gpio_pin! {
   ospeedr7,
   ot7,
   pupdr7,
+  ((
+    Asc7,
+    gpiob_ascr_asc7,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2320,13 +2262,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 8.",
   Gpiob8,
-  "GPIO port B pin 8 items.",
-  Gpiob8Items,
+  peripheral_gpiob_8,
+  "GPIO port B pin 8 tokens.",
+  Gpiob8Tokens,
   gpiob,
   afrh,
   crh,
   Afrh8,
-  (Asc8),
   Br8,
   Bs8,
   Cnf8,
@@ -2339,7 +2281,6 @@ gpio_pin! {
   Ot8,
   Pupdr8,
   gpiob_afrh_afrh8,
-  (gpiob_ascr_asc8),
   gpiob_brr_br8,
   gpiob_bsrr_br8,
   gpiob_bsrr_bs8,
@@ -2377,6 +2318,10 @@ gpio_pin! {
   ospeedr8,
   ot8,
   pupdr8,
+  ((
+    Asc8,
+    gpiob_ascr_asc8,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2387,13 +2332,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 9.",
   Gpiob9,
-  "GPIO port B pin 9 items.",
-  Gpiob9Items,
+  peripheral_gpiob_9,
+  "GPIO port B pin 9 tokens.",
+  Gpiob9Tokens,
   gpiob,
   afrh,
   crh,
   Afrh9,
-  (Asc9),
   Br9,
   Bs9,
   Cnf9,
@@ -2406,7 +2351,6 @@ gpio_pin! {
   Ot9,
   Pupdr9,
   gpiob_afrh_afrh9,
-  (gpiob_ascr_asc9),
   gpiob_brr_br9,
   gpiob_bsrr_br9,
   gpiob_bsrr_bs9,
@@ -2444,6 +2388,10 @@ gpio_pin! {
   ospeedr9,
   ot9,
   pupdr9,
+  ((
+    Asc9,
+    gpiob_ascr_asc9,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2454,13 +2402,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 10.",
   Gpiob10,
-  "GPIO port B pin 10 items.",
-  Gpiob10Items,
+  peripheral_gpiob_10,
+  "GPIO port B pin 10 tokens.",
+  Gpiob10Tokens,
   gpiob,
   afrh,
   crh,
   Afrh10,
-  (Asc10),
   Br10,
   Bs10,
   Cnf10,
@@ -2473,7 +2421,6 @@ gpio_pin! {
   Ot10,
   Pupdr10,
   gpiob_afrh_afrh10,
-  (gpiob_ascr_asc10),
   gpiob_brr_br10,
   gpiob_bsrr_br10,
   gpiob_bsrr_bs10,
@@ -2511,6 +2458,10 @@ gpio_pin! {
   ospeedr10,
   ot10,
   pupdr10,
+  ((
+    Asc10,
+    gpiob_ascr_asc10,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2521,13 +2472,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 11.",
   Gpiob11,
-  "GPIO port B pin 11 items.",
-  Gpiob11Items,
+  peripheral_gpiob_11,
+  "GPIO port B pin 11 tokens.",
+  Gpiob11Tokens,
   gpiob,
   afrh,
   crh,
   Afrh11,
-  (Asc11),
   Br11,
   Bs11,
   Cnf11,
@@ -2540,7 +2491,6 @@ gpio_pin! {
   Ot11,
   Pupdr11,
   gpiob_afrh_afrh11,
-  (gpiob_ascr_asc11),
   gpiob_brr_br11,
   gpiob_bsrr_br11,
   gpiob_bsrr_bs11,
@@ -2578,6 +2528,10 @@ gpio_pin! {
   ospeedr11,
   ot11,
   pupdr11,
+  ((
+    Asc11,
+    gpiob_ascr_asc11,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2588,13 +2542,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 12.",
   Gpiob12,
-  "GPIO port B pin 12 items.",
-  Gpiob12Items,
+  peripheral_gpiob_12,
+  "GPIO port B pin 12 tokens.",
+  Gpiob12Tokens,
   gpiob,
   afrh,
   crh,
   Afrh12,
-  (Asc12),
   Br12,
   Bs12,
   Cnf12,
@@ -2607,7 +2561,6 @@ gpio_pin! {
   Ot12,
   Pupdr12,
   gpiob_afrh_afrh12,
-  (gpiob_ascr_asc12),
   gpiob_brr_br12,
   gpiob_bsrr_br12,
   gpiob_bsrr_bs12,
@@ -2645,6 +2598,10 @@ gpio_pin! {
   ospeedr12,
   ot12,
   pupdr12,
+  ((
+    Asc12,
+    gpiob_ascr_asc12,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2655,13 +2612,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 13.",
   Gpiob13,
-  "GPIO port B pin 13 items.",
-  Gpiob13Items,
+  peripheral_gpiob_13,
+  "GPIO port B pin 13 tokens.",
+  Gpiob13Tokens,
   gpiob,
   afrh,
   crh,
   Afrh13,
-  (Asc13),
   Br13,
   Bs13,
   Cnf13,
@@ -2674,7 +2631,6 @@ gpio_pin! {
   Ot13,
   Pupdr13,
   gpiob_afrh_afrh13,
-  (gpiob_ascr_asc13),
   gpiob_brr_br13,
   gpiob_bsrr_br13,
   gpiob_bsrr_bs13,
@@ -2712,6 +2668,10 @@ gpio_pin! {
   ospeedr13,
   ot13,
   pupdr13,
+  ((
+    Asc13,
+    gpiob_ascr_asc13,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2722,13 +2682,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 14.",
   Gpiob14,
-  "GPIO port B pin 14 items.",
-  Gpiob14Items,
+  peripheral_gpiob_14,
+  "GPIO port B pin 14 tokens.",
+  Gpiob14Tokens,
   gpiob,
   afrh,
   crh,
   Afrh14,
-  (Asc14),
   Br14,
   Bs14,
   Cnf14,
@@ -2741,7 +2701,6 @@ gpio_pin! {
   Ot14,
   Pupdr14,
   gpiob_afrh_afrh14,
-  (gpiob_ascr_asc14),
   gpiob_brr_br14,
   gpiob_bsrr_br14,
   gpiob_bsrr_bs14,
@@ -2779,6 +2738,10 @@ gpio_pin! {
   ospeedr14,
   ot14,
   pupdr14,
+  ((
+    Asc14,
+    gpiob_ascr_asc14,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2789,13 +2752,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 15.",
   Gpiob15,
-  "GPIO port B pin 15 items.",
-  Gpiob15Items,
+  peripheral_gpiob_15,
+  "GPIO port B pin 15 tokens.",
+  Gpiob15Tokens,
   gpiob,
   afrh,
   crh,
   Afrh15,
-  (Asc15),
   Br15,
   Bs15,
   Cnf15,
@@ -2808,7 +2771,6 @@ gpio_pin! {
   Ot15,
   Pupdr15,
   gpiob_afrh_afrh15,
-  (gpiob_ascr_asc15),
   gpiob_brr_br15,
   gpiob_bsrr_br15,
   gpiob_bsrr_bs15,
@@ -2846,6 +2808,10 @@ gpio_pin! {
   ospeedr15,
   ot15,
   pupdr15,
+  ((
+    Asc15,
+    gpiob_ascr_asc15,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2856,13 +2822,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 0.",
   Gpioc0,
-  "GPIO port C pin 0 items.",
-  Gpioc0Items,
+  peripheral_gpioc_0,
+  "GPIO port C pin 0 tokens.",
+  Gpioc0Tokens,
   gpioc,
   afrl,
   crl,
   Afrl0,
-  (Asc0),
   Br0,
   Bs0,
   Cnf0,
@@ -2875,7 +2841,6 @@ gpio_pin! {
   Ot0,
   Pupdr0,
   gpioc_afrl_afrl0,
-  (gpioc_ascr_asc0),
   gpioc_brr_br0,
   gpioc_bsrr_br0,
   gpioc_bsrr_bs0,
@@ -2913,6 +2878,10 @@ gpio_pin! {
   ospeedr0,
   ot0,
   pupdr0,
+  ((
+    Asc0,
+    gpioc_ascr_asc0,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2923,13 +2892,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 1.",
   Gpioc1,
-  "GPIO port C pin 1 items.",
-  Gpioc1Items,
+  peripheral_gpioc_1,
+  "GPIO port C pin 1 tokens.",
+  Gpioc1Tokens,
   gpioc,
   afrl,
   crl,
   Afrl1,
-  (Asc1),
   Br1,
   Bs1,
   Cnf1,
@@ -2942,7 +2911,6 @@ gpio_pin! {
   Ot1,
   Pupdr1,
   gpioc_afrl_afrl1,
-  (gpioc_ascr_asc1),
   gpioc_brr_br1,
   gpioc_bsrr_br1,
   gpioc_bsrr_bs1,
@@ -2980,6 +2948,10 @@ gpio_pin! {
   ospeedr1,
   ot1,
   pupdr1,
+  ((
+    Asc1,
+    gpioc_ascr_asc1,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -2990,13 +2962,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 2.",
   Gpioc2,
-  "GPIO port C pin 2 items.",
-  Gpioc2Items,
+  peripheral_gpioc_2,
+  "GPIO port C pin 2 tokens.",
+  Gpioc2Tokens,
   gpioc,
   afrl,
   crl,
   Afrl2,
-  (Asc2),
   Br2,
   Bs2,
   Cnf2,
@@ -3009,7 +2981,6 @@ gpio_pin! {
   Ot2,
   Pupdr2,
   gpioc_afrl_afrl2,
-  (gpioc_ascr_asc2),
   gpioc_brr_br2,
   gpioc_bsrr_br2,
   gpioc_bsrr_bs2,
@@ -3047,6 +3018,10 @@ gpio_pin! {
   ospeedr2,
   ot2,
   pupdr2,
+  ((
+    Asc2,
+    gpioc_ascr_asc2,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3057,13 +3032,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 3.",
   Gpioc3,
-  "GPIO port C pin 3 items.",
-  Gpioc3Items,
+  peripheral_gpioc_3,
+  "GPIO port C pin 3 tokens.",
+  Gpioc3Tokens,
   gpioc,
   afrl,
   crl,
   Afrl3,
-  (Asc3),
   Br3,
   Bs3,
   Cnf3,
@@ -3076,7 +3051,6 @@ gpio_pin! {
   Ot3,
   Pupdr3,
   gpioc_afrl_afrl3,
-  (gpioc_ascr_asc3),
   gpioc_brr_br3,
   gpioc_bsrr_br3,
   gpioc_bsrr_bs3,
@@ -3114,6 +3088,10 @@ gpio_pin! {
   ospeedr3,
   ot3,
   pupdr3,
+  ((
+    Asc3,
+    gpioc_ascr_asc3,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3124,13 +3102,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 4.",
   Gpioc4,
-  "GPIO port C pin 4 items.",
-  Gpioc4Items,
+  peripheral_gpioc_4,
+  "GPIO port C pin 4 tokens.",
+  Gpioc4Tokens,
   gpioc,
   afrl,
   crl,
   Afrl4,
-  (Asc4),
   Br4,
   Bs4,
   Cnf4,
@@ -3143,7 +3121,6 @@ gpio_pin! {
   Ot4,
   Pupdr4,
   gpioc_afrl_afrl4,
-  (gpioc_ascr_asc4),
   gpioc_brr_br4,
   gpioc_bsrr_br4,
   gpioc_bsrr_bs4,
@@ -3181,6 +3158,10 @@ gpio_pin! {
   ospeedr4,
   ot4,
   pupdr4,
+  ((
+    Asc4,
+    gpioc_ascr_asc4,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3191,13 +3172,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 5.",
   Gpioc5,
-  "GPIO port C pin 5 items.",
-  Gpioc5Items,
+  peripheral_gpioc_5,
+  "GPIO port C pin 5 tokens.",
+  Gpioc5Tokens,
   gpioc,
   afrl,
   crl,
   Afrl5,
-  (Asc5),
   Br5,
   Bs5,
   Cnf5,
@@ -3210,7 +3191,6 @@ gpio_pin! {
   Ot5,
   Pupdr5,
   gpioc_afrl_afrl5,
-  (gpioc_ascr_asc5),
   gpioc_brr_br5,
   gpioc_bsrr_br5,
   gpioc_bsrr_bs5,
@@ -3248,6 +3228,10 @@ gpio_pin! {
   ospeedr5,
   ot5,
   pupdr5,
+  ((
+    Asc5,
+    gpioc_ascr_asc5,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3258,13 +3242,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 6.",
   Gpioc6,
-  "GPIO port C pin 6 items.",
-  Gpioc6Items,
+  peripheral_gpioc_6,
+  "GPIO port C pin 6 tokens.",
+  Gpioc6Tokens,
   gpioc,
   afrl,
   crl,
   Afrl6,
-  (Asc6),
   Br6,
   Bs6,
   Cnf6,
@@ -3277,7 +3261,6 @@ gpio_pin! {
   Ot6,
   Pupdr6,
   gpioc_afrl_afrl6,
-  (gpioc_ascr_asc6),
   gpioc_brr_br6,
   gpioc_bsrr_br6,
   gpioc_bsrr_bs6,
@@ -3315,6 +3298,10 @@ gpio_pin! {
   ospeedr6,
   ot6,
   pupdr6,
+  ((
+    Asc6,
+    gpioc_ascr_asc6,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3325,13 +3312,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 7.",
   Gpioc7,
-  "GPIO port C pin 7 items.",
-  Gpioc7Items,
+  peripheral_gpioc_7,
+  "GPIO port C pin 7 tokens.",
+  Gpioc7Tokens,
   gpioc,
   afrl,
   crl,
   Afrl7,
-  (Asc7),
   Br7,
   Bs7,
   Cnf7,
@@ -3344,7 +3331,6 @@ gpio_pin! {
   Ot7,
   Pupdr7,
   gpioc_afrl_afrl7,
-  (gpioc_ascr_asc7),
   gpioc_brr_br7,
   gpioc_bsrr_br7,
   gpioc_bsrr_bs7,
@@ -3382,6 +3368,10 @@ gpio_pin! {
   ospeedr7,
   ot7,
   pupdr7,
+  ((
+    Asc7,
+    gpioc_ascr_asc7,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3392,13 +3382,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 8.",
   Gpioc8,
-  "GPIO port C pin 8 items.",
-  Gpioc8Items,
+  peripheral_gpioc_8,
+  "GPIO port C pin 8 tokens.",
+  Gpioc8Tokens,
   gpioc,
   afrh,
   crh,
   Afrh8,
-  (Asc8),
   Br8,
   Bs8,
   Cnf8,
@@ -3411,7 +3401,6 @@ gpio_pin! {
   Ot8,
   Pupdr8,
   gpioc_afrh_afrh8,
-  (gpioc_ascr_asc8),
   gpioc_brr_br8,
   gpioc_bsrr_br8,
   gpioc_bsrr_bs8,
@@ -3449,6 +3438,10 @@ gpio_pin! {
   ospeedr8,
   ot8,
   pupdr8,
+  ((
+    Asc8,
+    gpioc_ascr_asc8,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3459,13 +3452,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 9.",
   Gpioc9,
-  "GPIO port C pin 9 items.",
-  Gpioc9Items,
+  peripheral_gpioc_9,
+  "GPIO port C pin 9 tokens.",
+  Gpioc9Tokens,
   gpioc,
   afrh,
   crh,
   Afrh9,
-  (Asc9),
   Br9,
   Bs9,
   Cnf9,
@@ -3478,7 +3471,6 @@ gpio_pin! {
   Ot9,
   Pupdr9,
   gpioc_afrh_afrh9,
-  (gpioc_ascr_asc9),
   gpioc_brr_br9,
   gpioc_bsrr_br9,
   gpioc_bsrr_bs9,
@@ -3516,6 +3508,10 @@ gpio_pin! {
   ospeedr9,
   ot9,
   pupdr9,
+  ((
+    Asc9,
+    gpioc_ascr_asc9,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3526,13 +3522,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 10.",
   Gpioc10,
-  "GPIO port C pin 10 items.",
-  Gpioc10Items,
+  peripheral_gpioc_10,
+  "GPIO port C pin 10 tokens.",
+  Gpioc10Tokens,
   gpioc,
   afrh,
   crh,
   Afrh10,
-  (Asc10),
   Br10,
   Bs10,
   Cnf10,
@@ -3545,7 +3541,6 @@ gpio_pin! {
   Ot10,
   Pupdr10,
   gpioc_afrh_afrh10,
-  (gpioc_ascr_asc10),
   gpioc_brr_br10,
   gpioc_bsrr_br10,
   gpioc_bsrr_bs10,
@@ -3583,6 +3578,10 @@ gpio_pin! {
   ospeedr10,
   ot10,
   pupdr10,
+  ((
+    Asc10,
+    gpioc_ascr_asc10,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3593,13 +3592,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 11.",
   Gpioc11,
-  "GPIO port C pin 11 items.",
-  Gpioc11Items,
+  peripheral_gpioc_11,
+  "GPIO port C pin 11 tokens.",
+  Gpioc11Tokens,
   gpioc,
   afrh,
   crh,
   Afrh11,
-  (Asc11),
   Br11,
   Bs11,
   Cnf11,
@@ -3612,7 +3611,6 @@ gpio_pin! {
   Ot11,
   Pupdr11,
   gpioc_afrh_afrh11,
-  (gpioc_ascr_asc11),
   gpioc_brr_br11,
   gpioc_bsrr_br11,
   gpioc_bsrr_bs11,
@@ -3650,6 +3648,10 @@ gpio_pin! {
   ospeedr11,
   ot11,
   pupdr11,
+  ((
+    Asc11,
+    gpioc_ascr_asc11,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3660,13 +3662,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 12.",
   Gpioc12,
-  "GPIO port C pin 12 items.",
-  Gpioc12Items,
+  peripheral_gpioc_12,
+  "GPIO port C pin 12 tokens.",
+  Gpioc12Tokens,
   gpioc,
   afrh,
   crh,
   Afrh12,
-  (Asc12),
   Br12,
   Bs12,
   Cnf12,
@@ -3679,7 +3681,6 @@ gpio_pin! {
   Ot12,
   Pupdr12,
   gpioc_afrh_afrh12,
-  (gpioc_ascr_asc12),
   gpioc_brr_br12,
   gpioc_bsrr_br12,
   gpioc_bsrr_bs12,
@@ -3717,6 +3718,10 @@ gpio_pin! {
   ospeedr12,
   ot12,
   pupdr12,
+  ((
+    Asc12,
+    gpioc_ascr_asc12,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3727,13 +3732,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 13.",
   Gpioc13,
-  "GPIO port C pin 13 items.",
-  Gpioc13Items,
+  peripheral_gpioc_13,
+  "GPIO port C pin 13 tokens.",
+  Gpioc13Tokens,
   gpioc,
   afrh,
   crh,
   Afrh13,
-  (Asc13),
   Br13,
   Bs13,
   Cnf13,
@@ -3746,7 +3751,6 @@ gpio_pin! {
   Ot13,
   Pupdr13,
   gpioc_afrh_afrh13,
-  (gpioc_ascr_asc13),
   gpioc_brr_br13,
   gpioc_bsrr_br13,
   gpioc_bsrr_bs13,
@@ -3784,6 +3788,10 @@ gpio_pin! {
   ospeedr13,
   ot13,
   pupdr13,
+  ((
+    Asc13,
+    gpioc_ascr_asc13,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3794,13 +3802,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 14.",
   Gpioc14,
-  "GPIO port C pin 14 items.",
-  Gpioc14Items,
+  peripheral_gpioc_14,
+  "GPIO port C pin 14 tokens.",
+  Gpioc14Tokens,
   gpioc,
   afrh,
   crh,
   Afrh14,
-  (Asc14),
   Br14,
   Bs14,
   Cnf14,
@@ -3813,7 +3821,6 @@ gpio_pin! {
   Ot14,
   Pupdr14,
   gpioc_afrh_afrh14,
-  (gpioc_ascr_asc14),
   gpioc_brr_br14,
   gpioc_bsrr_br14,
   gpioc_bsrr_bs14,
@@ -3851,6 +3858,10 @@ gpio_pin! {
   ospeedr14,
   ot14,
   pupdr14,
+  ((
+    Asc14,
+    gpioc_ascr_asc14,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3861,13 +3872,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 15.",
   Gpioc15,
-  "GPIO port C pin 15 items.",
-  Gpioc15Items,
+  peripheral_gpioc_15,
+  "GPIO port C pin 15 tokens.",
+  Gpioc15Tokens,
   gpioc,
   afrh,
   crh,
   Afrh15,
-  (Asc15),
   Br15,
   Bs15,
   Cnf15,
@@ -3880,7 +3891,6 @@ gpio_pin! {
   Ot15,
   Pupdr15,
   gpioc_afrh_afrh15,
-  (gpioc_ascr_asc15),
   gpioc_brr_br15,
   gpioc_bsrr_br15,
   gpioc_bsrr_bs15,
@@ -3918,6 +3928,10 @@ gpio_pin! {
   ospeedr15,
   ot15,
   pupdr15,
+  ((
+    Asc15,
+    gpioc_ascr_asc15,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3928,13 +3942,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 0.",
   Gpiod0,
-  "GPIO port D pin 0 items.",
-  Gpiod0Items,
+  peripheral_gpiod_0,
+  "GPIO port D pin 0 tokens.",
+  Gpiod0Tokens,
   gpiod,
   afrl,
   crl,
   Afrl0,
-  (Asc0),
   Br0,
   Bs0,
   Cnf0,
@@ -3947,7 +3961,6 @@ gpio_pin! {
   Ot0,
   Pupdr0,
   gpiod_afrl_afrl0,
-  (gpiod_ascr_asc0),
   gpiod_brr_br0,
   gpiod_bsrr_br0,
   gpiod_bsrr_bs0,
@@ -3985,6 +3998,10 @@ gpio_pin! {
   ospeedr0,
   ot0,
   pupdr0,
+  ((
+    Asc0,
+    gpiod_ascr_asc0,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -3995,13 +4012,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 1.",
   Gpiod1,
-  "GPIO port D pin 1 items.",
-  Gpiod1Items,
+  peripheral_gpiod_1,
+  "GPIO port D pin 1 tokens.",
+  Gpiod1Tokens,
   gpiod,
   afrl,
   crl,
   Afrl1,
-  (Asc1),
   Br1,
   Bs1,
   Cnf1,
@@ -4014,7 +4031,6 @@ gpio_pin! {
   Ot1,
   Pupdr1,
   gpiod_afrl_afrl1,
-  (gpiod_ascr_asc1),
   gpiod_brr_br1,
   gpiod_bsrr_br1,
   gpiod_bsrr_bs1,
@@ -4052,6 +4068,10 @@ gpio_pin! {
   ospeedr1,
   ot1,
   pupdr1,
+  ((
+    Asc1,
+    gpiod_ascr_asc1,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4062,13 +4082,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 2.",
   Gpiod2,
-  "GPIO port D pin 2 items.",
-  Gpiod2Items,
+  peripheral_gpiod_2,
+  "GPIO port D pin 2 tokens.",
+  Gpiod2Tokens,
   gpiod,
   afrl,
   crl,
   Afrl2,
-  (Asc2),
   Br2,
   Bs2,
   Cnf2,
@@ -4081,7 +4101,6 @@ gpio_pin! {
   Ot2,
   Pupdr2,
   gpiod_afrl_afrl2,
-  (gpiod_ascr_asc2),
   gpiod_brr_br2,
   gpiod_bsrr_br2,
   gpiod_bsrr_bs2,
@@ -4119,6 +4138,10 @@ gpio_pin! {
   ospeedr2,
   ot2,
   pupdr2,
+  ((
+    Asc2,
+    gpiod_ascr_asc2,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4129,13 +4152,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 3.",
   Gpiod3,
-  "GPIO port D pin 3 items.",
-  Gpiod3Items,
+  peripheral_gpiod_3,
+  "GPIO port D pin 3 tokens.",
+  Gpiod3Tokens,
   gpiod,
   afrl,
   crl,
   Afrl3,
-  (Asc3),
   Br3,
   Bs3,
   Cnf3,
@@ -4148,7 +4171,6 @@ gpio_pin! {
   Ot3,
   Pupdr3,
   gpiod_afrl_afrl3,
-  (gpiod_ascr_asc3),
   gpiod_brr_br3,
   gpiod_bsrr_br3,
   gpiod_bsrr_bs3,
@@ -4186,6 +4208,10 @@ gpio_pin! {
   ospeedr3,
   ot3,
   pupdr3,
+  ((
+    Asc3,
+    gpiod_ascr_asc3,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4196,13 +4222,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 4.",
   Gpiod4,
-  "GPIO port D pin 4 items.",
-  Gpiod4Items,
+  peripheral_gpiod_4,
+  "GPIO port D pin 4 tokens.",
+  Gpiod4Tokens,
   gpiod,
   afrl,
   crl,
   Afrl4,
-  (Asc4),
   Br4,
   Bs4,
   Cnf4,
@@ -4215,7 +4241,6 @@ gpio_pin! {
   Ot4,
   Pupdr4,
   gpiod_afrl_afrl4,
-  (gpiod_ascr_asc4),
   gpiod_brr_br4,
   gpiod_bsrr_br4,
   gpiod_bsrr_bs4,
@@ -4253,6 +4278,10 @@ gpio_pin! {
   ospeedr4,
   ot4,
   pupdr4,
+  ((
+    Asc4,
+    gpiod_ascr_asc4,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4263,13 +4292,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 5.",
   Gpiod5,
-  "GPIO port D pin 5 items.",
-  Gpiod5Items,
+  peripheral_gpiod_5,
+  "GPIO port D pin 5 tokens.",
+  Gpiod5Tokens,
   gpiod,
   afrl,
   crl,
   Afrl5,
-  (Asc5),
   Br5,
   Bs5,
   Cnf5,
@@ -4282,7 +4311,6 @@ gpio_pin! {
   Ot5,
   Pupdr5,
   gpiod_afrl_afrl5,
-  (gpiod_ascr_asc5),
   gpiod_brr_br5,
   gpiod_bsrr_br5,
   gpiod_bsrr_bs5,
@@ -4320,6 +4348,10 @@ gpio_pin! {
   ospeedr5,
   ot5,
   pupdr5,
+  ((
+    Asc5,
+    gpiod_ascr_asc5,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4330,13 +4362,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 6.",
   Gpiod6,
-  "GPIO port D pin 6 items.",
-  Gpiod6Items,
+  peripheral_gpiod_6,
+  "GPIO port D pin 6 tokens.",
+  Gpiod6Tokens,
   gpiod,
   afrl,
   crl,
   Afrl6,
-  (Asc6),
   Br6,
   Bs6,
   Cnf6,
@@ -4349,7 +4381,6 @@ gpio_pin! {
   Ot6,
   Pupdr6,
   gpiod_afrl_afrl6,
-  (gpiod_ascr_asc6),
   gpiod_brr_br6,
   gpiod_bsrr_br6,
   gpiod_bsrr_bs6,
@@ -4387,6 +4418,10 @@ gpio_pin! {
   ospeedr6,
   ot6,
   pupdr6,
+  ((
+    Asc6,
+    gpiod_ascr_asc6,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4397,13 +4432,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 7.",
   Gpiod7,
-  "GPIO port D pin 7 items.",
-  Gpiod7Items,
+  peripheral_gpiod_7,
+  "GPIO port D pin 7 tokens.",
+  Gpiod7Tokens,
   gpiod,
   afrl,
   crl,
   Afrl7,
-  (Asc7),
   Br7,
   Bs7,
   Cnf7,
@@ -4416,7 +4451,6 @@ gpio_pin! {
   Ot7,
   Pupdr7,
   gpiod_afrl_afrl7,
-  (gpiod_ascr_asc7),
   gpiod_brr_br7,
   gpiod_bsrr_br7,
   gpiod_bsrr_bs7,
@@ -4454,6 +4488,10 @@ gpio_pin! {
   ospeedr7,
   ot7,
   pupdr7,
+  ((
+    Asc7,
+    gpiod_ascr_asc7,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4464,13 +4502,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 8.",
   Gpiod8,
-  "GPIO port D pin 8 items.",
-  Gpiod8Items,
+  peripheral_gpiod_8,
+  "GPIO port D pin 8 tokens.",
+  Gpiod8Tokens,
   gpiod,
   afrh,
   crh,
   Afrh8,
-  (Asc8),
   Br8,
   Bs8,
   Cnf8,
@@ -4483,7 +4521,6 @@ gpio_pin! {
   Ot8,
   Pupdr8,
   gpiod_afrh_afrh8,
-  (gpiod_ascr_asc8),
   gpiod_brr_br8,
   gpiod_bsrr_br8,
   gpiod_bsrr_bs8,
@@ -4521,6 +4558,10 @@ gpio_pin! {
   ospeedr8,
   ot8,
   pupdr8,
+  ((
+    Asc8,
+    gpiod_ascr_asc8,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4531,13 +4572,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 9.",
   Gpiod9,
-  "GPIO port D pin 9 items.",
-  Gpiod9Items,
+  peripheral_gpiod_9,
+  "GPIO port D pin 9 tokens.",
+  Gpiod9Tokens,
   gpiod,
   afrh,
   crh,
   Afrh9,
-  (Asc9),
   Br9,
   Bs9,
   Cnf9,
@@ -4550,7 +4591,6 @@ gpio_pin! {
   Ot9,
   Pupdr9,
   gpiod_afrh_afrh9,
-  (gpiod_ascr_asc9),
   gpiod_brr_br9,
   gpiod_bsrr_br9,
   gpiod_bsrr_bs9,
@@ -4588,6 +4628,10 @@ gpio_pin! {
   ospeedr9,
   ot9,
   pupdr9,
+  ((
+    Asc9,
+    gpiod_ascr_asc9,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4598,13 +4642,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 10.",
   Gpiod10,
-  "GPIO port D pin 10 items.",
-  Gpiod10Items,
+  peripheral_gpiod_10,
+  "GPIO port D pin 10 tokens.",
+  Gpiod10Tokens,
   gpiod,
   afrh,
   crh,
   Afrh10,
-  (Asc10),
   Br10,
   Bs10,
   Cnf10,
@@ -4617,7 +4661,6 @@ gpio_pin! {
   Ot10,
   Pupdr10,
   gpiod_afrh_afrh10,
-  (gpiod_ascr_asc10),
   gpiod_brr_br10,
   gpiod_bsrr_br10,
   gpiod_bsrr_bs10,
@@ -4655,6 +4698,10 @@ gpio_pin! {
   ospeedr10,
   ot10,
   pupdr10,
+  ((
+    Asc10,
+    gpiod_ascr_asc10,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4665,13 +4712,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 11.",
   Gpiod11,
-  "GPIO port D pin 11 items.",
-  Gpiod11Items,
+  peripheral_gpiod_11,
+  "GPIO port D pin 11 tokens.",
+  Gpiod11Tokens,
   gpiod,
   afrh,
   crh,
   Afrh11,
-  (Asc11),
   Br11,
   Bs11,
   Cnf11,
@@ -4684,7 +4731,6 @@ gpio_pin! {
   Ot11,
   Pupdr11,
   gpiod_afrh_afrh11,
-  (gpiod_ascr_asc11),
   gpiod_brr_br11,
   gpiod_bsrr_br11,
   gpiod_bsrr_bs11,
@@ -4722,6 +4768,10 @@ gpio_pin! {
   ospeedr11,
   ot11,
   pupdr11,
+  ((
+    Asc11,
+    gpiod_ascr_asc11,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4732,13 +4782,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 12.",
   Gpiod12,
-  "GPIO port D pin 12 items.",
-  Gpiod12Items,
+  peripheral_gpiod_12,
+  "GPIO port D pin 12 tokens.",
+  Gpiod12Tokens,
   gpiod,
   afrh,
   crh,
   Afrh12,
-  (Asc12),
   Br12,
   Bs12,
   Cnf12,
@@ -4751,7 +4801,6 @@ gpio_pin! {
   Ot12,
   Pupdr12,
   gpiod_afrh_afrh12,
-  (gpiod_ascr_asc12),
   gpiod_brr_br12,
   gpiod_bsrr_br12,
   gpiod_bsrr_bs12,
@@ -4789,6 +4838,10 @@ gpio_pin! {
   ospeedr12,
   ot12,
   pupdr12,
+  ((
+    Asc12,
+    gpiod_ascr_asc12,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4799,13 +4852,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 13.",
   Gpiod13,
-  "GPIO port D pin 13 items.",
-  Gpiod13Items,
+  peripheral_gpiod_13,
+  "GPIO port D pin 13 tokens.",
+  Gpiod13Tokens,
   gpiod,
   afrh,
   crh,
   Afrh13,
-  (Asc13),
   Br13,
   Bs13,
   Cnf13,
@@ -4818,7 +4871,6 @@ gpio_pin! {
   Ot13,
   Pupdr13,
   gpiod_afrh_afrh13,
-  (gpiod_ascr_asc13),
   gpiod_brr_br13,
   gpiod_bsrr_br13,
   gpiod_bsrr_bs13,
@@ -4856,6 +4908,10 @@ gpio_pin! {
   ospeedr13,
   ot13,
   pupdr13,
+  ((
+    Asc13,
+    gpiod_ascr_asc13,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4866,13 +4922,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 14.",
   Gpiod14,
-  "GPIO port D pin 14 items.",
-  Gpiod14Items,
+  peripheral_gpiod_14,
+  "GPIO port D pin 14 tokens.",
+  Gpiod14Tokens,
   gpiod,
   afrh,
   crh,
   Afrh14,
-  (Asc14),
   Br14,
   Bs14,
   Cnf14,
@@ -4885,7 +4941,6 @@ gpio_pin! {
   Ot14,
   Pupdr14,
   gpiod_afrh_afrh14,
-  (gpiod_ascr_asc14),
   gpiod_brr_br14,
   gpiod_bsrr_br14,
   gpiod_bsrr_bs14,
@@ -4923,6 +4978,10 @@ gpio_pin! {
   ospeedr14,
   ot14,
   pupdr14,
+  ((
+    Asc14,
+    gpiod_ascr_asc14,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -4933,13 +4992,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 15.",
   Gpiod15,
-  "GPIO port D pin 15 items.",
-  Gpiod15Items,
+  peripheral_gpiod_15,
+  "GPIO port D pin 15 tokens.",
+  Gpiod15Tokens,
   gpiod,
   afrh,
   crh,
   Afrh15,
-  (Asc15),
   Br15,
   Bs15,
   Cnf15,
@@ -4952,7 +5011,6 @@ gpio_pin! {
   Ot15,
   Pupdr15,
   gpiod_afrh_afrh15,
-  (gpiod_ascr_asc15),
   gpiod_brr_br15,
   gpiod_bsrr_br15,
   gpiod_bsrr_bs15,
@@ -4990,6 +5048,10 @@ gpio_pin! {
   ospeedr15,
   ot15,
   pupdr15,
+  ((
+    Asc15,
+    gpiod_ascr_asc15,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5000,13 +5062,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 0.",
   Gpioe0,
-  "GPIO port E pin 0 items.",
-  Gpioe0Items,
+  peripheral_gpioe_0,
+  "GPIO port E pin 0 tokens.",
+  Gpioe0Tokens,
   gpioe,
   afrl,
   crl,
   Afrl0,
-  (Asc0),
   Br0,
   Bs0,
   Cnf0,
@@ -5019,7 +5081,6 @@ gpio_pin! {
   Ot0,
   Pupdr0,
   gpioe_afrl_afrl0,
-  (gpioe_ascr_asc0),
   gpioe_brr_br0,
   gpioe_bsrr_br0,
   gpioe_bsrr_bs0,
@@ -5057,6 +5118,10 @@ gpio_pin! {
   ospeedr0,
   ot0,
   pupdr0,
+  ((
+    Asc0,
+    gpioe_ascr_asc0,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5067,13 +5132,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 1.",
   Gpioe1,
-  "GPIO port E pin 1 items.",
-  Gpioe1Items,
+  peripheral_gpioe_1,
+  "GPIO port E pin 1 tokens.",
+  Gpioe1Tokens,
   gpioe,
   afrl,
   crl,
   Afrl1,
-  (Asc1),
   Br1,
   Bs1,
   Cnf1,
@@ -5086,7 +5151,6 @@ gpio_pin! {
   Ot1,
   Pupdr1,
   gpioe_afrl_afrl1,
-  (gpioe_ascr_asc1),
   gpioe_brr_br1,
   gpioe_bsrr_br1,
   gpioe_bsrr_bs1,
@@ -5124,6 +5188,10 @@ gpio_pin! {
   ospeedr1,
   ot1,
   pupdr1,
+  ((
+    Asc1,
+    gpioe_ascr_asc1,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5134,13 +5202,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 2.",
   Gpioe2,
-  "GPIO port E pin 2 items.",
-  Gpioe2Items,
+  peripheral_gpioe_2,
+  "GPIO port E pin 2 tokens.",
+  Gpioe2Tokens,
   gpioe,
   afrl,
   crl,
   Afrl2,
-  (Asc2),
   Br2,
   Bs2,
   Cnf2,
@@ -5153,7 +5221,6 @@ gpio_pin! {
   Ot2,
   Pupdr2,
   gpioe_afrl_afrl2,
-  (gpioe_ascr_asc2),
   gpioe_brr_br2,
   gpioe_bsrr_br2,
   gpioe_bsrr_bs2,
@@ -5191,6 +5258,10 @@ gpio_pin! {
   ospeedr2,
   ot2,
   pupdr2,
+  ((
+    Asc2,
+    gpioe_ascr_asc2,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5201,13 +5272,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 3.",
   Gpioe3,
-  "GPIO port E pin 3 items.",
-  Gpioe3Items,
+  peripheral_gpioe_3,
+  "GPIO port E pin 3 tokens.",
+  Gpioe3Tokens,
   gpioe,
   afrl,
   crl,
   Afrl3,
-  (Asc3),
   Br3,
   Bs3,
   Cnf3,
@@ -5220,7 +5291,6 @@ gpio_pin! {
   Ot3,
   Pupdr3,
   gpioe_afrl_afrl3,
-  (gpioe_ascr_asc3),
   gpioe_brr_br3,
   gpioe_bsrr_br3,
   gpioe_bsrr_bs3,
@@ -5258,6 +5328,10 @@ gpio_pin! {
   ospeedr3,
   ot3,
   pupdr3,
+  ((
+    Asc3,
+    gpioe_ascr_asc3,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5268,13 +5342,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 4.",
   Gpioe4,
-  "GPIO port E pin 4 items.",
-  Gpioe4Items,
+  peripheral_gpioe_4,
+  "GPIO port E pin 4 tokens.",
+  Gpioe4Tokens,
   gpioe,
   afrl,
   crl,
   Afrl4,
-  (Asc4),
   Br4,
   Bs4,
   Cnf4,
@@ -5287,7 +5361,6 @@ gpio_pin! {
   Ot4,
   Pupdr4,
   gpioe_afrl_afrl4,
-  (gpioe_ascr_asc4),
   gpioe_brr_br4,
   gpioe_bsrr_br4,
   gpioe_bsrr_bs4,
@@ -5325,6 +5398,10 @@ gpio_pin! {
   ospeedr4,
   ot4,
   pupdr4,
+  ((
+    Asc4,
+    gpioe_ascr_asc4,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5335,13 +5412,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 5.",
   Gpioe5,
-  "GPIO port E pin 5 items.",
-  Gpioe5Items,
+  peripheral_gpioe_5,
+  "GPIO port E pin 5 tokens.",
+  Gpioe5Tokens,
   gpioe,
   afrl,
   crl,
   Afrl5,
-  (Asc5),
   Br5,
   Bs5,
   Cnf5,
@@ -5354,7 +5431,6 @@ gpio_pin! {
   Ot5,
   Pupdr5,
   gpioe_afrl_afrl5,
-  (gpioe_ascr_asc5),
   gpioe_brr_br5,
   gpioe_bsrr_br5,
   gpioe_bsrr_bs5,
@@ -5392,6 +5468,10 @@ gpio_pin! {
   ospeedr5,
   ot5,
   pupdr5,
+  ((
+    Asc5,
+    gpioe_ascr_asc5,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5402,13 +5482,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 6.",
   Gpioe6,
-  "GPIO port E pin 6 items.",
-  Gpioe6Items,
+  peripheral_gpioe_6,
+  "GPIO port E pin 6 tokens.",
+  Gpioe6Tokens,
   gpioe,
   afrl,
   crl,
   Afrl6,
-  (Asc6),
   Br6,
   Bs6,
   Cnf6,
@@ -5421,7 +5501,6 @@ gpio_pin! {
   Ot6,
   Pupdr6,
   gpioe_afrl_afrl6,
-  (gpioe_ascr_asc6),
   gpioe_brr_br6,
   gpioe_bsrr_br6,
   gpioe_bsrr_bs6,
@@ -5459,6 +5538,10 @@ gpio_pin! {
   ospeedr6,
   ot6,
   pupdr6,
+  ((
+    Asc6,
+    gpioe_ascr_asc6,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5469,13 +5552,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 7.",
   Gpioe7,
-  "GPIO port E pin 7 items.",
-  Gpioe7Items,
+  peripheral_gpioe_7,
+  "GPIO port E pin 7 tokens.",
+  Gpioe7Tokens,
   gpioe,
   afrl,
   crl,
   Afrl7,
-  (Asc7),
   Br7,
   Bs7,
   Cnf7,
@@ -5488,7 +5571,6 @@ gpio_pin! {
   Ot7,
   Pupdr7,
   gpioe_afrl_afrl7,
-  (gpioe_ascr_asc7),
   gpioe_brr_br7,
   gpioe_bsrr_br7,
   gpioe_bsrr_bs7,
@@ -5526,6 +5608,10 @@ gpio_pin! {
   ospeedr7,
   ot7,
   pupdr7,
+  ((
+    Asc7,
+    gpioe_ascr_asc7,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5536,13 +5622,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 8.",
   Gpioe8,
-  "GPIO port E pin 8 items.",
-  Gpioe8Items,
+  peripheral_gpioe_8,
+  "GPIO port E pin 8 tokens.",
+  Gpioe8Tokens,
   gpioe,
   afrh,
   crh,
   Afrh8,
-  (Asc8),
   Br8,
   Bs8,
   Cnf8,
@@ -5555,7 +5641,6 @@ gpio_pin! {
   Ot8,
   Pupdr8,
   gpioe_afrh_afrh8,
-  (gpioe_ascr_asc8),
   gpioe_brr_br8,
   gpioe_bsrr_br8,
   gpioe_bsrr_bs8,
@@ -5593,6 +5678,10 @@ gpio_pin! {
   ospeedr8,
   ot8,
   pupdr8,
+  ((
+    Asc8,
+    gpioe_ascr_asc8,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5603,13 +5692,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 9.",
   Gpioe9,
-  "GPIO port E pin 9 items.",
-  Gpioe9Items,
+  peripheral_gpioe_9,
+  "GPIO port E pin 9 tokens.",
+  Gpioe9Tokens,
   gpioe,
   afrh,
   crh,
   Afrh9,
-  (Asc9),
   Br9,
   Bs9,
   Cnf9,
@@ -5622,7 +5711,6 @@ gpio_pin! {
   Ot9,
   Pupdr9,
   gpioe_afrh_afrh9,
-  (gpioe_ascr_asc9),
   gpioe_brr_br9,
   gpioe_bsrr_br9,
   gpioe_bsrr_bs9,
@@ -5660,6 +5748,10 @@ gpio_pin! {
   ospeedr9,
   ot9,
   pupdr9,
+  ((
+    Asc9,
+    gpioe_ascr_asc9,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5670,13 +5762,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 10.",
   Gpioe10,
-  "GPIO port E pin 10 items.",
-  Gpioe10Items,
+  peripheral_gpioe_10,
+  "GPIO port E pin 10 tokens.",
+  Gpioe10Tokens,
   gpioe,
   afrh,
   crh,
   Afrh10,
-  (Asc10),
   Br10,
   Bs10,
   Cnf10,
@@ -5689,7 +5781,6 @@ gpio_pin! {
   Ot10,
   Pupdr10,
   gpioe_afrh_afrh10,
-  (gpioe_ascr_asc10),
   gpioe_brr_br10,
   gpioe_bsrr_br10,
   gpioe_bsrr_bs10,
@@ -5727,6 +5818,10 @@ gpio_pin! {
   ospeedr10,
   ot10,
   pupdr10,
+  ((
+    Asc10,
+    gpioe_ascr_asc10,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5737,13 +5832,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 11.",
   Gpioe11,
-  "GPIO port E pin 11 items.",
-  Gpioe11Items,
+  peripheral_gpioe_11,
+  "GPIO port E pin 11 tokens.",
+  Gpioe11Tokens,
   gpioe,
   afrh,
   crh,
   Afrh11,
-  (Asc11),
   Br11,
   Bs11,
   Cnf11,
@@ -5756,7 +5851,6 @@ gpio_pin! {
   Ot11,
   Pupdr11,
   gpioe_afrh_afrh11,
-  (gpioe_ascr_asc11),
   gpioe_brr_br11,
   gpioe_bsrr_br11,
   gpioe_bsrr_bs11,
@@ -5794,6 +5888,10 @@ gpio_pin! {
   ospeedr11,
   ot11,
   pupdr11,
+  ((
+    Asc11,
+    gpioe_ascr_asc11,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5804,13 +5902,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 12.",
   Gpioe12,
-  "GPIO port E pin 12 items.",
-  Gpioe12Items,
+  peripheral_gpioe_12,
+  "GPIO port E pin 12 tokens.",
+  Gpioe12Tokens,
   gpioe,
   afrh,
   crh,
   Afrh12,
-  (Asc12),
   Br12,
   Bs12,
   Cnf12,
@@ -5823,7 +5921,6 @@ gpio_pin! {
   Ot12,
   Pupdr12,
   gpioe_afrh_afrh12,
-  (gpioe_ascr_asc12),
   gpioe_brr_br12,
   gpioe_bsrr_br12,
   gpioe_bsrr_bs12,
@@ -5861,6 +5958,10 @@ gpio_pin! {
   ospeedr12,
   ot12,
   pupdr12,
+  ((
+    Asc12,
+    gpioe_ascr_asc12,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5871,13 +5972,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 13.",
   Gpioe13,
-  "GPIO port E pin 13 items.",
-  Gpioe13Items,
+  peripheral_gpioe_13,
+  "GPIO port E pin 13 tokens.",
+  Gpioe13Tokens,
   gpioe,
   afrh,
   crh,
   Afrh13,
-  (Asc13),
   Br13,
   Bs13,
   Cnf13,
@@ -5890,7 +5991,6 @@ gpio_pin! {
   Ot13,
   Pupdr13,
   gpioe_afrh_afrh13,
-  (gpioe_ascr_asc13),
   gpioe_brr_br13,
   gpioe_bsrr_br13,
   gpioe_bsrr_bs13,
@@ -5928,6 +6028,10 @@ gpio_pin! {
   ospeedr13,
   ot13,
   pupdr13,
+  ((
+    Asc13,
+    gpioe_ascr_asc13,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -5938,13 +6042,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 14.",
   Gpioe14,
-  "GPIO port E pin 14 items.",
-  Gpioe14Items,
+  peripheral_gpioe_14,
+  "GPIO port E pin 14 tokens.",
+  Gpioe14Tokens,
   gpioe,
   afrh,
   crh,
   Afrh14,
-  (Asc14),
   Br14,
   Bs14,
   Cnf14,
@@ -5957,7 +6061,6 @@ gpio_pin! {
   Ot14,
   Pupdr14,
   gpioe_afrh_afrh14,
-  (gpioe_ascr_asc14),
   gpioe_brr_br14,
   gpioe_bsrr_br14,
   gpioe_bsrr_bs14,
@@ -5995,6 +6098,10 @@ gpio_pin! {
   ospeedr14,
   ot14,
   pupdr14,
+  ((
+    Asc14,
+    gpioe_ascr_asc14,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6005,13 +6112,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 15.",
   Gpioe15,
-  "GPIO port E pin 15 items.",
-  Gpioe15Items,
+  peripheral_gpioe_15,
+  "GPIO port E pin 15 tokens.",
+  Gpioe15Tokens,
   gpioe,
   afrh,
   crh,
   Afrh15,
-  (Asc15),
   Br15,
   Bs15,
   Cnf15,
@@ -6024,7 +6131,6 @@ gpio_pin! {
   Ot15,
   Pupdr15,
   gpioe_afrh_afrh15,
-  (gpioe_ascr_asc15),
   gpioe_brr_br15,
   gpioe_bsrr_br15,
   gpioe_bsrr_bs15,
@@ -6062,6 +6168,10 @@ gpio_pin! {
   ospeedr15,
   ot15,
   pupdr15,
+  ((
+    Asc15,
+    gpioe_ascr_asc15,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6071,13 +6181,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 0.",
   Gpiof0,
-  "GPIO port F pin 0 items.",
-  Gpiof0Items,
+  peripheral_gpiof_0,
+  "GPIO port F pin 0 tokens.",
+  Gpiof0Tokens,
   gpiof,
   afrl,
   crl,
   Afrl0,
-  (Asc0),
   Br0,
   Bs0,
   Cnf0,
@@ -6090,7 +6200,6 @@ gpio_pin! {
   Ot0,
   Pupdr0,
   gpiof_afrl_afrl0,
-  (gpiof_ascr_asc0),
   gpiof_brr_br0,
   gpiof_bsrr_br0,
   gpiof_bsrr_bs0,
@@ -6128,6 +6237,10 @@ gpio_pin! {
   ospeedr0,
   ot0,
   pupdr0,
+  ((
+    Asc0,
+    gpiof_ascr_asc0,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6137,13 +6250,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 1.",
   Gpiof1,
-  "GPIO port F pin 1 items.",
-  Gpiof1Items,
+  peripheral_gpiof_1,
+  "GPIO port F pin 1 tokens.",
+  Gpiof1Tokens,
   gpiof,
   afrl,
   crl,
   Afrl1,
-  (Asc1),
   Br1,
   Bs1,
   Cnf1,
@@ -6156,7 +6269,6 @@ gpio_pin! {
   Ot1,
   Pupdr1,
   gpiof_afrl_afrl1,
-  (gpiof_ascr_asc1),
   gpiof_brr_br1,
   gpiof_bsrr_br1,
   gpiof_bsrr_bs1,
@@ -6194,6 +6306,10 @@ gpio_pin! {
   ospeedr1,
   ot1,
   pupdr1,
+  ((
+    Asc1,
+    gpiof_ascr_asc1,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6203,13 +6319,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 2.",
   Gpiof2,
-  "GPIO port F pin 2 items.",
-  Gpiof2Items,
+  peripheral_gpiof_2,
+  "GPIO port F pin 2 tokens.",
+  Gpiof2Tokens,
   gpiof,
   afrl,
   crl,
   Afrl2,
-  (Asc2),
   Br2,
   Bs2,
   Cnf2,
@@ -6222,7 +6338,6 @@ gpio_pin! {
   Ot2,
   Pupdr2,
   gpiof_afrl_afrl2,
-  (gpiof_ascr_asc2),
   gpiof_brr_br2,
   gpiof_bsrr_br2,
   gpiof_bsrr_bs2,
@@ -6260,6 +6375,10 @@ gpio_pin! {
   ospeedr2,
   ot2,
   pupdr2,
+  ((
+    Asc2,
+    gpiof_ascr_asc2,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6269,13 +6388,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 3.",
   Gpiof3,
-  "GPIO port F pin 3 items.",
-  Gpiof3Items,
+  peripheral_gpiof_3,
+  "GPIO port F pin 3 tokens.",
+  Gpiof3Tokens,
   gpiof,
   afrl,
   crl,
   Afrl3,
-  (Asc3),
   Br3,
   Bs3,
   Cnf3,
@@ -6288,7 +6407,6 @@ gpio_pin! {
   Ot3,
   Pupdr3,
   gpiof_afrl_afrl3,
-  (gpiof_ascr_asc3),
   gpiof_brr_br3,
   gpiof_bsrr_br3,
   gpiof_bsrr_bs3,
@@ -6326,6 +6444,10 @@ gpio_pin! {
   ospeedr3,
   ot3,
   pupdr3,
+  ((
+    Asc3,
+    gpiof_ascr_asc3,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6335,13 +6457,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 4.",
   Gpiof4,
-  "GPIO port F pin 4 items.",
-  Gpiof4Items,
+  peripheral_gpiof_4,
+  "GPIO port F pin 4 tokens.",
+  Gpiof4Tokens,
   gpiof,
   afrl,
   crl,
   Afrl4,
-  (Asc4),
   Br4,
   Bs4,
   Cnf4,
@@ -6354,7 +6476,6 @@ gpio_pin! {
   Ot4,
   Pupdr4,
   gpiof_afrl_afrl4,
-  (gpiof_ascr_asc4),
   gpiof_brr_br4,
   gpiof_bsrr_br4,
   gpiof_bsrr_bs4,
@@ -6392,6 +6513,10 @@ gpio_pin! {
   ospeedr4,
   ot4,
   pupdr4,
+  ((
+    Asc4,
+    gpiof_ascr_asc4,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6401,13 +6526,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 5.",
   Gpiof5,
-  "GPIO port F pin 5 items.",
-  Gpiof5Items,
+  peripheral_gpiof_5,
+  "GPIO port F pin 5 tokens.",
+  Gpiof5Tokens,
   gpiof,
   afrl,
   crl,
   Afrl5,
-  (Asc5),
   Br5,
   Bs5,
   Cnf5,
@@ -6420,7 +6545,6 @@ gpio_pin! {
   Ot5,
   Pupdr5,
   gpiof_afrl_afrl5,
-  (gpiof_ascr_asc5),
   gpiof_brr_br5,
   gpiof_bsrr_br5,
   gpiof_bsrr_bs5,
@@ -6458,6 +6582,10 @@ gpio_pin! {
   ospeedr5,
   ot5,
   pupdr5,
+  ((
+    Asc5,
+    gpiof_ascr_asc5,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6467,13 +6595,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 6.",
   Gpiof6,
-  "GPIO port F pin 6 items.",
-  Gpiof6Items,
+  peripheral_gpiof_6,
+  "GPIO port F pin 6 tokens.",
+  Gpiof6Tokens,
   gpiof,
   afrl,
   crl,
   Afrl6,
-  (Asc6),
   Br6,
   Bs6,
   Cnf6,
@@ -6486,7 +6614,6 @@ gpio_pin! {
   Ot6,
   Pupdr6,
   gpiof_afrl_afrl6,
-  (gpiof_ascr_asc6),
   gpiof_brr_br6,
   gpiof_bsrr_br6,
   gpiof_bsrr_bs6,
@@ -6524,6 +6651,10 @@ gpio_pin! {
   ospeedr6,
   ot6,
   pupdr6,
+  ((
+    Asc6,
+    gpiof_ascr_asc6,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6533,13 +6664,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 7.",
   Gpiof7,
-  "GPIO port F pin 7 items.",
-  Gpiof7Items,
+  peripheral_gpiof_7,
+  "GPIO port F pin 7 tokens.",
+  Gpiof7Tokens,
   gpiof,
   afrl,
   crl,
   Afrl7,
-  (Asc7),
   Br7,
   Bs7,
   Cnf7,
@@ -6552,7 +6683,6 @@ gpio_pin! {
   Ot7,
   Pupdr7,
   gpiof_afrl_afrl7,
-  (gpiof_ascr_asc7),
   gpiof_brr_br7,
   gpiof_bsrr_br7,
   gpiof_bsrr_bs7,
@@ -6590,6 +6720,10 @@ gpio_pin! {
   ospeedr7,
   ot7,
   pupdr7,
+  ((
+    Asc7,
+    gpiof_ascr_asc7,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6599,13 +6733,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 8.",
   Gpiof8,
-  "GPIO port F pin 8 items.",
-  Gpiof8Items,
+  peripheral_gpiof_8,
+  "GPIO port F pin 8 tokens.",
+  Gpiof8Tokens,
   gpiof,
   afrh,
   crh,
   Afrh8,
-  (Asc8),
   Br8,
   Bs8,
   Cnf8,
@@ -6618,7 +6752,6 @@ gpio_pin! {
   Ot8,
   Pupdr8,
   gpiof_afrh_afrh8,
-  (gpiof_ascr_asc8),
   gpiof_brr_br8,
   gpiof_bsrr_br8,
   gpiof_bsrr_bs8,
@@ -6656,6 +6789,10 @@ gpio_pin! {
   ospeedr8,
   ot8,
   pupdr8,
+  ((
+    Asc8,
+    gpiof_ascr_asc8,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6665,13 +6802,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 9.",
   Gpiof9,
-  "GPIO port F pin 9 items.",
-  Gpiof9Items,
+  peripheral_gpiof_9,
+  "GPIO port F pin 9 tokens.",
+  Gpiof9Tokens,
   gpiof,
   afrh,
   crh,
   Afrh9,
-  (Asc9),
   Br9,
   Bs9,
   Cnf9,
@@ -6684,7 +6821,6 @@ gpio_pin! {
   Ot9,
   Pupdr9,
   gpiof_afrh_afrh9,
-  (gpiof_ascr_asc9),
   gpiof_brr_br9,
   gpiof_bsrr_br9,
   gpiof_bsrr_bs9,
@@ -6722,6 +6858,10 @@ gpio_pin! {
   ospeedr9,
   ot9,
   pupdr9,
+  ((
+    Asc9,
+    gpiof_ascr_asc9,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6731,13 +6871,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 10.",
   Gpiof10,
-  "GPIO port F pin 10 items.",
-  Gpiof10Items,
+  peripheral_gpiof_10,
+  "GPIO port F pin 10 tokens.",
+  Gpiof10Tokens,
   gpiof,
   afrh,
   crh,
   Afrh10,
-  (Asc10),
   Br10,
   Bs10,
   Cnf10,
@@ -6750,7 +6890,6 @@ gpio_pin! {
   Ot10,
   Pupdr10,
   gpiof_afrh_afrh10,
-  (gpiof_ascr_asc10),
   gpiof_brr_br10,
   gpiof_bsrr_br10,
   gpiof_bsrr_bs10,
@@ -6788,6 +6927,10 @@ gpio_pin! {
   ospeedr10,
   ot10,
   pupdr10,
+  ((
+    Asc10,
+    gpiof_ascr_asc10,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6797,13 +6940,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 11.",
   Gpiof11,
-  "GPIO port F pin 11 items.",
-  Gpiof11Items,
+  peripheral_gpiof_11,
+  "GPIO port F pin 11 tokens.",
+  Gpiof11Tokens,
   gpiof,
   afrh,
   crh,
   Afrh11,
-  (Asc11),
   Br11,
   Bs11,
   Cnf11,
@@ -6816,7 +6959,6 @@ gpio_pin! {
   Ot11,
   Pupdr11,
   gpiof_afrh_afrh11,
-  (gpiof_ascr_asc11),
   gpiof_brr_br11,
   gpiof_bsrr_br11,
   gpiof_bsrr_bs11,
@@ -6854,6 +6996,10 @@ gpio_pin! {
   ospeedr11,
   ot11,
   pupdr11,
+  ((
+    Asc11,
+    gpiof_ascr_asc11,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6863,13 +7009,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 12.",
   Gpiof12,
-  "GPIO port F pin 12 items.",
-  Gpiof12Items,
+  peripheral_gpiof_12,
+  "GPIO port F pin 12 tokens.",
+  Gpiof12Tokens,
   gpiof,
   afrh,
   crh,
   Afrh12,
-  (Asc12),
   Br12,
   Bs12,
   Cnf12,
@@ -6882,7 +7028,6 @@ gpio_pin! {
   Ot12,
   Pupdr12,
   gpiof_afrh_afrh12,
-  (gpiof_ascr_asc12),
   gpiof_brr_br12,
   gpiof_bsrr_br12,
   gpiof_bsrr_bs12,
@@ -6920,6 +7065,10 @@ gpio_pin! {
   ospeedr12,
   ot12,
   pupdr12,
+  ((
+    Asc12,
+    gpiof_ascr_asc12,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6929,13 +7078,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 13.",
   Gpiof13,
-  "GPIO port F pin 13 items.",
-  Gpiof13Items,
+  peripheral_gpiof_13,
+  "GPIO port F pin 13 tokens.",
+  Gpiof13Tokens,
   gpiof,
   afrh,
   crh,
   Afrh13,
-  (Asc13),
   Br13,
   Bs13,
   Cnf13,
@@ -6948,7 +7097,6 @@ gpio_pin! {
   Ot13,
   Pupdr13,
   gpiof_afrh_afrh13,
-  (gpiof_ascr_asc13),
   gpiof_brr_br13,
   gpiof_bsrr_br13,
   gpiof_bsrr_bs13,
@@ -6986,6 +7134,10 @@ gpio_pin! {
   ospeedr13,
   ot13,
   pupdr13,
+  ((
+    Asc13,
+    gpiof_ascr_asc13,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -6995,13 +7147,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 14.",
   Gpiof14,
-  "GPIO port F pin 14 items.",
-  Gpiof14Items,
+  peripheral_gpiof_14,
+  "GPIO port F pin 14 tokens.",
+  Gpiof14Tokens,
   gpiof,
   afrh,
   crh,
   Afrh14,
-  (Asc14),
   Br14,
   Bs14,
   Cnf14,
@@ -7014,7 +7166,6 @@ gpio_pin! {
   Ot14,
   Pupdr14,
   gpiof_afrh_afrh14,
-  (gpiof_ascr_asc14),
   gpiof_brr_br14,
   gpiof_bsrr_br14,
   gpiof_bsrr_bs14,
@@ -7052,6 +7203,10 @@ gpio_pin! {
   ospeedr14,
   ot14,
   pupdr14,
+  ((
+    Asc14,
+    gpiof_ascr_asc14,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7061,13 +7216,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 15.",
   Gpiof15,
-  "GPIO port F pin 15 items.",
-  Gpiof15Items,
+  peripheral_gpiof_15,
+  "GPIO port F pin 15 tokens.",
+  Gpiof15Tokens,
   gpiof,
   afrh,
   crh,
   Afrh15,
-  (Asc15),
   Br15,
   Bs15,
   Cnf15,
@@ -7080,7 +7235,6 @@ gpio_pin! {
   Ot15,
   Pupdr15,
   gpiof_afrh_afrh15,
-  (gpiof_ascr_asc15),
   gpiof_brr_br15,
   gpiof_bsrr_br15,
   gpiof_bsrr_bs15,
@@ -7118,6 +7272,10 @@ gpio_pin! {
   ospeedr15,
   ot15,
   pupdr15,
+  ((
+    Asc15,
+    gpiof_ascr_asc15,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7127,13 +7285,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 0.",
   Gpiog0,
-  "GPIO port G pin 0 items.",
-  Gpiog0Items,
+  peripheral_gpiog_0,
+  "GPIO port G pin 0 tokens.",
+  Gpiog0Tokens,
   gpiog,
   afrl,
   crl,
   Afrl0,
-  (Asc0),
   Br0,
   Bs0,
   Cnf0,
@@ -7146,7 +7304,6 @@ gpio_pin! {
   Ot0,
   Pupdr0,
   gpiog_afrl_afrl0,
-  (gpiog_ascr_asc0),
   gpiog_brr_br0,
   gpiog_bsrr_br0,
   gpiog_bsrr_bs0,
@@ -7184,6 +7341,10 @@ gpio_pin! {
   ospeedr0,
   ot0,
   pupdr0,
+  ((
+    Asc0,
+    gpiog_ascr_asc0,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7193,13 +7354,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 1.",
   Gpiog1,
-  "GPIO port G pin 1 items.",
-  Gpiog1Items,
+  peripheral_gpiog_1,
+  "GPIO port G pin 1 tokens.",
+  Gpiog1Tokens,
   gpiog,
   afrl,
   crl,
   Afrl1,
-  (Asc1),
   Br1,
   Bs1,
   Cnf1,
@@ -7212,7 +7373,6 @@ gpio_pin! {
   Ot1,
   Pupdr1,
   gpiog_afrl_afrl1,
-  (gpiog_ascr_asc1),
   gpiog_brr_br1,
   gpiog_bsrr_br1,
   gpiog_bsrr_bs1,
@@ -7250,6 +7410,10 @@ gpio_pin! {
   ospeedr1,
   ot1,
   pupdr1,
+  ((
+    Asc1,
+    gpiog_ascr_asc1,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7259,13 +7423,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 2.",
   Gpiog2,
-  "GPIO port G pin 2 items.",
-  Gpiog2Items,
+  peripheral_gpiog_2,
+  "GPIO port G pin 2 tokens.",
+  Gpiog2Tokens,
   gpiog,
   afrl,
   crl,
   Afrl2,
-  (Asc2),
   Br2,
   Bs2,
   Cnf2,
@@ -7278,7 +7442,6 @@ gpio_pin! {
   Ot2,
   Pupdr2,
   gpiog_afrl_afrl2,
-  (gpiog_ascr_asc2),
   gpiog_brr_br2,
   gpiog_bsrr_br2,
   gpiog_bsrr_bs2,
@@ -7316,6 +7479,10 @@ gpio_pin! {
   ospeedr2,
   ot2,
   pupdr2,
+  ((
+    Asc2,
+    gpiog_ascr_asc2,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7325,13 +7492,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 3.",
   Gpiog3,
-  "GPIO port G pin 3 items.",
-  Gpiog3Items,
+  peripheral_gpiog_3,
+  "GPIO port G pin 3 tokens.",
+  Gpiog3Tokens,
   gpiog,
   afrl,
   crl,
   Afrl3,
-  (Asc3),
   Br3,
   Bs3,
   Cnf3,
@@ -7344,7 +7511,6 @@ gpio_pin! {
   Ot3,
   Pupdr3,
   gpiog_afrl_afrl3,
-  (gpiog_ascr_asc3),
   gpiog_brr_br3,
   gpiog_bsrr_br3,
   gpiog_bsrr_bs3,
@@ -7382,6 +7548,10 @@ gpio_pin! {
   ospeedr3,
   ot3,
   pupdr3,
+  ((
+    Asc3,
+    gpiog_ascr_asc3,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7391,13 +7561,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 4.",
   Gpiog4,
-  "GPIO port G pin 4 items.",
-  Gpiog4Items,
+  peripheral_gpiog_4,
+  "GPIO port G pin 4 tokens.",
+  Gpiog4Tokens,
   gpiog,
   afrl,
   crl,
   Afrl4,
-  (Asc4),
   Br4,
   Bs4,
   Cnf4,
@@ -7410,7 +7580,6 @@ gpio_pin! {
   Ot4,
   Pupdr4,
   gpiog_afrl_afrl4,
-  (gpiog_ascr_asc4),
   gpiog_brr_br4,
   gpiog_bsrr_br4,
   gpiog_bsrr_bs4,
@@ -7448,6 +7617,10 @@ gpio_pin! {
   ospeedr4,
   ot4,
   pupdr4,
+  ((
+    Asc4,
+    gpiog_ascr_asc4,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7457,13 +7630,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 5.",
   Gpiog5,
-  "GPIO port G pin 5 items.",
-  Gpiog5Items,
+  peripheral_gpiog_5,
+  "GPIO port G pin 5 tokens.",
+  Gpiog5Tokens,
   gpiog,
   afrl,
   crl,
   Afrl5,
-  (Asc5),
   Br5,
   Bs5,
   Cnf5,
@@ -7476,7 +7649,6 @@ gpio_pin! {
   Ot5,
   Pupdr5,
   gpiog_afrl_afrl5,
-  (gpiog_ascr_asc5),
   gpiog_brr_br5,
   gpiog_bsrr_br5,
   gpiog_bsrr_bs5,
@@ -7514,6 +7686,10 @@ gpio_pin! {
   ospeedr5,
   ot5,
   pupdr5,
+  ((
+    Asc5,
+    gpiog_ascr_asc5,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7523,13 +7699,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 6.",
   Gpiog6,
-  "GPIO port G pin 6 items.",
-  Gpiog6Items,
+  peripheral_gpiog_6,
+  "GPIO port G pin 6 tokens.",
+  Gpiog6Tokens,
   gpiog,
   afrl,
   crl,
   Afrl6,
-  (Asc6),
   Br6,
   Bs6,
   Cnf6,
@@ -7542,7 +7718,6 @@ gpio_pin! {
   Ot6,
   Pupdr6,
   gpiog_afrl_afrl6,
-  (gpiog_ascr_asc6),
   gpiog_brr_br6,
   gpiog_bsrr_br6,
   gpiog_bsrr_bs6,
@@ -7580,6 +7755,10 @@ gpio_pin! {
   ospeedr6,
   ot6,
   pupdr6,
+  ((
+    Asc6,
+    gpiog_ascr_asc6,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7589,13 +7768,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 7.",
   Gpiog7,
-  "GPIO port G pin 7 items.",
-  Gpiog7Items,
+  peripheral_gpiog_7,
+  "GPIO port G pin 7 tokens.",
+  Gpiog7Tokens,
   gpiog,
   afrl,
   crl,
   Afrl7,
-  (Asc7),
   Br7,
   Bs7,
   Cnf7,
@@ -7608,7 +7787,6 @@ gpio_pin! {
   Ot7,
   Pupdr7,
   gpiog_afrl_afrl7,
-  (gpiog_ascr_asc7),
   gpiog_brr_br7,
   gpiog_bsrr_br7,
   gpiog_bsrr_bs7,
@@ -7646,6 +7824,10 @@ gpio_pin! {
   ospeedr7,
   ot7,
   pupdr7,
+  ((
+    Asc7,
+    gpiog_ascr_asc7,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7655,13 +7837,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 8.",
   Gpiog8,
-  "GPIO port G pin 8 items.",
-  Gpiog8Items,
+  peripheral_gpiog_8,
+  "GPIO port G pin 8 tokens.",
+  Gpiog8Tokens,
   gpiog,
   afrh,
   crh,
   Afrh8,
-  (Asc8),
   Br8,
   Bs8,
   Cnf8,
@@ -7674,7 +7856,6 @@ gpio_pin! {
   Ot8,
   Pupdr8,
   gpiog_afrh_afrh8,
-  (gpiog_ascr_asc8),
   gpiog_brr_br8,
   gpiog_bsrr_br8,
   gpiog_bsrr_bs8,
@@ -7712,6 +7893,10 @@ gpio_pin! {
   ospeedr8,
   ot8,
   pupdr8,
+  ((
+    Asc8,
+    gpiog_ascr_asc8,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7721,13 +7906,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 9.",
   Gpiog9,
-  "GPIO port G pin 9 items.",
-  Gpiog9Items,
+  peripheral_gpiog_9,
+  "GPIO port G pin 9 tokens.",
+  Gpiog9Tokens,
   gpiog,
   afrh,
   crh,
   Afrh9,
-  (Asc9),
   Br9,
   Bs9,
   Cnf9,
@@ -7740,7 +7925,6 @@ gpio_pin! {
   Ot9,
   Pupdr9,
   gpiog_afrh_afrh9,
-  (gpiog_ascr_asc9),
   gpiog_brr_br9,
   gpiog_bsrr_br9,
   gpiog_bsrr_bs9,
@@ -7778,6 +7962,10 @@ gpio_pin! {
   ospeedr9,
   ot9,
   pupdr9,
+  ((
+    Asc9,
+    gpiog_ascr_asc9,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7787,13 +7975,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 10.",
   Gpiog10,
-  "GPIO port G pin 10 items.",
-  Gpiog10Items,
+  peripheral_gpiog_10,
+  "GPIO port G pin 10 tokens.",
+  Gpiog10Tokens,
   gpiog,
   afrh,
   crh,
   Afrh10,
-  (Asc10),
   Br10,
   Bs10,
   Cnf10,
@@ -7806,7 +7994,6 @@ gpio_pin! {
   Ot10,
   Pupdr10,
   gpiog_afrh_afrh10,
-  (gpiog_ascr_asc10),
   gpiog_brr_br10,
   gpiog_bsrr_br10,
   gpiog_bsrr_bs10,
@@ -7844,6 +8031,10 @@ gpio_pin! {
   ospeedr10,
   ot10,
   pupdr10,
+  ((
+    Asc10,
+    gpiog_ascr_asc10,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7853,13 +8044,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 11.",
   Gpiog11,
-  "GPIO port G pin 11 items.",
-  Gpiog11Items,
+  peripheral_gpiog_11,
+  "GPIO port G pin 11 tokens.",
+  Gpiog11Tokens,
   gpiog,
   afrh,
   crh,
   Afrh11,
-  (Asc11),
   Br11,
   Bs11,
   Cnf11,
@@ -7872,7 +8063,6 @@ gpio_pin! {
   Ot11,
   Pupdr11,
   gpiog_afrh_afrh11,
-  (gpiog_ascr_asc11),
   gpiog_brr_br11,
   gpiog_bsrr_br11,
   gpiog_bsrr_bs11,
@@ -7910,6 +8100,10 @@ gpio_pin! {
   ospeedr11,
   ot11,
   pupdr11,
+  ((
+    Asc11,
+    gpiog_ascr_asc11,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7919,13 +8113,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 12.",
   Gpiog12,
-  "GPIO port G pin 12 items.",
-  Gpiog12Items,
+  peripheral_gpiog_12,
+  "GPIO port G pin 12 tokens.",
+  Gpiog12Tokens,
   gpiog,
   afrh,
   crh,
   Afrh12,
-  (Asc12),
   Br12,
   Bs12,
   Cnf12,
@@ -7938,7 +8132,6 @@ gpio_pin! {
   Ot12,
   Pupdr12,
   gpiog_afrh_afrh12,
-  (gpiog_ascr_asc12),
   gpiog_brr_br12,
   gpiog_bsrr_br12,
   gpiog_bsrr_bs12,
@@ -7976,6 +8169,10 @@ gpio_pin! {
   ospeedr12,
   ot12,
   pupdr12,
+  ((
+    Asc12,
+    gpiog_ascr_asc12,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -7985,13 +8182,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 13.",
   Gpiog13,
-  "GPIO port G pin 13 items.",
-  Gpiog13Items,
+  peripheral_gpiog_13,
+  "GPIO port G pin 13 tokens.",
+  Gpiog13Tokens,
   gpiog,
   afrh,
   crh,
   Afrh13,
-  (Asc13),
   Br13,
   Bs13,
   Cnf13,
@@ -8004,7 +8201,6 @@ gpio_pin! {
   Ot13,
   Pupdr13,
   gpiog_afrh_afrh13,
-  (gpiog_ascr_asc13),
   gpiog_brr_br13,
   gpiog_bsrr_br13,
   gpiog_bsrr_bs13,
@@ -8042,6 +8238,10 @@ gpio_pin! {
   ospeedr13,
   ot13,
   pupdr13,
+  ((
+    Asc13,
+    gpiog_ascr_asc13,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -8051,13 +8251,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 14.",
   Gpiog14,
-  "GPIO port G pin 14 items.",
-  Gpiog14Items,
+  peripheral_gpiog_14,
+  "GPIO port G pin 14 tokens.",
+  Gpiog14Tokens,
   gpiog,
   afrh,
   crh,
   Afrh14,
-  (Asc14),
   Br14,
   Bs14,
   Cnf14,
@@ -8070,7 +8270,6 @@ gpio_pin! {
   Ot14,
   Pupdr14,
   gpiog_afrh_afrh14,
-  (gpiog_ascr_asc14),
   gpiog_brr_br14,
   gpiog_bsrr_br14,
   gpiog_bsrr_bs14,
@@ -8108,6 +8307,10 @@ gpio_pin! {
   ospeedr14,
   ot14,
   pupdr14,
+  ((
+    Asc14,
+    gpiog_ascr_asc14,
+  )),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -8117,13 +8320,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 15.",
   Gpiog15,
-  "GPIO port G pin 15 items.",
-  Gpiog15Items,
+  peripheral_gpiog_15,
+  "GPIO port G pin 15 tokens.",
+  Gpiog15Tokens,
   gpiog,
   afrh,
   crh,
   Afrh15,
-  (Asc15),
   Br15,
   Bs15,
   Cnf15,
@@ -8136,7 +8339,6 @@ gpio_pin! {
   Ot15,
   Pupdr15,
   gpiog_afrh_afrh15,
-  (gpiog_ascr_asc15),
   gpiog_brr_br15,
   gpiog_bsrr_br15,
   gpiog_bsrr_bs15,
@@ -8174,6 +8376,10 @@ gpio_pin! {
   ospeedr15,
   ot15,
   pupdr15,
+  ((
+    Asc15,
+    gpiog_ascr_asc15,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8182,13 +8388,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 0.",
   Gpioh0,
-  "GPIO port H pin 0 items.",
-  Gpioh0Items,
+  peripheral_gpioh_0,
+  "GPIO port H pin 0 tokens.",
+  Gpioh0Tokens,
   gpioh,
   afrl,
   crl,
   Afrl0,
-  (Asc0),
   Br0,
   Bs0,
   Cnf0,
@@ -8201,7 +8407,6 @@ gpio_pin! {
   Ot0,
   Pupdr0,
   gpioh_afrl_afrl0,
-  (gpioh_ascr_asc0),
   gpioh_brr_br0,
   gpioh_bsrr_br0,
   gpioh_bsrr_bs0,
@@ -8239,6 +8444,10 @@ gpio_pin! {
   ospeedr0,
   ot0,
   pupdr0,
+  ((
+    Asc0,
+    gpioh_ascr_asc0,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8247,13 +8456,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 1.",
   Gpioh1,
-  "GPIO port H pin 1 items.",
-  Gpioh1Items,
+  peripheral_gpioh_1,
+  "GPIO port H pin 1 tokens.",
+  Gpioh1Tokens,
   gpioh,
   afrl,
   crl,
   Afrl1,
-  (Asc1),
   Br1,
   Bs1,
   Cnf1,
@@ -8266,7 +8475,6 @@ gpio_pin! {
   Ot1,
   Pupdr1,
   gpioh_afrl_afrl1,
-  (gpioh_ascr_asc1),
   gpioh_brr_br1,
   gpioh_bsrr_br1,
   gpioh_bsrr_bs1,
@@ -8304,6 +8512,10 @@ gpio_pin! {
   ospeedr1,
   ot1,
   pupdr1,
+  ((
+    Asc1,
+    gpioh_ascr_asc1,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8312,13 +8524,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 2.",
   Gpioh2,
-  "GPIO port H pin 2 items.",
-  Gpioh2Items,
+  peripheral_gpioh_2,
+  "GPIO port H pin 2 tokens.",
+  Gpioh2Tokens,
   gpioh,
   afrl,
   crl,
   Afrl2,
-  (Asc2),
   Br2,
   Bs2,
   Cnf2,
@@ -8331,7 +8543,6 @@ gpio_pin! {
   Ot2,
   Pupdr2,
   gpioh_afrl_afrl2,
-  (gpioh_ascr_asc2),
   gpioh_brr_br2,
   gpioh_bsrr_br2,
   gpioh_bsrr_bs2,
@@ -8369,6 +8580,10 @@ gpio_pin! {
   ospeedr2,
   ot2,
   pupdr2,
+  ((
+    Asc2,
+    gpioh_ascr_asc2,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8377,13 +8592,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 3.",
   Gpioh3,
-  "GPIO port H pin 3 items.",
-  Gpioh3Items,
+  peripheral_gpioh_3,
+  "GPIO port H pin 3 tokens.",
+  Gpioh3Tokens,
   gpioh,
   afrl,
   crl,
   Afrl3,
-  (Asc3),
   Br3,
   Bs3,
   Cnf3,
@@ -8396,7 +8611,6 @@ gpio_pin! {
   Ot3,
   Pupdr3,
   gpioh_afrl_afrl3,
-  (gpioh_ascr_asc3),
   gpioh_brr_br3,
   gpioh_bsrr_br3,
   gpioh_bsrr_bs3,
@@ -8434,6 +8648,10 @@ gpio_pin! {
   ospeedr3,
   ot3,
   pupdr3,
+  ((
+    Asc3,
+    gpioh_ascr_asc3,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8442,13 +8660,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 4.",
   Gpioh4,
-  "GPIO port H pin 4 items.",
-  Gpioh4Items,
+  peripheral_gpioh_4,
+  "GPIO port H pin 4 tokens.",
+  Gpioh4Tokens,
   gpioh,
   afrl,
   crl,
   Afrl4,
-  (Asc4),
   Br4,
   Bs4,
   Cnf4,
@@ -8461,7 +8679,6 @@ gpio_pin! {
   Ot4,
   Pupdr4,
   gpioh_afrl_afrl4,
-  (gpioh_ascr_asc4),
   gpioh_brr_br4,
   gpioh_bsrr_br4,
   gpioh_bsrr_bs4,
@@ -8499,6 +8716,10 @@ gpio_pin! {
   ospeedr4,
   ot4,
   pupdr4,
+  ((
+    Asc4,
+    gpioh_ascr_asc4,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8507,13 +8728,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 5.",
   Gpioh5,
-  "GPIO port H pin 5 items.",
-  Gpioh5Items,
+  peripheral_gpioh_5,
+  "GPIO port H pin 5 tokens.",
+  Gpioh5Tokens,
   gpioh,
   afrl,
   crl,
   Afrl5,
-  (Asc5),
   Br5,
   Bs5,
   Cnf5,
@@ -8526,7 +8747,6 @@ gpio_pin! {
   Ot5,
   Pupdr5,
   gpioh_afrl_afrl5,
-  (gpioh_ascr_asc5),
   gpioh_brr_br5,
   gpioh_bsrr_br5,
   gpioh_bsrr_bs5,
@@ -8564,6 +8784,10 @@ gpio_pin! {
   ospeedr5,
   ot5,
   pupdr5,
+  ((
+    Asc5,
+    gpioh_ascr_asc5,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8572,13 +8796,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 6.",
   Gpioh6,
-  "GPIO port H pin 6 items.",
-  Gpioh6Items,
+  peripheral_gpioh_6,
+  "GPIO port H pin 6 tokens.",
+  Gpioh6Tokens,
   gpioh,
   afrl,
   crl,
   Afrl6,
-  (Asc6),
   Br6,
   Bs6,
   Cnf6,
@@ -8591,7 +8815,6 @@ gpio_pin! {
   Ot6,
   Pupdr6,
   gpioh_afrl_afrl6,
-  (gpioh_ascr_asc6),
   gpioh_brr_br6,
   gpioh_bsrr_br6,
   gpioh_bsrr_bs6,
@@ -8629,6 +8852,10 @@ gpio_pin! {
   ospeedr6,
   ot6,
   pupdr6,
+  ((
+    Asc6,
+    gpioh_ascr_asc6,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8637,13 +8864,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 7.",
   Gpioh7,
-  "GPIO port H pin 7 items.",
-  Gpioh7Items,
+  peripheral_gpioh_7,
+  "GPIO port H pin 7 tokens.",
+  Gpioh7Tokens,
   gpioh,
   afrl,
   crl,
   Afrl7,
-  (Asc7),
   Br7,
   Bs7,
   Cnf7,
@@ -8656,7 +8883,6 @@ gpio_pin! {
   Ot7,
   Pupdr7,
   gpioh_afrl_afrl7,
-  (gpioh_ascr_asc7),
   gpioh_brr_br7,
   gpioh_bsrr_br7,
   gpioh_bsrr_bs7,
@@ -8694,6 +8920,10 @@ gpio_pin! {
   ospeedr7,
   ot7,
   pupdr7,
+  ((
+    Asc7,
+    gpioh_ascr_asc7,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8702,13 +8932,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 8.",
   Gpioh8,
-  "GPIO port H pin 8 items.",
-  Gpioh8Items,
+  peripheral_gpioh_8,
+  "GPIO port H pin 8 tokens.",
+  Gpioh8Tokens,
   gpioh,
   afrh,
   crh,
   Afrh8,
-  (Asc8),
   Br8,
   Bs8,
   Cnf8,
@@ -8721,7 +8951,6 @@ gpio_pin! {
   Ot8,
   Pupdr8,
   gpioh_afrh_afrh8,
-  (gpioh_ascr_asc8),
   gpioh_brr_br8,
   gpioh_bsrr_br8,
   gpioh_bsrr_bs8,
@@ -8759,6 +8988,10 @@ gpio_pin! {
   ospeedr8,
   ot8,
   pupdr8,
+  ((
+    Asc8,
+    gpioh_ascr_asc8,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8767,13 +9000,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 9.",
   Gpioh9,
-  "GPIO port H pin 9 items.",
-  Gpioh9Items,
+  peripheral_gpioh_9,
+  "GPIO port H pin 9 tokens.",
+  Gpioh9Tokens,
   gpioh,
   afrh,
   crh,
   Afrh9,
-  (Asc9),
   Br9,
   Bs9,
   Cnf9,
@@ -8786,7 +9019,6 @@ gpio_pin! {
   Ot9,
   Pupdr9,
   gpioh_afrh_afrh9,
-  (gpioh_ascr_asc9),
   gpioh_brr_br9,
   gpioh_bsrr_br9,
   gpioh_bsrr_bs9,
@@ -8824,6 +9056,10 @@ gpio_pin! {
   ospeedr9,
   ot9,
   pupdr9,
+  ((
+    Asc9,
+    gpioh_ascr_asc9,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8832,13 +9068,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 10.",
   Gpioh10,
-  "GPIO port H pin 10 items.",
-  Gpioh10Items,
+  peripheral_gpioh_10,
+  "GPIO port H pin 10 tokens.",
+  Gpioh10Tokens,
   gpioh,
   afrh,
   crh,
   Afrh10,
-  (Asc10),
   Br10,
   Bs10,
   Cnf10,
@@ -8851,7 +9087,6 @@ gpio_pin! {
   Ot10,
   Pupdr10,
   gpioh_afrh_afrh10,
-  (gpioh_ascr_asc10),
   gpioh_brr_br10,
   gpioh_bsrr_br10,
   gpioh_bsrr_bs10,
@@ -8889,6 +9124,10 @@ gpio_pin! {
   ospeedr10,
   ot10,
   pupdr10,
+  ((
+    Asc10,
+    gpioh_ascr_asc10,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8897,13 +9136,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 11.",
   Gpioh11,
-  "GPIO port H pin 11 items.",
-  Gpioh11Items,
+  peripheral_gpioh_11,
+  "GPIO port H pin 11 tokens.",
+  Gpioh11Tokens,
   gpioh,
   afrh,
   crh,
   Afrh11,
-  (Asc11),
   Br11,
   Bs11,
   Cnf11,
@@ -8916,7 +9155,6 @@ gpio_pin! {
   Ot11,
   Pupdr11,
   gpioh_afrh_afrh11,
-  (gpioh_ascr_asc11),
   gpioh_brr_br11,
   gpioh_bsrr_br11,
   gpioh_bsrr_bs11,
@@ -8954,6 +9192,10 @@ gpio_pin! {
   ospeedr11,
   ot11,
   pupdr11,
+  ((
+    Asc11,
+    gpioh_ascr_asc11,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -8962,13 +9204,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 12.",
   Gpioh12,
-  "GPIO port H pin 12 items.",
-  Gpioh12Items,
+  peripheral_gpioh_12,
+  "GPIO port H pin 12 tokens.",
+  Gpioh12Tokens,
   gpioh,
   afrh,
   crh,
   Afrh12,
-  (Asc12),
   Br12,
   Bs12,
   Cnf12,
@@ -8981,7 +9223,6 @@ gpio_pin! {
   Ot12,
   Pupdr12,
   gpioh_afrh_afrh12,
-  (gpioh_ascr_asc12),
   gpioh_brr_br12,
   gpioh_bsrr_br12,
   gpioh_bsrr_bs12,
@@ -9019,6 +9260,10 @@ gpio_pin! {
   ospeedr12,
   ot12,
   pupdr12,
+  ((
+    Asc12,
+    gpioh_ascr_asc12,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -9027,13 +9272,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 13.",
   Gpioh13,
-  "GPIO port H pin 13 items.",
-  Gpioh13Items,
+  peripheral_gpioh_13,
+  "GPIO port H pin 13 tokens.",
+  Gpioh13Tokens,
   gpioh,
   afrh,
   crh,
   Afrh13,
-  (Asc13),
   Br13,
   Bs13,
   Cnf13,
@@ -9046,7 +9291,6 @@ gpio_pin! {
   Ot13,
   Pupdr13,
   gpioh_afrh_afrh13,
-  (gpioh_ascr_asc13),
   gpioh_brr_br13,
   gpioh_bsrr_br13,
   gpioh_bsrr_bs13,
@@ -9084,6 +9328,10 @@ gpio_pin! {
   ospeedr13,
   ot13,
   pupdr13,
+  ((
+    Asc13,
+    gpioh_ascr_asc13,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -9092,13 +9340,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 14.",
   Gpioh14,
-  "GPIO port H pin 14 items.",
-  Gpioh14Items,
+  peripheral_gpioh_14,
+  "GPIO port H pin 14 tokens.",
+  Gpioh14Tokens,
   gpioh,
   afrh,
   crh,
   Afrh14,
-  (Asc14),
   Br14,
   Bs14,
   Cnf14,
@@ -9111,7 +9359,6 @@ gpio_pin! {
   Ot14,
   Pupdr14,
   gpioh_afrh_afrh14,
-  (gpioh_ascr_asc14),
   gpioh_brr_br14,
   gpioh_bsrr_br14,
   gpioh_bsrr_bs14,
@@ -9149,6 +9396,10 @@ gpio_pin! {
   ospeedr14,
   ot14,
   pupdr14,
+  ((
+    Asc14,
+    gpioh_ascr_asc14,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -9157,13 +9408,13 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 15.",
   Gpioh15,
-  "GPIO port H pin 15 items.",
-  Gpioh15Items,
+  peripheral_gpioh_15,
+  "GPIO port H pin 15 tokens.",
+  Gpioh15Tokens,
   gpioh,
   afrh,
   crh,
   Afrh15,
-  (Asc15),
   Br15,
   Bs15,
   Cnf15,
@@ -9176,7 +9427,6 @@ gpio_pin! {
   Ot15,
   Pupdr15,
   gpioh_afrh_afrh15,
-  (gpioh_ascr_asc15),
   gpioh_brr_br15,
   gpioh_bsrr_br15,
   gpioh_bsrr_bs15,
@@ -9214,19 +9464,23 @@ gpio_pin! {
   ospeedr15,
   ot15,
   pupdr15,
+  ((
+    Asc15,
+    gpioh_ascr_asc15,
+  )),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 0.",
   Gpioi0,
-  "GPIO port I pin 0 items.",
-  Gpioi0Items,
+  peripheral_gpioi_0,
+  "GPIO port I pin 0 tokens.",
+  Gpioi0Tokens,
   gpioi,
   afrl,
   crl,
   Afrl0,
-  (),
   Br0,
   Bs0,
   Cnf0,
@@ -9239,7 +9493,6 @@ gpio_pin! {
   Ot0,
   Pupdr0,
   gpioi_afrl_afrl0,
-  (),
   gpioi_brr_br0,
   gpioi_bsrr_br0,
   gpioi_bsrr_bs0,
@@ -9277,19 +9530,20 @@ gpio_pin! {
   ospeedr0,
   ot0,
   pupdr0,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 1.",
   Gpioi1,
-  "GPIO port I pin 1 items.",
-  Gpioi1Items,
+  peripheral_gpioi_1,
+  "GPIO port I pin 1 tokens.",
+  Gpioi1Tokens,
   gpioi,
   afrl,
   crl,
   Afrl1,
-  (),
   Br1,
   Bs1,
   Cnf1,
@@ -9302,7 +9556,6 @@ gpio_pin! {
   Ot1,
   Pupdr1,
   gpioi_afrl_afrl1,
-  (),
   gpioi_brr_br1,
   gpioi_bsrr_br1,
   gpioi_bsrr_bs1,
@@ -9340,19 +9593,20 @@ gpio_pin! {
   ospeedr1,
   ot1,
   pupdr1,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 2.",
   Gpioi2,
-  "GPIO port I pin 2 items.",
-  Gpioi2Items,
+  peripheral_gpioi_2,
+  "GPIO port I pin 2 tokens.",
+  Gpioi2Tokens,
   gpioi,
   afrl,
   crl,
   Afrl2,
-  (),
   Br2,
   Bs2,
   Cnf2,
@@ -9365,7 +9619,6 @@ gpio_pin! {
   Ot2,
   Pupdr2,
   gpioi_afrl_afrl2,
-  (),
   gpioi_brr_br2,
   gpioi_bsrr_br2,
   gpioi_bsrr_bs2,
@@ -9403,19 +9656,20 @@ gpio_pin! {
   ospeedr2,
   ot2,
   pupdr2,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 3.",
   Gpioi3,
-  "GPIO port I pin 3 items.",
-  Gpioi3Items,
+  peripheral_gpioi_3,
+  "GPIO port I pin 3 tokens.",
+  Gpioi3Tokens,
   gpioi,
   afrl,
   crl,
   Afrl3,
-  (),
   Br3,
   Bs3,
   Cnf3,
@@ -9428,7 +9682,6 @@ gpio_pin! {
   Ot3,
   Pupdr3,
   gpioi_afrl_afrl3,
-  (),
   gpioi_brr_br3,
   gpioi_bsrr_br3,
   gpioi_bsrr_bs3,
@@ -9466,19 +9719,20 @@ gpio_pin! {
   ospeedr3,
   ot3,
   pupdr3,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 4.",
   Gpioi4,
-  "GPIO port I pin 4 items.",
-  Gpioi4Items,
+  peripheral_gpioi_4,
+  "GPIO port I pin 4 tokens.",
+  Gpioi4Tokens,
   gpioi,
   afrl,
   crl,
   Afrl4,
-  (),
   Br4,
   Bs4,
   Cnf4,
@@ -9491,7 +9745,6 @@ gpio_pin! {
   Ot4,
   Pupdr4,
   gpioi_afrl_afrl4,
-  (),
   gpioi_brr_br4,
   gpioi_bsrr_br4,
   gpioi_bsrr_bs4,
@@ -9529,19 +9782,20 @@ gpio_pin! {
   ospeedr4,
   ot4,
   pupdr4,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 5.",
   Gpioi5,
-  "GPIO port I pin 5 items.",
-  Gpioi5Items,
+  peripheral_gpioi_5,
+  "GPIO port I pin 5 tokens.",
+  Gpioi5Tokens,
   gpioi,
   afrl,
   crl,
   Afrl5,
-  (),
   Br5,
   Bs5,
   Cnf5,
@@ -9554,7 +9808,6 @@ gpio_pin! {
   Ot5,
   Pupdr5,
   gpioi_afrl_afrl5,
-  (),
   gpioi_brr_br5,
   gpioi_bsrr_br5,
   gpioi_bsrr_bs5,
@@ -9592,19 +9845,20 @@ gpio_pin! {
   ospeedr5,
   ot5,
   pupdr5,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 6.",
   Gpioi6,
-  "GPIO port I pin 6 items.",
-  Gpioi6Items,
+  peripheral_gpioi_6,
+  "GPIO port I pin 6 tokens.",
+  Gpioi6Tokens,
   gpioi,
   afrl,
   crl,
   Afrl6,
-  (),
   Br6,
   Bs6,
   Cnf6,
@@ -9617,7 +9871,6 @@ gpio_pin! {
   Ot6,
   Pupdr6,
   gpioi_afrl_afrl6,
-  (),
   gpioi_brr_br6,
   gpioi_bsrr_br6,
   gpioi_bsrr_bs6,
@@ -9655,19 +9908,20 @@ gpio_pin! {
   ospeedr6,
   ot6,
   pupdr6,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 7.",
   Gpioi7,
-  "GPIO port I pin 7 items.",
-  Gpioi7Items,
+  peripheral_gpioi_7,
+  "GPIO port I pin 7 tokens.",
+  Gpioi7Tokens,
   gpioi,
   afrl,
   crl,
   Afrl7,
-  (),
   Br7,
   Bs7,
   Cnf7,
@@ -9680,7 +9934,6 @@ gpio_pin! {
   Ot7,
   Pupdr7,
   gpioi_afrl_afrl7,
-  (),
   gpioi_brr_br7,
   gpioi_bsrr_br7,
   gpioi_bsrr_bs7,
@@ -9718,19 +9971,20 @@ gpio_pin! {
   ospeedr7,
   ot7,
   pupdr7,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 8.",
   Gpioi8,
-  "GPIO port I pin 8 items.",
-  Gpioi8Items,
+  peripheral_gpioi_8,
+  "GPIO port I pin 8 tokens.",
+  Gpioi8Tokens,
   gpioi,
   afrh,
   crh,
   Afrh8,
-  (),
   Br8,
   Bs8,
   Cnf8,
@@ -9743,7 +9997,6 @@ gpio_pin! {
   Ot8,
   Pupdr8,
   gpioi_afrh_afrh8,
-  (),
   gpioi_brr_br8,
   gpioi_bsrr_br8,
   gpioi_bsrr_bs8,
@@ -9781,19 +10034,20 @@ gpio_pin! {
   ospeedr8,
   ot8,
   pupdr8,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 9.",
   Gpioi9,
-  "GPIO port I pin 9 items.",
-  Gpioi9Items,
+  peripheral_gpioi_9,
+  "GPIO port I pin 9 tokens.",
+  Gpioi9Tokens,
   gpioi,
   afrh,
   crh,
   Afrh9,
-  (),
   Br9,
   Bs9,
   Cnf9,
@@ -9806,7 +10060,6 @@ gpio_pin! {
   Ot9,
   Pupdr9,
   gpioi_afrh_afrh9,
-  (),
   gpioi_brr_br9,
   gpioi_bsrr_br9,
   gpioi_bsrr_bs9,
@@ -9844,19 +10097,20 @@ gpio_pin! {
   ospeedr9,
   ot9,
   pupdr9,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 10.",
   Gpioi10,
-  "GPIO port I pin 10 items.",
-  Gpioi10Items,
+  peripheral_gpioi_10,
+  "GPIO port I pin 10 tokens.",
+  Gpioi10Tokens,
   gpioi,
   afrh,
   crh,
   Afrh10,
-  (),
   Br10,
   Bs10,
   Cnf10,
@@ -9869,7 +10123,6 @@ gpio_pin! {
   Ot10,
   Pupdr10,
   gpioi_afrh_afrh10,
-  (),
   gpioi_brr_br10,
   gpioi_bsrr_br10,
   gpioi_bsrr_bs10,
@@ -9907,19 +10160,20 @@ gpio_pin! {
   ospeedr10,
   ot10,
   pupdr10,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 11.",
   Gpioi11,
-  "GPIO port I pin 11 items.",
-  Gpioi11Items,
+  peripheral_gpioi_11,
+  "GPIO port I pin 11 tokens.",
+  Gpioi11Tokens,
   gpioi,
   afrh,
   crh,
   Afrh11,
-  (),
   Br11,
   Bs11,
   Cnf11,
@@ -9932,7 +10186,6 @@ gpio_pin! {
   Ot11,
   Pupdr11,
   gpioi_afrh_afrh11,
-  (),
   gpioi_brr_br11,
   gpioi_bsrr_br11,
   gpioi_bsrr_bs11,
@@ -9970,19 +10223,20 @@ gpio_pin! {
   ospeedr11,
   ot11,
   pupdr11,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 12.",
   Gpioi12,
-  "GPIO port I pin 12 items.",
-  Gpioi12Items,
+  peripheral_gpioi_12,
+  "GPIO port I pin 12 tokens.",
+  Gpioi12Tokens,
   gpioi,
   afrh,
   crh,
   Afrh12,
-  (),
   Br12,
   Bs12,
   Cnf12,
@@ -9995,7 +10249,6 @@ gpio_pin! {
   Ot12,
   Pupdr12,
   gpioi_afrh_afrh12,
-  (),
   gpioi_brr_br12,
   gpioi_bsrr_br12,
   gpioi_bsrr_bs12,
@@ -10033,19 +10286,20 @@ gpio_pin! {
   ospeedr12,
   ot12,
   pupdr12,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 13.",
   Gpioi13,
-  "GPIO port I pin 13 items.",
-  Gpioi13Items,
+  peripheral_gpioi_13,
+  "GPIO port I pin 13 tokens.",
+  Gpioi13Tokens,
   gpioi,
   afrh,
   crh,
   Afrh13,
-  (),
   Br13,
   Bs13,
   Cnf13,
@@ -10058,7 +10312,6 @@ gpio_pin! {
   Ot13,
   Pupdr13,
   gpioi_afrh_afrh13,
-  (),
   gpioi_brr_br13,
   gpioi_bsrr_br13,
   gpioi_bsrr_bs13,
@@ -10096,19 +10349,20 @@ gpio_pin! {
   ospeedr13,
   ot13,
   pupdr13,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 14.",
   Gpioi14,
-  "GPIO port I pin 14 items.",
-  Gpioi14Items,
+  peripheral_gpioi_14,
+  "GPIO port I pin 14 tokens.",
+  Gpioi14Tokens,
   gpioi,
   afrh,
   crh,
   Afrh14,
-  (),
   Br14,
   Bs14,
   Cnf14,
@@ -10121,7 +10375,6 @@ gpio_pin! {
   Ot14,
   Pupdr14,
   gpioi_afrh_afrh14,
-  (),
   gpioi_brr_br14,
   gpioi_bsrr_br14,
   gpioi_bsrr_bs14,
@@ -10159,19 +10412,20 @@ gpio_pin! {
   ospeedr14,
   ot14,
   pupdr14,
+  (),
 }
 
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 15.",
   Gpioi15,
-  "GPIO port I pin 15 items.",
-  Gpioi15Items,
+  peripheral_gpioi_15,
+  "GPIO port I pin 15 tokens.",
+  Gpioi15Tokens,
   gpioi,
   afrh,
   crh,
   Afrh15,
-  (),
   Br15,
   Bs15,
   Cnf15,
@@ -10184,7 +10438,6 @@ gpio_pin! {
   Ot15,
   Pupdr15,
   gpioi_afrh_afrh15,
-  (),
   gpioi_brr_br15,
   gpioi_bsrr_br15,
   gpioi_bsrr_bs15,
@@ -10222,4 +10475,5 @@ gpio_pin! {
   ospeedr15,
   ot15,
   pupdr15,
+  (),
 }

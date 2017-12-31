@@ -37,11 +37,12 @@
 //!
 //! [`vtable!`]: ../macro.vtable.html
 
-mod thread_interrupt;
 pub mod interrupts;
+pub mod prelude;
 
-pub use self::thread_interrupt::ThreadInterrupt;
 pub use drone_cortex_m_macros::interrupt;
+
+use drone_core::thread::ThreadNumber;
 
 /// Pointer to an exception handler.
 pub type Handler = unsafe extern "C" fn();
@@ -55,4 +56,10 @@ pub type ResetHandler = unsafe extern "C" fn() -> !;
 pub enum Reserved {
   /// The only allowed zero-value.
   Vector = 0,
+}
+
+/// An interrupt.
+pub trait InterruptNumber: ThreadNumber {
+  /// An interrupt position within the vector table.
+  const INTERRUPT_NUMBER: usize;
 }

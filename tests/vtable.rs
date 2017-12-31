@@ -13,7 +13,7 @@
 
 extern crate alloc;
 extern crate compiler_builtins;
-extern crate drone;
+extern crate drone_core;
 extern crate drone_cortex_m;
 extern crate test;
 
@@ -22,8 +22,9 @@ extern crate test;
 use drone_cortex_m::prelude::*;
 
 use core::mem::size_of;
+use drone_cortex_m::thread::prelude::*;
 
-drone::heap! {
+drone_core::heap! {
   Heap;
   #[global_allocator]
   ALLOC;
@@ -34,10 +35,10 @@ mod vtable1 {
 
   use super::*;
 
-  drone::thread::thread_local!(ThreadLocal; THREADS);
+  drone_core::thread::thread_local!(ThreadLocal; THREADS);
 
-  trait Irq10<T> {}
-  trait Irq5<T> {}
+  trait Irq10 {}
+  trait Irq5 {}
 
   drone_cortex_m::vtable! {
     /// Test doc attribute
@@ -45,7 +46,7 @@ mod vtable1 {
     VectorTable;
     /// Test doc attribute
     #[doc = "test attribute"]
-    Bindings;
+    ThreadIndex;
     /// Test doc attribute
     #[doc = "test attribute"]
     THREADS;
@@ -71,8 +72,8 @@ mod vtable2 {
 
   use super::*;
 
-  drone::thread::thread_local!(ThreadLocal; THREADS);
-  drone_cortex_m::vtable!(VectorTable; Bindings; THREADS; ThreadLocal);
+  drone_core::thread::thread_local!(ThreadLocal; THREADS);
+  drone_cortex_m::vtable!(VectorTable; ThreadIndex; THREADS; ThreadLocal);
 }
 
 #[test]

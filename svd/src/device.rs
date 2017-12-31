@@ -87,15 +87,15 @@ impl Device {
   pub fn generate(
     self,
     mappings: &mut File,
-    bindings: &mut File,
+    tokens: &mut File,
     interrupts: &mut File,
   ) -> Result<(), Error> {
     let mut interrupt_names = HashSet::new();
     for peripheral in self.peripherals.peripheral.values() {
-      let (mapping_tokens, binding_tokens, interrupt_tokens) =
+      let (mapping_tokens, token_tokens, interrupt_tokens) =
         peripheral.to_tokens(&self.peripherals, &mut interrupt_names)?;
       mappings.write_all(mapping_tokens.as_str().as_bytes())?;
-      bindings.write_all(binding_tokens.as_str().as_bytes())?;
+      tokens.write_all(token_tokens.as_str().as_bytes())?;
       interrupts.write_all(interrupt_tokens.as_str().as_bytes())?;
     }
     Ok(())
@@ -122,7 +122,7 @@ impl Peripheral {
       .or_else(|| parent.and_then(|x| x.description.as_ref()))
       .ok_or_else(|| err_msg("Peripheral description not found"))?;
     let peripheral_name = Ident::new(self.name.to_owned());
-    let (mappings, bindings) = self
+    let (mappings, tokens) = self
       .registers
       .as_ref()
       .or_else(|| parent.and_then(|x| x.registers.as_ref()))
@@ -139,7 +139,7 @@ impl Peripheral {
       },
       quote! {
         reg::#peripheral_name {
-          #(#bindings)*
+          #(#tokens)*
         }
       },
       quote! {

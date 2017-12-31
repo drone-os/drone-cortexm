@@ -27,9 +27,9 @@ stm32l4x6 = []
 version = "0.7.0"
 path = "macros"
 
-[dependencies.drone]
+[dependencies.drone-core]
 version = "0.7"
-path = "../drone"
+path = "../drone-core"
 
 [dependencies.futures]
 version = "0.1"

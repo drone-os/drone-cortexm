@@ -16,7 +16,6 @@
 //!
 //! [`std::prelude`]: https://doc.rust-lang.org/std/prelude/
 
-pub use drone::prelude::*;
+pub use drone_core::prelude::*;
 
 pub use task::{DroneFuture, DroneStream};
-pub use thread::ThreadInterrupt;

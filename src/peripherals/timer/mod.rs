@@ -1,12 +1,11 @@
 //! Timers and watchdogs.
 
-#[doc(hidden)] // FIXME https://github.com/rust-lang/rust/issues/45266
 mod sys_tick;
 
-pub use self::sys_tick::SysTick;
+pub use self::sys_tick::{SysTick, SysTickTokens};
 
-use drone::sync::spsc::unit;
-use drone::thread::RoutineFuture;
+use drone_core::sync::spsc::unit;
+use drone_core::thread::RoutineFuture;
 use reg::prelude::*;
 
 /// Generic timer.
@@ -33,7 +32,4 @@ pub trait Timer: Sized {
 
   /// Stops the timer.
   fn stop(&mut self, ctrl_val: Self::CtrlVal);
-
-  /// Stops the timer by setting the control register to the reset value.
-  fn reset(&mut self);
 }

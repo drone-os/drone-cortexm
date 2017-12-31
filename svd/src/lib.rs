@@ -1,7 +1,6 @@
 //! Drone ARM Cortex-M SVD bindings generator.
 //!
 //! See `drone-cortex-m` documentation for details.
-#![feature(decl_macro)]
 #![feature(range_contains)]
 #![warn(missing_docs)]
 #![cfg_attr(feature = "clippy", feature(plugin))]
@@ -28,11 +27,11 @@ use std::io::prelude::*;
 pub fn svd_generate(
   input: &mut File,
   mappings: &mut File,
-  bindings: &mut File,
+  tokens: &mut File,
   interrupts: &mut File,
 ) -> Result<(), Error> {
   let mut xml = String::new();
   input.read_to_string(&mut xml)?;
   let device: Device = serde_xml_rs::deserialize(xml.as_bytes())?;
-  device.generate(mappings, bindings, interrupts)
+  device.generate(mappings, tokens, interrupts)
 }

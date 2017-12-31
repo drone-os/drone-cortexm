@@ -1,5 +1,5 @@
 use core::ops::{Deref, DerefMut};
-use drone::reg::prelude::*;
+use drone_core::reg::prelude::*;
 
 /// A wrapper for a value loaded with `ldrex` instruction.
 pub struct RegExcl<T> {
