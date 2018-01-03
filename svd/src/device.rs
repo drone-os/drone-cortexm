@@ -210,7 +210,7 @@ impl Registers {
             #[doc = #description]
             #name {
               #address #size #reset
-              #(#traits)*
+              #(#traits)*;
               #(#fields)*
             }
           },

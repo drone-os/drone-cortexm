@@ -1,4 +1,4 @@
-//! Drone for ARM Cortex-M procedural macros.
+//! Drone for ARM Cortex-M. Procedural macros.
 //!
 //! See `drone-cortex-m` documentation for details.
 

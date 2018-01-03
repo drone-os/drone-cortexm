@@ -10,7 +10,7 @@ mappings! {
   /// System control register.
   SCR {
     0xE000_ED10 0x20 0x0000_0000
-    RReg WReg
+    RReg WReg;
     /// Send Event on Pending bit.
     SEVEONPEND { 4 1 RRegField WRegField }
     /// Controls whether the processor uses sleep or deep sleep as its low power
@@ -29,7 +29,7 @@ mappings! {
   /// SysTick control and status register.
   CTRL {
     0xE000_E010 0x20 0x0000_0000
-    RReg WReg
+    RReg WReg;
     /// Returns `true` if timer counted to `0` since last time this was read.
     COUNTFLAG { 16 1 RRegField WRegField }
     /// Clock source selection.
@@ -43,7 +43,7 @@ mappings! {
   /// SysTick reload value register.
   LOAD {
     0xE000_E014 0x20 0x0000_0000
-    RReg WReg
+    RReg WReg;
     /// RELOAD value.
     RELOAD { 0 24 RRegField WRegField }
   }
@@ -51,7 +51,7 @@ mappings! {
   /// SysTick current value register.
   VAL {
     0xE000_E018 0x20 0x0000_0000
-    RReg WReg
+    RReg WReg;
     /// Current counter value.
     CURRENT { 0 24 RRegField WRegField }
   }
@@ -59,7 +59,7 @@ mappings! {
   /// SysTick calibration value register.
   CALIB {
     0xE000_E01C 0x20 0x0000_0000
-    RReg RoReg
+    RReg RoReg;
     /// NOREF flag.
     NOREF { 31 1 RRegField RoRegField }
     /// SKEW flag.

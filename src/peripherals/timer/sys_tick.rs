@@ -37,19 +37,6 @@ macro_rules! peripheral_sys_tick {
 
 #[allow(missing_docs)]
 impl<T: Thread, I: IrqSysTick> SysTick<T, I> {
-  /// Creates a new `SysTick` driver from provided `tokens`.
-  #[inline(always)]
-  pub fn new(tokens: SysTickTokens<T, I, Stt>) -> Self {
-    Self {
-      tokens: SysTickTokens {
-        sys_tick: tokens.sys_tick,
-        stk_ctrl: tokens.stk_ctrl.into(),
-        stk_load: tokens.stk_load,
-        stk_val: tokens.stk_val,
-      },
-    }
-  }
-
   #[inline(always)]
   pub fn irq(&self) -> ThreadToken<T, I> {
     self.tokens.sys_tick
@@ -80,14 +67,28 @@ impl<T: Thread, I: IrqSysTick> From<SysTick<T, I>>
 }
 
 impl<T: Thread, I: IrqSysTick> Timer for SysTick<T, I> {
-  type Counter = u32;
-  type CtrlVal = stk::ctrl::Val;
+  type InputTokens = SysTickTokens<T, I, Stt>;
+  type Tokens = SysTickTokens<T, I, Ftt>;
+  type Duration = u32;
+  type Ctrl = stk::Ctrl<Ftt>;
+
+  #[inline(always)]
+  fn new(tokens: SysTickTokens<T, I, Stt>) -> Self {
+    Self {
+      tokens: SysTickTokens {
+        sys_tick: tokens.sys_tick,
+        stk_ctrl: tokens.stk_ctrl.into(),
+        stk_load: tokens.stk_load,
+        stk_val: tokens.stk_val,
+      },
+    }
+  }
 
   #[inline]
   fn sleep(
     &mut self,
-    duration: Self::Counter,
-    mut ctrl_val: Self::CtrlVal,
+    duration: Self::Duration,
+    mut ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
   ) -> RoutineFuture<(), ()> {
     ctrl_val = disable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
     self.tokens.stk_ctrl.store_val(ctrl_val);
@@ -105,8 +106,8 @@ impl<T: Thread, I: IrqSysTick> Timer for SysTick<T, I> {
   #[inline]
   fn interval(
     &mut self,
-    duration: Self::Counter,
-    mut ctrl_val: Self::CtrlVal,
+    duration: Self::Duration,
+    mut ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
   ) -> unit::Receiver<()> {
     ctrl_val = disable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
     self.tokens.stk_ctrl.store_val(ctrl_val);
@@ -120,7 +121,7 @@ impl<T: Thread, I: IrqSysTick> Timer for SysTick<T, I> {
   }
 
   #[inline(always)]
-  fn stop(&mut self, mut ctrl_val: Self::CtrlVal) {
+  fn stop(&mut self, mut ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val) {
     ctrl_val = disable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
     self.tokens.stk_ctrl.store_val(ctrl_val);
   }

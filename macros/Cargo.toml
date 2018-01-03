@@ -2,7 +2,7 @@
 name = "drone-cortex-m-macros"
 version = "0.7.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
-description = "Drone for ARM Cortex-M procedural macros."
+description = "Drone for ARM Cortex-M. Procedural macros."
 readme = "README.md"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/drone-os/drone-cortex-m"
