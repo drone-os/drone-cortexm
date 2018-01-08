@@ -23,7 +23,7 @@ use reg::prelude::*;
 #[allow(missing_docs)]
 pub trait GpioPin<T: RegTag>
 where
-  Self: Sized,
+  Self: Sized + 'static,
   Self::Tokens: From<Self>,
 {
   /// Generic GPIO pin tokens.

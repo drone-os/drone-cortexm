@@ -4,14 +4,19 @@ mod sys_tick;
 
 pub use self::sys_tick::{SysTick, SysTickTokens};
 
-use drone_core::sync::spsc::unit;
-use drone_core::thread::RoutineFuture;
+use drone_core::thread::{RoutineFuture, RoutineStreamUnit};
 use reg::prelude::*;
+
+/// Error returned from [`Timer::interval`].
+///
+/// [`Timer::interval`]: trait.Timer.html#method.interval
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TimerOverflow;
 
 /// Generic timer.
 pub trait Timer
 where
-  Self: Sized,
+  Self: Sized + Send + Sync + 'static,
   Self::Tokens: From<Self>,
 {
   /// Generic timer input tokens.
@@ -34,14 +39,21 @@ where
     &mut self,
     duration: Self::Duration,
     ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
-  ) -> RoutineFuture<(), ()>;
+  ) -> RoutineFuture<(), !>;
 
   /// Returns a stream that resolves every `duration` ticks.
   fn interval(
     &mut self,
     duration: Self::Duration,
     ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
-  ) -> unit::Receiver<()>;
+  ) -> RoutineStreamUnit<TimerOverflow>;
+
+  /// Returns a stream that resolves every `duration` ticks. Skips overflow.
+  fn interval_skip(
+    &mut self,
+    duration: Self::Duration,
+    ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
+  ) -> RoutineStreamUnit<!>;
 
   /// Stops the timer.
   fn stop(&mut self, ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val);

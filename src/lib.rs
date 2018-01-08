@@ -32,6 +32,7 @@
 #![feature(const_fn)]
 #![feature(fused)]
 #![feature(generators)]
+#![feature(generator_trait)]
 #![feature(lang_items)]
 #![feature(linkage)]
 #![feature(never_type)]
@@ -74,7 +75,6 @@ pub mod panicking;
 pub mod peripherals;
 pub mod prelude;
 pub mod reg;
-pub mod task;
 pub mod thread;
 
 pub use drone_cortex_m_macros::vtable;

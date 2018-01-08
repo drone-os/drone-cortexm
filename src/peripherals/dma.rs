@@ -10,44 +10,40 @@ use reg::{dma1, dma2};
 use reg::prelude::*;
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x6"))]
-use thread::interrupts::{IrqDma1Ch1, IrqDma1Ch2, IrqDma1Ch3, IrqDma1Ch4,
-                         IrqDma1Ch5, IrqDma1Ch6, IrqDma1Ch7, IrqDma2Ch1,
-                         IrqDma2Ch2, IrqDma2Ch3, IrqDma2Ch4, IrqDma2Ch5,
-                         IrqDma2Ch6, IrqDma2Ch7};
+use thread::irq::{IrqDma1Ch1, IrqDma1Ch2, IrqDma1Ch3, IrqDma1Ch4, IrqDma1Ch5,
+                  IrqDma1Ch6, IrqDma1Ch7, IrqDma2Ch1, IrqDma2Ch2, IrqDma2Ch3,
+                  IrqDma2Ch4, IrqDma2Ch5, IrqDma2Ch6, IrqDma2Ch7};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x3",
           feature = "stm32l4x5"))]
-use thread::interrupts::{IrqDma1Channel1 as IrqDma1Ch1,
-                         IrqDma1Channel2 as IrqDma1Ch2,
-                         IrqDma1Channel3 as IrqDma1Ch3,
-                         IrqDma1Channel4 as IrqDma1Ch4,
-                         IrqDma1Channel5 as IrqDma1Ch5,
-                         IrqDma1Channel6 as IrqDma1Ch6,
-                         IrqDma1Channel7 as IrqDma1Ch7,
-                         IrqDma2Channel1 as IrqDma2Ch1,
-                         IrqDma2Channel2 as IrqDma2Ch2,
-                         IrqDma2Channel3 as IrqDma2Ch3};
+use thread::irq::{IrqDma1Channel1 as IrqDma1Ch1,
+                  IrqDma1Channel2 as IrqDma1Ch2,
+                  IrqDma1Channel3 as IrqDma1Ch3,
+                  IrqDma1Channel4 as IrqDma1Ch4,
+                  IrqDma1Channel5 as IrqDma1Ch5,
+                  IrqDma1Channel6 as IrqDma1Ch6,
+                  IrqDma1Channel7 as IrqDma1Ch7,
+                  IrqDma2Channel1 as IrqDma2Ch1,
+                  IrqDma2Channel2 as IrqDma2Ch2, IrqDma2Channel3 as IrqDma2Ch3};
 #[cfg(any(feature = "stm32f107", feature = "stm32l4x3",
           feature = "stm32l4x5"))]
-use thread::interrupts::{IrqDma2Channel4 as IrqDma2Ch4,
-                         IrqDma2Channel5 as IrqDma2Ch5};
+use thread::irq::{IrqDma2Channel4 as IrqDma2Ch4, IrqDma2Channel5 as IrqDma2Ch5};
 #[cfg(any(feature = "stm32l4x3", feature = "stm32l4x5"))]
-use thread::interrupts::{IrqDma2Channel6 as IrqDma2Ch6,
-                         IrqDma2Channel7 as IrqDma2Ch7};
+use thread::irq::{IrqDma2Channel6 as IrqDma2Ch6, IrqDma2Channel7 as IrqDma2Ch7};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103"))]
-use thread::interrupts::IrqDma2Channel45 as IrqDma2Ch4;
+use thread::irq::IrqDma2Channel45 as IrqDma2Ch4;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103"))]
-use thread::interrupts::IrqDma2Channel45 as IrqDma2Ch5;
+use thread::irq::IrqDma2Channel45 as IrqDma2Ch5;
 use thread::prelude::*;
 
 /// Generic DMA.
 #[allow(missing_docs)]
 pub trait Dma<T, I>
 where
-  Self: Sized,
+  Self: Sized + Send + Sync + 'static,
   Self::Tokens: From<Self>,
   T: Thread,
   I: ThreadNumber,

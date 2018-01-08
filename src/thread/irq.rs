@@ -6,7 +6,13 @@ use drone_core::thread::ThreadNumber;
 #[allow(unused_imports)]
 use thread::prelude::*;
 
-include!(concat!(env!("OUT_DIR"), "/svd_interrupts.rs"));
+include!(concat!(env!("OUT_DIR"), "/svd_irq.rs"));
+
+/// An interrupt.
+pub trait IrqNumber: ThreadNumber {
+  /// An interrupt position within the vector table.
+  const IRQ_NUMBER: usize;
+}
 
 /// Non maskable interrupt.
 pub trait IrqNmi: ThreadNumber {}

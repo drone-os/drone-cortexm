@@ -30,7 +30,7 @@ pub(crate) fn interrupt(input: TokenStream) -> Result<Tokens, Error> {
 
   Ok(quote! {
     #(#attrs)*
-    pub trait #trait_number: InterruptNumber {}
+    pub trait #trait_number: IrqNumber {}
     pub use self::#trait_number as #trait_name;
   })
 }

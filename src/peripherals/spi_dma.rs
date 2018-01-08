@@ -21,27 +21,25 @@ use peripherals::spi::Spi;
 use reg::prelude::*;
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x6"))]
-use thread::interrupts::{IrqDma1Ch2, IrqDma1Ch3, IrqDma1Ch4, IrqDma1Ch5,
-                         IrqDma2Ch1, IrqDma2Ch2, IrqDma2Ch3, IrqDma2Ch4};
+use thread::irq::{IrqDma1Ch2, IrqDma1Ch3, IrqDma1Ch4, IrqDma1Ch5, IrqDma2Ch1,
+                  IrqDma2Ch2, IrqDma2Ch3, IrqDma2Ch4};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x3",
           feature = "stm32l4x5"))]
-use thread::interrupts::{IrqDma1Channel2 as IrqDma1Ch2,
-                         IrqDma1Channel3 as IrqDma1Ch3,
-                         IrqDma1Channel4 as IrqDma1Ch4,
-                         IrqDma1Channel5 as IrqDma1Ch5,
-                         IrqDma2Channel1 as IrqDma2Ch1,
-                         IrqDma2Channel2 as IrqDma2Ch2};
+use thread::irq::{IrqDma1Channel2 as IrqDma1Ch2,
+                  IrqDma1Channel3 as IrqDma1Ch3,
+                  IrqDma1Channel4 as IrqDma1Ch4,
+                  IrqDma1Channel5 as IrqDma1Ch5,
+                  IrqDma2Channel1 as IrqDma2Ch1, IrqDma2Channel2 as IrqDma2Ch2};
 #[cfg(any(feature = "stm32l4x3", feature = "stm32l4x5"))]
-use thread::interrupts::{IrqDma2Channel3 as IrqDma2Ch3,
-                         IrqDma2Channel4 as IrqDma2Ch4};
+use thread::irq::{IrqDma2Channel3 as IrqDma2Ch3, IrqDma2Channel4 as IrqDma2Ch4};
 use thread::prelude::*;
 
 /// Generic SPI with duplex DMA.
 pub trait SpiDmaDx<T, IrqDmaTx, IrqDmaRx>
 where
-  Self: Sized,
+  Self: Sized + Send + Sync + 'static,
   Self::Tokens: From<Self>,
   T: Thread,
   IrqDmaTx: ThreadNumber,
@@ -80,13 +78,13 @@ where
     self,
     cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
     cr2: <<Self::Spi as Spi>::Cr2 as Reg<Ftt>>::Val,
-  ) -> Box<Future<Item = Self, Error = Self>>;
+  ) -> Box<Future<Item = Self, Error = Self> + Send>;
 }
 
 /// Generic SPI with transmit-only DMA.
 pub trait SpiDmaTx<T, IrqDmaTx>
 where
-  Self: Sized,
+  Self: Sized + Send + Sync + 'static,
   Self::Tokens: From<Self>,
   T: Thread,
   IrqDmaTx: ThreadNumber,
@@ -117,13 +115,13 @@ where
     self,
     cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
     cr2: <<Self::Spi as Spi>::Cr2 as Reg<Ftt>>::Val,
-  ) -> Box<Future<Item = Self, Error = Self>>;
+  ) -> Box<Future<Item = Self, Error = Self> + Send>;
 }
 
 /// Generic SPI with receive-only DMA.
 pub trait SpiDmaRx<T, IrqDmaRx>
 where
-  Self: Sized,
+  Self: Sized + Send + Sync + 'static,
   Self::Tokens: From<Self>,
   T: Thread,
   IrqDmaRx: ThreadNumber,
@@ -153,7 +151,7 @@ where
   fn transfer_complete(
     self,
     cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
-  ) -> Box<Future<Item = Self, Error = Self>>;
+  ) -> Box<Future<Item = Self, Error = Self> + Send>;
 }
 
 #[allow(unused_macros)]
@@ -414,7 +412,7 @@ macro_rules! spi_dma {
         self,
         cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
         cr2: <<Self::Spi as Spi>::Cr2 as Reg<Ftt>>::Val,
-      ) -> Box<Future<Item = Self, Error = Self>> {
+      ) -> Box<Future<Item = Self, Error = Self> + Send> {
         let Self::Tokens {
           $spi,
           $dma_tx,
@@ -496,7 +494,7 @@ macro_rules! spi_dma {
         self,
         cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
         cr2: <<Self::Spi as Spi>::Cr2 as Reg<Ftt>>::Val,
-      ) -> Box<Future<Item = Self, Error = Self>> {
+      ) -> Box<Future<Item = Self, Error = Self> + Send> {
         let Self::Tokens {
           $spi,
           $dma_tx,
@@ -567,7 +565,7 @@ macro_rules! spi_dma {
       fn transfer_complete(
         self,
         cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
-      ) -> Box<Future<Item = Self, Error = Self>> {
+      ) -> Box<Future<Item = Self, Error = Self> + Send> {
         let Self::Tokens {
           $spi,
           $dma_rx,

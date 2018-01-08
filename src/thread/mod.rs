@@ -37,29 +37,16 @@
 //!
 //! [`vtable!`]: ../macro.vtable.html
 
-pub mod interrupts;
+pub mod irq;
 pub mod prelude;
+pub mod vtable;
 
+mod future;
+mod notify;
+mod stream;
+mod token;
+
+pub use self::future::PFuture;
+pub use self::stream::{PStream, StreamWait};
+pub use self::token::PThreadToken;
 pub use drone_cortex_m_macros::interrupt;
-
-use drone_core::thread::ThreadNumber;
-
-/// Pointer to an exception handler.
-pub type Handler = unsafe extern "C" fn();
-
-/// Pointer to a reset handler.
-pub type ResetHandler = unsafe extern "C" fn() -> !;
-
-/// Reserved pointer in a vector table.
-#[derive(Clone, Copy)]
-#[repr(usize)]
-pub enum Reserved {
-  /// The only allowed zero-value.
-  Vector = 0,
-}
-
-/// An interrupt.
-pub trait InterruptNumber: ThreadNumber {
-  /// An interrupt position within the vector table.
-  const INTERRUPT_NUMBER: usize;
-}

@@ -1,9 +1,8 @@
-use super::Timer;
-use drone_core::sync::spsc::unit;
-use drone_core::thread::RoutineFuture;
+use super::{Timer, TimerOverflow};
+use drone_core::thread::{RoutineFuture, RoutineStreamUnit};
 use reg::prelude::*;
 use reg::stk;
-use thread::interrupts::IrqSysTick;
+use thread::irq::IrqSysTick;
 use thread::prelude::*;
 
 /// SysTick timer.
@@ -56,6 +55,25 @@ impl<T: Thread, I: IrqSysTick> SysTick<T, I> {
   pub fn val(&self) -> &stk::Val<Stt> {
     &self.tokens.stk_val
   }
+
+  fn interval_stream<F, S>(
+    &mut self,
+    duration: u32,
+    mut ctrl_val: stk::ctrl::Val,
+    f: F,
+  ) -> S
+  where
+    F: FnOnce(ThreadToken<T, I>) -> S,
+    S: Stream,
+  {
+    ctrl_val = disable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
+    self.tokens.stk_ctrl.store_val(ctrl_val);
+    schedule(&self.tokens.stk_load, &self.tokens.stk_val, duration);
+    let stream = f(self.tokens.sys_tick);
+    ctrl_val = enable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
+    self.tokens.stk_ctrl.store_val(ctrl_val);
+    stream
+  }
 }
 
 impl<T: Thread, I: IrqSysTick> From<SysTick<T, I>>
@@ -84,12 +102,11 @@ impl<T: Thread, I: IrqSysTick> Timer for SysTick<T, I> {
     }
   }
 
-  #[inline]
   fn sleep(
     &mut self,
     duration: Self::Duration,
     mut ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
-  ) -> RoutineFuture<(), ()> {
+  ) -> RoutineFuture<(), !> {
     ctrl_val = disable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
     self.tokens.stk_ctrl.store_val(ctrl_val);
     schedule(&self.tokens.stk_load, &self.tokens.stk_val, duration);
@@ -103,21 +120,31 @@ impl<T: Thread, I: IrqSysTick> Timer for SysTick<T, I> {
     future
   }
 
-  #[inline]
   fn interval(
     &mut self,
     duration: Self::Duration,
-    mut ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
-  ) -> unit::Receiver<()> {
-    ctrl_val = disable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
-    self.tokens.stk_ctrl.store_val(ctrl_val);
-    schedule(&self.tokens.stk_load, &self.tokens.stk_val, duration);
-    let stream = self.tokens.sys_tick.stream_skip(|| loop {
-      yield Some(());
-    });
-    ctrl_val = enable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
-    self.tokens.stk_ctrl.store_val(ctrl_val);
-    stream
+    ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
+  ) -> RoutineStreamUnit<TimerOverflow> {
+    self.interval_stream(duration, ctrl_val, |thread| {
+      thread.stream(
+        || Err(TimerOverflow),
+        || loop {
+          yield Some(());
+        },
+      )
+    })
+  }
+
+  fn interval_skip(
+    &mut self,
+    duration: Self::Duration,
+    ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
+  ) -> RoutineStreamUnit<!> {
+    self.interval_stream(duration, ctrl_val, |thread| {
+      thread.stream_skip(|| loop {
+        yield Some(());
+      })
+    })
   }
 
   #[inline(always)]

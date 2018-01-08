@@ -1,7 +1,6 @@
 //! Extended interrupts and events controller.
 
-use drone_core::sync::spsc::unit;
-use drone_core::thread::RoutineFuture;
+use drone_core::thread::{RoutineFuture, RoutineStreamUnit};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
@@ -22,8 +21,8 @@ use reg::syscfg;
           feature = "stm32f107", feature = "stm32l4x1",
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
-use thread::interrupts::{IrqExti0, IrqExti1, IrqExti1510, IrqExti2, IrqExti3,
-                         IrqExti4, IrqExti95};
+use thread::irq::{IrqExti0, IrqExti1, IrqExti1510, IrqExti2, IrqExti3,
+                  IrqExti4, IrqExti95};
 use thread::prelude::*;
 
 /// Error returned from [`ExtiLnExt::stream`].
@@ -36,7 +35,7 @@ pub struct ExtiLnOverflow;
 #[allow(missing_docs)]
 pub trait ExtiLn
 where
-  Self: Sized,
+  Self: Sized + Send + Sync + 'static,
   Self::Tokens: From<Self>,
 {
   /// Generic EXTI line input tokens.
@@ -87,7 +86,11 @@ where
 
   /// Returns a stream, which resolves to `Ok(())` each time the event is
   /// triggered. Resolves to `Err(ExtiLnOverflow)` on overflow.
-  fn stream(&mut self) -> unit::Receiver<ExtiLnOverflow>;
+  fn stream(&mut self) -> RoutineStreamUnit<ExtiLnOverflow>;
+
+  /// Returns a stream, which resolves to `Ok(())` each time the event is
+  /// triggered. Skips on overflow.
+  fn stream_skip(&mut self) -> RoutineStreamUnit<!>;
 }
 
 #[allow(unused_macros)]
@@ -301,6 +304,28 @@ macro_rules! exti_line {
     )*
 
     $(
+      impl<T, $irq_g> $name<T, $irq_g>
+      where
+        T: Thread,
+        $irq_g: $irq_ty,
+      {
+        fn stream_routine<E>(
+          &mut self
+        ) -> impl Generator<
+          Yield = Option<()>,
+          Return = Result<Option<()>, E>,
+        > {
+          let pr = self.pr_mut().fork();
+          move || loop {
+            if pr.read_bit_band() {
+              pr.set_bit_band();
+              yield Some(());
+            }
+            yield None;
+          }
+        }
+      }
+
       impl<T, $irq_g> ExtiLnExt<T, $irq_g> for $name<T, $irq_g>
       where
         T: Thread,
@@ -318,7 +343,6 @@ macro_rules! exti_line {
           &self.tokens.$exticr_exti
         }
 
-        #[inline]
         fn future(&mut self) -> RoutineFuture<(), !> {
           let pr = self.pr_mut().fork();
           self.irq().future(move || loop {
@@ -330,16 +354,12 @@ macro_rules! exti_line {
           })
         }
 
-        #[inline]
-        fn stream(&mut self) -> unit::Receiver<ExtiLnOverflow> {
-          let pr = self.pr_mut().fork();
-          self.irq().stream(|| Err(ExtiLnOverflow), move || loop {
-            if pr.read_bit_band() {
-              pr.set_bit_band();
-              yield Some(());
-            }
-            yield None;
-          })
+        fn stream(&mut self) -> RoutineStreamUnit<ExtiLnOverflow> {
+          self.irq().stream(|| Err(ExtiLnOverflow), self.stream_routine())
+        }
+
+        fn stream_skip(&mut self) -> RoutineStreamUnit<!> {
+          self.irq().stream_skip(self.stream_routine())
         }
       }
     )*

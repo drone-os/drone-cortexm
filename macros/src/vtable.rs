@@ -116,11 +116,11 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
     #[allow(unused_imports)]
     use ::drone_core::thread::ThreadTokens;
     #[allow(unused_imports)]
-    use ::drone_cortex_m::thread::{Handler, Reserved, ResetHandler};
-    #[allow(unused_imports)]
-    use ::drone_cortex_m::thread::interrupts::*;
+    use ::drone_cortex_m::thread::irq::*;
     #[allow(unused_imports)]
     use ::drone_cortex_m::thread::prelude::*;
+    #[allow(unused_imports)]
+    use ::drone_cortex_m::thread::vtable::{Handler, Reserved, ResetHandler};
 
     #(#attrs)*
     #[allow(dead_code)]
@@ -211,8 +211,8 @@ fn parse_thread(
       let irq_trait = Ident::new(format!("Irq{}", number));
       let number = Lit::Int(number, IntTy::Unsuffixed);
       quote! {
-        impl InterruptNumber for #struct_name {
-          const INTERRUPT_NUMBER: usize = #number;
+        impl IrqNumber for #struct_name {
+          const IRQ_NUMBER: usize = #number;
         }
 
         impl #irq_trait for #struct_name {}

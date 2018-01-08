@@ -88,15 +88,15 @@ impl Device {
     self,
     mappings: &mut File,
     tokens: &mut File,
-    interrupts: &mut File,
+    irq: &mut File,
   ) -> Result<(), Error> {
-    let mut interrupt_names = HashSet::new();
+    let mut irq_names = HashSet::new();
     for peripheral in self.peripherals.peripheral.values() {
-      let (mapping_tokens, token_tokens, interrupt_tokens) =
-        peripheral.to_tokens(&self.peripherals, &mut interrupt_names)?;
+      let (mapping_tokens, token_tokens, irq_tokens) =
+        peripheral.to_tokens(&self.peripherals, &mut irq_names)?;
       mappings.write_all(mapping_tokens.as_str().as_bytes())?;
       tokens.write_all(token_tokens.as_str().as_bytes())?;
-      interrupts.write_all(interrupt_tokens.as_str().as_bytes())?;
+      irq.write_all(irq_tokens.as_str().as_bytes())?;
     }
     Ok(())
   }
@@ -106,7 +106,7 @@ impl Peripheral {
   fn to_tokens(
     &self,
     peripherals: &Peripherals,
-    interrupt_names: &mut HashSet<String>,
+    irq_names: &mut HashSet<String>,
   ) -> Result<(Tokens, Tokens, Tokens), Error> {
     let parent = if let Some(ref derived_from) = self.derived_from {
       Some(peripherals
@@ -128,7 +128,7 @@ impl Peripheral {
       .or_else(|| parent.and_then(|x| x.registers.as_ref()))
       .ok_or_else(|| err_msg("Peripheral registers not found"))?
       .to_tokens(self);
-    let interrupts = self.interrupt.to_tokens(interrupt_names);
+    let interrupts = self.interrupt.to_tokens(irq_names);
     Ok((
       quote! {
         mappings! {
@@ -150,14 +150,14 @@ impl Peripheral {
 }
 
 trait Interrupts {
-  fn to_tokens(&self, interrupt_names: &mut HashSet<String>) -> Vec<Tokens>;
+  fn to_tokens(&self, irq_names: &mut HashSet<String>) -> Vec<Tokens>;
 }
 
 impl Interrupts for Vec<Interrupt> {
-  fn to_tokens(&self, interrupt_names: &mut HashSet<String>) -> Vec<Tokens> {
+  fn to_tokens(&self, irq_names: &mut HashSet<String>) -> Vec<Tokens> {
     self
       .iter()
-      .filter(|interrupt| interrupt_names.insert(interrupt.name.to_owned()))
+      .filter(|interrupt| irq_names.insert(interrupt.name.to_owned()))
       .map(|interrupt| {
         let description = &interrupt.description;
         let name = Ident::new(interrupt.name.to_owned());

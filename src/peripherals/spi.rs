@@ -14,14 +14,14 @@ use reg::prelude::*;
           feature = "stm32f107", feature = "stm32l4x1",
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
-use thread::interrupts::{IrqSpi1, IrqSpi2, IrqSpi3};
+use thread::irq::{IrqSpi1, IrqSpi2, IrqSpi3};
 use thread::prelude::*;
 
 /// Generic SPI.
 #[allow(missing_docs)]
-pub trait Spi: Sized
+pub trait Spi
 where
-  Self: Sized,
+  Self: Sized + Send + Sync + 'static,
   Self::Tokens: From<Self>,
 {
   /// Generic SPI input tokens.

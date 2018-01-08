@@ -18,4 +18,4 @@
 
 pub use drone_core::prelude::*;
 
-pub use task::{DroneFuture, DroneStream};
+pub use thread::{PFuture, PStream};
