@@ -114,8 +114,8 @@ mod tests {
     }
   }
 
-  type LocalLowReg = LowReg<Utt>;
-  type LocalHighReg = HighReg<Utt>;
+  type LocalLowReg = LowReg<Urt>;
+  type LocalHighReg = HighReg<Urt>;
 
   #[test]
   fn reg_bit_band_addr() {

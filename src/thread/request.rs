@@ -2,21 +2,25 @@ use futures::executor::{self, Notify};
 use thread::notify::irq::NOTIFY_IRQ;
 use thread::prelude::*;
 
-/// Platform thread token extensions.
-pub trait PThreadToken<T: Thread, U: ThreadNumber> {
+/// Thread execution requests.
+pub trait ThreadRequest<T: ThreadTrigger>: IrqToken<T> {
   /// Executes the future `f` within the thread.
   fn exec<F>(&self, f: F)
   where
-    U: IrqNumber,
     F: IntoFuture<Item = (), Error = !>,
     F::Future: Send + 'static;
+
+  /// Requests the interrupt.
+  #[inline(always)]
+  fn trigger(&self) {
+    NOTIFY_IRQ.notify(Self::IRQ_NUMBER);
+  }
 }
 
-impl<T: Thread, U: ThreadNumber> PThreadToken<T, U> for ThreadToken<T, U> {
+impl<T: ThreadTrigger, U: IrqToken<T>> ThreadRequest<T> for U {
   #[cfg_attr(feature = "clippy", allow(while_let_loop))]
   fn exec<F>(&self, f: F)
   where
-    U: IrqNumber,
     F: IntoFuture<Item = (), Error = !>,
     F::Future: Send + 'static,
   {
@@ -28,6 +32,6 @@ impl<T: Thread, U: ThreadNumber> PThreadToken<T, U> for ThreadToken<T, U> {
       }
       yield;
     });
-    NOTIFY_IRQ.notify(U::IRQ_NUMBER);
+    self.trigger();
   }
 }

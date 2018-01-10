@@ -2,41 +2,59 @@
 
 #[allow(unused_imports)]
 use super::interrupt;
-use drone_core::thread::ThreadNumber;
 #[allow(unused_imports)]
 use thread::prelude::*;
 
 include!(concat!(env!("OUT_DIR"), "/svd_irq.rs"));
 
+/// NVIC register bundle.
+pub trait IrqBundle {
+  /// A number of NVIC register.
+  const BUNDLE_NUMBER: usize;
+}
+
 /// An interrupt.
-pub trait IrqNumber: ThreadNumber {
+pub trait IrqToken<T: ThreadTag>: ThreadToken<T> {
+  /// A number of NVIC register.
+  type Bundle: IrqBundle;
+
   /// An interrupt position within the vector table.
   const IRQ_NUMBER: usize;
 }
 
-/// Non maskable interrupt.
-pub trait IrqNmi: ThreadNumber {}
+macro_rules! exception {
+  ($name:ident, $doc:expr) => {
+    #[doc = $doc]
+    pub trait $name<T: ThreadTag>: ThreadToken<T> {}
+  }
+}
 
-/// All classes of fault.
-pub trait IrqHardFault: ThreadNumber {}
+macro_rules! irq_bundle {
+  ($name:ident, $number:expr, $doc:expr) => {
+    #[doc = $doc]
+    pub struct $name;
 
-/// Memory management.
-pub trait IrqMemManage: ThreadNumber {}
+    impl IrqBundle for $name {
+      const BUNDLE_NUMBER: usize = $number;
+    }
+  }
+}
 
-/// Pre-fetch fault, memory access fault.
-pub trait IrqBusFault: ThreadNumber {}
+exception!(IrqNmi, "Non maskable interrupt.");
+exception!(IrqHardFault, "All classes of fault.");
+exception!(IrqMemManage, "Memory management.");
+exception!(IrqBusFault, "Pre-fetch fault, memory access fault.");
+exception!(IrqUsageFault, "Undefined instruction or illegal state.");
+exception!(IrqSvCall, "System service call via SWI instruction.");
+exception!(IrqDebug, "Monitor.");
+exception!(IrqPendSv, "Pendable request for system service.");
+exception!(IrqSysTick, "System tick timer.");
 
-/// Undefined instruction or illegal state.
-pub trait IrqUsageFault: ThreadNumber {}
-
-/// System service call via SWI instruction.
-pub trait IrqSvCall: ThreadNumber {}
-
-/// Monitor.
-pub trait IrqDebug: ThreadNumber {}
-
-/// Pendable request for system service.
-pub trait IrqPendSv: ThreadNumber {}
-
-/// System tick timer.
-pub trait IrqSysTick: ThreadNumber {}
+irq_bundle!(IrqBundle0, 0, "NVIC register bundle 0.");
+irq_bundle!(IrqBundle1, 1, "NVIC register bundle 1.");
+irq_bundle!(IrqBundle2, 2, "NVIC register bundle 2.");
+irq_bundle!(IrqBundle3, 3, "NVIC register bundle 3.");
+irq_bundle!(IrqBundle4, 4, "NVIC register bundle 4.");
+irq_bundle!(IrqBundle5, 5, "NVIC register bundle 5.");
+irq_bundle!(IrqBundle6, 6, "NVIC register bundle 6.");
+irq_bundle!(IrqBundle7, 7, "NVIC register bundle 7.");

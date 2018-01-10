@@ -3,7 +3,7 @@ members = ["macros", "svd"]
 
 [package]
 name = "drone-cortex-m"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 description = "Drone for ARM Cortex-M."
 readme = "README.md"
@@ -24,11 +24,11 @@ stm32l4x5 = []
 stm32l4x6 = []
 
 [dependencies.drone-cortex-m-macros]
-version = "0.7.0"
+version = "0.8.0"
 path = "macros"
 
 [dependencies.drone-core]
-version = "0.7"
+version = "0.8"
 path = "../drone-core"
 
 [dependencies.futures]
@@ -48,5 +48,5 @@ path = "../drone-test"
 failure = "0.1"
 
 [build-dependencies.drone-cortex-m-svd]
-version = "0.7.0"
+version = "0.8.0"
 path = "svd"

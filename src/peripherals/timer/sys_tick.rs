@@ -6,26 +6,26 @@ use thread::irq::IrqSysTick;
 use thread::prelude::*;
 
 /// SysTick timer.
-pub struct SysTick<T: Thread, I: IrqSysTick> {
-  tokens: SysTickTokens<T, I, Ftt>,
+pub struct SysTick<T: IrqSysTick<Ltt>> {
+  tokens: SysTickTokens<T, Frt>,
 }
 
 /// SysTick timer tokens.
 #[allow(missing_docs)]
-pub struct SysTickTokens<T: Thread, I: IrqSysTick, R: RegTag> {
-  pub sys_tick: ThreadToken<T, I>,
+pub struct SysTickTokens<T: IrqSysTick<Ltt>, R: RegTag> {
+  pub sys_tick: T,
   pub stk_ctrl: stk::Ctrl<R>,
-  pub stk_load: stk::Load<Stt>,
-  pub stk_val: stk::Val<Stt>,
+  pub stk_load: stk::Load<Srt>,
+  pub stk_val: stk::Val<Srt>,
 }
 
 /// Creates a new `SysTick` driver from tokens.
 #[macro_export]
 macro_rules! peripheral_sys_tick {
-  ($thrd:ident, $regs:ident) => {
+  ($regs:ident, $thrd:ident) => {
     $crate::peripherals::timer::SysTick::new(
       $crate::peripherals::timer::SysTickTokens {
-        sys_tick: $thrd.sys_tick,
+        sys_tick: $thrd.sys_tick.into(),
         stk_ctrl: $regs.stk_ctrl,
         stk_load: $regs.stk_load,
         stk_val: $regs.stk_val,
@@ -35,24 +35,24 @@ macro_rules! peripheral_sys_tick {
 }
 
 #[allow(missing_docs)]
-impl<T: Thread, I: IrqSysTick> SysTick<T, I> {
+impl<T: IrqSysTick<Ltt>> SysTick<T> {
   #[inline(always)]
-  pub fn irq(&self) -> ThreadToken<T, I> {
+  pub fn irq(&self) -> T {
     self.tokens.sys_tick
   }
 
   #[inline(always)]
-  pub fn ctrl(&self) -> &stk::Ctrl<Ftt> {
+  pub fn ctrl(&self) -> &stk::Ctrl<Frt> {
     &self.tokens.stk_ctrl
   }
 
   #[inline(always)]
-  pub fn load(&self) -> &stk::Load<Stt> {
+  pub fn load(&self) -> &stk::Load<Srt> {
     &self.tokens.stk_load
   }
 
   #[inline(always)]
-  pub fn val(&self) -> &stk::Val<Stt> {
+  pub fn val(&self) -> &stk::Val<Srt> {
     &self.tokens.stk_val
   }
 
@@ -63,7 +63,7 @@ impl<T: Thread, I: IrqSysTick> SysTick<T, I> {
     f: F,
   ) -> S
   where
-    F: FnOnce(ThreadToken<T, I>) -> S,
+    F: FnOnce(T) -> S,
     S: Stream,
   {
     ctrl_val = disable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
@@ -76,22 +76,21 @@ impl<T: Thread, I: IrqSysTick> SysTick<T, I> {
   }
 }
 
-impl<T: Thread, I: IrqSysTick> From<SysTick<T, I>>
-  for SysTickTokens<T, I, Ftt> {
+impl<T: IrqSysTick<Ltt>> From<SysTick<T>> for SysTickTokens<T, Frt> {
   #[inline(always)]
-  fn from(sys_tick: SysTick<T, I>) -> Self {
+  fn from(sys_tick: SysTick<T>) -> Self {
     sys_tick.tokens
   }
 }
 
-impl<T: Thread, I: IrqSysTick> Timer for SysTick<T, I> {
-  type InputTokens = SysTickTokens<T, I, Stt>;
-  type Tokens = SysTickTokens<T, I, Ftt>;
+impl<T: IrqSysTick<Ltt>> Timer for SysTick<T> {
+  type InputTokens = SysTickTokens<T, Srt>;
+  type Tokens = SysTickTokens<T, Frt>;
   type Duration = u32;
-  type Ctrl = stk::Ctrl<Ftt>;
+  type Ctrl = stk::Ctrl<Frt>;
 
   #[inline(always)]
-  fn new(tokens: SysTickTokens<T, I, Stt>) -> Self {
+  fn new(tokens: SysTickTokens<T, Srt>) -> Self {
     Self {
       tokens: SysTickTokens {
         sys_tick: tokens.sys_tick,
@@ -105,7 +104,7 @@ impl<T: Thread, I: IrqSysTick> Timer for SysTick<T, I> {
   fn sleep(
     &mut self,
     duration: Self::Duration,
-    mut ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
+    mut ctrl_val: <Self::Ctrl as Reg<Frt>>::Val,
   ) -> RoutineFuture<(), !> {
     ctrl_val = disable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
     self.tokens.stk_ctrl.store_val(ctrl_val);
@@ -123,10 +122,10 @@ impl<T: Thread, I: IrqSysTick> Timer for SysTick<T, I> {
   fn interval(
     &mut self,
     duration: Self::Duration,
-    ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
+    ctrl_val: <Self::Ctrl as Reg<Frt>>::Val,
   ) -> RoutineStreamUnit<TimerOverflow> {
-    self.interval_stream(duration, ctrl_val, |thread| {
-      thread.stream(
+    self.interval_stream(duration, ctrl_val, |irq| {
+      irq.stream(
         || Err(TimerOverflow),
         || loop {
           yield Some(());
@@ -138,38 +137,38 @@ impl<T: Thread, I: IrqSysTick> Timer for SysTick<T, I> {
   fn interval_skip(
     &mut self,
     duration: Self::Duration,
-    ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
+    ctrl_val: <Self::Ctrl as Reg<Frt>>::Val,
   ) -> RoutineStreamUnit<!> {
-    self.interval_stream(duration, ctrl_val, |thread| {
-      thread.stream_skip(|| loop {
+    self.interval_stream(duration, ctrl_val, |irq| {
+      irq.stream_skip(|| loop {
         yield Some(());
       })
     })
   }
 
   #[inline(always)]
-  fn stop(&mut self, mut ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val) {
+  fn stop(&mut self, mut ctrl_val: <Self::Ctrl as Reg<Frt>>::Val) {
     ctrl_val = disable(&mut self.tokens.stk_ctrl.hold(ctrl_val)).val();
     self.tokens.stk_ctrl.store_val(ctrl_val);
   }
 }
 
 #[inline(always)]
-fn schedule(stk_load: &stk::Load<Stt>, stk_val: &stk::Val<Stt>, duration: u32) {
+fn schedule(stk_load: &stk::Load<Srt>, stk_val: &stk::Val<Srt>, duration: u32) {
   stk_load.reset(|r| r.write_reload(duration));
   stk_val.reset(|r| r.write_current(0));
 }
 
 #[inline(always)]
 fn enable<'a, 'b>(
-  ctrl: &'a mut stk::ctrl::Hold<'b, Ftt>,
-) -> &'a mut stk::ctrl::Hold<'b, Ftt> {
+  ctrl: &'a mut stk::ctrl::Hold<'b, Frt>,
+) -> &'a mut stk::ctrl::Hold<'b, Frt> {
   ctrl.set_enable().set_tickint()
 }
 
 #[inline(always)]
 fn disable<'a, 'b>(
-  ctrl: &'a mut stk::ctrl::Hold<'b, Ftt>,
-) -> &'a mut stk::ctrl::Hold<'b, Ftt> {
+  ctrl: &'a mut stk::ctrl::Hold<'b, Frt>,
+) -> &'a mut stk::ctrl::Hold<'b, Frt> {
   ctrl.clear_enable().clear_tickint()
 }

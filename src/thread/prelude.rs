@@ -2,5 +2,5 @@
 
 pub use drone_core::thread::prelude::*;
 
-pub use super::PThreadToken;
-pub use super::irq::IrqNumber;
+pub use super::{ThreadControl, ThreadRequest};
+pub use super::irq::IrqToken;

@@ -6,7 +6,7 @@
 #![recursion_limit = "256"]
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
-#![cfg_attr(feature = "clippy", allow(precedence, doc_markdown))]
+#![cfg_attr(feature = "clippy", allow(precedence))]
 
 #[macro_use]
 extern crate drone_macros_core;

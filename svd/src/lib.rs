@@ -1,11 +1,12 @@
 //! Drone ARM Cortex-M SVD bindings generator.
 //!
 //! See `drone-cortex-m` documentation for details.
+
 #![feature(range_contains)]
 #![warn(missing_docs)]
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
-#![cfg_attr(feature = "clippy", allow(precedence, doc_markdown))]
+#![cfg_attr(feature = "clippy", allow(precedence))]
 
 extern crate failure;
 #[macro_use]

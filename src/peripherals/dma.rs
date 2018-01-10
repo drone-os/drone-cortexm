@@ -41,37 +41,36 @@ use thread::prelude::*;
 
 /// Generic DMA.
 #[allow(missing_docs)]
-pub trait Dma<T, I>
+pub trait Dma<T>
 where
   Self: Sized + Send + Sync + 'static,
   Self::Tokens: From<Self>,
-  T: Thread,
-  I: ThreadNumber,
+  T: ThreadToken<Ltt>,
 {
   /// Generic DMA tokens.
   type Tokens;
 
-  type Ccr: for<'a> WRegShared<'a, Stt>;
-  type Cmar: Reg<Stt>;
-  type Cndtr: Reg<Stt>;
-  type Cpar: Reg<Stt>;
+  type Ccr: for<'a> WRegShared<'a, Srt>;
+  type Cmar: Reg<Srt>;
+  type Cndtr: Reg<Srt>;
+  type Cpar: Reg<Srt>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  type CselrCs: RegField<Stt>;
-  type IfcrCgif: RegField<Stt>;
-  type IfcrChtif: RegField<Stt>;
-  type IfcrCtcif: RegField<Stt>;
-  type IfcrCteif: RegField<Stt>;
-  type IsrGif: RegField<Stt>;
-  type IsrHtif: RegField<Stt>;
-  type IsrTcif: RegField<Stt>;
-  type IsrTeif: RegField<Stt>;
+  type CselrCs: RegField<Srt>;
+  type IfcrCgif: RegField<Srt>;
+  type IfcrChtif: RegField<Srt>;
+  type IfcrCtcif: RegField<Srt>;
+  type IfcrCteif: RegField<Srt>;
+  type IsrGif: RegField<Srt>;
+  type IsrHtif: RegField<Srt>;
+  type IsrTcif: RegField<Srt>;
+  type IsrTeif: RegField<Srt>;
 
   /// Creates a new `Dma` driver from provided `tokens`.
   fn new(tokens: Self::Tokens) -> Self;
 
-  fn irq(&self) -> ThreadToken<T, I>;
+  fn irq(&self) -> T;
   fn ccr(&self) -> &Self::Ccr;
   fn cmar(&self) -> &Self::Cmar;
   fn cndtr(&self) -> &Self::Cndtr;
@@ -165,30 +164,30 @@ macro_rules! dma_ch {
     $teif:ident,
   ) => {
     #[doc = $doc]
-    pub struct $name<T: Thread, I: $irq_ty> {
-      tokens: $name_tokens<T, I>,
+    pub struct $name<T: $irq_ty<Ltt>> {
+      tokens: $name_tokens<T>,
     }
 
     #[doc = $doc_tokens]
     #[allow(missing_docs)]
-    pub struct $name_tokens<T: Thread, I: $irq_ty> {
-      pub $irq: ThreadToken<T, I>,
-      pub $dma_ccr: $dma::$ccr_ty<Stt>,
-      pub $dma_cmar: $dma::$cmar_ty<Stt>,
-      pub $dma_cndtr: $dma::$cndtr_ty<Stt>,
-      pub $dma_cpar: $dma::$cpar_ty<Stt>,
+    pub struct $name_tokens<T: $irq_ty<Ltt>> {
+      pub $irq: T,
+      pub $dma_ccr: $dma::$ccr_ty<Srt>,
+      pub $dma_cmar: $dma::$cmar_ty<Srt>,
+      pub $dma_cndtr: $dma::$cndtr_ty<Srt>,
+      pub $dma_cpar: $dma::$cpar_ty<Srt>,
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      pub $dma_cselr_cs: $dma::cselr::$cs_ty<Stt>,
-      pub $dma_ifcr_cgif: $dma::ifcr::$cgif_ty<Stt>,
-      pub $dma_ifcr_chtif: $dma::ifcr::$chtif_ty<Stt>,
-      pub $dma_ifcr_ctcif: $dma::ifcr::$ctcif_ty<Stt>,
-      pub $dma_ifcr_cteif: $dma::ifcr::$cteif_ty<Stt>,
-      pub $dma_isr_gif: $dma::isr::$gif_ty<Stt>,
-      pub $dma_isr_htif: $dma::isr::$htif_ty<Stt>,
-      pub $dma_isr_tcif: $dma::isr::$tcif_ty<Stt>,
-      pub $dma_isr_teif: $dma::isr::$teif_ty<Stt>,
+      pub $dma_cselr_cs: $dma::cselr::$cs_ty<Srt>,
+      pub $dma_ifcr_cgif: $dma::ifcr::$cgif_ty<Srt>,
+      pub $dma_ifcr_chtif: $dma::ifcr::$chtif_ty<Srt>,
+      pub $dma_ifcr_ctcif: $dma::ifcr::$ctcif_ty<Srt>,
+      pub $dma_ifcr_cteif: $dma::ifcr::$cteif_ty<Srt>,
+      pub $dma_isr_gif: $dma::isr::$gif_ty<Srt>,
+      pub $dma_isr_htif: $dma::isr::$htif_ty<Srt>,
+      pub $dma_isr_tcif: $dma::isr::$tcif_ty<Srt>,
+      pub $dma_isr_teif: $dma::isr::$teif_ty<Srt>,
     }
 
     #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -197,10 +196,10 @@ macro_rules! dma_ch {
     /// Creates a new `Dma` driver from tokens.
     #[macro_export]
     macro_rules! $name_macro {
-      ($thrd:ident, $regs:ident) => {
+      ($regs:ident, $thrd:ident) => {
         $crate::peripherals::dma::Dma::new(
           $crate::peripherals::dma::$name_tokens {
-            $irq: $thrd.$irq,
+            $irq: $thrd.$irq.into(),
             $dma_ccr: $regs.$dma_ccr,
             $dma_cmar: $regs.$dma_cmar,
             $dma_cndtr: $regs.$dma_cndtr,
@@ -225,10 +224,10 @@ macro_rules! dma_ch {
     /// Creates a new `Dma` driver from tokens.
     #[macro_export]
     macro_rules! $name_macro {
-      ($thrd:ident, $regs:ident) => {
+      ($regs:ident, $thrd:ident) => {
         $crate::peripherals::dma::Dma::new(
           $crate::peripherals::dma::$name_tokens {
-            $irq: $thrd.$irq,
+            $irq: $thrd.$irq.into(),
             $dma_ccr: $regs.$dma_ccr,
             $dma_cmar: $regs.$dma_cmar,
             $dma_cndtr: $regs.$dma_cndtr,
@@ -246,31 +245,31 @@ macro_rules! dma_ch {
       }
     }
 
-    impl<T: Thread, I: $irq_ty> From<$name<T, I>> for $name_tokens<T, I> {
+    impl<T: $irq_ty<Ltt>> From<$name<T>> for $name_tokens<T> {
       #[inline(always)]
-      fn from(dma: $name<T, I>) -> Self {
+      fn from(dma: $name<T>) -> Self {
         dma.tokens
       }
     }
 
-    impl<T: Thread, I: $irq_ty> Dma<T, I> for $name<T, I> {
-      type Tokens = $name_tokens<T, I>;
-      type Ccr = $dma::$ccr_ty<Stt>;
-      type Cmar = $dma::$cmar_ty<Stt>;
-      type Cndtr = $dma::$cndtr_ty<Stt>;
-      type Cpar = $dma::$cpar_ty<Stt>;
+    impl<T: $irq_ty<Ltt>> Dma<T> for $name<T> {
+      type Tokens = $name_tokens<T>;
+      type Ccr = $dma::$ccr_ty<Srt>;
+      type Cmar = $dma::$cmar_ty<Srt>;
+      type Cndtr = $dma::$cndtr_ty<Srt>;
+      type Cpar = $dma::$cpar_ty<Srt>;
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      type CselrCs = $dma::cselr::$cs_ty<Stt>;
-      type IfcrCgif = $dma::ifcr::$cgif_ty<Stt>;
-      type IfcrChtif = $dma::ifcr::$chtif_ty<Stt>;
-      type IfcrCtcif = $dma::ifcr::$ctcif_ty<Stt>;
-      type IfcrCteif = $dma::ifcr::$cteif_ty<Stt>;
-      type IsrGif = $dma::isr::$gif_ty<Stt>;
-      type IsrHtif = $dma::isr::$htif_ty<Stt>;
-      type IsrTcif = $dma::isr::$tcif_ty<Stt>;
-      type IsrTeif = $dma::isr::$teif_ty<Stt>;
+      type CselrCs = $dma::cselr::$cs_ty<Srt>;
+      type IfcrCgif = $dma::ifcr::$cgif_ty<Srt>;
+      type IfcrChtif = $dma::ifcr::$chtif_ty<Srt>;
+      type IfcrCtcif = $dma::ifcr::$ctcif_ty<Srt>;
+      type IfcrCteif = $dma::ifcr::$cteif_ty<Srt>;
+      type IsrGif = $dma::isr::$gif_ty<Srt>;
+      type IsrHtif = $dma::isr::$htif_ty<Srt>;
+      type IsrTcif = $dma::isr::$tcif_ty<Srt>;
+      type IsrTeif = $dma::isr::$teif_ty<Srt>;
 
       #[inline(always)]
       fn new(tokens: Self::Tokens) -> Self {
@@ -278,7 +277,7 @@ macro_rules! dma_ch {
       }
 
       #[inline(always)]
-      fn irq(&self) -> ThreadToken<T, I> {
+      fn irq(&self) -> T {
         self.tokens.$irq
       }
 
@@ -382,8 +381,7 @@ macro_rules! dma_ch {
 
       #[inline]
       fn transfer_complete(self) -> RoutineFuture<Self, Self> {
-        let irq = self.irq();
-        irq.future(move || loop {
+        self.irq().future(move || loop {
           if self.isr_teif().read_bit_band() {
             self.ifcr_cgif().set_bit_band();
             break Err(self);
@@ -398,8 +396,7 @@ macro_rules! dma_ch {
 
       #[inline]
       fn half_transfer(self) -> RoutineFuture<Self, Self> {
-        let irq = self.irq();
-        irq.future(move || loop {
+        self.irq().future(move || loop {
           if self.isr_teif().read_bit_band() {
             self.ifcr_cgif().set_bit_band();
             break Err(self);

@@ -37,13 +37,12 @@ use thread::irq::{IrqDma2Channel3 as IrqDma2Ch3, IrqDma2Channel4 as IrqDma2Ch4};
 use thread::prelude::*;
 
 /// Generic SPI with duplex DMA.
-pub trait SpiDmaDx<T, IrqDmaTx, IrqDmaRx>
+pub trait SpiDmaDx<Tx, Rx>
 where
   Self: Sized + Send + Sync + 'static,
   Self::Tokens: From<Self>,
-  T: Thread,
-  IrqDmaTx: ThreadNumber,
-  IrqDmaRx: ThreadNumber,
+  Tx: ThreadToken<Ltt>,
+  Rx: ThreadToken<Ltt>,
 {
   /// Generic SPI with duplex DMA tokens.
   type Tokens;
@@ -52,10 +51,10 @@ where
   type Spi: Spi;
 
   /// DMA transmitting channel.
-  type DmaTx: Dma<T, IrqDmaTx>;
+  type DmaTx: Dma<Tx>;
 
   /// DMA receiving channel.
-  type DmaRx: Dma<T, IrqDmaRx>;
+  type DmaRx: Dma<Rx>;
 
   /// Creates a new `SpiDmaDx` driver from provided `tokens`.
   fn new(tokens: Self::Tokens) -> Self;
@@ -76,18 +75,17 @@ where
   /// complete.
   fn transfer_complete(
     self,
-    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
-    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Ftt>>::Val,
+    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Frt>>::Val,
+    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Frt>>::Val,
   ) -> Box<Future<Item = Self, Error = Self> + Send>;
 }
 
 /// Generic SPI with transmit-only DMA.
-pub trait SpiDmaTx<T, IrqDmaTx>
+pub trait SpiDmaTx<Tx>
 where
   Self: Sized + Send + Sync + 'static,
   Self::Tokens: From<Self>,
-  T: Thread,
-  IrqDmaTx: ThreadNumber,
+  Tx: ThreadToken<Ltt>,
 {
   /// Generic SPI with transmit-only DMA tokens.
   type Tokens;
@@ -96,7 +94,7 @@ where
   type Spi: Spi;
 
   /// DMA transmitting channel.
-  type DmaTx: Dma<T, IrqDmaTx>;
+  type DmaTx: Dma<Tx>;
 
   /// Creates a new `SpiDmaTx` driver from provided `tokens`.
   fn new(tokens: Self::Tokens) -> Self;
@@ -113,18 +111,17 @@ where
   /// Returns a future, which resolves on DMA transmit complete.
   fn transfer_complete(
     self,
-    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
-    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Ftt>>::Val,
+    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Frt>>::Val,
+    cr2: <<Self::Spi as Spi>::Cr2 as Reg<Frt>>::Val,
   ) -> Box<Future<Item = Self, Error = Self> + Send>;
 }
 
 /// Generic SPI with receive-only DMA.
-pub trait SpiDmaRx<T, IrqDmaRx>
+pub trait SpiDmaRx<Rx>
 where
   Self: Sized + Send + Sync + 'static,
   Self::Tokens: From<Self>,
-  T: Thread,
-  IrqDmaRx: ThreadNumber,
+  Rx: ThreadToken<Ltt>,
 {
   /// Generic SPI with receive-only DMA tokens.
   type Tokens;
@@ -133,7 +130,7 @@ where
   type Spi: Spi;
 
   /// DMA receiving channel.
-  type DmaRx: Dma<T, IrqDmaRx>;
+  type DmaRx: Dma<Rx>;
 
   /// Creates a new `SpiDmaRx` driver from provided `tokens`.
   fn new(tokens: Self::Tokens) -> Self;
@@ -150,7 +147,7 @@ where
   /// Returns a future, which resolves on DMA receive complete.
   fn transfer_complete(
     self,
-    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
+    cr1: <<Self::Spi as Spi>::Cr1 as Reg<Frt>>::Val,
   ) -> Box<Future<Item = Self, Error = Self> + Send>;
 }
 
@@ -188,77 +185,51 @@ macro_rules! spi_dma {
     $dma_rx_cs:expr,
   ) => {
     #[doc = $doc_dx]
-    pub struct $name_dx<T, IrqDmaTx, IrqDmaRx>
-    where
-      T: Thread,
-      IrqDmaTx: $irq_dma_tx,
-      IrqDmaRx: $irq_dma_rx,
-    {
-      tokens: $name_dx_tokens<T, IrqDmaTx, IrqDmaRx>,
+    pub struct $name_dx<Tx: $irq_dma_tx<Ltt>, Rx: $irq_dma_rx<Ltt>> {
+      tokens: $name_dx_tokens<Tx, Rx>,
     }
 
     #[doc = $doc_tx]
-    pub struct $name_tx<T, IrqDmaTx>
-    where
-      T: Thread,
-      IrqDmaTx: $irq_dma_tx,
-    {
-      tokens: $name_tx_tokens<T, IrqDmaTx>,
+    pub struct $name_tx<Tx: $irq_dma_tx<Ltt>> {
+      tokens: $name_tx_tokens<Tx>,
     }
 
     #[doc = $doc_rx]
-    pub struct $name_rx<T, IrqDmaRx>
-    where
-      T: Thread,
-      IrqDmaRx: $irq_dma_rx,
-    {
-      tokens: $name_rx_tokens<T, IrqDmaRx>,
+    pub struct $name_rx<Rx: $irq_dma_rx<Ltt>> {
+      tokens: $name_rx_tokens<Rx>,
     }
 
     #[doc = $doc_dx_tokens]
     #[allow(missing_docs)]
-    pub struct $name_dx_tokens<T, IrqDmaTx, IrqDmaRx>
-    where
-      T: Thread,
-      IrqDmaTx: $irq_dma_tx,
-      IrqDmaRx: $irq_dma_rx,
-    {
+    pub struct $name_dx_tokens<Tx: $irq_dma_tx<Ltt>, Rx: $irq_dma_rx<Ltt>> {
       pub $spi: $spi_ty,
-      pub $dma_tx: $dma_tx_ty<T, IrqDmaTx>,
-      pub $dma_rx: $dma_rx_ty<T, IrqDmaRx>,
+      pub $dma_tx: $dma_tx_ty<Tx>,
+      pub $dma_rx: $dma_rx_ty<Rx>,
     }
 
     #[doc = $doc_tx_tokens]
     #[allow(missing_docs)]
-    pub struct $name_tx_tokens<T, IrqDmaTx>
-    where
-      T: Thread,
-      IrqDmaTx: $irq_dma_tx,
-    {
+    pub struct $name_tx_tokens<Tx: $irq_dma_tx<Ltt>> {
       pub $spi: $spi_ty,
-      pub $dma_tx: $dma_tx_ty<T, IrqDmaTx>,
+      pub $dma_tx: $dma_tx_ty<Tx>,
     }
 
     #[doc = $doc_rx_tokens]
     #[allow(missing_docs)]
-    pub struct $name_rx_tokens<T, IrqDmaRx>
-    where
-      T: Thread,
-      IrqDmaRx: $irq_dma_rx,
-    {
+    pub struct $name_rx_tokens<Rx: $irq_dma_rx<Ltt>> {
       pub $spi: $spi_ty,
-      pub $dma_rx: $dma_rx_ty<T, IrqDmaRx>,
+      pub $dma_rx: $dma_rx_ty<Rx>,
     }
 
     /// Creates a new `SpiDmaDx` driver from tokens.
     #[macro_export]
     macro_rules! $name_dx_macro {
-      ($thrd:ident, $regs:ident) => {
+      ($regs:ident, $thrd:ident) => {
         $crate::peripherals::spi_dma::SpiDmaDx::new(
           $crate::peripherals::spi_dma::$name_dx_tokens {
             $spi: $spi_macro!($regs),
-            $dma_tx: $dma_tx_macro!($thrd, $regs),
-            $dma_rx: $dma_rx_macro!($thrd, $regs),
+            $dma_tx: $dma_tx_macro!($regs, $thrd),
+            $dma_rx: $dma_rx_macro!($regs, $thrd),
           }
         )
       }
@@ -267,11 +238,11 @@ macro_rules! spi_dma {
     /// Creates a new `SpiDmaTx` driver from tokens.
     #[macro_export]
     macro_rules! $name_tx_macro {
-      ($thrd:ident, $regs:ident) => {
+      ($regs:ident, $thrd:ident) => {
         $crate::peripherals::spi_dma::SpiDmaTx::new(
           $crate::peripherals::spi_dma::$name_tx_tokens {
             $spi: $spi_macro!($regs),
-            $dma_tx: $dma_tx_macro!($thrd, $regs),
+            $dma_tx: $dma_tx_macro!($regs, $thrd),
           }
         )
       }
@@ -280,22 +251,17 @@ macro_rules! spi_dma {
     /// Creates a new `SpiDmaRx` driver from tokens.
     #[macro_export]
     macro_rules! $name_rx_macro {
-      ($thrd:ident, $regs:ident) => {
+      ($regs:ident, $thrd:ident) => {
         $crate::peripherals::spi_dma::SpiDmaRx::new(
           $crate::peripherals::spi_dma::$name_rx_tokens {
             $spi: $spi_macro!($regs),
-            $dma_rx: $dma_rx_macro!($thrd, $regs),
+            $dma_rx: $dma_rx_macro!($regs, $thrd),
           }
         )
       }
     }
 
-    impl<T, IrqDmaTx, IrqDmaRx> $name_dx<T, IrqDmaTx, IrqDmaRx>
-    where
-      T: Thread,
-      IrqDmaTx: $irq_dma_tx,
-      IrqDmaRx: $irq_dma_rx,
-    {
+    impl<Tx: $irq_dma_tx<Ltt>, Rx: $irq_dma_rx<Ltt>> $name_dx<Tx, Rx> {
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
@@ -314,11 +280,7 @@ macro_rules! spi_dma {
       fn select_channels(&self) {}
     }
 
-    impl<T, IrqDmaTx> $name_tx<T, IrqDmaTx>
-    where
-      T: Thread,
-      IrqDmaTx: $irq_dma_tx,
-    {
+    impl<Tx: $irq_dma_tx<Ltt>> $name_tx<Tx> {
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
@@ -334,11 +296,7 @@ macro_rules! spi_dma {
       fn select_channel(&self) {}
     }
 
-    impl<T, IrqDmaRx> $name_rx<T, IrqDmaRx>
-    where
-      T: Thread,
-      IrqDmaRx: $irq_dma_rx,
-    {
+    impl<Rx: $irq_dma_rx<Ltt>> $name_rx<Rx> {
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
@@ -354,30 +312,26 @@ macro_rules! spi_dma {
       fn select_channel(&self) {}
     }
 
-    impl<T, IrqDmaTx, IrqDmaRx> From<$name_dx<T, IrqDmaTx, IrqDmaRx>>
-      for $name_dx_tokens<T, IrqDmaTx, IrqDmaRx>
+    impl<Tx, Rx> From<$name_dx<Tx, Rx>> for $name_dx_tokens<Tx, Rx>
     where
-      T: Thread,
-      IrqDmaTx: $irq_dma_tx,
-      IrqDmaRx: $irq_dma_rx,
+      Tx: $irq_dma_tx<Ltt>,
+      Rx: $irq_dma_rx<Ltt>,
     {
       #[inline(always)]
-      fn from(spi_dma_dx: $name_dx<T, IrqDmaTx, IrqDmaRx>) -> Self {
+      fn from(spi_dma_dx: $name_dx<Tx, Rx>) -> Self {
         spi_dma_dx.tokens
       }
     }
 
-    impl<T, IrqDmaTx, IrqDmaRx> SpiDmaDx<T, IrqDmaTx, IrqDmaRx>
-      for $name_dx<T, IrqDmaTx, IrqDmaRx>
+    impl<Tx, Rx> SpiDmaDx<Tx, Rx> for $name_dx<Tx, Rx>
     where
-      T: Thread,
-      IrqDmaTx: $irq_dma_tx,
-      IrqDmaRx: $irq_dma_rx,
+      Tx: $irq_dma_tx<Ltt>,
+      Rx: $irq_dma_rx<Ltt>,
     {
-      type Tokens = $name_dx_tokens<T, IrqDmaTx, IrqDmaRx>;
+      type Tokens = $name_dx_tokens<Tx, Rx>;
       type Spi = $spi_ty;
-      type DmaTx = $dma_tx_ty<T, IrqDmaTx>;
-      type DmaRx = $dma_rx_ty<T, IrqDmaRx>;
+      type DmaTx = $dma_tx_ty<Tx>;
+      type DmaRx = $dma_rx_ty<Rx>;
 
       #[inline(always)]
       fn new(tokens: Self::Tokens) -> Self {
@@ -410,8 +364,8 @@ macro_rules! spi_dma {
       #[inline]
       fn transfer_complete(
         self,
-        cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
-        cr2: <<Self::Spi as Spi>::Cr2 as Reg<Ftt>>::Val,
+        cr1: <<Self::Spi as Spi>::Cr1 as Reg<Frt>>::Val,
+        cr2: <<Self::Spi as Spi>::Cr2 as Reg<Frt>>::Val,
       ) -> Box<Future<Item = Self, Error = Self> + Send> {
         let Self::Tokens {
           $spi,
@@ -446,26 +400,23 @@ macro_rules! spi_dma {
       }
     }
 
-    impl<T, IrqDmaTx> From<$name_tx<T, IrqDmaTx>>
-      for $name_tx_tokens<T, IrqDmaTx>
+    impl<Tx> From<$name_tx<Tx>> for $name_tx_tokens<Tx>
     where
-      T: Thread,
-      IrqDmaTx: $irq_dma_tx,
+      Tx: $irq_dma_tx<Ltt>,
     {
       #[inline(always)]
-      fn from(spi_dma_tx: $name_tx<T, IrqDmaTx>) -> Self {
+      fn from(spi_dma_tx: $name_tx<Tx>) -> Self {
         spi_dma_tx.tokens
       }
     }
 
-    impl<T, IrqDmaTx> SpiDmaTx<T, IrqDmaTx> for $name_tx<T, IrqDmaTx>
+    impl<Tx> SpiDmaTx<Tx> for $name_tx<Tx>
     where
-      T: Thread,
-      IrqDmaTx: $irq_dma_tx,
+      Tx: $irq_dma_tx<Ltt>,
     {
-      type Tokens = $name_tx_tokens<T, IrqDmaTx>;
+      type Tokens = $name_tx_tokens<Tx>;
       type Spi = $spi_ty;
-      type DmaTx = $dma_tx_ty<T, IrqDmaTx>;
+      type DmaTx = $dma_tx_ty<Tx>;
 
       #[inline(always)]
       fn new(tokens: Self::Tokens) -> Self {
@@ -492,8 +443,8 @@ macro_rules! spi_dma {
       #[inline]
       fn transfer_complete(
         self,
-        cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
-        cr2: <<Self::Spi as Spi>::Cr2 as Reg<Ftt>>::Val,
+        cr1: <<Self::Spi as Spi>::Cr1 as Reg<Frt>>::Val,
+        cr2: <<Self::Spi as Spi>::Cr2 as Reg<Frt>>::Val,
       ) -> Box<Future<Item = Self, Error = Self> + Send> {
         let Self::Tokens {
           $spi,
@@ -518,26 +469,23 @@ macro_rules! spi_dma {
       }
     }
 
-    impl<T, IrqDmaRx> From<$name_rx<T, IrqDmaRx>>
-      for $name_rx_tokens<T, IrqDmaRx>
+    impl<Rx> From<$name_rx<Rx>> for $name_rx_tokens<Rx>
     where
-      T: Thread,
-      IrqDmaRx: $irq_dma_rx,
+      Rx: $irq_dma_rx<Ltt>,
     {
       #[inline(always)]
-      fn from(spi_dma_rx: $name_rx<T, IrqDmaRx>) -> Self {
+      fn from(spi_dma_rx: $name_rx<Rx>) -> Self {
         spi_dma_rx.tokens
       }
     }
 
-    impl<T, IrqDmaRx> SpiDmaRx<T, IrqDmaRx> for $name_rx<T, IrqDmaRx>
+    impl<Rx> SpiDmaRx<Rx> for $name_rx<Rx>
     where
-      T: Thread,
-      IrqDmaRx: $irq_dma_rx,
+      Rx: $irq_dma_rx<Ltt>,
     {
-      type Tokens = $name_rx_tokens<T, IrqDmaRx>;
+      type Tokens = $name_rx_tokens<Rx>;
       type Spi = $spi_ty;
-      type DmaRx = $dma_rx_ty<T, IrqDmaRx>;
+      type DmaRx = $dma_rx_ty<Rx>;
 
       #[inline(always)]
       fn new(tokens: Self::Tokens) -> Self {
@@ -564,7 +512,7 @@ macro_rules! spi_dma {
       #[inline]
       fn transfer_complete(
         self,
-        cr1: <<Self::Spi as Spi>::Cr1 as Reg<Ftt>>::Val,
+        cr1: <<Self::Spi as Spi>::Cr1 as Reg<Frt>>::Val,
       ) -> Box<Future<Item = Self, Error = Self> + Send> {
         let Self::Tokens {
           $spi,

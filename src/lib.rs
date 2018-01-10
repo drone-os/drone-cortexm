@@ -36,6 +36,7 @@
 #![feature(lang_items)]
 #![feature(linkage)]
 #![feature(never_type)]
+#![feature(pointer_methods)]
 #![feature(prelude_import)]
 #![feature(proc_macro)]
 #![feature(range_contains)]
@@ -52,7 +53,7 @@
 #![cfg_attr(test, default_lib_allocator)]
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
-#![cfg_attr(feature = "clippy", allow(precedence, doc_markdown, inline_always))]
+#![cfg_attr(feature = "clippy", allow(precedence, inline_always))]
 
 #[cfg(test)]
 extern crate alloc;

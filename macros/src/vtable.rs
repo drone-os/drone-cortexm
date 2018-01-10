@@ -114,7 +114,11 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
 
   Ok(quote! {
     #[allow(unused_imports)]
-    use ::drone_core::thread::ThreadTokens;
+    use ::core::ops::Deref;
+    #[allow(unused_imports)]
+    use ::core::marker::PhantomData;
+    #[allow(unused_imports)]
+    use ::drone_cortex_m::peripherals;
     #[allow(unused_imports)]
     use ::drone_cortex_m::thread::irq::*;
     #[allow(unused_imports)]
@@ -174,8 +178,11 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
       #(#thread_tokens_struct_tokens),*
     }
 
-    impl ThreadTokens<#thread_local> for #tokens_name {
-      unsafe fn new() -> Self {
+    impl ThreadTokens for #tokens_name {
+      type Thread = #thread_local;
+      type Tokens = peripherals::nvic::Nvic;
+
+      fn new(_tokens: Self::Tokens) -> Self {
         Self {
           #(#thread_tokens_impl_tokens),*
         }
@@ -209,19 +216,22 @@ fn parse_thread(
   let interrupt = match number {
     Some(number) => {
       let irq_trait = Ident::new(format!("Irq{}", number));
+      let bundle = Ident::new(format!("IrqBundle{}", number / 32));
       let number = Lit::Int(number, IntTy::Unsuffixed);
       quote! {
-        impl IrqNumber for #struct_name {
+        impl<T: ThreadTag> IrqToken<T> for #struct_name<T> {
+          type Bundle = #bundle;
+
           const IRQ_NUMBER: usize = #number;
         }
 
-        impl #irq_trait for #struct_name {}
+        impl<T: ThreadTag> #irq_trait<T> for #struct_name<T> {}
       }
     }
     None => {
       let irq_trait = Ident::new(format!("Irq{}", struct_name));
       quote! {
-        impl #irq_trait for #struct_name {}
+        impl<T: ThreadTag> #irq_trait<T> for #struct_name<T> {}
       }
     }
   };
@@ -229,26 +239,68 @@ fn parse_thread(
   Ok((
     quote! {
       #(#attrs)*
-      pub struct #struct_name;
+      #[derive(Clone, Copy)]
+      pub struct #struct_name<T: ThreadTag> {
+        _tag: PhantomData<T>,
+      }
 
-      impl ThreadNumber for #struct_name {
+      impl<T: ThreadTag> #struct_name<T> {
+        #[inline(always)]
+        unsafe fn new() -> Self {
+          Self { _tag: PhantomData }
+        }
+      }
+
+      impl<T: ThreadTag> ThreadToken<T> for #struct_name<T> {
+        type Thread = #thread_local;
+
         const THREAD_NUMBER: usize = #index;
+      }
+
+      impl<T: ThreadTag> Deref for #struct_name<T> {
+        type Target = #thread_local;
+
+        #[inline(always)]
+        fn deref(&self) -> &#thread_local {
+          self.as_thread()
+        }
+      }
+
+      impl From<#struct_name<Ctt>> for #struct_name<Ttt> {
+        #[inline(always)]
+        fn from(_token: #struct_name<Ctt>) -> Self {
+          unsafe { Self::new() }
+        }
+      }
+
+      impl From<#struct_name<Ctt>> for #struct_name<Ltt> {
+        #[inline(always)]
+        fn from(_token: #struct_name<Ctt>) -> Self {
+          unsafe { Self::new() }
+        }
+      }
+
+      impl From<#struct_name<Ttt>> for #struct_name<Ltt> {
+        #[inline(always)]
+        fn from(_token: #struct_name<Ttt>) -> Self {
+          unsafe { Self::new() }
+        }
       }
 
       #interrupt
     },
     quote! {
-      #field_name: Some(ThreadToken::<#thread_local, #struct_name>::handler)
+      #field_name: Some(#struct_name::<Ltt>::handler)
     },
     quote! {
       #thread_local::new(#index)
     },
     quote! {
       #(#attrs)*
-      pub #field_name: ThreadToken<#thread_local, #struct_name>
+      pub #field_name: #struct_name<Ctt>
     },
     quote! {
-      #field_name: ThreadToken::<#thread_local, #struct_name>::new()
+      #field_name: unsafe { #struct_name::new() }
     },
   ))
 }

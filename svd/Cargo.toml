@@ -1,6 +1,6 @@
 [package]
 name = "drone-cortex-m-svd"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 description = "Drone for ARM Cortex-M bindings generator."
 readme = "README.md"

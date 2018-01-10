@@ -1,6 +1,6 @@
 [package]
 name = "drone-cortex-m-macros"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 description = "Drone for ARM Cortex-M. Procedural macros."
 readme = "README.md"
@@ -16,7 +16,7 @@ quote = "0.3"
 Inflector = "0.11"
 
 [dependencies.drone-macros-core]
-version = "0.7"
+version = "0.8"
 path = "../../drone-core/macros-core"
 
 [dependencies.syn]

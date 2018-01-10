@@ -37,8 +37,8 @@ mod vtable1 {
 
   drone_core::thread::thread_local!(ThreadLocal; THREADS);
 
-  trait Irq10 {}
-  trait Irq5 {}
+  trait Irq10<T: ThreadTag>: IrqToken<T> {}
+  trait Irq5<T: ThreadTag>: IrqToken<T> {}
 
   drone_cortex_m::vtable! {
     /// Test doc attribute

@@ -41,12 +41,14 @@ pub mod irq;
 pub mod prelude;
 pub mod vtable;
 
+mod control;
 mod future;
 mod notify;
+mod request;
 mod stream;
-mod token;
 
+pub use self::control::ThreadControl;
 pub use self::future::PFuture;
+pub use self::request::ThreadRequest;
 pub use self::stream::{PStream, StreamWait};
-pub use self::token::PThreadToken;
 pub use drone_cortex_m_macros::interrupt;

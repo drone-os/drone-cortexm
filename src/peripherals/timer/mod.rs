@@ -29,7 +29,7 @@ where
   type Duration;
 
   /// Timer control register.
-  type Ctrl: for<'a> WRegShared<'a, Ftt>;
+  type Ctrl: for<'a> WRegShared<'a, Frt>;
 
   /// Creates a new `Timer` driver from provided `tokens`.
   fn new(tokens: Self::InputTokens) -> Self;
@@ -38,23 +38,23 @@ where
   fn sleep(
     &mut self,
     duration: Self::Duration,
-    ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
+    ctrl_val: <Self::Ctrl as Reg<Frt>>::Val,
   ) -> RoutineFuture<(), !>;
 
   /// Returns a stream that resolves every `duration` ticks.
   fn interval(
     &mut self,
     duration: Self::Duration,
-    ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
+    ctrl_val: <Self::Ctrl as Reg<Frt>>::Val,
   ) -> RoutineStreamUnit<TimerOverflow>;
 
   /// Returns a stream that resolves every `duration` ticks. Skips overflow.
   fn interval_skip(
     &mut self,
     duration: Self::Duration,
-    ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val,
+    ctrl_val: <Self::Ctrl as Reg<Frt>>::Val,
   ) -> RoutineStreamUnit<!>;
 
   /// Stops the timer.
-  fn stop(&mut self, ctrl_val: <Self::Ctrl as Reg<Ftt>>::Val);
+  fn stop(&mut self, ctrl_val: <Self::Ctrl as Reg<Frt>>::Val);
 }

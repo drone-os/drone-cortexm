@@ -30,13 +30,13 @@ where
   /// Generic SPI tokens.
   type Tokens;
 
-  type Cr1: for<'a> WRegShared<'a, Ftt>;
-  type Cr2: for<'a> WRegShared<'a, Ftt>;
-  type Crcpr: Reg<Stt>;
-  type Dr: Reg<Stt>;
-  type Rxcrcr: Reg<Stt>;
-  type Sr: Reg<Stt>;
-  type Txcrcr: Reg<Stt>;
+  type Cr1: for<'a> WRegShared<'a, Frt>;
+  type Cr2: for<'a> WRegShared<'a, Frt>;
+  type Crcpr: Reg<Srt>;
+  type Dr: Reg<Srt>;
+  type Rxcrcr: Reg<Srt>;
+  type Sr: Reg<Srt>;
+  type Txcrcr: Reg<Srt>;
 
   /// Creates a new `Spi` driver from provided `tokens`.
   fn new(tokens: Self::InputTokens) -> Self;
@@ -65,14 +65,14 @@ where
   fn busy_wait(&self);
 
   /// Moves `self` into `f` while `SPE` is cleared, and then sets `SPE`.
-  fn spe_after<F, R>(self, cr1_val: <Self::Cr1 as Reg<Ftt>>::Val, f: F) -> R
+  fn spe_after<F, R>(self, cr1_val: <Self::Cr1 as Reg<Frt>>::Val, f: F) -> R
   where
     F: FnOnce(Self) -> R;
 
   /// Moves `self` into `f` while `TXDMAEN` is cleared, and then sets `TXDMAEN`.
   fn txdmaen_after<F, R>(
     self,
-    cr2_val: <Self::Cr2 as Reg<Ftt>>::Val,
+    cr2_val: <Self::Cr2 as Reg<Frt>>::Val,
     f: F,
   ) -> R
   where
@@ -81,8 +81,8 @@ where
 
 /// Generic interrupt-driven SPI.
 #[allow(missing_docs)]
-pub trait SpiIrq<T: Thread, I: ThreadNumber>: Spi {
-  fn irq(&self) -> ThreadToken<T, I>;
+pub trait SpiIrq<T: ThreadToken<Ltt>>: Spi {
+  fn irq(&self) -> T;
 }
 
 #[allow(unused_macros)]
@@ -97,13 +97,13 @@ macro_rules! spi_shared {
     $spi_sr:ident,
     $spi_txcrcr:ident,
   ) => {
-    type Cr1 = $spi::Cr1<Ftt>;
-    type Cr2 = $spi::Cr2<Ftt>;
-    type Crcpr = $spi::Crcpr<Stt>;
-    type Dr = $spi::Dr<Stt>;
-    type Rxcrcr = $spi::Rxcrcr<Stt>;
-    type Sr = $spi::Sr<Stt>;
-    type Txcrcr = $spi::Txcrcr<Stt>;
+    type Cr1 = $spi::Cr1<Frt>;
+    type Cr2 = $spi::Cr2<Frt>;
+    type Crcpr = $spi::Crcpr<Srt>;
+    type Dr = $spi::Dr<Srt>;
+    type Rxcrcr = $spi::Rxcrcr<Srt>;
+    type Sr = $spi::Sr<Srt>;
+    type Txcrcr = $spi::Txcrcr<Srt>;
 
     #[inline(always)]
     fn cr1(&self) -> &Self::Cr1 {
@@ -172,7 +172,7 @@ macro_rules! spi_shared {
     #[inline]
     fn spe_after<F, R>(
       mut self,
-      mut cr1_val: <Self::Cr1 as Reg<Ftt>>::Val,
+      mut cr1_val: <Self::Cr1 as Reg<Frt>>::Val,
       f: F,
     ) -> R
     where
@@ -191,7 +191,7 @@ macro_rules! spi_shared {
     #[inline]
     fn txdmaen_after<F, R>(
       mut self,
-      mut cr2_val: <Self::Cr2 as Reg<Ftt>>::Val,
+      mut cr2_val: <Self::Cr2 as Reg<Frt>>::Val,
       f: F,
     ) -> R
     where
@@ -234,12 +234,12 @@ macro_rules! spi {
   ) => {
     #[doc = $doc]
     pub struct $name {
-      tokens: $name_tokens<Ftt>,
+      tokens: $name_tokens<Frt>,
     }
 
     #[doc = $doc_irq]
-    pub struct $name_irq<T: Thread, I: $irq_ty> {
-      tokens: $name_irq_tokens<T, I, Ftt>,
+    pub struct $name_irq<T: $irq_ty<Ltt>> {
+      tokens: $name_irq_tokens<T, Frt>,
     }
 
     #[doc = $doc_tokens]
@@ -247,24 +247,24 @@ macro_rules! spi {
     pub struct $name_tokens<R: RegTag> {
       pub $spi_cr1: $spi::Cr1<R>,
       pub $spi_cr2: $spi::Cr2<R>,
-      pub $spi_crcpr: $spi::Crcpr<Stt>,
-      pub $spi_dr: $spi::Dr<Stt>,
-      pub $spi_rxcrcr: $spi::Rxcrcr<Stt>,
-      pub $spi_sr: $spi::Sr<Stt>,
-      pub $spi_txcrcr: $spi::Txcrcr<Stt>,
+      pub $spi_crcpr: $spi::Crcpr<Srt>,
+      pub $spi_dr: $spi::Dr<Srt>,
+      pub $spi_rxcrcr: $spi::Rxcrcr<Srt>,
+      pub $spi_sr: $spi::Sr<Srt>,
+      pub $spi_txcrcr: $spi::Txcrcr<Srt>,
     }
 
     #[doc = $doc_irq_tokens]
     #[allow(missing_docs)]
-    pub struct $name_irq_tokens<T: Thread, I: $irq_ty, R: RegTag> {
-      pub $spi: ThreadToken<T, I>,
+    pub struct $name_irq_tokens<T: $irq_ty<Ltt>, R: RegTag> {
+      pub $spi: T,
       pub $spi_cr1: $spi::Cr1<R>,
       pub $spi_cr2: $spi::Cr2<R>,
-      pub $spi_crcpr: $spi::Crcpr<Stt>,
-      pub $spi_dr: $spi::Dr<Stt>,
-      pub $spi_rxcrcr: $spi::Rxcrcr<Stt>,
-      pub $spi_sr: $spi::Sr<Stt>,
-      pub $spi_txcrcr: $spi::Txcrcr<Stt>,
+      pub $spi_crcpr: $spi::Crcpr<Srt>,
+      pub $spi_dr: $spi::Dr<Srt>,
+      pub $spi_rxcrcr: $spi::Rxcrcr<Srt>,
+      pub $spi_sr: $spi::Sr<Srt>,
+      pub $spi_txcrcr: $spi::Txcrcr<Srt>,
     }
 
     /// Creates a new `Spi` driver from tokens.
@@ -288,10 +288,10 @@ macro_rules! spi {
     /// Creates a new `SpiIrq` driver from tokens.
     #[macro_export]
     macro_rules! $name_irq_macro {
-      ($thrd:ident, $regs:ident) => {
+      ($regs:ident, $thrd:ident) => {
         $crate::peripherals::spi::SpiIrq::new(
           $crate::peripherals::spi::$name_irq_tokens {
-            $spi: $thrd.$spi,
+            $spi: $thrd.$spi.into(),
             $spi_cr1: $regs.$spi_cr1,
             $spi_cr2: $regs.$spi_cr2,
             $spi_crcpr: $regs.$spi_crcpr,
@@ -304,7 +304,7 @@ macro_rules! spi {
       }
     }
 
-    impl From<$name> for $name_tokens<Ftt> {
+    impl From<$name> for $name_tokens<Frt> {
       #[inline(always)]
       fn from(spi: $name) -> Self {
         spi.tokens
@@ -312,8 +312,8 @@ macro_rules! spi {
     }
 
     impl Spi for $name {
-      type InputTokens = $name_tokens<Stt>;
-      type Tokens = $name_tokens<Ftt>;
+      type InputTokens = $name_tokens<Srt>;
+      type Tokens = $name_tokens<Frt>;
 
       #[inline(always)]
       fn new(tokens: Self::InputTokens) -> Self {
@@ -342,20 +342,16 @@ macro_rules! spi {
       }
     }
 
-    impl<T, I> From<$name_irq<T, I>> for $name_irq_tokens<T, I, Ftt>
-    where
-      T: Thread,
-      I: $irq_ty,
-    {
+    impl<T: $irq_ty<Ltt>> From<$name_irq<T>> for $name_irq_tokens<T, Frt> {
       #[inline(always)]
-      fn from(spi_irq: $name_irq<T, I>) -> Self {
+      fn from(spi_irq: $name_irq<T>) -> Self {
         spi_irq.tokens
       }
     }
 
-    impl<T: Thread, I: $irq_ty> Spi for $name_irq<T, I> {
-      type InputTokens = $name_irq_tokens<T, I, Stt>;
-      type Tokens = $name_irq_tokens<T, I, Ftt>;
+    impl<T: $irq_ty<Ltt>> Spi for $name_irq<T> {
+      type InputTokens = $name_irq_tokens<T, Srt>;
+      type Tokens = $name_irq_tokens<T, Frt>;
 
       #[inline(always)]
       fn new(tokens: Self::InputTokens) -> Self {
@@ -385,9 +381,9 @@ macro_rules! spi {
       }
     }
 
-    impl<T: Thread, I: $irq_ty> SpiIrq<T, I> for $name_irq<T, I> {
+    impl<T: $irq_ty<Ltt>> SpiIrq<T> for $name_irq<T> {
       #[inline(always)]
-      fn irq(&self) -> ThreadToken<T, I> {
+      fn irq(&self) -> T {
         self.tokens.$spi
       }
     }
