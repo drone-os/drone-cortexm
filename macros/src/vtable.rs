@@ -180,9 +180,9 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
 
     impl ThreadTokens for #tokens_name {
       type Thread = #thread_local;
-      type Tokens = peripherals::nvic::Nvic;
+      type Token = peripherals::nvic::Nvic;
 
-      fn new(_tokens: Self::Tokens) -> Self {
+      fn new(_token: Self::Token) -> Self {
         Self {
           #(#thread_tokens_impl_tokens),*
         }

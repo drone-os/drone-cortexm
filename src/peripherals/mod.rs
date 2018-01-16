@@ -1,4 +1,4 @@
-//! Peripheral drivers.
+//! Peripheral devices.
 
 pub mod dma;
 pub mod exti;

@@ -1,6 +1,6 @@
 //! Extended interrupts and events controller.
 
-use drone_core::thread::{RoutineFuture, RoutineStreamUnit};
+use drone_core::peripheral::{PeripheralDevice, PeripheralTokens};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
@@ -25,71 +25,179 @@ use thread::irq::{IrqExti0, IrqExti1, IrqExti1510, IrqExti2, IrqExti3,
                   IrqExti4, IrqExti95};
 use thread::prelude::*;
 
-/// Error returned from [`ExtiLnExt::stream`].
+/// Error returned from [`ExtiLn::stream`].
 ///
-/// [`ExtiLnExt::stream`]: trait.ExtiLnExt.html#method.stream
+/// [`ExtiLn::stream`]: struct.ExtiLn.html#method.stream
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExtiLnOverflow;
 
 /// Generic EXTI line.
+pub struct ExtiLn<T: ExtiLnTokens>(T);
+
+/// Generic EXTI line tokens.
 #[allow(missing_docs)]
-pub trait ExtiLn
-where
-  Self: Sized + Send + Sync + 'static,
-  Self::Tokens: From<Self>,
-{
-  /// Generic EXTI line input tokens.
-  type InputTokens;
+pub trait ExtiLnTokens: PeripheralTokens {
+  type Emr: RwRegShared<Srt> + RegBitBand<Srt>;
+  type EmrMr: RegField<Srt, Reg = Self::Emr>
+    + WRwRegFieldBitShared<Srt>
+    + RRegFieldBitBand<Srt>
+    + WRegFieldBitBand<Srt>;
+  type Imr: RwRegShared<Srt> + RegBitBand<Srt>;
+  type ImrMr: RegField<Srt, Reg = Self::Imr>
+    + WRwRegFieldBitShared<Srt>
+    + RRegFieldBitBand<Srt>
+    + WRegFieldBitBand<Srt>;
 
-  /// Generic EXTI line tokens.
-  type Tokens;
-
-  type Emr: RegField<Srt>;
-  type Imr: RegField<Srt>;
-
-  /// Creates a new `ExtiLn` driver from provided `tokens`.
-  fn new(tokens: Self::InputTokens) -> Self;
-
-  fn emr(&self) -> &Self::Emr;
-  fn imr(&self) -> &Self::Imr;
+  fn emr_mr(&self) -> &Self::EmrMr;
+  fn imr_mr(&self) -> &Self::ImrMr;
 }
 
-/// Generic configurable EXTI line.
+/// Generic configurable EXTI line tokens.
 #[allow(missing_docs)]
-pub trait ExtiLnConf: ExtiLn {
-  type Ftsr: RegField<Srt>;
-  type Pr: RegField<Frt>;
-  type Rtsr: RegField<Srt>;
-  type Swier: RegField<Srt>;
+pub trait ExtiLnTokensConf: ExtiLnTokens {
+  type Ftsr: RwRegShared<Srt> + RegBitBand<Srt>;
+  type FtsrFt: RegField<Srt, Reg = Self::Ftsr>
+    + WRwRegFieldBitShared<Srt>
+    + RRegFieldBitBand<Srt>
+    + WRegFieldBitBand<Srt>;
+  type Pr: RwRegShared<Frt> + RegBitBand<Frt>;
+  type PrPif: RegField<Frt, Reg = Self::Pr>
+    + WRwRegFieldBitShared<Frt>
+    + RRegFieldBitBand<Frt>
+    + WRegFieldBitBand<Frt>
+    + RegFork;
+  type Rtsr: RwRegShared<Srt> + RegBitBand<Srt>;
+  type RtsrRt: RegField<Srt, Reg = Self::Rtsr>
+    + WRwRegFieldBitShared<Srt>
+    + RRegFieldBitBand<Srt>
+    + WRegFieldBitBand<Srt>;
+  type Swier: RwRegShared<Srt> + RegBitBand<Srt>;
+  type SwierSwi: RegField<Srt, Reg = Self::Swier>
+    + WRwRegFieldBitShared<Srt>
+    + RRegFieldBitBand<Srt>
+    + WRegFieldBitBand<Srt>;
 
-  fn ftsr(&self) -> &Self::Ftsr;
-  fn pr(&self) -> &Self::Pr;
-  fn rtsr(&self) -> &Self::Rtsr;
-  fn swier(&self) -> &Self::Swier;
+  fn ftsr_ft(&self) -> &Self::FtsrFt;
+  fn pr_pif(&self) -> &Self::PrPif;
+  fn pr_pif_mut(&mut self) -> &mut Self::PrPif;
+  fn rtsr_rt(&self) -> &Self::RtsrRt;
+  fn swier_swi(&self) -> &Self::SwierSwi;
 }
 
-/// Generic EXTI line with external interrupt support.
+/// Generic EXTI line tokens with external interrupt support.
 #[allow(missing_docs)]
-pub trait ExtiLnExt<T>
-where
-  Self: ExtiLn + ExtiLnConf,
-  T: ThreadToken<Ltt>,
-{
-  type Exticr: RegField<Srt>;
+pub trait ExtiLnTokensExt: ExtiLnTokens {
+  type Irq: IrqToken<Ltt>;
+  type Exticr: RwRegShared<Srt>;
+  type ExticrExti: RegField<Srt, Reg = Self::Exticr>
+    + RRegFieldBits<Srt>
+    + WRwRegFieldBitsShared<Srt>;
 
-  fn irq(&self) -> T;
-  fn exticr(&self) -> &Self::Exticr;
+  fn irq(&self) -> Self::Irq;
+  fn exticr_exti(&self) -> &Self::ExticrExti;
+}
 
+impl<T: ExtiLnTokens> PeripheralDevice<T> for ExtiLn<T> {
+  #[inline(always)]
+  fn from_tokens(tokens: T::InputTokens) -> Self {
+    ExtiLn(tokens.into())
+  }
+
+  #[inline(always)]
+  fn into_tokens(self) -> T {
+    self.0
+  }
+}
+
+#[allow(missing_docs)]
+impl<T: ExtiLnTokens> ExtiLn<T> {
+  #[inline(always)]
+  pub fn emr_mr(&self) -> &T::EmrMr {
+    self.0.emr_mr()
+  }
+
+  #[inline(always)]
+  pub fn imr_mr(&self) -> &T::ImrMr {
+    self.0.imr_mr()
+  }
+}
+
+#[allow(missing_docs)]
+impl<T: ExtiLnTokensConf> ExtiLn<T> {
+  #[inline(always)]
+  pub fn ftsr_ft(&self) -> &T::FtsrFt {
+    self.0.ftsr_ft()
+  }
+
+  #[inline(always)]
+  pub fn pr_pif(&self) -> &T::PrPif {
+    self.0.pr_pif()
+  }
+
+  #[inline(always)]
+  pub fn rtsr_rt(&self) -> &T::RtsrRt {
+    self.0.rtsr_rt()
+  }
+
+  #[inline(always)]
+  pub fn swier_swi(&self) -> &T::SwierSwi {
+    self.0.swier_swi()
+  }
+}
+
+#[allow(missing_docs)]
+impl<T: ExtiLnTokensExt> ExtiLn<T> {
+  #[inline(always)]
+  pub fn irq(&self) -> T::Irq {
+    self.0.irq()
+  }
+
+  #[inline(always)]
+  pub fn exticr_exti(&self) -> &T::ExticrExti {
+    self.0.exticr_exti()
+  }
+}
+
+impl<T: ExtiLnTokensExt + ExtiLnTokensConf> ExtiLn<T> {
   /// Returns a future, which resolves to `Ok(())` when the event is triggered.
-  fn future(&mut self) -> RoutineFuture<(), !>;
+  pub fn future(&mut self) -> impl Future<Item = (), Error = !> {
+    let pif = self.0.pr_pif_mut().fork();
+    self.0.irq().future(move || loop {
+      if pif.read_bit_band() {
+        pif.set_bit_band();
+        break Ok(());
+      }
+      yield;
+    })
+  }
 
   /// Returns a stream, which resolves to `Ok(())` each time the event is
   /// triggered. Resolves to `Err(ExtiLnOverflow)` on overflow.
-  fn stream(&mut self) -> RoutineStreamUnit<ExtiLnOverflow>;
+  pub fn stream(&mut self) -> impl Stream<Item = (), Error = ExtiLnOverflow> {
+    self
+      .0
+      .irq()
+      .stream(|| Err(ExtiLnOverflow), self.stream_routine())
+  }
 
   /// Returns a stream, which resolves to `Ok(())` each time the event is
   /// triggered. Skips on overflow.
-  fn stream_skip(&mut self) -> RoutineStreamUnit<!>;
+  pub fn stream_skip(&mut self) -> impl Stream<Item = (), Error = !> {
+    self.0.irq().stream_skip(self.stream_routine())
+  }
+
+  fn stream_routine<E>(
+    &mut self,
+  ) -> impl Generator<Yield = Option<()>, Return = Result<Option<()>, E>> {
+    let pif = self.0.pr_pif_mut().fork();
+    move || loop {
+      if pif.read_bit_band() {
+        pif.set_bit_band();
+        yield Some(());
+      }
+      yield None;
+    }
+  }
 }
 
 #[allow(unused_macros)]
@@ -109,7 +217,8 @@ macro_rules! exti_line {
     $exti_imr_mr:ident,
     $mr:ident,
     ($((
-      $irq_g:ident: $irq_ty:ident,
+      $i_tp:ident: $irq_ty:ident,
+      ($($frt_i:ident)*),
       $exti_ty:ident,
       $irq:ident,
       $($exticr_path:ident)::*,
@@ -118,8 +227,8 @@ macro_rules! exti_line {
       $exti:ident,
     ))*),
     ($((
-      ($($conf_irq_g:ident: $conf_irq_ty:ident)*),
-      $tag_g:ident: $tag_sbt:ident $tag_fbt:ident,
+      ($($i_tp_c:ident: $irq_ty_c:ident, $irq_c:ident, $exticr_exti_c:ident)*),
+      $rt_tp:ident: $srt:ident $frt:ident,
       $ft_ty:ident,
       $pif_ty:ident,
       $rt_ty:ident,
@@ -143,24 +252,18 @@ macro_rules! exti_line {
     ))*),
   ) => {
     #[doc = $doc]
-    pub struct $name<$($irq_g: $irq_ty<Ltt>),*> {
-      tokens: $name_tokens<$($irq_g,)* $($tag_fbt,)*>,
-    }
+    pub type $name<$($i_tp,)*> = ExtiLn<$name_tokens<$($i_tp,)* $($frt,)*>>;
 
     #[doc = $doc_tokens]
     #[allow(missing_docs)]
-    pub struct $name_tokens<$($irq_g,)* $($tag_g,)*>
-    where
-      $($irq_g: $irq_ty<Ltt>,)*
-      $($tag_g: RegTag,)*
-    {
+    pub struct $name_tokens<$($i_tp: $irq_ty<Ltt>,)* $($rt_tp: RegTag,)*> {
       $(
-        pub $irq: $irq_g,
+        pub $irq: $i_tp,
         pub $exticr_exti: $($exticr_path)::*::$exti_ty<Srt>,
       )*
       $(
         pub $exti_ftsr_ft: exti::$ftsr_path::$ft_ty<Srt>,
-        pub $exti_pr_pif: exti::$pr_path::$pif_ty<$tag_g>,
+        pub $exti_pr_pif: exti::$pr_path::$pif_ty<$rt_tp>,
         pub $exti_rtsr_rt: exti::$rtsr_path::$rt_ty<Srt>,
         pub $exti_swier_swi: exti::$swier_path::$swi_ty<Srt>,
       )*
@@ -168,11 +271,11 @@ macro_rules! exti_line {
       pub $exti_imr_mr: exti::$imr_path::$mr_ty<Srt>,
     }
 
-    /// Creates a new `ExtiLn` driver from tokens.
+    /// Creates a new `ExtiLn`.
     #[macro_export]
     macro_rules! $name_macro {
       ($regs:ident, $thrd:ident) => {
-        $crate::peripherals::exti::ExtiLn::new(
+        $crate::peripherals::exti::ExtiLn::from_tokens(
           $crate::peripherals::exti::$name_tokens {
             $(
               $irq: $thrd.$irq.into(),
@@ -191,149 +294,115 @@ macro_rules! exti_line {
       }
     }
 
-    impl<$($irq_g),*> From<$name<$($irq_g),*>>
-      for $name_tokens<$($irq_g,)* $($tag_fbt,)*>
-    where
-      $($irq_g: $irq_ty<Ltt>,)*
-    {
-      #[inline(always)]
-      fn from(exti_ln: $name<$($irq_g),*>) -> Self {
-        exti_ln.tokens
-      }
-    }
-
-    impl<$($irq_g),*> ExtiLn for $name<$($irq_g),*>
-    where
-      $($irq_g: $irq_ty<Ltt>,)*
-    {
-      type InputTokens = $name_tokens<$($irq_g,)* $($tag_sbt,)*>;
-      type Tokens = $name_tokens<$($irq_g,)* $($tag_fbt,)*>;
-      type Emr = exti::$emr_path::$mr_ty<Srt>;
-      type Imr = exti::$imr_path::$mr_ty<Srt>;
-
-      #[inline(always)]
-      fn new(tokens: Self::InputTokens) -> Self {
-        Self {
-          tokens: Self::Tokens {
+    $(
+      impl<$($i_tp_c,)*> From<$name_tokens<$($i_tp_c,)* $srt>>
+        for $name_tokens<$($i_tp_c,)* $frt>
+      where
+        $($i_tp_c: $irq_ty_c<Ltt>,)*
+      {
+        #[inline(always)]
+        fn from(tokens: $name_tokens<$($i_tp_c,)* $srt>) -> Self {
+          Self {
             $(
-              $irq: tokens.$irq,
-              $exticr_exti: tokens.$exticr_exti,
+              $irq_c: tokens.$irq_c,
+              $exticr_exti_c: tokens.$exticr_exti_c,
             )*
-            $(
-              $exti_ftsr_ft: tokens.$exti_ftsr_ft,
-              $exti_pr_pif: tokens.$exti_pr_pif.into(),
-              $exti_rtsr_rt: tokens.$exti_rtsr_rt,
-              $exti_swier_swi: tokens.$exti_swier_swi,
-            )*
+            $exti_ftsr_ft: tokens.$exti_ftsr_ft,
+            $exti_pr_pif: tokens.$exti_pr_pif.into(),
+            $exti_rtsr_rt: tokens.$exti_rtsr_rt,
+            $exti_swier_swi: tokens.$exti_swier_swi,
             $exti_emr_mr: tokens.$exti_emr_mr,
             $exti_imr_mr: tokens.$exti_imr_mr,
           }
         }
       }
+    )*
+
+    impl<$($i_tp,)*> PeripheralTokens for $name_tokens<$($i_tp,)* $($frt,)*>
+    where
+      $($i_tp: $irq_ty<Ltt>,)*
+    {
+      type InputTokens = $name_tokens<$($i_tp,)* $($srt,)*>;
+    }
+
+    impl<$($i_tp,)*> ExtiLnTokens for $name_tokens<$($i_tp,)* $($frt,)*>
+    where
+      $($i_tp: $irq_ty<Ltt>,)*
+    {
+      type Emr = exti::$emr_path::Reg<Srt>;
+      type EmrMr = exti::$emr_path::$mr_ty<Srt>;
+      type Imr = exti::$imr_path::Reg<Srt>;
+      type ImrMr = exti::$imr_path::$mr_ty<Srt>;
 
       #[inline(always)]
-      fn emr(&self) -> &Self::Emr {
-        &self.tokens.$exti_emr_mr
+      fn emr_mr(&self) -> &Self::EmrMr {
+        &self.$exti_emr_mr
       }
 
       #[inline(always)]
-      fn imr(&self) -> &Self::Imr {
-        &self.tokens.$exti_imr_mr
+      fn imr_mr(&self) -> &Self::ImrMr {
+        &self.$exti_imr_mr
       }
     }
 
     $(
-      impl<$($conf_irq_g),*> ExtiLnConf for $name<$($conf_irq_g),*>
+      impl<$($i_tp_c,)*> ExtiLnTokensConf for $name_tokens<$($i_tp_c,)* Frt>
       where
-        $($conf_irq_g: $conf_irq_ty<Ltt>,)*
+        $($i_tp_c: $irq_ty_c<Ltt>,)*
       {
-        type Ftsr = exti::$ftsr_path::$ft_ty<Srt>;
-        type Pr = exti::$pr_path::$pif_ty<Frt>;
-        type Rtsr = exti::$rtsr_path::$rt_ty<Srt>;
-        type Swier = exti::$swier_path::$swi_ty<Srt>;
+        type Ftsr = exti::$ftsr_path::Reg<Srt>;
+        type FtsrFt = exti::$ftsr_path::$ft_ty<Srt>;
+        type Pr = exti::$pr_path::Reg<Frt>;
+        type PrPif = exti::$pr_path::$pif_ty<Frt>;
+        type Rtsr = exti::$rtsr_path::Reg<Srt>;
+        type RtsrRt = exti::$rtsr_path::$rt_ty<Srt>;
+        type Swier = exti::$swier_path::Reg<Srt>;
+        type SwierSwi = exti::$swier_path::$swi_ty<Srt>;
 
         #[inline(always)]
-        fn ftsr(&self) -> &Self::Ftsr {
-          &self.tokens.$exti_ftsr_ft
+        fn ftsr_ft(&self) -> &Self::FtsrFt {
+          &self.$exti_ftsr_ft
         }
 
         #[inline(always)]
-        fn pr(&self) -> &Self::Pr {
-          &self.tokens.$exti_pr_pif
+        fn pr_pif(&self) -> &Self::PrPif {
+          &self.$exti_pr_pif
         }
 
         #[inline(always)]
-        fn rtsr(&self) -> &Self::Rtsr {
-          &self.tokens.$exti_rtsr_rt
+        fn pr_pif_mut(&mut self) -> &mut Self::PrPif {
+          &mut self.$exti_pr_pif
         }
 
         #[inline(always)]
-        fn swier(&self) -> &Self::Swier {
-          &self.tokens.$exti_swier_swi
+        fn rtsr_rt(&self) -> &Self::RtsrRt {
+          &self.$exti_rtsr_rt
         }
-      }
 
-      impl<$($conf_irq_g),*> $name<$($conf_irq_g),*>
-      where
-        $($conf_irq_g: $conf_irq_ty<Ltt>,)*
-      {
-        #[allow(dead_code)]
         #[inline(always)]
-        fn pr_mut(&mut self) -> &mut <Self as ExtiLnConf>::Pr {
-          &mut self.tokens.$exti_pr_pif
+        fn swier_swi(&self) -> &Self::SwierSwi {
+          &self.$exti_swier_swi
         }
       }
     )*
 
     $(
-      impl<$irq_g: $irq_ty<Ltt>> $name<$irq_g> {
-        fn stream_routine<E>(
-          &mut self
-        ) -> impl Generator<
-          Yield = Option<()>,
-          Return = Result<Option<()>, E>,
-        > {
-          let pr = self.pr_mut().fork();
-          move || loop {
-            if pr.read_bit_band() {
-              pr.set_bit_band();
-              yield Some(());
-            }
-            yield None;
-          }
-        }
-      }
-
-      impl<$irq_g: $irq_ty<Ltt>> ExtiLnExt<$irq_g> for $name<$irq_g> {
-        type Exticr = $($exticr_path)::*::$exti_ty<Srt>;
+      impl<$i_tp> ExtiLnTokensExt for $name_tokens<$i_tp, $($frt_i,)*>
+      where
+        $i_tp: $irq_ty<Ltt>,
+      {
+        type Irq = $i_tp;
+        type Exticr = $($exticr_path)::*::Reg<Srt>;
+        type ExticrExti = $($exticr_path)::*::$exti_ty<Srt>;
 
         #[inline(always)]
-        fn irq(&self) -> $irq_g {
-          self.tokens.$irq
+        fn irq(&self) -> Self::Irq {
+          self.$irq
         }
 
         #[inline(always)]
-        fn exticr(&self) -> &Self::Exticr {
-          &self.tokens.$exticr_exti
-        }
-
-        fn future(&mut self) -> RoutineFuture<(), !> {
-          let pr = self.pr_mut().fork();
-          self.irq().future(move || loop {
-            if pr.read_bit_band() {
-              pr.set_bit_band();
-              break Ok(());
-            }
-            yield;
-          })
-        }
-
-        fn stream(&mut self) -> RoutineStreamUnit<ExtiLnOverflow> {
-          self.irq().stream(|| Err(ExtiLnOverflow), self.stream_routine())
-        }
-
-        fn stream_skip(&mut self) -> RoutineStreamUnit<!> {
-          self.irq().stream_skip(self.stream_routine())
+        fn exticr_exti(&self) -> &Self::ExticrExti {
+          &self.$exticr_exti
         }
       }
     )*
@@ -358,7 +427,8 @@ exti_line! {
   exti_imr_mr0,
   mr0,
   ((
-    T: IrqExti0,
+    I: IrqExti0,
+    (Frt),
     Exti0,
     exti0,
     afio::exticr1,
@@ -367,8 +437,8 @@ exti_line! {
     exti0,
   )),
   ((
-    (T: IrqExti0),
-    R: Srt Frt,
+    (I: IrqExti0, exti0, afio_exticr1_exti0),
+    Rt: Srt Frt,
     Tr0,
     Pr0,
     Tr0,
@@ -410,7 +480,8 @@ exti_line! {
   exti_imr_mr1,
   mr1,
   ((
-    T: IrqExti1,
+    I: IrqExti1,
+    (Frt),
     Exti1,
     exti1,
     afio::exticr1,
@@ -419,8 +490,8 @@ exti_line! {
     exti1,
   )),
   ((
-    (T: IrqExti1),
-    R: Srt Frt,
+    (I: IrqExti1, exti1, afio_exticr1_exti1),
+    Rt: Srt Frt,
     Tr1,
     Pr1,
     Tr1,
@@ -462,7 +533,8 @@ exti_line! {
   exti_imr_mr2,
   mr2,
   ((
-    T: IrqExti2,
+    I: IrqExti2,
+    (Frt),
     Exti2,
     exti2,
     afio::exticr1,
@@ -471,8 +543,8 @@ exti_line! {
     exti2,
   )),
   ((
-    (T: IrqExti2),
-    R: Srt Frt,
+    (I: IrqExti2, exti2, afio_exticr1_exti2),
+    Rt: Srt Frt,
     Tr2,
     Pr2,
     Tr2,
@@ -514,7 +586,8 @@ exti_line! {
   exti_imr_mr3,
   mr3,
   ((
-    T: IrqExti3,
+    I: IrqExti3,
+    (Frt),
     Exti3,
     exti3,
     afio::exticr1,
@@ -523,8 +596,8 @@ exti_line! {
     exti3,
   )),
   ((
-    (T: IrqExti3),
-    R: Srt Frt,
+    (I: IrqExti3, exti3, afio_exticr1_exti3),
+    Rt: Srt Frt,
     Tr3,
     Pr3,
     Tr3,
@@ -566,7 +639,8 @@ exti_line! {
   exti_imr_mr4,
   mr4,
   ((
-    T: IrqExti4,
+    I: IrqExti4,
+    (Frt),
     Exti4,
     exti4,
     afio::exticr2,
@@ -575,8 +649,8 @@ exti_line! {
     exti4,
   )),
   ((
-    (T: IrqExti4),
-    R: Srt Frt,
+    (I: IrqExti4, exti4, afio_exticr2_exti4),
+    Rt: Srt Frt,
     Tr4,
     Pr4,
     Tr4,
@@ -618,7 +692,8 @@ exti_line! {
   exti_imr_mr5,
   mr5,
   ((
-    T: IrqExti95,
+    I: IrqExti95,
+    (Frt),
     Exti5,
     exti9_5,
     afio::exticr2,
@@ -627,8 +702,8 @@ exti_line! {
     exti5,
   )),
   ((
-    (T: IrqExti95),
-    R: Srt Frt,
+    (I: IrqExti95, exti9_5, afio_exticr2_exti5),
+    Rt: Srt Frt,
     Tr5,
     Pr5,
     Tr5,
@@ -670,7 +745,8 @@ exti_line! {
   exti_imr_mr6,
   mr6,
   ((
-    T: IrqExti95,
+    I: IrqExti95,
+    (Frt),
     Exti6,
     exti9_5,
     afio::exticr2,
@@ -679,8 +755,8 @@ exti_line! {
     exti6,
   )),
   ((
-    (T: IrqExti95),
-    R: Srt Frt,
+    (I: IrqExti95, exti9_5, afio_exticr2_exti6),
+    Rt: Srt Frt,
     Tr6,
     Pr6,
     Tr6,
@@ -722,7 +798,8 @@ exti_line! {
   exti_imr_mr7,
   mr7,
   ((
-    T: IrqExti95,
+    I: IrqExti95,
+    (Frt),
     Exti7,
     exti9_5,
     afio::exticr2,
@@ -731,8 +808,8 @@ exti_line! {
     exti7,
   )),
   ((
-    (T: IrqExti95),
-    R: Srt Frt,
+    (I: IrqExti95, exti9_5, afio_exticr2_exti7),
+    Rt: Srt Frt,
     Tr7,
     Pr7,
     Tr7,
@@ -774,7 +851,8 @@ exti_line! {
   exti_imr_mr8,
   mr8,
   ((
-    T: IrqExti95,
+    I: IrqExti95,
+    (Frt),
     Exti8,
     exti9_5,
     afio::exticr3,
@@ -783,8 +861,8 @@ exti_line! {
     exti8,
   )),
   ((
-    (T: IrqExti95),
-    R: Srt Frt,
+    (I: IrqExti95, exti9_5, afio_exticr3_exti8),
+    Rt: Srt Frt,
     Tr8,
     Pr8,
     Tr8,
@@ -826,7 +904,8 @@ exti_line! {
   exti_imr_mr9,
   mr9,
   ((
-    T: IrqExti95,
+    I: IrqExti95,
+    (Frt),
     Exti9,
     exti9_5,
     afio::exticr3,
@@ -835,8 +914,8 @@ exti_line! {
     exti9,
   )),
   ((
-    (T: IrqExti95),
-    R: Srt Frt,
+    (I: IrqExti95, exti9_5, afio_exticr3_exti9),
+    Rt: Srt Frt,
     Tr9,
     Pr9,
     Tr9,
@@ -878,7 +957,8 @@ exti_line! {
   exti_imr_mr10,
   mr10,
   ((
-    T: IrqExti1510,
+    I: IrqExti1510,
+    (Frt),
     Exti10,
     exti15_10,
     afio::exticr3,
@@ -887,8 +967,8 @@ exti_line! {
     exti10,
   )),
   ((
-    (T: IrqExti1510),
-    R: Srt Frt,
+    (I: IrqExti1510, exti15_10, afio_exticr3_exti10),
+    Rt: Srt Frt,
     Tr10,
     Pr10,
     Tr10,
@@ -930,7 +1010,8 @@ exti_line! {
   exti_imr_mr11,
   mr11,
   ((
-    T: IrqExti1510,
+    I: IrqExti1510,
+    (Frt),
     Exti11,
     exti15_10,
     afio::exticr3,
@@ -939,8 +1020,8 @@ exti_line! {
     exti11,
   )),
   ((
-    (T: IrqExti1510),
-    R: Srt Frt,
+    (I: IrqExti1510, exti15_10, afio_exticr3_exti11),
+    Rt: Srt Frt,
     Tr11,
     Pr11,
     Tr11,
@@ -982,7 +1063,8 @@ exti_line! {
   exti_imr_mr12,
   mr12,
   ((
-    T: IrqExti1510,
+    I: IrqExti1510,
+    (Frt),
     Exti12,
     exti15_10,
     afio::exticr4,
@@ -991,8 +1073,8 @@ exti_line! {
     exti12,
   )),
   ((
-    (T: IrqExti1510),
-    R: Srt Frt,
+    (I: IrqExti1510, exti15_10, afio_exticr4_exti12),
+    Rt: Srt Frt,
     Tr12,
     Pr12,
     Tr12,
@@ -1034,7 +1116,8 @@ exti_line! {
   exti_imr_mr13,
   mr13,
   ((
-    T: IrqExti1510,
+    I: IrqExti1510,
+    (Frt),
     Exti13,
     exti15_10,
     afio::exticr4,
@@ -1043,8 +1126,8 @@ exti_line! {
     exti13,
   )),
   ((
-    (T: IrqExti1510),
-    R: Srt Frt,
+    (I: IrqExti1510, exti15_10, afio_exticr4_exti13),
+    Rt: Srt Frt,
     Tr13,
     Pr13,
     Tr13,
@@ -1086,7 +1169,8 @@ exti_line! {
   exti_imr_mr14,
   mr14,
   ((
-    T: IrqExti1510,
+    I: IrqExti1510,
+    (Frt),
     Exti14,
     exti15_10,
     afio::exticr4,
@@ -1095,8 +1179,8 @@ exti_line! {
     exti14,
   )),
   ((
-    (T: IrqExti1510),
-    R: Srt Frt,
+    (I: IrqExti1510, exti15_10, afio_exticr4_exti14),
+    Rt: Srt Frt,
     Tr14,
     Pr14,
     Tr14,
@@ -1138,7 +1222,8 @@ exti_line! {
   exti_imr_mr15,
   mr15,
   ((
-    T: IrqExti1510,
+    I: IrqExti1510,
+    (Frt),
     Exti15,
     exti15_10,
     afio::exticr4,
@@ -1147,8 +1232,8 @@ exti_line! {
     exti15,
   )),
   ((
-    (T: IrqExti1510),
-    R: Srt Frt,
+    (I: IrqExti1510, exti15_10, afio_exticr4_exti15),
+    Rt: Srt Frt,
     Tr15,
     Pr15,
     Tr15,
@@ -1192,7 +1277,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Tr16,
     Pr16,
     Tr16,
@@ -1236,7 +1321,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Tr17,
     Pr17,
     Tr17,
@@ -1279,7 +1364,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Tr18,
     Pr18,
     Tr18,
@@ -1321,7 +1406,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Tr19,
     Pr19,
     Tr19,
@@ -1363,7 +1448,8 @@ exti_line! {
   exti_imr1_mr0,
   mr0,
   ((
-    T: IrqExti0,
+    I: IrqExti0,
+    (Frt),
     Exti0,
     exti0,
     syscfg::exticr1,
@@ -1372,8 +1458,8 @@ exti_line! {
     exti0,
   )),
   ((
-    (T: IrqExti0),
-    R: Srt Frt,
+    (I: IrqExti0, exti0, syscfg_exticr1_exti0),
+    Rt: Srt Frt,
     Tr0,
     Pr0,
     Tr0,
@@ -1415,7 +1501,8 @@ exti_line! {
   exti_imr1_mr1,
   mr1,
   ((
-    T: IrqExti1,
+    I: IrqExti1,
+    (Frt),
     Exti1,
     exti1,
     syscfg::exticr1,
@@ -1424,8 +1511,8 @@ exti_line! {
     exti1,
   )),
   ((
-    (T: IrqExti1),
-    R: Srt Frt,
+    (I: IrqExti1, exti1, syscfg_exticr1_exti1),
+    Rt: Srt Frt,
     Tr1,
     Pr1,
     Tr1,
@@ -1467,7 +1554,8 @@ exti_line! {
   exti_imr1_mr2,
   mr2,
   ((
-    T: IrqExti2,
+    I: IrqExti2,
+    (Frt),
     Exti2,
     exti2,
     syscfg::exticr1,
@@ -1476,8 +1564,8 @@ exti_line! {
     exti2,
   )),
   ((
-    (T: IrqExti2),
-    R: Srt Frt,
+    (I: IrqExti2, exti2, syscfg_exticr1_exti2),
+    Rt: Srt Frt,
     Tr2,
     Pr2,
     Tr2,
@@ -1519,7 +1607,8 @@ exti_line! {
   exti_imr1_mr3,
   mr3,
   ((
-    T: IrqExti3,
+    I: IrqExti3,
+    (Frt),
     Exti3,
     exti3,
     syscfg::exticr1,
@@ -1528,8 +1617,8 @@ exti_line! {
     exti3,
   )),
   ((
-    (T: IrqExti3),
-    R: Srt Frt,
+    (I: IrqExti3, exti3, syscfg_exticr1_exti3),
+    Rt: Srt Frt,
     Tr3,
     Pr3,
     Tr3,
@@ -1571,7 +1660,8 @@ exti_line! {
   exti_imr1_mr4,
   mr4,
   ((
-    T: IrqExti4,
+    I: IrqExti4,
+    (Frt),
     Exti4,
     exti4,
     syscfg::exticr2,
@@ -1580,8 +1670,8 @@ exti_line! {
     exti4,
   )),
   ((
-    (T: IrqExti4),
-    R: Srt Frt,
+    (I: IrqExti4, exti4, syscfg_exticr2_exti4),
+    Rt: Srt Frt,
     Tr4,
     Pr4,
     Tr4,
@@ -1623,7 +1713,8 @@ exti_line! {
   exti_imr1_mr5,
   mr5,
   ((
-    T: IrqExti95,
+    I: IrqExti95,
+    (Frt),
     Exti5,
     exti9_5,
     syscfg::exticr2,
@@ -1632,8 +1723,8 @@ exti_line! {
     exti5,
   )),
   ((
-    (T: IrqExti95),
-    R: Srt Frt,
+    (I: IrqExti95, exti9_5, syscfg_exticr2_exti5),
+    Rt: Srt Frt,
     Tr5,
     Pr5,
     Tr5,
@@ -1675,7 +1766,8 @@ exti_line! {
   exti_imr1_mr6,
   mr6,
   ((
-    T: IrqExti95,
+    I: IrqExti95,
+    (Frt),
     Exti6,
     exti9_5,
     syscfg::exticr2,
@@ -1684,8 +1776,8 @@ exti_line! {
     exti6,
   )),
   ((
-    (T: IrqExti95),
-    R: Srt Frt,
+    (I: IrqExti95, exti9_5, syscfg_exticr2_exti6),
+    Rt: Srt Frt,
     Tr6,
     Pr6,
     Tr6,
@@ -1727,7 +1819,8 @@ exti_line! {
   exti_imr1_mr7,
   mr7,
   ((
-    T: IrqExti95,
+    I: IrqExti95,
+    (Frt),
     Exti7,
     exti9_5,
     syscfg::exticr2,
@@ -1736,8 +1829,8 @@ exti_line! {
     exti7,
   )),
   ((
-    (T: IrqExti95),
-    R: Srt Frt,
+    (I: IrqExti95, exti9_5, syscfg_exticr2_exti7),
+    Rt: Srt Frt,
     Tr7,
     Pr7,
     Tr7,
@@ -1779,7 +1872,8 @@ exti_line! {
   exti_imr1_mr8,
   mr8,
   ((
-    T: IrqExti95,
+    I: IrqExti95,
+    (Frt),
     Exti8,
     exti9_5,
     syscfg::exticr3,
@@ -1788,8 +1882,8 @@ exti_line! {
     exti8,
   )),
   ((
-    (T: IrqExti95),
-    R: Srt Frt,
+    (I: IrqExti95, exti9_5, syscfg_exticr3_exti8),
+    Rt: Srt Frt,
     Tr8,
     Pr8,
     Tr8,
@@ -1831,7 +1925,8 @@ exti_line! {
   exti_imr1_mr9,
   mr9,
   ((
-    T: IrqExti95,
+    I: IrqExti95,
+    (Frt),
     Exti9,
     exti9_5,
     syscfg::exticr3,
@@ -1840,8 +1935,8 @@ exti_line! {
     exti9,
   )),
   ((
-    (T: IrqExti95),
-    R: Srt Frt,
+    (I: IrqExti95, exti9_5, syscfg_exticr3_exti9),
+    Rt: Srt Frt,
     Tr9,
     Pr9,
     Tr9,
@@ -1883,7 +1978,8 @@ exti_line! {
   exti_imr1_mr10,
   mr10,
   ((
-    T: IrqExti1510,
+    I: IrqExti1510,
+    (Frt),
     Exti10,
     exti15_10,
     syscfg::exticr3,
@@ -1892,8 +1988,8 @@ exti_line! {
     exti10,
   )),
   ((
-    (T: IrqExti1510),
-    R: Srt Frt,
+    (I: IrqExti1510, exti15_10, syscfg_exticr3_exti10),
+    Rt: Srt Frt,
     Tr10,
     Pr10,
     Tr10,
@@ -1935,7 +2031,8 @@ exti_line! {
   exti_imr1_mr11,
   mr11,
   ((
-    T: IrqExti1510,
+    I: IrqExti1510,
+    (Frt),
     Exti11,
     exti15_10,
     syscfg::exticr3,
@@ -1944,8 +2041,8 @@ exti_line! {
     exti11,
   )),
   ((
-    (T: IrqExti1510),
-    R: Srt Frt,
+    (I: IrqExti1510, exti15_10, syscfg_exticr3_exti11),
+    Rt: Srt Frt,
     Tr11,
     Pr11,
     Tr11,
@@ -1987,7 +2084,8 @@ exti_line! {
   exti_imr1_mr12,
   mr12,
   ((
-    T: IrqExti1510,
+    I: IrqExti1510,
+    (Frt),
     Exti12,
     exti15_10,
     syscfg::exticr4,
@@ -1996,8 +2094,8 @@ exti_line! {
     exti12,
   )),
   ((
-    (T: IrqExti1510),
-    R: Srt Frt,
+    (I: IrqExti1510, exti15_10, syscfg_exticr4_exti12),
+    Rt: Srt Frt,
     Tr12,
     Pr12,
     Tr12,
@@ -2039,7 +2137,8 @@ exti_line! {
   exti_imr1_mr13,
   mr13,
   ((
-    T: IrqExti1510,
+    I: IrqExti1510,
+    (Frt),
     Exti13,
     exti15_10,
     syscfg::exticr4,
@@ -2048,8 +2147,8 @@ exti_line! {
     exti13,
   )),
   ((
-    (T: IrqExti1510),
-    R: Srt Frt,
+    (I: IrqExti1510, exti15_10, syscfg_exticr4_exti13),
+    Rt: Srt Frt,
     Tr13,
     Pr13,
     Tr13,
@@ -2091,7 +2190,8 @@ exti_line! {
   exti_imr1_mr14,
   mr14,
   ((
-    T: IrqExti1510,
+    I: IrqExti1510,
+    (Frt),
     Exti14,
     exti15_10,
     syscfg::exticr4,
@@ -2100,8 +2200,8 @@ exti_line! {
     exti14,
   )),
   ((
-    (T: IrqExti1510),
-    R: Srt Frt,
+    (I: IrqExti1510, exti15_10, syscfg_exticr4_exti14),
+    Rt: Srt Frt,
     Tr14,
     Pr14,
     Tr14,
@@ -2143,7 +2243,8 @@ exti_line! {
   exti_imr1_mr15,
   mr15,
   ((
-    T: IrqExti1510,
+    I: IrqExti1510,
+    (Frt),
     Exti15,
     exti15_10,
     syscfg::exticr4,
@@ -2152,8 +2253,8 @@ exti_line! {
     exti15,
   )),
   ((
-    (T: IrqExti1510),
-    R: Srt Frt,
+    (I: IrqExti1510, exti15_10, syscfg_exticr4_exti15),
+    Rt: Srt Frt,
     Tr15,
     Pr15,
     Tr15,
@@ -2197,7 +2298,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Tr16,
     Pr16,
     Tr16,
@@ -2262,7 +2363,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Tr18,
     Pr18,
     Tr18,
@@ -2306,7 +2407,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Tr19,
     Pr19,
     Tr19,
@@ -2350,7 +2451,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Tr20,
     Pr20,
     Tr20,
@@ -2394,7 +2495,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Tr21,
     Pr21,
     Tr21,
@@ -2438,7 +2539,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Tr22,
     Pr22,
     Tr22,
@@ -2734,7 +2835,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Ft35,
     Pif35,
     Rt35,
@@ -2778,7 +2879,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Ft36,
     Pif36,
     Rt36,
@@ -2822,7 +2923,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Ft37,
     Pif37,
     Rt37,
@@ -2866,7 +2967,7 @@ exti_line! {
   (),
   ((
     (),
-    R: Srt Frt,
+    Rt: Srt Frt,
     Ft38,
     Pif38,
     Rt38,

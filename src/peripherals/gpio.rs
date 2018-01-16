@@ -21,62 +21,93 @@ use reg::prelude::*;
 
 /// Generic GPIO pin.
 #[allow(missing_docs)]
-pub trait GpioPin<T: RegTag>
-where
-  Self: Sized + 'static,
-  Self::Tokens: From<Self>,
-{
-  /// Generic GPIO pin tokens.
-  type Tokens;
-
+pub trait GpioPin<T: RegTag>: Sized + Send + 'static {
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  type Afr: RegField<T>;
-  type Brr: RegField<T>;
-  type BsrrBr: RegField<T>;
-  type BsrrBs: RegField<T>;
+  type Afr: RReg<T> + WReg<T>;
+  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+            feature = "stm32l4x3", feature = "stm32l4x5",
+            feature = "stm32l4x6"))]
+  type AfrAfr: RegField<T, Reg = Self::Afr>
+    + RRegFieldBits<T>
+    + WRegFieldBits<T>;
+  type Brr: WoReg<T>;
+  type BrrBr: RegField<T, Reg = Self::Brr> + WoWoRegFieldBit<T>;
+  type Bsrr: WoReg<T>;
+  type BsrrBr: RegField<T, Reg = Self::Bsrr> + WoWoRegFieldBit<T>;
+  type BsrrBs: RegField<T, Reg = Self::Bsrr> + WoWoRegFieldBit<T>;
   #[cfg(any(feature = "stm32f100", feature = "stm32f101",
             feature = "stm32f102", feature = "stm32f103",
             feature = "stm32f107"))]
-  type CrCnf: RegField<T>;
+  type Cr: RReg<T> + WReg<T>;
   #[cfg(any(feature = "stm32f100", feature = "stm32f101",
             feature = "stm32f102", feature = "stm32f103",
             feature = "stm32f107"))]
-  type CrMode: RegField<T>;
-  type Idr: RegField<T>;
-  type Lckr: RegField<T>;
+  type CrCnf: RegField<T, Reg = Self::Cr> + RRegFieldBits<T> + WRegFieldBits<T>;
+  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+            feature = "stm32f102", feature = "stm32f103",
+            feature = "stm32f107"))]
+  type CrMode: RegField<T, Reg = Self::Cr> + RRegFieldBits<T> + WRegFieldBits<T>;
+  type Idr: RoReg<T>;
+  type IdrIdr: RegField<T, Reg = Self::Idr> + RRegFieldBit<T>;
+  type Lckr: RReg<T> + WReg<T>;
+  type LckrLck: RegField<T, Reg = Self::Lckr>
+    + RRegFieldBit<T>
+    + WRegFieldBit<T>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  type Moder: RegField<T>;
-  type Odr: RegField<T>;
+  type Moder: RReg<T> + WReg<T>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  type Ospeedr: RegField<T>;
+  type ModerModer: RegField<T, Reg = Self::Moder>
+    + RRegFieldBits<T>
+    + WRegFieldBits<T>;
+  type Odr: RReg<T> + WReg<T>;
+  type OdrOdr: RegField<T, Reg = Self::Odr> + RRegFieldBit<T> + WRegFieldBit<T>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  type Otyper: RegField<T>;
+  type Ospeedr: RReg<T> + WReg<T>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  type Pupdr: RegField<T>;
+  type OspeedrOspeedr: RegField<T, Reg = Self::Ospeedr>
+    + RRegFieldBits<T>
+    + WRegFieldBits<T>;
+  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+            feature = "stm32l4x3", feature = "stm32l4x5",
+            feature = "stm32l4x6"))]
+  type Otyper: RReg<T> + WReg<T>;
+  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+            feature = "stm32l4x3", feature = "stm32l4x5",
+            feature = "stm32l4x6"))]
+  type OtyperOt: RegField<T, Reg = Self::Otyper>
+    + RRegFieldBit<T>
+    + WRegFieldBit<T>;
+  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+            feature = "stm32l4x3", feature = "stm32l4x5",
+            feature = "stm32l4x6"))]
+  type Pupdr: RReg<T> + WReg<T>;
+  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+            feature = "stm32l4x3", feature = "stm32l4x5",
+            feature = "stm32l4x6"))]
+  type PupdrPupdr: RegField<T, Reg = Self::Pupdr>
+    + RRegFieldBits<T>
+    + WRegFieldBits<T>;
 
-  /// Creates a new `GpioPin` driver from provided `tokens`.
-  fn new(tokens: Self::Tokens) -> Self;
-
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn afr(&self) -> &Self::Afr;
+  fn afr(&self) -> &Self::AfrAfr;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn afr_mut(&mut self) -> &mut Self::Afr;
-  fn brr(&self) -> &Self::Brr;
-  fn brr_mut(&mut self) -> &mut Self::Brr;
+  fn afr_mut(&mut self) -> &mut Self::AfrAfr;
+  fn brr_br(&self) -> &Self::BrrBr;
+  fn brr_br_mut(&mut self) -> &mut Self::BrrBr;
   fn bsrr_br(&self) -> &Self::BsrrBr;
   fn bsrr_br_mut(&mut self) -> &mut Self::BsrrBr;
   fn bsrr_bs(&self) -> &Self::BsrrBs;
@@ -97,54 +128,54 @@ where
             feature = "stm32f102", feature = "stm32f103",
             feature = "stm32f107"))]
   fn cr_mode_mut(&mut self) -> &mut Self::CrMode;
-  fn idr(&self) -> &Self::Idr;
-  fn idr_mut(&mut self) -> &mut Self::Idr;
-  fn lckr(&self) -> &Self::Lckr;
-  fn lckr_mut(&mut self) -> &mut Self::Lckr;
+  fn idr(&self) -> &Self::IdrIdr;
+  fn idr_mut(&mut self) -> &mut Self::IdrIdr;
+  fn lckr(&self) -> &Self::LckrLck;
+  fn lckr_mut(&mut self) -> &mut Self::LckrLck;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn moder(&self) -> &Self::Moder;
+  fn moder(&self) -> &Self::ModerModer;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn moder_mut(&mut self) -> &mut Self::Moder;
-  fn odr(&self) -> &Self::Odr;
-  fn odr_mut(&mut self) -> &mut Self::Odr;
+  fn moder_mut(&mut self) -> &mut Self::ModerModer;
+  fn odr(&self) -> &Self::OdrOdr;
+  fn odr_mut(&mut self) -> &mut Self::OdrOdr;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn ospeedr(&self) -> &Self::Ospeedr;
+  fn ospeedr(&self) -> &Self::OspeedrOspeedr;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn ospeedr_mut(&mut self) -> &mut Self::Ospeedr;
+  fn ospeedr_mut(&mut self) -> &mut Self::OspeedrOspeedr;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn otyper(&self) -> &Self::Otyper;
+  fn otyper(&self) -> &Self::OtyperOt;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn otyper_mut(&mut self) -> &mut Self::Otyper;
+  fn otyper_mut(&mut self) -> &mut Self::OtyperOt;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn pupdr(&self) -> &Self::Pupdr;
+  fn pupdr(&self) -> &Self::PupdrPupdr;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn pupdr_mut(&mut self) -> &mut Self::Pupdr;
+  fn pupdr_mut(&mut self) -> &mut Self::PupdrPupdr;
 }
 
 /// Generic GPIO pin with `ASCR` register.
 #[cfg(any(feature = "stm32l4x6"))]
 #[allow(missing_docs)]
-pub trait GpioAscrPin<T: RegTag>: GpioPin<T> {
-  type Ascr: RegField<T>;
+pub trait GpioPinAscr<T: RegTag>: GpioPin<T> {
+  type AscrAsc: RegField<T>;
 
-  fn ascr(&self) -> &Self::Ascr;
-  fn ascr_mut(&mut self) -> &mut Self::Ascr;
+  fn ascr(&self) -> &Self::AscrAsc;
+  fn ascr_mut(&mut self) -> &mut Self::AscrAsc;
 }
 
 #[allow(unused_macros)]
@@ -153,11 +184,9 @@ macro_rules! gpio_pin {
     $doc:expr,
     $name:ident,
     $name_macro:ident,
-    $doc_tokens:expr,
-    $name_tokens:ident,
     $gpio:ident,
-    $afr_mod:ident,
-    $cr_mod:ident,
+    $afr_path:ident,
+    $cr_path:ident,
     $afr_ty:ident,
     $br_ty:ident,
     $bs_ty:ident,
@@ -214,17 +243,12 @@ macro_rules! gpio_pin {
     ))*),
   ) => {
     #[doc = $doc]
-    pub struct $name<T: RegTag> {
-      tokens: $name_tokens<T>,
-    }
-
-    #[doc = $doc_tokens]
     #[allow(missing_docs)]
-    pub struct $name_tokens<T: RegTag> {
+    pub struct $name<T: RegTag> {
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      pub $gpio_afr_afr: $gpio::$afr_mod::$afr_ty<T>,
+      pub $gpio_afr_afr: $gpio::$afr_path::$afr_ty<T>,
       $(
         #[cfg(any(feature = "stm32l4x6"))]
         pub $gpio_ascr_asc: $gpio::ascr::$asc_ty<T>,
@@ -235,11 +259,11 @@ macro_rules! gpio_pin {
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
                 feature = "stm32f102", feature = "stm32f103",
                 feature = "stm32f107"))]
-      pub $gpio_cr_cnf: $gpio::$cr_mod::$cnf_ty<T>,
+      pub $gpio_cr_cnf: $gpio::$cr_path::$cnf_ty<T>,
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
                 feature = "stm32f102", feature = "stm32f103",
                 feature = "stm32f107"))]
-      pub $gpio_cr_mode: $gpio::$cr_mod::$mode_ty<T>,
+      pub $gpio_cr_mode: $gpio::$cr_path::$mode_ty<T>,
       pub $gpio_idr_idr: $gpio::idr::$idr_ty<T>,
       pub $gpio_lckr_lck: $gpio::lckr::$lck_ty<T>,
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -262,170 +286,180 @@ macro_rules! gpio_pin {
     }
 
     #[cfg(any(feature = "stm32l4x6"))]
-    /// Creates a new `GpioPin` driver from tokens.
+    /// Creates a new `GpioPin`.
     #[macro_export]
     macro_rules! $name_macro {
       ($regs:ident) => {
-        $crate::peripherals::gpio::GpioPin::new(
-          $crate::peripherals::gpio::$name_tokens {
-            $gpio_afr_afr: $regs.$gpio_afr.$afr,
-            $(
-              $gpio_ascr_asc: $regs.$gpio_ascr.$asc,
-            )*
-            $gpio_brr_br: $regs.$gpio_brr.$br,
-            $gpio_bsrr_br: $regs.$gpio_bsrr.$br,
-            $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs,
-            $gpio_idr_idr: $regs.$gpio_idr.$idr,
-            $gpio_lckr_lck: $regs.$gpio_lckr.$lck,
-            $gpio_moder_moder: $regs.$gpio_moder.$moder,
-            $gpio_odr_odr: $regs.$gpio_odr.$odr,
-            $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr,
-            $gpio_otyper_ot: $regs.$gpio_otyper.$ot,
-            $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr,
-          }
-        )
+        $crate::peripherals::gpio::$name {
+          $gpio_afr_afr: $regs.$gpio_afr.$afr,
+          $(
+            $gpio_ascr_asc: $regs.$gpio_ascr.$asc,
+          )*
+          $gpio_brr_br: $regs.$gpio_brr.$br,
+          $gpio_bsrr_br: $regs.$gpio_bsrr.$br,
+          $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs,
+          $gpio_idr_idr: $regs.$gpio_idr.$idr,
+          $gpio_lckr_lck: $regs.$gpio_lckr.$lck,
+          $gpio_moder_moder: $regs.$gpio_moder.$moder,
+          $gpio_odr_odr: $regs.$gpio_odr.$odr,
+          $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr,
+          $gpio_otyper_ot: $regs.$gpio_otyper.$ot,
+          $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr,
+        }
       }
     }
 
     #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
               feature = "stm32l4x3", feature = "stm32l4x5"))]
-    /// Creates a new `GpioPin` driver from tokens.
+    /// Creates a new `GpioPin`.
     #[macro_export]
     macro_rules! $name_macro {
       ($regs:ident) => {
-        $crate::peripherals::gpio::GpioPin::new(
-          $crate::peripherals::gpio::$name_tokens {
-            $gpio_afr_afr: $regs.$gpio_afr.$afr,
-            $gpio_brr_br: $regs.$gpio_brr.$br,
-            $gpio_bsrr_br: $regs.$gpio_bsrr.$br,
-            $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs,
-            $gpio_idr_idr: $regs.$gpio_idr.$idr,
-            $gpio_lckr_lck: $regs.$gpio_lckr.$lck,
-            $gpio_moder_moder: $regs.$gpio_moder.$moder,
-            $gpio_odr_odr: $regs.$gpio_odr.$odr,
-            $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr,
-            $gpio_otyper_ot: $regs.$gpio_otyper.$ot,
-            $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr,
-          }
-        )
+        $crate::peripherals::gpio::$name {
+          $gpio_afr_afr: $regs.$gpio_afr.$afr,
+          $gpio_brr_br: $regs.$gpio_brr.$br,
+          $gpio_bsrr_br: $regs.$gpio_bsrr.$br,
+          $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs,
+          $gpio_idr_idr: $regs.$gpio_idr.$idr,
+          $gpio_lckr_lck: $regs.$gpio_lckr.$lck,
+          $gpio_moder_moder: $regs.$gpio_moder.$moder,
+          $gpio_odr_odr: $regs.$gpio_odr.$odr,
+          $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr,
+          $gpio_otyper_ot: $regs.$gpio_otyper.$ot,
+          $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr,
+        }
       }
     }
 
     #[cfg(any(feature = "stm32f100", feature = "stm32f101",
               feature = "stm32f102", feature = "stm32f103",
               feature = "stm32f107"))]
-    /// Creates a new `GpioPin` driver from tokens.
+    /// Creates a new `GpioPin`.
     #[macro_export]
     macro_rules! $name_macro {
       ($regs:ident) => {
-        $crate::peripherals::gpio::GpioPin::new(
-          $crate::peripherals::gpio::$name_tokens {
-            $gpio_brr_br: $regs.$gpio_brr_br,
-            $gpio_bsrr_br: $regs.$gpio_bsrr_br,
-            $gpio_bsrr_bs: $regs.$gpio_bsrr_bs,
-            $gpio_cr_cnf: $regs.$gpio_cr_cnf,
-            $gpio_cr_mode: $regs.$gpio_cr_mode,
-            $gpio_idr_idr: $regs.$gpio_idr_idr,
-            $gpio_lckr_lck: $regs.$gpio_lckr_lck,
-            $gpio_odr_odr: $regs.$gpio_odr_odr,
-          }
-        )
-      }
-    }
-
-    impl<T: RegTag> From<$name<T>> for $name_tokens<T> {
-      #[inline(always)]
-      fn from(gpio_pin: $name<T>) -> Self {
-        gpio_pin.tokens
+        $crate::peripherals::gpio::$name {
+          $gpio_brr_br: $regs.$gpio_brr_br,
+          $gpio_bsrr_br: $regs.$gpio_bsrr_br,
+          $gpio_bsrr_bs: $regs.$gpio_bsrr_bs,
+          $gpio_cr_cnf: $regs.$gpio_cr_cnf,
+          $gpio_cr_mode: $regs.$gpio_cr_mode,
+          $gpio_idr_idr: $regs.$gpio_idr_idr,
+          $gpio_lckr_lck: $regs.$gpio_lckr_lck,
+          $gpio_odr_odr: $regs.$gpio_odr_odr,
+        }
       }
     }
 
     impl<T: RegTag> GpioPin<T> for $name<T> {
-      type Tokens = $name_tokens<T>;
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      type Afr = $gpio::$afr_mod::$afr_ty<T>;
-      type Brr = $gpio::brr::$br_ty<T>;
+      type Afr = $gpio::$afr_path::Reg<T>;
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      type AfrAfr = $gpio::$afr_path::$afr_ty<T>;
+      type Brr = $gpio::brr::Reg<T>;
+      type BrrBr = $gpio::brr::$br_ty<T>;
+      type Bsrr = $gpio::bsrr::Reg<T>;
       type BsrrBr = $gpio::bsrr::$br_ty<T>;
       type BsrrBs = $gpio::bsrr::$bs_ty<T>;
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
                 feature = "stm32f102", feature = "stm32f103",
                 feature = "stm32f107"))]
-      type CrCnf = $gpio::$cr_mod::$cnf_ty<T>;
+      type Cr = $gpio::$cr_path::Reg<T>;
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
                 feature = "stm32f102", feature = "stm32f103",
                 feature = "stm32f107"))]
-      type CrMode = $gpio::$cr_mod::$mode_ty<T>;
-      type Idr = $gpio::idr::$idr_ty<T>;
-      type Lckr = $gpio::lckr::$lck_ty<T>;
+      type CrCnf = $gpio::$cr_path::$cnf_ty<T>;
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107"))]
+      type CrMode = $gpio::$cr_path::$mode_ty<T>;
+      type Idr = $gpio::idr::Reg<T>;
+      type IdrIdr = $gpio::idr::$idr_ty<T>;
+      type Lckr = $gpio::lckr::Reg<T>;
+      type LckrLck = $gpio::lckr::$lck_ty<T>;
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      type Moder = $gpio::moder::$moder_ty<T>;
-      type Odr = $gpio::odr::$odr_ty<T>;
+      type Moder = $gpio::moder::Reg<T>;
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      type Ospeedr = $gpio::ospeedr::$ospeedr_ty<T>;
+      type ModerModer = $gpio::moder::$moder_ty<T>;
+      type Odr = $gpio::odr::Reg<T>;
+      type OdrOdr = $gpio::odr::$odr_ty<T>;
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      type Otyper = $gpio::otyper::$ot_ty<T>;
+      type Ospeedr = $gpio::ospeedr::Reg<T>;
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      type Pupdr = $gpio::pupdr::$pupdr_ty<T>;
+      type OspeedrOspeedr = $gpio::ospeedr::$ospeedr_ty<T>;
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      type Otyper = $gpio::otyper::Reg<T>;
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      type OtyperOt = $gpio::otyper::$ot_ty<T>;
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      type Pupdr = $gpio::pupdr::Reg<T>;
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      type PupdrPupdr = $gpio::pupdr::$pupdr_ty<T>;
 
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
       #[inline(always)]
-      fn new(tokens: Self::Tokens) -> Self {
-        Self { tokens }
+      fn afr(&self) -> &Self::AfrAfr {
+        &self.$gpio_afr_afr
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
-      fn afr(&self) -> &Self::Afr {
-        &self.tokens.$gpio_afr_afr
-      }
-
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn afr_mut(&mut self) -> &mut Self::Afr {
-        &mut self.tokens.$gpio_afr_afr
+      fn afr_mut(&mut self) -> &mut Self::AfrAfr {
+        &mut self.$gpio_afr_afr
       }
 
       #[inline(always)]
-      fn brr(&self) -> &Self::Brr {
-        &self.tokens.$gpio_brr_br
+      fn brr_br(&self) -> &Self::BrrBr {
+        &self.$gpio_brr_br
       }
 
       #[inline(always)]
-      fn brr_mut(&mut self) -> &mut Self::Brr {
-        &mut self.tokens.$gpio_brr_br
+      fn brr_br_mut(&mut self) -> &mut Self::BrrBr {
+        &mut self.$gpio_brr_br
       }
 
       #[inline(always)]
       fn bsrr_br(&self) -> &Self::BsrrBr {
-        &self.tokens.$gpio_bsrr_br
+        &self.$gpio_bsrr_br
       }
 
       #[inline(always)]
       fn bsrr_br_mut(&mut self) -> &mut Self::BsrrBr {
-        &mut self.tokens.$gpio_bsrr_br
+        &mut self.$gpio_bsrr_br
       }
 
       #[inline(always)]
       fn bsrr_bs(&self) -> &Self::BsrrBs {
-        &self.tokens.$gpio_bsrr_bs
+        &self.$gpio_bsrr_bs
       }
 
       #[inline(always)]
       fn bsrr_bs_mut(&mut self) -> &mut Self::BsrrBs {
-        &mut self.tokens.$gpio_bsrr_bs
+        &mut self.$gpio_bsrr_bs
       }
 
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -433,7 +467,7 @@ macro_rules! gpio_pin {
                 feature = "stm32f107"))]
       #[inline(always)]
       fn cr_cnf(&self) -> &Self::CrCnf {
-        &self.tokens.$gpio_cr_cnf
+        &self.$gpio_cr_cnf
       }
 
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -441,7 +475,7 @@ macro_rules! gpio_pin {
                 feature = "stm32f107"))]
       #[inline(always)]
       fn cr_cnf_mut(&mut self) -> &mut Self::CrCnf {
-        &mut self.tokens.$gpio_cr_cnf
+        &mut self.$gpio_cr_cnf
       }
 
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -449,7 +483,7 @@ macro_rules! gpio_pin {
                 feature = "stm32f107"))]
       #[inline(always)]
       fn cr_mode(&self) -> &Self::CrMode {
-        &self.tokens.$gpio_cr_mode
+        &self.$gpio_cr_mode
       }
 
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -457,117 +491,117 @@ macro_rules! gpio_pin {
                 feature = "stm32f107"))]
       #[inline(always)]
       fn cr_mode_mut(&mut self) -> &mut Self::CrMode {
-        &mut self.tokens.$gpio_cr_mode
+        &mut self.$gpio_cr_mode
       }
 
       #[inline(always)]
-      fn idr(&self) -> &Self::Idr {
-        &self.tokens.$gpio_idr_idr
+      fn idr(&self) -> &Self::IdrIdr {
+        &self.$gpio_idr_idr
       }
 
       #[inline(always)]
-      fn idr_mut(&mut self) -> &mut Self::Idr {
-        &mut self.tokens.$gpio_idr_idr
+      fn idr_mut(&mut self) -> &mut Self::IdrIdr {
+        &mut self.$gpio_idr_idr
       }
 
       #[inline(always)]
-      fn lckr(&self) -> &Self::Lckr {
-        &self.tokens.$gpio_lckr_lck
+      fn lckr(&self) -> &Self::LckrLck {
+        &self.$gpio_lckr_lck
       }
 
       #[inline(always)]
-      fn lckr_mut(&mut self) -> &mut Self::Lckr {
-        &mut self.tokens.$gpio_lckr_lck
-      }
-
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn moder(&self) -> &Self::Moder {
-        &self.tokens.$gpio_moder_moder
+      fn lckr_mut(&mut self) -> &mut Self::LckrLck {
+        &mut self.$gpio_lckr_lck
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
-      fn moder_mut(&mut self) -> &mut Self::Moder {
-        &mut self.tokens.$gpio_moder_moder
-      }
-
-      #[inline(always)]
-      fn odr(&self) -> &Self::Odr {
-        &self.tokens.$gpio_odr_odr
-      }
-
-      #[inline(always)]
-      fn odr_mut(&mut self) -> &mut Self::Odr {
-        &mut self.tokens.$gpio_odr_odr
+      fn moder(&self) -> &Self::ModerModer {
+        &self.$gpio_moder_moder
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
-      fn ospeedr(&self) -> &Self::Ospeedr {
-        &self.tokens.$gpio_ospeedr_ospeedr
+      fn moder_mut(&mut self) -> &mut Self::ModerModer {
+        &mut self.$gpio_moder_moder
+      }
+
+      #[inline(always)]
+      fn odr(&self) -> &Self::OdrOdr {
+        &self.$gpio_odr_odr
+      }
+
+      #[inline(always)]
+      fn odr_mut(&mut self) -> &mut Self::OdrOdr {
+        &mut self.$gpio_odr_odr
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
-      fn ospeedr_mut(&mut self) -> &mut Self::Ospeedr {
-        &mut self.tokens.$gpio_ospeedr_ospeedr
+      fn ospeedr(&self) -> &Self::OspeedrOspeedr {
+        &self.$gpio_ospeedr_ospeedr
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
-      fn otyper(&self) -> &Self::Otyper {
-        &self.tokens.$gpio_otyper_ot
+      fn ospeedr_mut(&mut self) -> &mut Self::OspeedrOspeedr {
+        &mut self.$gpio_ospeedr_ospeedr
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
-      fn otyper_mut(&mut self) -> &mut Self::Otyper {
-        &mut self.tokens.$gpio_otyper_ot
+      fn otyper(&self) -> &Self::OtyperOt {
+        &self.$gpio_otyper_ot
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
-      fn pupdr(&self) -> &Self::Pupdr {
-        &self.tokens.$gpio_pupdr_pupdr
+      fn otyper_mut(&mut self) -> &mut Self::OtyperOt {
+        &mut self.$gpio_otyper_ot
       }
 
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
-      fn pupdr_mut(&mut self) -> &mut Self::Pupdr {
-        &mut self.tokens.$gpio_pupdr_pupdr
+      fn pupdr(&self) -> &Self::PupdrPupdr {
+        &self.$gpio_pupdr_pupdr
+      }
+
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn pupdr_mut(&mut self) -> &mut Self::PupdrPupdr {
+        &mut self.$gpio_pupdr_pupdr
       }
     }
 
     $(
       #[cfg(any(feature = "stm32l4x6"))]
-      impl<T: RegTag> GpioAscrPin<T> for $name<T> {
-        type Ascr = $gpio::ascr::$asc_ty<T>;
+      impl<T: RegTag> GpioPinAscr<T> for $name<T> {
+        type AscrAsc = $gpio::ascr::$asc_ty<T>;
 
         #[inline(always)]
-        fn ascr(&self) -> &Self::Ascr {
-          &self.tokens.$gpio_ascr_asc
+        fn ascr(&self) -> &Self::AscrAsc {
+          &self.$gpio_ascr_asc
         }
 
         #[inline(always)]
-        fn ascr_mut(&mut self) -> &mut Self::Ascr {
-          &mut self.tokens.$gpio_ascr_asc
+        fn ascr_mut(&mut self) -> &mut Self::AscrAsc {
+          &mut self.$gpio_ascr_asc
         }
       }
     )*
@@ -583,8 +617,6 @@ gpio_pin! {
   "GPIO port A pin 0.",
   Gpioa0,
   peripheral_gpioa_0,
-  "GPIO port A pin 0 tokens.",
-  Gpioa0Tokens,
   gpioa,
   afrl,
   crl,
@@ -653,8 +685,6 @@ gpio_pin! {
   "GPIO port A pin 1.",
   Gpioa1,
   peripheral_gpioa_1,
-  "GPIO port A pin 1 tokens.",
-  Gpioa1Tokens,
   gpioa,
   afrl,
   crl,
@@ -723,8 +753,6 @@ gpio_pin! {
   "GPIO port A pin 2.",
   Gpioa2,
   peripheral_gpioa_2,
-  "GPIO port A pin 2 tokens.",
-  Gpioa2Tokens,
   gpioa,
   afrl,
   crl,
@@ -793,8 +821,6 @@ gpio_pin! {
   "GPIO port A pin 3.",
   Gpioa3,
   peripheral_gpioa_3,
-  "GPIO port A pin 3 tokens.",
-  Gpioa3Tokens,
   gpioa,
   afrl,
   crl,
@@ -863,8 +889,6 @@ gpio_pin! {
   "GPIO port A pin 4.",
   Gpioa4,
   peripheral_gpioa_4,
-  "GPIO port A pin 4 tokens.",
-  Gpioa4Tokens,
   gpioa,
   afrl,
   crl,
@@ -933,8 +957,6 @@ gpio_pin! {
   "GPIO port A pin 5.",
   Gpioa5,
   peripheral_gpioa_5,
-  "GPIO port A pin 5 tokens.",
-  Gpioa5Tokens,
   gpioa,
   afrl,
   crl,
@@ -1003,8 +1025,6 @@ gpio_pin! {
   "GPIO port A pin 6.",
   Gpioa6,
   peripheral_gpioa_6,
-  "GPIO port A pin 6 tokens.",
-  Gpioa6Tokens,
   gpioa,
   afrl,
   crl,
@@ -1073,8 +1093,6 @@ gpio_pin! {
   "GPIO port A pin 7.",
   Gpioa7,
   peripheral_gpioa_7,
-  "GPIO port A pin 7 tokens.",
-  Gpioa7Tokens,
   gpioa,
   afrl,
   crl,
@@ -1143,8 +1161,6 @@ gpio_pin! {
   "GPIO port A pin 8.",
   Gpioa8,
   peripheral_gpioa_8,
-  "GPIO port A pin 8 tokens.",
-  Gpioa8Tokens,
   gpioa,
   afrh,
   crh,
@@ -1213,8 +1229,6 @@ gpio_pin! {
   "GPIO port A pin 9.",
   Gpioa9,
   peripheral_gpioa_9,
-  "GPIO port A pin 9 tokens.",
-  Gpioa9Tokens,
   gpioa,
   afrh,
   crh,
@@ -1283,8 +1297,6 @@ gpio_pin! {
   "GPIO port A pin 10.",
   Gpioa10,
   peripheral_gpioa_10,
-  "GPIO port A pin 10 tokens.",
-  Gpioa10Tokens,
   gpioa,
   afrh,
   crh,
@@ -1353,8 +1365,6 @@ gpio_pin! {
   "GPIO port A pin 11.",
   Gpioa11,
   peripheral_gpioa_11,
-  "GPIO port A pin 11 tokens.",
-  Gpioa11Tokens,
   gpioa,
   afrh,
   crh,
@@ -1423,8 +1433,6 @@ gpio_pin! {
   "GPIO port A pin 12.",
   Gpioa12,
   peripheral_gpioa_12,
-  "GPIO port A pin 12 tokens.",
-  Gpioa12Tokens,
   gpioa,
   afrh,
   crh,
@@ -1493,8 +1501,6 @@ gpio_pin! {
   "GPIO port A pin 13.",
   Gpioa13,
   peripheral_gpioa_13,
-  "GPIO port A pin 13 tokens.",
-  Gpioa13Tokens,
   gpioa,
   afrh,
   crh,
@@ -1563,8 +1569,6 @@ gpio_pin! {
   "GPIO port A pin 14.",
   Gpioa14,
   peripheral_gpioa_14,
-  "GPIO port A pin 14 tokens.",
-  Gpioa14Tokens,
   gpioa,
   afrh,
   crh,
@@ -1633,8 +1637,6 @@ gpio_pin! {
   "GPIO port A pin 15.",
   Gpioa15,
   peripheral_gpioa_15,
-  "GPIO port A pin 15 tokens.",
-  Gpioa15Tokens,
   gpioa,
   afrh,
   crh,
@@ -1703,8 +1705,6 @@ gpio_pin! {
   "GPIO port B pin 0.",
   Gpiob0,
   peripheral_gpiob_0,
-  "GPIO port B pin 0 tokens.",
-  Gpiob0Tokens,
   gpiob,
   afrl,
   crl,
@@ -1773,8 +1773,6 @@ gpio_pin! {
   "GPIO port B pin 1.",
   Gpiob1,
   peripheral_gpiob_1,
-  "GPIO port B pin 1 tokens.",
-  Gpiob1Tokens,
   gpiob,
   afrl,
   crl,
@@ -1843,8 +1841,6 @@ gpio_pin! {
   "GPIO port B pin 2.",
   Gpiob2,
   peripheral_gpiob_2,
-  "GPIO port B pin 2 tokens.",
-  Gpiob2Tokens,
   gpiob,
   afrl,
   crl,
@@ -1913,8 +1909,6 @@ gpio_pin! {
   "GPIO port B pin 3.",
   Gpiob3,
   peripheral_gpiob_3,
-  "GPIO port B pin 3 tokens.",
-  Gpiob3Tokens,
   gpiob,
   afrl,
   crl,
@@ -1983,8 +1977,6 @@ gpio_pin! {
   "GPIO port B pin 4.",
   Gpiob4,
   peripheral_gpiob_4,
-  "GPIO port B pin 4 tokens.",
-  Gpiob4Tokens,
   gpiob,
   afrl,
   crl,
@@ -2053,8 +2045,6 @@ gpio_pin! {
   "GPIO port B pin 5.",
   Gpiob5,
   peripheral_gpiob_5,
-  "GPIO port B pin 5 tokens.",
-  Gpiob5Tokens,
   gpiob,
   afrl,
   crl,
@@ -2123,8 +2113,6 @@ gpio_pin! {
   "GPIO port B pin 6.",
   Gpiob6,
   peripheral_gpiob_6,
-  "GPIO port B pin 6 tokens.",
-  Gpiob6Tokens,
   gpiob,
   afrl,
   crl,
@@ -2193,8 +2181,6 @@ gpio_pin! {
   "GPIO port B pin 7.",
   Gpiob7,
   peripheral_gpiob_7,
-  "GPIO port B pin 7 tokens.",
-  Gpiob7Tokens,
   gpiob,
   afrl,
   crl,
@@ -2263,8 +2249,6 @@ gpio_pin! {
   "GPIO port B pin 8.",
   Gpiob8,
   peripheral_gpiob_8,
-  "GPIO port B pin 8 tokens.",
-  Gpiob8Tokens,
   gpiob,
   afrh,
   crh,
@@ -2333,8 +2317,6 @@ gpio_pin! {
   "GPIO port B pin 9.",
   Gpiob9,
   peripheral_gpiob_9,
-  "GPIO port B pin 9 tokens.",
-  Gpiob9Tokens,
   gpiob,
   afrh,
   crh,
@@ -2403,8 +2385,6 @@ gpio_pin! {
   "GPIO port B pin 10.",
   Gpiob10,
   peripheral_gpiob_10,
-  "GPIO port B pin 10 tokens.",
-  Gpiob10Tokens,
   gpiob,
   afrh,
   crh,
@@ -2473,8 +2453,6 @@ gpio_pin! {
   "GPIO port B pin 11.",
   Gpiob11,
   peripheral_gpiob_11,
-  "GPIO port B pin 11 tokens.",
-  Gpiob11Tokens,
   gpiob,
   afrh,
   crh,
@@ -2543,8 +2521,6 @@ gpio_pin! {
   "GPIO port B pin 12.",
   Gpiob12,
   peripheral_gpiob_12,
-  "GPIO port B pin 12 tokens.",
-  Gpiob12Tokens,
   gpiob,
   afrh,
   crh,
@@ -2613,8 +2589,6 @@ gpio_pin! {
   "GPIO port B pin 13.",
   Gpiob13,
   peripheral_gpiob_13,
-  "GPIO port B pin 13 tokens.",
-  Gpiob13Tokens,
   gpiob,
   afrh,
   crh,
@@ -2683,8 +2657,6 @@ gpio_pin! {
   "GPIO port B pin 14.",
   Gpiob14,
   peripheral_gpiob_14,
-  "GPIO port B pin 14 tokens.",
-  Gpiob14Tokens,
   gpiob,
   afrh,
   crh,
@@ -2753,8 +2725,6 @@ gpio_pin! {
   "GPIO port B pin 15.",
   Gpiob15,
   peripheral_gpiob_15,
-  "GPIO port B pin 15 tokens.",
-  Gpiob15Tokens,
   gpiob,
   afrh,
   crh,
@@ -2823,8 +2793,6 @@ gpio_pin! {
   "GPIO port C pin 0.",
   Gpioc0,
   peripheral_gpioc_0,
-  "GPIO port C pin 0 tokens.",
-  Gpioc0Tokens,
   gpioc,
   afrl,
   crl,
@@ -2893,8 +2861,6 @@ gpio_pin! {
   "GPIO port C pin 1.",
   Gpioc1,
   peripheral_gpioc_1,
-  "GPIO port C pin 1 tokens.",
-  Gpioc1Tokens,
   gpioc,
   afrl,
   crl,
@@ -2963,8 +2929,6 @@ gpio_pin! {
   "GPIO port C pin 2.",
   Gpioc2,
   peripheral_gpioc_2,
-  "GPIO port C pin 2 tokens.",
-  Gpioc2Tokens,
   gpioc,
   afrl,
   crl,
@@ -3033,8 +2997,6 @@ gpio_pin! {
   "GPIO port C pin 3.",
   Gpioc3,
   peripheral_gpioc_3,
-  "GPIO port C pin 3 tokens.",
-  Gpioc3Tokens,
   gpioc,
   afrl,
   crl,
@@ -3103,8 +3065,6 @@ gpio_pin! {
   "GPIO port C pin 4.",
   Gpioc4,
   peripheral_gpioc_4,
-  "GPIO port C pin 4 tokens.",
-  Gpioc4Tokens,
   gpioc,
   afrl,
   crl,
@@ -3173,8 +3133,6 @@ gpio_pin! {
   "GPIO port C pin 5.",
   Gpioc5,
   peripheral_gpioc_5,
-  "GPIO port C pin 5 tokens.",
-  Gpioc5Tokens,
   gpioc,
   afrl,
   crl,
@@ -3243,8 +3201,6 @@ gpio_pin! {
   "GPIO port C pin 6.",
   Gpioc6,
   peripheral_gpioc_6,
-  "GPIO port C pin 6 tokens.",
-  Gpioc6Tokens,
   gpioc,
   afrl,
   crl,
@@ -3313,8 +3269,6 @@ gpio_pin! {
   "GPIO port C pin 7.",
   Gpioc7,
   peripheral_gpioc_7,
-  "GPIO port C pin 7 tokens.",
-  Gpioc7Tokens,
   gpioc,
   afrl,
   crl,
@@ -3383,8 +3337,6 @@ gpio_pin! {
   "GPIO port C pin 8.",
   Gpioc8,
   peripheral_gpioc_8,
-  "GPIO port C pin 8 tokens.",
-  Gpioc8Tokens,
   gpioc,
   afrh,
   crh,
@@ -3453,8 +3405,6 @@ gpio_pin! {
   "GPIO port C pin 9.",
   Gpioc9,
   peripheral_gpioc_9,
-  "GPIO port C pin 9 tokens.",
-  Gpioc9Tokens,
   gpioc,
   afrh,
   crh,
@@ -3523,8 +3473,6 @@ gpio_pin! {
   "GPIO port C pin 10.",
   Gpioc10,
   peripheral_gpioc_10,
-  "GPIO port C pin 10 tokens.",
-  Gpioc10Tokens,
   gpioc,
   afrh,
   crh,
@@ -3593,8 +3541,6 @@ gpio_pin! {
   "GPIO port C pin 11.",
   Gpioc11,
   peripheral_gpioc_11,
-  "GPIO port C pin 11 tokens.",
-  Gpioc11Tokens,
   gpioc,
   afrh,
   crh,
@@ -3663,8 +3609,6 @@ gpio_pin! {
   "GPIO port C pin 12.",
   Gpioc12,
   peripheral_gpioc_12,
-  "GPIO port C pin 12 tokens.",
-  Gpioc12Tokens,
   gpioc,
   afrh,
   crh,
@@ -3733,8 +3677,6 @@ gpio_pin! {
   "GPIO port C pin 13.",
   Gpioc13,
   peripheral_gpioc_13,
-  "GPIO port C pin 13 tokens.",
-  Gpioc13Tokens,
   gpioc,
   afrh,
   crh,
@@ -3803,8 +3745,6 @@ gpio_pin! {
   "GPIO port C pin 14.",
   Gpioc14,
   peripheral_gpioc_14,
-  "GPIO port C pin 14 tokens.",
-  Gpioc14Tokens,
   gpioc,
   afrh,
   crh,
@@ -3873,8 +3813,6 @@ gpio_pin! {
   "GPIO port C pin 15.",
   Gpioc15,
   peripheral_gpioc_15,
-  "GPIO port C pin 15 tokens.",
-  Gpioc15Tokens,
   gpioc,
   afrh,
   crh,
@@ -3943,8 +3881,6 @@ gpio_pin! {
   "GPIO port D pin 0.",
   Gpiod0,
   peripheral_gpiod_0,
-  "GPIO port D pin 0 tokens.",
-  Gpiod0Tokens,
   gpiod,
   afrl,
   crl,
@@ -4013,8 +3949,6 @@ gpio_pin! {
   "GPIO port D pin 1.",
   Gpiod1,
   peripheral_gpiod_1,
-  "GPIO port D pin 1 tokens.",
-  Gpiod1Tokens,
   gpiod,
   afrl,
   crl,
@@ -4083,8 +4017,6 @@ gpio_pin! {
   "GPIO port D pin 2.",
   Gpiod2,
   peripheral_gpiod_2,
-  "GPIO port D pin 2 tokens.",
-  Gpiod2Tokens,
   gpiod,
   afrl,
   crl,
@@ -4153,8 +4085,6 @@ gpio_pin! {
   "GPIO port D pin 3.",
   Gpiod3,
   peripheral_gpiod_3,
-  "GPIO port D pin 3 tokens.",
-  Gpiod3Tokens,
   gpiod,
   afrl,
   crl,
@@ -4223,8 +4153,6 @@ gpio_pin! {
   "GPIO port D pin 4.",
   Gpiod4,
   peripheral_gpiod_4,
-  "GPIO port D pin 4 tokens.",
-  Gpiod4Tokens,
   gpiod,
   afrl,
   crl,
@@ -4293,8 +4221,6 @@ gpio_pin! {
   "GPIO port D pin 5.",
   Gpiod5,
   peripheral_gpiod_5,
-  "GPIO port D pin 5 tokens.",
-  Gpiod5Tokens,
   gpiod,
   afrl,
   crl,
@@ -4363,8 +4289,6 @@ gpio_pin! {
   "GPIO port D pin 6.",
   Gpiod6,
   peripheral_gpiod_6,
-  "GPIO port D pin 6 tokens.",
-  Gpiod6Tokens,
   gpiod,
   afrl,
   crl,
@@ -4433,8 +4357,6 @@ gpio_pin! {
   "GPIO port D pin 7.",
   Gpiod7,
   peripheral_gpiod_7,
-  "GPIO port D pin 7 tokens.",
-  Gpiod7Tokens,
   gpiod,
   afrl,
   crl,
@@ -4503,8 +4425,6 @@ gpio_pin! {
   "GPIO port D pin 8.",
   Gpiod8,
   peripheral_gpiod_8,
-  "GPIO port D pin 8 tokens.",
-  Gpiod8Tokens,
   gpiod,
   afrh,
   crh,
@@ -4573,8 +4493,6 @@ gpio_pin! {
   "GPIO port D pin 9.",
   Gpiod9,
   peripheral_gpiod_9,
-  "GPIO port D pin 9 tokens.",
-  Gpiod9Tokens,
   gpiod,
   afrh,
   crh,
@@ -4643,8 +4561,6 @@ gpio_pin! {
   "GPIO port D pin 10.",
   Gpiod10,
   peripheral_gpiod_10,
-  "GPIO port D pin 10 tokens.",
-  Gpiod10Tokens,
   gpiod,
   afrh,
   crh,
@@ -4713,8 +4629,6 @@ gpio_pin! {
   "GPIO port D pin 11.",
   Gpiod11,
   peripheral_gpiod_11,
-  "GPIO port D pin 11 tokens.",
-  Gpiod11Tokens,
   gpiod,
   afrh,
   crh,
@@ -4783,8 +4697,6 @@ gpio_pin! {
   "GPIO port D pin 12.",
   Gpiod12,
   peripheral_gpiod_12,
-  "GPIO port D pin 12 tokens.",
-  Gpiod12Tokens,
   gpiod,
   afrh,
   crh,
@@ -4853,8 +4765,6 @@ gpio_pin! {
   "GPIO port D pin 13.",
   Gpiod13,
   peripheral_gpiod_13,
-  "GPIO port D pin 13 tokens.",
-  Gpiod13Tokens,
   gpiod,
   afrh,
   crh,
@@ -4923,8 +4833,6 @@ gpio_pin! {
   "GPIO port D pin 14.",
   Gpiod14,
   peripheral_gpiod_14,
-  "GPIO port D pin 14 tokens.",
-  Gpiod14Tokens,
   gpiod,
   afrh,
   crh,
@@ -4993,8 +4901,6 @@ gpio_pin! {
   "GPIO port D pin 15.",
   Gpiod15,
   peripheral_gpiod_15,
-  "GPIO port D pin 15 tokens.",
-  Gpiod15Tokens,
   gpiod,
   afrh,
   crh,
@@ -5063,8 +4969,6 @@ gpio_pin! {
   "GPIO port E pin 0.",
   Gpioe0,
   peripheral_gpioe_0,
-  "GPIO port E pin 0 tokens.",
-  Gpioe0Tokens,
   gpioe,
   afrl,
   crl,
@@ -5133,8 +5037,6 @@ gpio_pin! {
   "GPIO port E pin 1.",
   Gpioe1,
   peripheral_gpioe_1,
-  "GPIO port E pin 1 tokens.",
-  Gpioe1Tokens,
   gpioe,
   afrl,
   crl,
@@ -5203,8 +5105,6 @@ gpio_pin! {
   "GPIO port E pin 2.",
   Gpioe2,
   peripheral_gpioe_2,
-  "GPIO port E pin 2 tokens.",
-  Gpioe2Tokens,
   gpioe,
   afrl,
   crl,
@@ -5273,8 +5173,6 @@ gpio_pin! {
   "GPIO port E pin 3.",
   Gpioe3,
   peripheral_gpioe_3,
-  "GPIO port E pin 3 tokens.",
-  Gpioe3Tokens,
   gpioe,
   afrl,
   crl,
@@ -5343,8 +5241,6 @@ gpio_pin! {
   "GPIO port E pin 4.",
   Gpioe4,
   peripheral_gpioe_4,
-  "GPIO port E pin 4 tokens.",
-  Gpioe4Tokens,
   gpioe,
   afrl,
   crl,
@@ -5413,8 +5309,6 @@ gpio_pin! {
   "GPIO port E pin 5.",
   Gpioe5,
   peripheral_gpioe_5,
-  "GPIO port E pin 5 tokens.",
-  Gpioe5Tokens,
   gpioe,
   afrl,
   crl,
@@ -5483,8 +5377,6 @@ gpio_pin! {
   "GPIO port E pin 6.",
   Gpioe6,
   peripheral_gpioe_6,
-  "GPIO port E pin 6 tokens.",
-  Gpioe6Tokens,
   gpioe,
   afrl,
   crl,
@@ -5553,8 +5445,6 @@ gpio_pin! {
   "GPIO port E pin 7.",
   Gpioe7,
   peripheral_gpioe_7,
-  "GPIO port E pin 7 tokens.",
-  Gpioe7Tokens,
   gpioe,
   afrl,
   crl,
@@ -5623,8 +5513,6 @@ gpio_pin! {
   "GPIO port E pin 8.",
   Gpioe8,
   peripheral_gpioe_8,
-  "GPIO port E pin 8 tokens.",
-  Gpioe8Tokens,
   gpioe,
   afrh,
   crh,
@@ -5693,8 +5581,6 @@ gpio_pin! {
   "GPIO port E pin 9.",
   Gpioe9,
   peripheral_gpioe_9,
-  "GPIO port E pin 9 tokens.",
-  Gpioe9Tokens,
   gpioe,
   afrh,
   crh,
@@ -5763,8 +5649,6 @@ gpio_pin! {
   "GPIO port E pin 10.",
   Gpioe10,
   peripheral_gpioe_10,
-  "GPIO port E pin 10 tokens.",
-  Gpioe10Tokens,
   gpioe,
   afrh,
   crh,
@@ -5833,8 +5717,6 @@ gpio_pin! {
   "GPIO port E pin 11.",
   Gpioe11,
   peripheral_gpioe_11,
-  "GPIO port E pin 11 tokens.",
-  Gpioe11Tokens,
   gpioe,
   afrh,
   crh,
@@ -5903,8 +5785,6 @@ gpio_pin! {
   "GPIO port E pin 12.",
   Gpioe12,
   peripheral_gpioe_12,
-  "GPIO port E pin 12 tokens.",
-  Gpioe12Tokens,
   gpioe,
   afrh,
   crh,
@@ -5973,8 +5853,6 @@ gpio_pin! {
   "GPIO port E pin 13.",
   Gpioe13,
   peripheral_gpioe_13,
-  "GPIO port E pin 13 tokens.",
-  Gpioe13Tokens,
   gpioe,
   afrh,
   crh,
@@ -6043,8 +5921,6 @@ gpio_pin! {
   "GPIO port E pin 14.",
   Gpioe14,
   peripheral_gpioe_14,
-  "GPIO port E pin 14 tokens.",
-  Gpioe14Tokens,
   gpioe,
   afrh,
   crh,
@@ -6113,8 +5989,6 @@ gpio_pin! {
   "GPIO port E pin 15.",
   Gpioe15,
   peripheral_gpioe_15,
-  "GPIO port E pin 15 tokens.",
-  Gpioe15Tokens,
   gpioe,
   afrh,
   crh,
@@ -6182,8 +6056,6 @@ gpio_pin! {
   "GPIO port F pin 0.",
   Gpiof0,
   peripheral_gpiof_0,
-  "GPIO port F pin 0 tokens.",
-  Gpiof0Tokens,
   gpiof,
   afrl,
   crl,
@@ -6251,8 +6123,6 @@ gpio_pin! {
   "GPIO port F pin 1.",
   Gpiof1,
   peripheral_gpiof_1,
-  "GPIO port F pin 1 tokens.",
-  Gpiof1Tokens,
   gpiof,
   afrl,
   crl,
@@ -6320,8 +6190,6 @@ gpio_pin! {
   "GPIO port F pin 2.",
   Gpiof2,
   peripheral_gpiof_2,
-  "GPIO port F pin 2 tokens.",
-  Gpiof2Tokens,
   gpiof,
   afrl,
   crl,
@@ -6389,8 +6257,6 @@ gpio_pin! {
   "GPIO port F pin 3.",
   Gpiof3,
   peripheral_gpiof_3,
-  "GPIO port F pin 3 tokens.",
-  Gpiof3Tokens,
   gpiof,
   afrl,
   crl,
@@ -6458,8 +6324,6 @@ gpio_pin! {
   "GPIO port F pin 4.",
   Gpiof4,
   peripheral_gpiof_4,
-  "GPIO port F pin 4 tokens.",
-  Gpiof4Tokens,
   gpiof,
   afrl,
   crl,
@@ -6527,8 +6391,6 @@ gpio_pin! {
   "GPIO port F pin 5.",
   Gpiof5,
   peripheral_gpiof_5,
-  "GPIO port F pin 5 tokens.",
-  Gpiof5Tokens,
   gpiof,
   afrl,
   crl,
@@ -6596,8 +6458,6 @@ gpio_pin! {
   "GPIO port F pin 6.",
   Gpiof6,
   peripheral_gpiof_6,
-  "GPIO port F pin 6 tokens.",
-  Gpiof6Tokens,
   gpiof,
   afrl,
   crl,
@@ -6665,8 +6525,6 @@ gpio_pin! {
   "GPIO port F pin 7.",
   Gpiof7,
   peripheral_gpiof_7,
-  "GPIO port F pin 7 tokens.",
-  Gpiof7Tokens,
   gpiof,
   afrl,
   crl,
@@ -6734,8 +6592,6 @@ gpio_pin! {
   "GPIO port F pin 8.",
   Gpiof8,
   peripheral_gpiof_8,
-  "GPIO port F pin 8 tokens.",
-  Gpiof8Tokens,
   gpiof,
   afrh,
   crh,
@@ -6803,8 +6659,6 @@ gpio_pin! {
   "GPIO port F pin 9.",
   Gpiof9,
   peripheral_gpiof_9,
-  "GPIO port F pin 9 tokens.",
-  Gpiof9Tokens,
   gpiof,
   afrh,
   crh,
@@ -6872,8 +6726,6 @@ gpio_pin! {
   "GPIO port F pin 10.",
   Gpiof10,
   peripheral_gpiof_10,
-  "GPIO port F pin 10 tokens.",
-  Gpiof10Tokens,
   gpiof,
   afrh,
   crh,
@@ -6941,8 +6793,6 @@ gpio_pin! {
   "GPIO port F pin 11.",
   Gpiof11,
   peripheral_gpiof_11,
-  "GPIO port F pin 11 tokens.",
-  Gpiof11Tokens,
   gpiof,
   afrh,
   crh,
@@ -7010,8 +6860,6 @@ gpio_pin! {
   "GPIO port F pin 12.",
   Gpiof12,
   peripheral_gpiof_12,
-  "GPIO port F pin 12 tokens.",
-  Gpiof12Tokens,
   gpiof,
   afrh,
   crh,
@@ -7079,8 +6927,6 @@ gpio_pin! {
   "GPIO port F pin 13.",
   Gpiof13,
   peripheral_gpiof_13,
-  "GPIO port F pin 13 tokens.",
-  Gpiof13Tokens,
   gpiof,
   afrh,
   crh,
@@ -7148,8 +6994,6 @@ gpio_pin! {
   "GPIO port F pin 14.",
   Gpiof14,
   peripheral_gpiof_14,
-  "GPIO port F pin 14 tokens.",
-  Gpiof14Tokens,
   gpiof,
   afrh,
   crh,
@@ -7217,8 +7061,6 @@ gpio_pin! {
   "GPIO port F pin 15.",
   Gpiof15,
   peripheral_gpiof_15,
-  "GPIO port F pin 15 tokens.",
-  Gpiof15Tokens,
   gpiof,
   afrh,
   crh,
@@ -7286,8 +7128,6 @@ gpio_pin! {
   "GPIO port G pin 0.",
   Gpiog0,
   peripheral_gpiog_0,
-  "GPIO port G pin 0 tokens.",
-  Gpiog0Tokens,
   gpiog,
   afrl,
   crl,
@@ -7355,8 +7195,6 @@ gpio_pin! {
   "GPIO port G pin 1.",
   Gpiog1,
   peripheral_gpiog_1,
-  "GPIO port G pin 1 tokens.",
-  Gpiog1Tokens,
   gpiog,
   afrl,
   crl,
@@ -7424,8 +7262,6 @@ gpio_pin! {
   "GPIO port G pin 2.",
   Gpiog2,
   peripheral_gpiog_2,
-  "GPIO port G pin 2 tokens.",
-  Gpiog2Tokens,
   gpiog,
   afrl,
   crl,
@@ -7493,8 +7329,6 @@ gpio_pin! {
   "GPIO port G pin 3.",
   Gpiog3,
   peripheral_gpiog_3,
-  "GPIO port G pin 3 tokens.",
-  Gpiog3Tokens,
   gpiog,
   afrl,
   crl,
@@ -7562,8 +7396,6 @@ gpio_pin! {
   "GPIO port G pin 4.",
   Gpiog4,
   peripheral_gpiog_4,
-  "GPIO port G pin 4 tokens.",
-  Gpiog4Tokens,
   gpiog,
   afrl,
   crl,
@@ -7631,8 +7463,6 @@ gpio_pin! {
   "GPIO port G pin 5.",
   Gpiog5,
   peripheral_gpiog_5,
-  "GPIO port G pin 5 tokens.",
-  Gpiog5Tokens,
   gpiog,
   afrl,
   crl,
@@ -7700,8 +7530,6 @@ gpio_pin! {
   "GPIO port G pin 6.",
   Gpiog6,
   peripheral_gpiog_6,
-  "GPIO port G pin 6 tokens.",
-  Gpiog6Tokens,
   gpiog,
   afrl,
   crl,
@@ -7769,8 +7597,6 @@ gpio_pin! {
   "GPIO port G pin 7.",
   Gpiog7,
   peripheral_gpiog_7,
-  "GPIO port G pin 7 tokens.",
-  Gpiog7Tokens,
   gpiog,
   afrl,
   crl,
@@ -7838,8 +7664,6 @@ gpio_pin! {
   "GPIO port G pin 8.",
   Gpiog8,
   peripheral_gpiog_8,
-  "GPIO port G pin 8 tokens.",
-  Gpiog8Tokens,
   gpiog,
   afrh,
   crh,
@@ -7907,8 +7731,6 @@ gpio_pin! {
   "GPIO port G pin 9.",
   Gpiog9,
   peripheral_gpiog_9,
-  "GPIO port G pin 9 tokens.",
-  Gpiog9Tokens,
   gpiog,
   afrh,
   crh,
@@ -7976,8 +7798,6 @@ gpio_pin! {
   "GPIO port G pin 10.",
   Gpiog10,
   peripheral_gpiog_10,
-  "GPIO port G pin 10 tokens.",
-  Gpiog10Tokens,
   gpiog,
   afrh,
   crh,
@@ -8045,8 +7865,6 @@ gpio_pin! {
   "GPIO port G pin 11.",
   Gpiog11,
   peripheral_gpiog_11,
-  "GPIO port G pin 11 tokens.",
-  Gpiog11Tokens,
   gpiog,
   afrh,
   crh,
@@ -8114,8 +7932,6 @@ gpio_pin! {
   "GPIO port G pin 12.",
   Gpiog12,
   peripheral_gpiog_12,
-  "GPIO port G pin 12 tokens.",
-  Gpiog12Tokens,
   gpiog,
   afrh,
   crh,
@@ -8183,8 +7999,6 @@ gpio_pin! {
   "GPIO port G pin 13.",
   Gpiog13,
   peripheral_gpiog_13,
-  "GPIO port G pin 13 tokens.",
-  Gpiog13Tokens,
   gpiog,
   afrh,
   crh,
@@ -8252,8 +8066,6 @@ gpio_pin! {
   "GPIO port G pin 14.",
   Gpiog14,
   peripheral_gpiog_14,
-  "GPIO port G pin 14 tokens.",
-  Gpiog14Tokens,
   gpiog,
   afrh,
   crh,
@@ -8321,8 +8133,6 @@ gpio_pin! {
   "GPIO port G pin 15.",
   Gpiog15,
   peripheral_gpiog_15,
-  "GPIO port G pin 15 tokens.",
-  Gpiog15Tokens,
   gpiog,
   afrh,
   crh,
@@ -8389,8 +8199,6 @@ gpio_pin! {
   "GPIO port H pin 0.",
   Gpioh0,
   peripheral_gpioh_0,
-  "GPIO port H pin 0 tokens.",
-  Gpioh0Tokens,
   gpioh,
   afrl,
   crl,
@@ -8457,8 +8265,6 @@ gpio_pin! {
   "GPIO port H pin 1.",
   Gpioh1,
   peripheral_gpioh_1,
-  "GPIO port H pin 1 tokens.",
-  Gpioh1Tokens,
   gpioh,
   afrl,
   crl,
@@ -8525,8 +8331,6 @@ gpio_pin! {
   "GPIO port H pin 2.",
   Gpioh2,
   peripheral_gpioh_2,
-  "GPIO port H pin 2 tokens.",
-  Gpioh2Tokens,
   gpioh,
   afrl,
   crl,
@@ -8593,8 +8397,6 @@ gpio_pin! {
   "GPIO port H pin 3.",
   Gpioh3,
   peripheral_gpioh_3,
-  "GPIO port H pin 3 tokens.",
-  Gpioh3Tokens,
   gpioh,
   afrl,
   crl,
@@ -8661,8 +8463,6 @@ gpio_pin! {
   "GPIO port H pin 4.",
   Gpioh4,
   peripheral_gpioh_4,
-  "GPIO port H pin 4 tokens.",
-  Gpioh4Tokens,
   gpioh,
   afrl,
   crl,
@@ -8729,8 +8529,6 @@ gpio_pin! {
   "GPIO port H pin 5.",
   Gpioh5,
   peripheral_gpioh_5,
-  "GPIO port H pin 5 tokens.",
-  Gpioh5Tokens,
   gpioh,
   afrl,
   crl,
@@ -8797,8 +8595,6 @@ gpio_pin! {
   "GPIO port H pin 6.",
   Gpioh6,
   peripheral_gpioh_6,
-  "GPIO port H pin 6 tokens.",
-  Gpioh6Tokens,
   gpioh,
   afrl,
   crl,
@@ -8865,8 +8661,6 @@ gpio_pin! {
   "GPIO port H pin 7.",
   Gpioh7,
   peripheral_gpioh_7,
-  "GPIO port H pin 7 tokens.",
-  Gpioh7Tokens,
   gpioh,
   afrl,
   crl,
@@ -8933,8 +8727,6 @@ gpio_pin! {
   "GPIO port H pin 8.",
   Gpioh8,
   peripheral_gpioh_8,
-  "GPIO port H pin 8 tokens.",
-  Gpioh8Tokens,
   gpioh,
   afrh,
   crh,
@@ -9001,8 +8793,6 @@ gpio_pin! {
   "GPIO port H pin 9.",
   Gpioh9,
   peripheral_gpioh_9,
-  "GPIO port H pin 9 tokens.",
-  Gpioh9Tokens,
   gpioh,
   afrh,
   crh,
@@ -9069,8 +8859,6 @@ gpio_pin! {
   "GPIO port H pin 10.",
   Gpioh10,
   peripheral_gpioh_10,
-  "GPIO port H pin 10 tokens.",
-  Gpioh10Tokens,
   gpioh,
   afrh,
   crh,
@@ -9137,8 +8925,6 @@ gpio_pin! {
   "GPIO port H pin 11.",
   Gpioh11,
   peripheral_gpioh_11,
-  "GPIO port H pin 11 tokens.",
-  Gpioh11Tokens,
   gpioh,
   afrh,
   crh,
@@ -9205,8 +8991,6 @@ gpio_pin! {
   "GPIO port H pin 12.",
   Gpioh12,
   peripheral_gpioh_12,
-  "GPIO port H pin 12 tokens.",
-  Gpioh12Tokens,
   gpioh,
   afrh,
   crh,
@@ -9273,8 +9057,6 @@ gpio_pin! {
   "GPIO port H pin 13.",
   Gpioh13,
   peripheral_gpioh_13,
-  "GPIO port H pin 13 tokens.",
-  Gpioh13Tokens,
   gpioh,
   afrh,
   crh,
@@ -9341,8 +9123,6 @@ gpio_pin! {
   "GPIO port H pin 14.",
   Gpioh14,
   peripheral_gpioh_14,
-  "GPIO port H pin 14 tokens.",
-  Gpioh14Tokens,
   gpioh,
   afrh,
   crh,
@@ -9409,8 +9189,6 @@ gpio_pin! {
   "GPIO port H pin 15.",
   Gpioh15,
   peripheral_gpioh_15,
-  "GPIO port H pin 15 tokens.",
-  Gpioh15Tokens,
   gpioh,
   afrh,
   crh,
@@ -9475,8 +9253,6 @@ gpio_pin! {
   "GPIO port I pin 0.",
   Gpioi0,
   peripheral_gpioi_0,
-  "GPIO port I pin 0 tokens.",
-  Gpioi0Tokens,
   gpioi,
   afrl,
   crl,
@@ -9538,8 +9314,6 @@ gpio_pin! {
   "GPIO port I pin 1.",
   Gpioi1,
   peripheral_gpioi_1,
-  "GPIO port I pin 1 tokens.",
-  Gpioi1Tokens,
   gpioi,
   afrl,
   crl,
@@ -9601,8 +9375,6 @@ gpio_pin! {
   "GPIO port I pin 2.",
   Gpioi2,
   peripheral_gpioi_2,
-  "GPIO port I pin 2 tokens.",
-  Gpioi2Tokens,
   gpioi,
   afrl,
   crl,
@@ -9664,8 +9436,6 @@ gpio_pin! {
   "GPIO port I pin 3.",
   Gpioi3,
   peripheral_gpioi_3,
-  "GPIO port I pin 3 tokens.",
-  Gpioi3Tokens,
   gpioi,
   afrl,
   crl,
@@ -9727,8 +9497,6 @@ gpio_pin! {
   "GPIO port I pin 4.",
   Gpioi4,
   peripheral_gpioi_4,
-  "GPIO port I pin 4 tokens.",
-  Gpioi4Tokens,
   gpioi,
   afrl,
   crl,
@@ -9790,8 +9558,6 @@ gpio_pin! {
   "GPIO port I pin 5.",
   Gpioi5,
   peripheral_gpioi_5,
-  "GPIO port I pin 5 tokens.",
-  Gpioi5Tokens,
   gpioi,
   afrl,
   crl,
@@ -9853,8 +9619,6 @@ gpio_pin! {
   "GPIO port I pin 6.",
   Gpioi6,
   peripheral_gpioi_6,
-  "GPIO port I pin 6 tokens.",
-  Gpioi6Tokens,
   gpioi,
   afrl,
   crl,
@@ -9916,8 +9680,6 @@ gpio_pin! {
   "GPIO port I pin 7.",
   Gpioi7,
   peripheral_gpioi_7,
-  "GPIO port I pin 7 tokens.",
-  Gpioi7Tokens,
   gpioi,
   afrl,
   crl,
@@ -9979,8 +9741,6 @@ gpio_pin! {
   "GPIO port I pin 8.",
   Gpioi8,
   peripheral_gpioi_8,
-  "GPIO port I pin 8 tokens.",
-  Gpioi8Tokens,
   gpioi,
   afrh,
   crh,
@@ -10042,8 +9802,6 @@ gpio_pin! {
   "GPIO port I pin 9.",
   Gpioi9,
   peripheral_gpioi_9,
-  "GPIO port I pin 9 tokens.",
-  Gpioi9Tokens,
   gpioi,
   afrh,
   crh,
@@ -10105,8 +9863,6 @@ gpio_pin! {
   "GPIO port I pin 10.",
   Gpioi10,
   peripheral_gpioi_10,
-  "GPIO port I pin 10 tokens.",
-  Gpioi10Tokens,
   gpioi,
   afrh,
   crh,
@@ -10168,8 +9924,6 @@ gpio_pin! {
   "GPIO port I pin 11.",
   Gpioi11,
   peripheral_gpioi_11,
-  "GPIO port I pin 11 tokens.",
-  Gpioi11Tokens,
   gpioi,
   afrh,
   crh,
@@ -10231,8 +9985,6 @@ gpio_pin! {
   "GPIO port I pin 12.",
   Gpioi12,
   peripheral_gpioi_12,
-  "GPIO port I pin 12 tokens.",
-  Gpioi12Tokens,
   gpioi,
   afrh,
   crh,
@@ -10294,8 +10046,6 @@ gpio_pin! {
   "GPIO port I pin 13.",
   Gpioi13,
   peripheral_gpioi_13,
-  "GPIO port I pin 13 tokens.",
-  Gpioi13Tokens,
   gpioi,
   afrh,
   crh,
@@ -10357,8 +10107,6 @@ gpio_pin! {
   "GPIO port I pin 14.",
   Gpioi14,
   peripheral_gpioi_14,
-  "GPIO port I pin 14 tokens.",
-  Gpioi14Tokens,
   gpioi,
   afrh,
   crh,
@@ -10420,8 +10168,6 @@ gpio_pin! {
   "GPIO port I pin 15.",
   Gpioi15,
   peripheral_gpioi_15,
-  "GPIO port I pin 15 tokens.",
-  Gpioi15Tokens,
   gpioi,
   afrh,
   crh,

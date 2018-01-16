@@ -209,7 +209,7 @@ pub struct Nvic {
 }
 
 #[cfg(any(feature = "stm32f101"))]
-/// Creates a new `Nvic` driver from tokens.
+/// Creates a new `Nvic`.
 #[macro_export]
 macro_rules! peripheral_nvic {
   ($regs:ident) => {
@@ -244,7 +244,7 @@ macro_rules! peripheral_nvic {
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f102",
           feature = "stm32f103"))]
-/// Creates a new `Nvic` driver from tokens.
+/// Creates a new `Nvic`.
 #[macro_export]
 macro_rules! peripheral_nvic {
   ($regs:ident) => {
@@ -279,7 +279,7 @@ macro_rules! peripheral_nvic {
 }
 
 #[cfg(any(feature = "stm32f107"))]
-/// Creates a new `Nvic` driver from tokens.
+/// Creates a new `Nvic`.
 #[macro_export]
 macro_rules! peripheral_nvic {
   ($regs:ident) => {
@@ -323,7 +323,7 @@ macro_rules! peripheral_nvic {
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
-/// Creates a new `Nvic` driver from tokens.
+/// Creates a new `Nvic`.
 #[macro_export]
 macro_rules! peripheral_nvic {
   ($regs:ident) => {

@@ -28,6 +28,7 @@
 //! [rules.d]: https://github.com/texane/stlink/tree/master/etc/udev/rules.d
 
 #![feature(asm)]
+#![feature(associated_type_defaults)]
 #![feature(conservative_impl_trait)]
 #![feature(const_fn)]
 #![feature(fused)]
@@ -40,6 +41,7 @@
 #![feature(prelude_import)]
 #![feature(proc_macro)]
 #![feature(range_contains)]
+#![feature(universal_impl_trait)]
 #![feature(unreachable)]
 #![feature(untagged_unions)]
 #![no_std]

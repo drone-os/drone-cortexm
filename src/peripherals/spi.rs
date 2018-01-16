@@ -2,6 +2,7 @@
 
 #[allow(unused_imports)]
 use core::ptr::{read_volatile, write_volatile};
+use drone_core::peripheral::{PeripheralDevice, PeripheralTokens};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
@@ -18,71 +19,172 @@ use thread::irq::{IrqSpi1, IrqSpi2, IrqSpi3};
 use thread::prelude::*;
 
 /// Generic SPI.
+pub struct Spi<T: SpiTokens>(T);
+
+/// Generic SPI tokens.
 #[allow(missing_docs)]
-pub trait Spi
-where
-  Self: Sized + Send + Sync + 'static,
-  Self::Tokens: From<Self>,
-{
-  /// Generic SPI input tokens.
-  type InputTokens;
-
-  /// Generic SPI tokens.
-  type Tokens;
-
-  type Cr1: for<'a> WRegShared<'a, Frt>;
-  type Cr2: for<'a> WRegShared<'a, Frt>;
-  type Crcpr: Reg<Srt>;
-  type Dr: Reg<Srt>;
-  type Rxcrcr: Reg<Srt>;
-  type Sr: Reg<Srt>;
-  type Txcrcr: Reg<Srt>;
-
-  /// Creates a new `Spi` driver from provided `tokens`.
-  fn new(tokens: Self::InputTokens) -> Self;
+pub trait SpiTokens: PeripheralTokens {
+  type Cr1: for<'a> RwRegSharedRef<'a, Frt> + RegBitBand<Frt> + RegFork;
+  type Cr1Spe: RegField<Frt, Reg = Self::Cr1>
+    + WRwRegFieldBitShared<Frt>
+    + RRegFieldBitBand<Frt>
+    + WRegFieldBitBand<Frt>
+    + RegFork;
+  type Cr2: for<'a> RwRegSharedRef<'a, Frt> + RegBitBand<Frt> + RegFork;
+  type Cr2Txdmaen: RegField<Frt, Reg = Self::Cr2>
+    + WRwRegFieldBitShared<Frt>
+    + RRegFieldBitBand<Frt>
+    + WRegFieldBitBand<Frt>
+    + RegFork;
+  type Crcpr: for<'a> RwRegSharedRef<'a, Srt>;
+  type Dr: for<'a> RwRegSharedRef<'a, Srt>;
+  type Rxcrcr: RoReg<Srt>;
+  type Sr: for<'a> RwRegSharedRef<'a, Srt> + RegBitBand<Srt>;
+  type SrBsy: RegField<Srt, Reg = Self::Sr> + RRegFieldBitBand<Srt>;
+  type Txcrcr: RoReg<Srt>;
 
   fn cr1(&self) -> &Self::Cr1;
+  fn cr1_mut(&mut self) -> &mut Self::Cr1;
+  fn cr1_spe_mut(&mut self) -> &mut Self::Cr1Spe;
   fn cr2(&self) -> &Self::Cr2;
+  fn cr2_mut(&mut self) -> &mut Self::Cr2;
+  fn cr2_txdmaen_mut(&mut self) -> &mut Self::Cr2Txdmaen;
   fn crcpr(&self) -> &Self::Crcpr;
   fn dr(&self) -> &Self::Dr;
   fn rxcrcr(&self) -> &Self::Rxcrcr;
   fn sr(&self) -> &Self::Sr;
+  fn sr_bsy(&self) -> &Self::SrBsy;
   fn txcrcr(&self) -> &Self::Txcrcr;
+}
+
+/// Generic interrupt-driven SPI tokens.
+#[allow(missing_docs)]
+pub trait SpiTokensIrq: SpiTokens {
+  type Irq: IrqToken<Ltt>;
+
+  fn irq(&self) -> Self::Irq;
+}
+
+impl<T: SpiTokens> PeripheralDevice<T> for Spi<T> {
+  #[inline(always)]
+  fn from_tokens(tokens: T::InputTokens) -> Self {
+    Spi(tokens.into())
+  }
+
+  #[inline(always)]
+  fn into_tokens(self) -> T {
+    self.0
+  }
+}
+
+#[allow(missing_docs)]
+impl<T: SpiTokens> Spi<T> {
+  #[inline(always)]
+  pub fn cr1(&self) -> &T::Cr1 {
+    self.0.cr1()
+  }
+
+  #[inline(always)]
+  pub fn cr2(&self) -> &T::Cr2 {
+    self.0.cr2()
+  }
+
+  #[inline(always)]
+  pub fn crcpr(&self) -> &T::Crcpr {
+    self.0.crcpr()
+  }
+
+  #[inline(always)]
+  pub fn dr(&self) -> &T::Dr {
+    self.0.dr()
+  }
+
+  #[inline(always)]
+  pub fn rxcrcr(&self) -> &T::Rxcrcr {
+    self.0.rxcrcr()
+  }
+
+  #[inline(always)]
+  pub fn sr(&self) -> &T::Sr {
+    self.0.sr()
+  }
+
+  #[inline(always)]
+  pub fn txcrcr(&self) -> &T::Txcrcr {
+    self.0.txcrcr()
+  }
 
   /// Writes `u8` value to the data register.
-  fn send_byte(&self, value: u8);
+  #[inline(always)]
+  pub fn send_byte(&self, value: u8) {
+    unsafe {
+      write_volatile(self.0.dr().to_mut_ptr() as *mut _, value);
+    }
+  }
 
   /// Writes `u16` value to the data register.
-  fn send_hword(&self, value: u16);
+  #[inline(always)]
+  pub fn send_hword(&self, value: u16) {
+    unsafe {
+      write_volatile(self.0.dr().to_mut_ptr() as *mut _, value);
+    }
+  }
 
   /// Reads `u8` value from the data register.
-  fn recv_byte(&self) -> u8;
+  #[inline(always)]
+  pub fn recv_byte(&self) -> u8 {
+    unsafe { read_volatile(self.0.dr().to_ptr() as *const _) }
+  }
 
   /// Reads `u16` value from the data register.
-  fn recv_hword(&self) -> u16;
+  #[inline(always)]
+  pub fn recv_hword(&self) -> u16 {
+    unsafe { read_volatile(self.0.dr().to_ptr() as *const _) }
+  }
 
   /// Waits while SPI is busy in communication or Tx buffer is not empty.
-  fn busy_wait(&self);
+  #[inline(always)]
+  pub fn busy_wait(&self) {
+    while self.0.sr_bsy().read_bit_band() {}
+  }
 
   /// Moves `self` into `f` while `SPE` is cleared, and then sets `SPE`.
-  fn spe_after<F, R>(self, cr1_val: <Self::Cr1 as Reg<Frt>>::Val, f: F) -> R
-  where
-    F: FnOnce(Self) -> R;
-
-  /// Moves `self` into `f` while `TXDMAEN` is cleared, and then sets `TXDMAEN`.
-  fn txdmaen_after<F, R>(
-    self,
-    cr2_val: <Self::Cr2 as Reg<Frt>>::Val,
+  pub fn spe_after<F, R>(
+    mut self,
+    mut cr1_val: <T::Cr1 as Reg<Frt>>::Val,
     f: F,
   ) -> R
   where
-    F: FnOnce(Self) -> R;
-}
+    F: FnOnce(Self) -> R,
+  {
+    let cr1 = self.0.cr1_mut().fork();
+    let cr1_spe = self.0.cr1_spe_mut().fork();
+    cr1_spe.clear(&mut cr1_val);
+    cr1.store_val(cr1_val);
+    let result = f(self);
+    cr1_spe.set(&mut cr1_val);
+    cr1.store_val(cr1_val);
+    result
+  }
 
-/// Generic interrupt-driven SPI.
-#[allow(missing_docs)]
-pub trait SpiIrq<T: ThreadToken<Ltt>>: Spi {
-  fn irq(&self) -> T;
+  /// Moves `self` into `f` while `TXDMAEN` is cleared, and then sets `TXDMAEN`.
+  pub fn txdmaen_after<F, R>(
+    mut self,
+    mut cr2_val: <T::Cr2 as Reg<Frt>>::Val,
+    f: F,
+  ) -> R
+  where
+    F: FnOnce(Self) -> R,
+  {
+    let cr2 = self.0.cr2_mut().fork();
+    let cr2_txdmaen = self.0.cr2_txdmaen_mut().fork();
+    cr2_txdmaen.clear(&mut cr2_val);
+    cr2.store_val(cr2_val);
+    let result = f(self);
+    cr2_txdmaen.set(&mut cr2_val);
+    cr2.store_val(cr2_val);
+    result
+  }
 }
 
 #[allow(unused_macros)]
@@ -98,113 +200,74 @@ macro_rules! spi_shared {
     $spi_txcrcr:ident,
   ) => {
     type Cr1 = $spi::Cr1<Frt>;
+    type Cr1Spe = $spi::cr1::Spe<Frt>;
     type Cr2 = $spi::Cr2<Frt>;
+    type Cr2Txdmaen = $spi::cr2::Txdmaen<Frt>;
     type Crcpr = $spi::Crcpr<Srt>;
     type Dr = $spi::Dr<Srt>;
     type Rxcrcr = $spi::Rxcrcr<Srt>;
     type Sr = $spi::Sr<Srt>;
+    type SrBsy = $spi::sr::Bsy<Srt>;
     type Txcrcr = $spi::Txcrcr<Srt>;
 
     #[inline(always)]
     fn cr1(&self) -> &Self::Cr1 {
-      &self.tokens.$spi_cr1
+      &self.$spi_cr1
+    }
+
+    #[inline(always)]
+    fn cr1_mut(&mut self) -> &mut Self::Cr1 {
+      &mut self.$spi_cr1
+    }
+
+    #[inline(always)]
+    fn cr1_spe_mut(&mut self) -> &mut Self::Cr1Spe {
+      &mut self.$spi_cr1.spe
     }
 
     #[inline(always)]
     fn cr2(&self) -> &Self::Cr2 {
-      &self.tokens.$spi_cr2
+      &self.$spi_cr2
+    }
+
+    #[inline(always)]
+    fn cr2_mut(&mut self) -> &mut Self::Cr2 {
+      &mut self.$spi_cr2
+    }
+
+    #[inline(always)]
+    fn cr2_txdmaen_mut(&mut self) -> &mut Self::Cr2Txdmaen {
+      &mut self.$spi_cr2.txdmaen
     }
 
     #[inline(always)]
     fn crcpr(&self) -> &Self::Crcpr {
-      &self.tokens.$spi_crcpr
+      &self.$spi_crcpr
     }
 
     #[inline(always)]
     fn dr(&self) -> &Self::Dr {
-      &self.tokens.$spi_dr
+      &self.$spi_dr
     }
 
     #[inline(always)]
     fn rxcrcr(&self) -> &Self::Rxcrcr {
-      &self.tokens.$spi_rxcrcr
+      &self.$spi_rxcrcr
     }
 
     #[inline(always)]
     fn sr(&self) -> &Self::Sr {
-      &self.tokens.$spi_sr
+      &self.$spi_sr
+    }
+
+    #[inline(always)]
+    fn sr_bsy(&self) -> &Self::SrBsy {
+      &self.$spi_sr.bsy
     }
 
     #[inline(always)]
     fn txcrcr(&self) -> &Self::Txcrcr {
-      &self.tokens.$spi_txcrcr
-    }
-
-    #[inline(always)]
-    fn send_byte(&self, value: u8) {
-      unsafe {
-        write_volatile(self.tokens.$spi_dr.to_mut_ptr() as *mut _, value);
-      }
-    }
-
-    #[inline(always)]
-    fn send_hword(&self, value: u16) {
-      unsafe {
-        write_volatile(self.tokens.$spi_dr.to_mut_ptr() as *mut _, value);
-      }
-    }
-
-    #[inline(always)]
-    fn recv_byte(&self) -> u8 {
-      unsafe { read_volatile(self.tokens.$spi_dr.to_ptr() as *const _) }
-    }
-
-    #[inline(always)]
-    fn recv_hword(&self) -> u16 {
-      unsafe { read_volatile(self.tokens.$spi_dr.to_ptr() as *const _) }
-    }
-
-    #[inline(always)]
-    fn busy_wait(&self) {
-      while self.sr().bsy.read_bit_band() {}
-    }
-
-    #[inline]
-    fn spe_after<F, R>(
-      mut self,
-      mut cr1_val: <Self::Cr1 as Reg<Frt>>::Val,
-      f: F,
-    ) -> R
-    where
-      F: FnOnce(Self) -> R,
-    {
-      let cr1 = self.tokens.$spi_cr1.fork();
-      let cr1_spe = self.tokens.$spi_cr1.spe.fork();
-      cr1_spe.clear(&mut cr1_val);
-      cr1.store_val(cr1_val);
-      let result = f(self);
-      cr1_spe.set(&mut cr1_val);
-      cr1.store_val(cr1_val);
-      result
-    }
-
-    #[inline]
-    fn txdmaen_after<F, R>(
-      mut self,
-      mut cr2_val: <Self::Cr2 as Reg<Frt>>::Val,
-      f: F,
-    ) -> R
-    where
-      F: FnOnce(Self) -> R,
-    {
-      let cr2 = self.tokens.$spi_cr2.fork();
-      let cr2_txdmaen = self.tokens.$spi_cr2.txdmaen.fork();
-      cr2_txdmaen.clear(&mut cr2_val);
-      cr2.store_val(cr2_val);
-      let result = f(self);
-      cr2_txdmaen.set(&mut cr2_val);
-      cr2.store_val(cr2_val);
-      result
+      &self.$spi_txcrcr
     }
   }
 }
@@ -233,20 +296,16 @@ macro_rules! spi {
     $spi_txcrcr:ident,
   ) => {
     #[doc = $doc]
-    pub struct $name {
-      tokens: $name_tokens<Frt>,
-    }
+    pub type $name = Spi<$name_tokens<Frt>>;
 
     #[doc = $doc_irq]
-    pub struct $name_irq<T: $irq_ty<Ltt>> {
-      tokens: $name_irq_tokens<T, Frt>,
-    }
+    pub type $name_irq<I> = Spi<$name_irq_tokens<I, Frt>>;
 
     #[doc = $doc_tokens]
     #[allow(missing_docs)]
-    pub struct $name_tokens<R: RegTag> {
-      pub $spi_cr1: $spi::Cr1<R>,
-      pub $spi_cr2: $spi::Cr2<R>,
+    pub struct $name_tokens<Rt: RegTag> {
+      pub $spi_cr1: $spi::Cr1<Rt>,
+      pub $spi_cr2: $spi::Cr2<Rt>,
       pub $spi_crcpr: $spi::Crcpr<Srt>,
       pub $spi_dr: $spi::Dr<Srt>,
       pub $spi_rxcrcr: $spi::Rxcrcr<Srt>,
@@ -256,10 +315,10 @@ macro_rules! spi {
 
     #[doc = $doc_irq_tokens]
     #[allow(missing_docs)]
-    pub struct $name_irq_tokens<T: $irq_ty<Ltt>, R: RegTag> {
-      pub $spi: T,
-      pub $spi_cr1: $spi::Cr1<R>,
-      pub $spi_cr2: $spi::Cr2<R>,
+    pub struct $name_irq_tokens<I: $irq_ty<Ltt>, Rt: RegTag> {
+      pub $spi: I,
+      pub $spi_cr1: $spi::Cr1<Rt>,
+      pub $spi_cr2: $spi::Cr2<Rt>,
       pub $spi_crcpr: $spi::Crcpr<Srt>,
       pub $spi_dr: $spi::Dr<Srt>,
       pub $spi_rxcrcr: $spi::Rxcrcr<Srt>,
@@ -267,11 +326,11 @@ macro_rules! spi {
       pub $spi_txcrcr: $spi::Txcrcr<Srt>,
     }
 
-    /// Creates a new `Spi` driver from tokens.
+    /// Creates a new `Spi`.
     #[macro_export]
     macro_rules! $name_macro {
       ($regs:ident) => {
-        $crate::peripherals::spi::Spi::new(
+        $crate::peripherals::spi::Spi::from_tokens(
           $crate::peripherals::spi::$name_tokens {
             $spi_cr1: $regs.$spi_cr1,
             $spi_cr2: $regs.$spi_cr2,
@@ -285,11 +344,11 @@ macro_rules! spi {
       }
     }
 
-    /// Creates a new `SpiIrq` driver from tokens.
+    /// Creates a new `SpiIrq`.
     #[macro_export]
     macro_rules! $name_irq_macro {
       ($regs:ident, $thrd:ident) => {
-        $crate::peripherals::spi::SpiIrq::new(
+        $crate::peripherals::spi::SpiIrq::from_tokens(
           $crate::peripherals::spi::$name_irq_tokens {
             $spi: $thrd.$spi.into(),
             $spi_cr1: $regs.$spi_cr1,
@@ -304,32 +363,26 @@ macro_rules! spi {
       }
     }
 
-    impl From<$name> for $name_tokens<Frt> {
+    impl From<$name_tokens<Srt>> for $name_tokens<Frt> {
       #[inline(always)]
-      fn from(spi: $name) -> Self {
-        spi.tokens
+      fn from(tokens: $name_tokens<Srt>) -> Self {
+        Self {
+          $spi_cr1: tokens.$spi_cr1.into(),
+          $spi_cr2: tokens.$spi_cr2.into(),
+          $spi_crcpr: tokens.$spi_crcpr,
+          $spi_dr: tokens.$spi_dr,
+          $spi_rxcrcr: tokens.$spi_rxcrcr,
+          $spi_sr: tokens.$spi_sr,
+          $spi_txcrcr: tokens.$spi_txcrcr,
+        }
       }
     }
 
-    impl Spi for $name {
+    impl PeripheralTokens for $name_tokens<Frt> {
       type InputTokens = $name_tokens<Srt>;
-      type Tokens = $name_tokens<Frt>;
+    }
 
-      #[inline(always)]
-      fn new(tokens: Self::InputTokens) -> Self {
-        Self {
-          tokens: Self::Tokens {
-            $spi_cr1: tokens.$spi_cr1.into(),
-            $spi_cr2: tokens.$spi_cr2.into(),
-            $spi_crcpr: tokens.$spi_crcpr,
-            $spi_dr: tokens.$spi_dr,
-            $spi_rxcrcr: tokens.$spi_rxcrcr,
-            $spi_sr: tokens.$spi_sr,
-            $spi_txcrcr: tokens.$spi_txcrcr,
-          }
-        }
-      }
-
+    impl SpiTokens for $name_tokens<Frt> {
       spi_shared! {
         $spi,
         $spi_cr1,
@@ -342,33 +395,30 @@ macro_rules! spi {
       }
     }
 
-    impl<T: $irq_ty<Ltt>> From<$name_irq<T>> for $name_irq_tokens<T, Frt> {
+    impl<I> From<$name_irq_tokens<I, Srt>> for $name_irq_tokens<I, Frt>
+    where
+      I: $irq_ty<Ltt>,
+    {
       #[inline(always)]
-      fn from(spi_irq: $name_irq<T>) -> Self {
-        spi_irq.tokens
+      fn from(tokens: $name_irq_tokens<I, Srt>) -> Self {
+        Self {
+          $spi: tokens.$spi,
+          $spi_cr1: tokens.$spi_cr1.into(),
+          $spi_cr2: tokens.$spi_cr2.into(),
+          $spi_crcpr: tokens.$spi_crcpr,
+          $spi_dr: tokens.$spi_dr,
+          $spi_rxcrcr: tokens.$spi_rxcrcr,
+          $spi_sr: tokens.$spi_sr,
+          $spi_txcrcr: tokens.$spi_txcrcr,
+        }
       }
     }
 
-    impl<T: $irq_ty<Ltt>> Spi for $name_irq<T> {
-      type InputTokens = $name_irq_tokens<T, Srt>;
-      type Tokens = $name_irq_tokens<T, Frt>;
+    impl<I: $irq_ty<Ltt>> PeripheralTokens for $name_irq_tokens<I, Frt> {
+      type InputTokens = $name_irq_tokens<I, Srt>;
+    }
 
-      #[inline(always)]
-      fn new(tokens: Self::InputTokens) -> Self {
-        Self {
-          tokens: Self::Tokens {
-            $spi: tokens.$spi,
-            $spi_cr1: tokens.$spi_cr1.into(),
-            $spi_cr2: tokens.$spi_cr2.into(),
-            $spi_crcpr: tokens.$spi_crcpr,
-            $spi_dr: tokens.$spi_dr,
-            $spi_rxcrcr: tokens.$spi_rxcrcr,
-            $spi_sr: tokens.$spi_sr,
-            $spi_txcrcr: tokens.$spi_txcrcr,
-          }
-        }
-      }
-
+    impl<I: $irq_ty<Ltt>> SpiTokens for $name_irq_tokens<I, Frt> {
       spi_shared! {
         $spi,
         $spi_cr1,
@@ -381,10 +431,12 @@ macro_rules! spi {
       }
     }
 
-    impl<T: $irq_ty<Ltt>> SpiIrq<T> for $name_irq<T> {
+    impl<I: $irq_ty<Ltt>> SpiTokensIrq for $name_irq_tokens<I, Frt> {
+      type Irq = I;
+
       #[inline(always)]
-      fn irq(&self) -> T {
-        self.tokens.$spi
+      fn irq(&self) -> Self::Irq {
+        self.$spi
       }
     }
   }
