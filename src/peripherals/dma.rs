@@ -1,6 +1,6 @@
 //! Direct memory access controller.
 
-use drone_core::peripheral::{PeripheralDevice, PeripheralTokens};
+use drone_core::peripherals::{PeripheralDevice, PeripheralTokens};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
@@ -44,52 +44,59 @@ pub struct Dma<T: DmaTokens>(T);
 
 /// Generic DMA tokens.
 #[allow(missing_docs)]
-pub trait DmaTokens: PeripheralTokens<InputTokens = Self> {
+pub trait DmaTokens: PeripheralTokens {
   type Irq: IrqToken<Ltt>;
-  type Ccr: for<'a> RwRegSharedRef<'a, Srt>;
+  type Ccr: for<'a> RwRegAtomicRef<'a, Srt>;
   type CmarVal: RegVal<Raw = u32>;
-  type Cmar: Reg<Srt, Val = Self::CmarVal> + for<'a> RwRegSharedRef<'a, Srt>;
+  type Cmar: Reg<Srt, Val = Self::CmarVal> + for<'a> RwRegAtomicRef<'a, Srt>;
   type CmarMa: RegField<Srt, Reg = Self::Cmar>
     + RRegFieldBits<Srt>
-    + WRwRegFieldBitsShared<Srt>;
+    + WRwRegFieldBitsAtomic<Srt>;
   type CndtrVal: RegVal<Raw = u32>;
-  type Cndtr: Reg<Srt, Val = Self::CndtrVal> + for<'a> RwRegSharedRef<'a, Srt>;
+  type Cndtr: Reg<Srt, Val = Self::CndtrVal> + for<'a> RwRegAtomicRef<'a, Srt>;
   type CndtrNdt: RegField<Srt, Reg = Self::Cndtr>
     + RRegFieldBits<Srt>
-    + WRwRegFieldBitsShared<Srt>;
+    + WRwRegFieldBitsAtomic<Srt>;
   type CparVal: RegVal<Raw = u32>;
-  type Cpar: Reg<Srt, Val = Self::CparVal> + for<'a> RwRegSharedRef<'a, Srt>;
+  type Cpar: Reg<Srt, Val = Self::CparVal> + for<'a> RwRegAtomicRef<'a, Srt>;
   type CparPa: RegField<Srt, Reg = Self::Cpar>
     + RRegFieldBits<Srt>
-    + WRwRegFieldBitsShared<Srt>;
+    + WRwRegFieldBitsAtomic<Srt>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  type Cselr: for<'a> RwRegSharedRef<'a, Srt>;
+  type Cselr: for<'a> RwRegAtomicRef<'a, Srt>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
   type CselrCs: RegField<Srt, Reg = Self::Cselr>
     + RRegFieldBits<Srt>
-    + WRwRegFieldBitsShared<Srt>;
-  type Ifcr: WoReg<Srt> + for<'a> WRegShared<'a, Srt> + RegBitBand<Srt>;
-  type IfcrCgif: RegField<Srt, Reg = Self::Ifcr>
-    + WoWoRegFieldBit<Srt>
-    + WRegFieldBitBand<Srt>;
-  type IfcrChtif: RegField<Srt, Reg = Self::Ifcr>
-    + WoWoRegFieldBit<Srt>
-    + WRegFieldBitBand<Srt>;
-  type IfcrCtcif: RegField<Srt, Reg = Self::Ifcr>
-    + WoWoRegFieldBit<Srt>
-    + WRegFieldBitBand<Srt>;
-  type IfcrCteif: RegField<Srt, Reg = Self::Ifcr>
-    + WoWoRegFieldBit<Srt>
-    + WRegFieldBitBand<Srt>;
-  type Isr: RoReg<Srt> + RegBitBand<Srt>;
-  type IsrGif: RegField<Srt, Reg = Self::Isr> + RRegFieldBitBand<Srt>;
-  type IsrHtif: RegField<Srt, Reg = Self::Isr> + RRegFieldBitBand<Srt>;
-  type IsrTcif: RegField<Srt, Reg = Self::Isr> + RRegFieldBitBand<Srt>;
-  type IsrTeif: RegField<Srt, Reg = Self::Isr> + RRegFieldBitBand<Srt>;
+    + WRwRegFieldBitsAtomic<Srt>;
+  type Ifcr: WoReg<Frt>
+    + for<'a> WRegAtomic<'a, Frt>
+    + RegBitBand<Frt>
+    + RegFork;
+  type IfcrCgif: RegField<Frt, Reg = Self::Ifcr>
+    + WoWoRegFieldBit<Frt>
+    + WRegFieldBitBand<Frt>
+    + RegFork;
+  type IfcrChtif: RegField<Frt, Reg = Self::Ifcr>
+    + WoWoRegFieldBit<Frt>
+    + WRegFieldBitBand<Frt>
+    + RegFork;
+  type IfcrCtcif: RegField<Frt, Reg = Self::Ifcr>
+    + WoWoRegFieldBit<Frt>
+    + WRegFieldBitBand<Frt>
+    + RegFork;
+  type IfcrCteif: RegField<Frt, Reg = Self::Ifcr>
+    + WoWoRegFieldBit<Frt>
+    + WRegFieldBitBand<Frt>
+    + RegFork;
+  type Isr: RoReg<Frt> + RegBitBand<Frt> + RegFork;
+  type IsrGif: RegField<Frt, Reg = Self::Isr> + RRegFieldBitBand<Frt> + RegFork;
+  type IsrHtif: RegField<Frt, Reg = Self::Isr> + RRegFieldBitBand<Frt> + RegFork;
+  type IsrTcif: RegField<Frt, Reg = Self::Isr> + RRegFieldBitBand<Frt> + RegFork;
+  type IsrTeif: RegField<Frt, Reg = Self::Isr> + RRegFieldBitBand<Frt> + RegFork;
 
   fn irq(&self) -> Self::Irq;
   fn ccr(&self) -> &Self::Ccr;
@@ -104,19 +111,29 @@ pub trait DmaTokens: PeripheralTokens<InputTokens = Self> {
             feature = "stm32l4x6"))]
   fn cselr_cs(&self) -> &Self::CselrCs;
   fn ifcr_cgif(&self) -> &Self::IfcrCgif;
+  fn ifcr_cgif_mut(&mut self) -> &mut Self::IfcrCgif;
   fn ifcr_chtif(&self) -> &Self::IfcrChtif;
+  fn ifcr_chtif_mut(&mut self) -> &mut Self::IfcrChtif;
   fn ifcr_ctcif(&self) -> &Self::IfcrCtcif;
+  fn ifcr_ctcif_mut(&mut self) -> &mut Self::IfcrCtcif;
   fn ifcr_cteif(&self) -> &Self::IfcrCteif;
+  fn ifcr_cteif_mut(&mut self) -> &mut Self::IfcrCteif;
   fn isr_gif(&self) -> &Self::IsrGif;
+  fn isr_gif_mut(&mut self) -> &mut Self::IsrGif;
   fn isr_htif(&self) -> &Self::IsrHtif;
+  fn isr_htif_mut(&mut self) -> &mut Self::IsrHtif;
   fn isr_tcif(&self) -> &Self::IsrTcif;
+  fn isr_tcif_mut(&mut self) -> &mut Self::IsrTcif;
   fn isr_teif(&self) -> &Self::IsrTeif;
+  fn isr_teif_mut(&mut self) -> &mut Self::IsrTeif;
 }
 
-impl<T: DmaTokens> PeripheralDevice<T> for Dma<T> {
+impl<T: DmaTokens> PeripheralDevice for Dma<T> {
+  type Tokens = T;
+
   #[inline(always)]
   fn from_tokens(tokens: T::InputTokens) -> Self {
-    Dma(tokens)
+    Dma(tokens.into())
   }
 
   #[inline(always)]
@@ -202,65 +219,71 @@ impl<T: DmaTokens> Dma<T> {
 
   /// Returns a number of data to transfer.
   #[inline(always)]
-  pub fn number_of_data(&self) -> u16 {
-    self.0.cndtr_ndt().read_bits() as u16
+  pub fn number_of_data(&self) -> usize {
+    self.0.cndtr_ndt().read_bits() as usize
   }
 
   /// Sets the number of data to transfer.
   #[inline(always)]
-  pub fn set_number_of_data(&self, number: u16) {
-    self.0.cndtr_ndt().write_bits(u32::from(number));
+  pub fn set_number_of_data(&self, number: usize) {
+    self.0.cndtr_ndt().write_bits(number as u32);
   }
 
   /// Returns a peripheral address.
   #[inline(always)]
-  pub fn peripheral_address(&self) -> usize {
+  pub fn peripheral_addr(&self) -> usize {
     self.0.cpar_pa().read_bits() as usize
   }
 
   /// Sets the peripheral address.
   #[inline(always)]
-  pub fn set_peripheral_address(&self, address: usize) {
-    self.0.cpar_pa().write_bits(address as u32);
+  pub unsafe fn set_peripheral_addr(&self, addr: usize) {
+    self.0.cpar_pa().write_bits(addr as u32);
   }
 
   /// Returns a memory address.
   #[inline(always)]
-  pub fn memory_address(&self) -> usize {
+  pub fn memory_addr(&self) -> usize {
     self.0.cmar_ma().read_bits() as usize
   }
 
   /// Sets the memory address.
   #[inline(always)]
-  pub fn set_memory_address(&self, address: usize) {
-    self.0.cmar_ma().write_bits(address as u32);
+  pub unsafe fn set_memory_addr(&self, addr: usize) {
+    self.0.cmar_ma().write_bits(addr as u32);
   }
 
   /// Returns a future, which resolves on DMA transfer complete event.
-  pub fn transfer_complete(self) -> impl Future<Item = Self, Error = Self> {
+  pub fn transfer_complete(&mut self) -> impl Future<Item = (), Error = ()> {
+    let teif = self.0.isr_teif_mut().fork();
+    let tcif = self.0.isr_tcif_mut().fork();
+    let cgif = self.0.ifcr_cgif_mut().fork();
     self.0.irq().future(move || loop {
-      if self.0.isr_teif().read_bit_band() {
-        self.0.ifcr_cgif().set_bit_band();
-        break Err(self);
+      if teif.read_bit_band() {
+        cgif.set_bit_band();
+        break Err(());
       }
-      if self.0.isr_tcif().read_bit_band() {
-        self.0.ifcr_cgif().set_bit_band();
-        break Ok(self);
+      if tcif.read_bit_band() {
+        cgif.set_bit_band();
+        break Ok(());
       }
       yield;
     })
   }
 
   /// Returns a future, which resolves on DMA half transfer event.
-  pub fn half_transfer(self) -> impl Future<Item = Self, Error = Self> {
+  pub fn half_transfer(&mut self) -> impl Future<Item = (), Error = ()> {
+    let teif = self.0.isr_teif_mut().fork();
+    let htif = self.0.isr_htif_mut().fork();
+    let cgif = self.0.ifcr_cgif_mut().fork();
     self.0.irq().future(move || loop {
-      if self.0.isr_teif().read_bit_band() {
-        self.0.ifcr_cgif().set_bit_band();
-        break Err(self);
+      if teif.read_bit_band() {
+        cgif.set_bit_band();
+        break Err(());
       }
-      if self.0.isr_htif().read_bit_band() {
-        self.0.ifcr_cgif().set_bit_band();
-        break Ok(self);
+      if htif.read_bit_band() {
+        cgif.set_bit_band();
+        break Ok(());
       }
       yield;
     })
@@ -321,11 +344,11 @@ macro_rules! dma_ch {
     $teif:ident,
   ) => {
     #[doc = $doc]
-    pub type $name<I> = Dma<$name_tokens<I>>;
+    pub type $name<I> = Dma<$name_tokens<I, Frt>>;
 
     #[doc = $doc_tokens]
     #[allow(missing_docs)]
-    pub struct $name_tokens<I: $irq_ty<Ltt>> {
+    pub struct $name_tokens<I: $irq_ty<Ltt>, Rt: RegTag> {
       pub $irq: I,
       pub $dma_ccr: $dma::$ccr_ty<Srt>,
       pub $dma_cmar: $dma::$cmar_ty<Srt>,
@@ -335,14 +358,14 @@ macro_rules! dma_ch {
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       pub $dma_cselr_cs: $dma::cselr::$cs_ty<Srt>,
-      pub $dma_ifcr_cgif: $dma::ifcr::$cgif_ty<Srt>,
-      pub $dma_ifcr_chtif: $dma::ifcr::$chtif_ty<Srt>,
-      pub $dma_ifcr_ctcif: $dma::ifcr::$ctcif_ty<Srt>,
-      pub $dma_ifcr_cteif: $dma::ifcr::$cteif_ty<Srt>,
-      pub $dma_isr_gif: $dma::isr::$gif_ty<Srt>,
-      pub $dma_isr_htif: $dma::isr::$htif_ty<Srt>,
-      pub $dma_isr_tcif: $dma::isr::$tcif_ty<Srt>,
-      pub $dma_isr_teif: $dma::isr::$teif_ty<Srt>,
+      pub $dma_ifcr_cgif: $dma::ifcr::$cgif_ty<Rt>,
+      pub $dma_ifcr_chtif: $dma::ifcr::$chtif_ty<Rt>,
+      pub $dma_ifcr_ctcif: $dma::ifcr::$ctcif_ty<Rt>,
+      pub $dma_ifcr_cteif: $dma::ifcr::$cteif_ty<Rt>,
+      pub $dma_isr_gif: $dma::isr::$gif_ty<Rt>,
+      pub $dma_isr_htif: $dma::isr::$htif_ty<Rt>,
+      pub $dma_isr_tcif: $dma::isr::$tcif_ty<Rt>,
+      pub $dma_isr_teif: $dma::isr::$teif_ty<Rt>,
     }
 
     #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -400,12 +423,58 @@ macro_rules! dma_ch {
       }
     }
 
-    impl<I: $irq_ty<Ltt>> PeripheralTokens for $name_tokens<I> {
-      // FIXME https://github.com/rust-lang/rust/issues/47385
-      type InputTokens = Self;
+    impl<I: $irq_ty<Ltt>> From<$name_tokens<I, Srt>> for $name_tokens<I, Frt> {
+      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                feature = "stm32l4x3", feature = "stm32l4x5",
+                feature = "stm32l4x6"))]
+      #[inline(always)]
+      fn from(tokens: $name_tokens<I, Srt>) -> Self {
+        Self {
+          $irq: tokens.$irq,
+          $dma_ccr: tokens.$dma_ccr,
+          $dma_cmar: tokens.$dma_cmar,
+          $dma_cndtr: tokens.$dma_cndtr,
+          $dma_cpar: tokens.$dma_cpar,
+          $dma_cselr_cs: tokens.$dma_cselr_cs,
+          $dma_ifcr_cgif: tokens.$dma_ifcr_cgif.into(),
+          $dma_ifcr_chtif: tokens.$dma_ifcr_chtif.into(),
+          $dma_ifcr_ctcif: tokens.$dma_ifcr_ctcif.into(),
+          $dma_ifcr_cteif: tokens.$dma_ifcr_cteif.into(),
+          $dma_isr_gif: tokens.$dma_isr_gif.into(),
+          $dma_isr_htif: tokens.$dma_isr_htif.into(),
+          $dma_isr_tcif: tokens.$dma_isr_tcif.into(),
+          $dma_isr_teif: tokens.$dma_isr_teif.into(),
+        }
+      }
+
+      #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
+                    feature = "stm32l4x3", feature = "stm32l4x5",
+                    feature = "stm32l4x6")))]
+      #[inline(always)]
+      fn from(tokens: $name_tokens<I, Srt>) -> Self {
+        Self {
+          $irq: tokens.$irq,
+          $dma_ccr: tokens.$dma_ccr,
+          $dma_cmar: tokens.$dma_cmar,
+          $dma_cndtr: tokens.$dma_cndtr,
+          $dma_cpar: tokens.$dma_cpar,
+          $dma_ifcr_cgif: tokens.$dma_ifcr_cgif.into(),
+          $dma_ifcr_chtif: tokens.$dma_ifcr_chtif.into(),
+          $dma_ifcr_ctcif: tokens.$dma_ifcr_ctcif.into(),
+          $dma_ifcr_cteif: tokens.$dma_ifcr_cteif.into(),
+          $dma_isr_gif: tokens.$dma_isr_gif.into(),
+          $dma_isr_htif: tokens.$dma_isr_htif.into(),
+          $dma_isr_tcif: tokens.$dma_isr_tcif.into(),
+          $dma_isr_teif: tokens.$dma_isr_teif.into(),
+        }
+      }
     }
 
-    impl<I: $irq_ty<Ltt>> DmaTokens for $name_tokens<I> {
+    impl<I: $irq_ty<Ltt>> PeripheralTokens for $name_tokens<I, Frt> {
+      type InputTokens = $name_tokens<I, Srt>;
+    }
+
+    impl<I: $irq_ty<Ltt>> DmaTokens for $name_tokens<I, Frt> {
       type Irq = I;
       type Ccr = $dma::$ccr_ty<Srt>;
       type CmarVal = $dma::$cmar_path::Val;
@@ -425,16 +494,16 @@ macro_rules! dma_ch {
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       type CselrCs = $dma::cselr::$cs_ty<Srt>;
-      type Ifcr = $dma::Ifcr<Srt>;
-      type IfcrCgif = $dma::ifcr::$cgif_ty<Srt>;
-      type IfcrChtif = $dma::ifcr::$chtif_ty<Srt>;
-      type IfcrCtcif = $dma::ifcr::$ctcif_ty<Srt>;
-      type IfcrCteif = $dma::ifcr::$cteif_ty<Srt>;
-      type Isr = $dma::Isr<Srt>;
-      type IsrGif = $dma::isr::$gif_ty<Srt>;
-      type IsrHtif = $dma::isr::$htif_ty<Srt>;
-      type IsrTcif = $dma::isr::$tcif_ty<Srt>;
-      type IsrTeif = $dma::isr::$teif_ty<Srt>;
+      type Ifcr = $dma::Ifcr<Frt>;
+      type IfcrCgif = $dma::ifcr::$cgif_ty<Frt>;
+      type IfcrChtif = $dma::ifcr::$chtif_ty<Frt>;
+      type IfcrCtcif = $dma::ifcr::$ctcif_ty<Frt>;
+      type IfcrCteif = $dma::ifcr::$cteif_ty<Frt>;
+      type Isr = $dma::Isr<Frt>;
+      type IsrGif = $dma::isr::$gif_ty<Frt>;
+      type IsrHtif = $dma::isr::$htif_ty<Frt>;
+      type IsrTcif = $dma::isr::$tcif_ty<Frt>;
+      type IsrTeif = $dma::isr::$teif_ty<Frt>;
 
       #[inline(always)]
       fn irq(&self) -> Self::Irq {
@@ -490,8 +559,18 @@ macro_rules! dma_ch {
       }
 
       #[inline(always)]
+      fn ifcr_cgif_mut(&mut self) -> &mut Self::IfcrCgif {
+        &mut self.$dma_ifcr_cgif
+      }
+
+      #[inline(always)]
       fn ifcr_chtif(&self) -> &Self::IfcrChtif {
         &self.$dma_ifcr_chtif
+      }
+
+      #[inline(always)]
+      fn ifcr_chtif_mut(&mut self) -> &mut Self::IfcrChtif {
+        &mut self.$dma_ifcr_chtif
       }
 
       #[inline(always)]
@@ -500,8 +579,18 @@ macro_rules! dma_ch {
       }
 
       #[inline(always)]
+      fn ifcr_ctcif_mut(&mut self) -> &mut Self::IfcrCtcif {
+        &mut self.$dma_ifcr_ctcif
+      }
+
+      #[inline(always)]
       fn ifcr_cteif(&self) -> &Self::IfcrCteif {
         &self.$dma_ifcr_cteif
+      }
+
+      #[inline(always)]
+      fn ifcr_cteif_mut(&mut self) -> &mut Self::IfcrCteif {
+        &mut self.$dma_ifcr_cteif
       }
 
       #[inline(always)]
@@ -510,8 +599,18 @@ macro_rules! dma_ch {
       }
 
       #[inline(always)]
+      fn isr_gif_mut(&mut self) -> &mut Self::IsrGif {
+        &mut self.$dma_isr_gif
+      }
+
+      #[inline(always)]
       fn isr_htif(&self) -> &Self::IsrHtif {
         &self.$dma_isr_htif
+      }
+
+      #[inline(always)]
+      fn isr_htif_mut(&mut self) -> &mut Self::IsrHtif {
+        &mut self.$dma_isr_htif
       }
 
       #[inline(always)]
@@ -520,8 +619,18 @@ macro_rules! dma_ch {
       }
 
       #[inline(always)]
+      fn isr_tcif_mut(&mut self) -> &mut Self::IsrTcif {
+        &mut self.$dma_isr_tcif
+      }
+
+      #[inline(always)]
       fn isr_teif(&self) -> &Self::IsrTeif {
         &self.$dma_isr_teif
+      }
+
+      #[inline(always)]
+      fn isr_teif_mut(&mut self) -> &mut Self::IsrTeif {
+        &mut self.$dma_isr_teif
       }
     }
   }

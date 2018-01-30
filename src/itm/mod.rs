@@ -25,7 +25,8 @@ pub mod macros;
 /// Must be called exactly once and as early as possible.
 pub unsafe fn init() {
   // Trace pin assignment control.
-  write_volatile(DBGMCU_CR as *mut usize, 0x0000_0020);
+  // FIXME better to set this via debugger.
+  write_volatile(DBGMCU_CR as *mut usize, 0x0000_0027);
   // Global enable for all DWT and ITM features.
   write_volatile(DEMCR as *mut usize, 0x0100_0000);
   // SerialWire Output (NRZ).

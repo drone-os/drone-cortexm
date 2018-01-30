@@ -1,5 +1,5 @@
 use super::{Timer, TimerOverflow};
-use drone_core::peripheral::{PeripheralDevice, PeripheralTokens};
+use drone_core::peripherals::{PeripheralDevice, PeripheralTokens};
 use drone_core::thread::{RoutineFuture, RoutineStreamUnit};
 use reg::prelude::*;
 use reg::stk;
@@ -49,10 +49,9 @@ impl<I: IrqSysTick<Ltt>> From<SysTickTokens<I, Srt>> for SysTickTokens<I, Frt> {
   }
 }
 
-impl<I> PeripheralDevice<SysTickTokens<I, Frt>> for SysTick<I>
-where
-  I: IrqSysTick<Ltt>,
-{
+impl<I: IrqSysTick<Ltt>> PeripheralDevice for SysTick<I> {
+  type Tokens = SysTickTokens<I, Frt>;
+
   #[inline(always)]
   fn from_tokens(tokens: SysTickTokens<I, Srt>) -> Self {
     SysTick(tokens.into())
@@ -172,8 +171,8 @@ impl<I: IrqSysTick<Ltt>> SysTick<I> {
 
 #[inline(always)]
 fn schedule(stk_load: &stk::Load<Srt>, stk_val: &stk::Val<Srt>, duration: u32) {
-  stk_load.reset(|r| r.write_reload(duration));
-  stk_val.reset(|r| r.write_current(0));
+  stk_load.store(|r| r.write_reload(duration));
+  stk_val.store(|r| r.write_current(0));
 }
 
 #[inline(always)]

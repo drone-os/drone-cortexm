@@ -28,8 +28,10 @@ struct Peripheral {
   derived_from: Option<String>,
   name: String,
   description: Option<String>,
-  #[serde(deserialize_with = "deserialize_hex")] base_address: u32,
-  #[serde(default)] interrupt: Vec<Interrupt>,
+  #[serde(deserialize_with = "deserialize_hex")]
+  base_address: u32,
+  #[serde(default)]
+  interrupt: Vec<Interrupt>,
   registers: Option<Registers>,
 }
 
@@ -38,7 +40,8 @@ struct Peripheral {
 struct Interrupt {
   name: String,
   description: String,
-  #[serde(deserialize_with = "deserialize_dec")] value: u32,
+  #[serde(deserialize_with = "deserialize_dec")]
+  value: u32,
 }
 
 #[serde(rename_all = "camelCase")]
@@ -52,10 +55,13 @@ struct Registers {
 struct Register {
   name: String,
   description: String,
-  #[serde(deserialize_with = "deserialize_hex")] address_offset: u32,
-  #[serde(deserialize_with = "deserialize_hex")] size: u32,
+  #[serde(deserialize_with = "deserialize_hex")]
+  address_offset: u32,
+  #[serde(deserialize_with = "deserialize_hex")]
+  size: u32,
   access: Option<Access>,
-  #[serde(deserialize_with = "deserialize_hex")] reset_value: u32,
+  #[serde(deserialize_with = "deserialize_hex")]
+  reset_value: u32,
   fields: Option<Fields>,
 }
 
@@ -271,7 +277,7 @@ where
   for peripheral in Vec::<Peripheral>::deserialize(deserializer)? {
     map.insert(peripheral.name.clone(), peripheral);
   }
-  Ok((map))
+  Ok(map)
 }
 
 fn deserialize_hex<'de, D>(deserializer: D) -> Result<u32, D::Error>

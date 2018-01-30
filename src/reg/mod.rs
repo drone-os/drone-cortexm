@@ -2,12 +2,12 @@
 
 pub mod prelude;
 
+mod atomic;
 mod bit_band;
 mod mappings;
-mod shared;
 mod tokens;
 
+pub use self::atomic::*;
 pub use self::bit_band::*;
 pub use self::mappings::*;
-pub use self::shared::*;
 pub use self::tokens::*;

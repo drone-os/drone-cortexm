@@ -21,7 +21,7 @@ use reg::prelude::*;
 
 /// Generic GPIO pin.
 #[allow(missing_docs)]
-pub trait GpioPin<T: RegTag>: Sized + Send + 'static {
+pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
@@ -32,7 +32,13 @@ pub trait GpioPin<T: RegTag>: Sized + Send + 'static {
   type AfrAfr: RegField<T, Reg = Self::Afr>
     + RRegFieldBits<T>
     + WRegFieldBits<T>;
+  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+            feature = "stm32f102", feature = "stm32f103",
+            feature = "stm32f107", feature = "stm32l4x6"))]
   type Brr: WoReg<T>;
+  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+            feature = "stm32f102", feature = "stm32f103",
+            feature = "stm32f107", feature = "stm32l4x6"))]
   type BrrBr: RegField<T, Reg = Self::Brr> + WoWoRegFieldBit<T>;
   type Bsrr: WoReg<T>;
   type BsrrBr: RegField<T, Reg = Self::Bsrr> + WoWoRegFieldBit<T>;
@@ -106,7 +112,13 @@ pub trait GpioPin<T: RegTag>: Sized + Send + 'static {
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
   fn afr_mut(&mut self) -> &mut Self::AfrAfr;
+  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+            feature = "stm32f102", feature = "stm32f103",
+            feature = "stm32f107", feature = "stm32l4x6"))]
   fn brr_br(&self) -> &Self::BrrBr;
+  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+            feature = "stm32f102", feature = "stm32f103",
+            feature = "stm32f107", feature = "stm32l4x6"))]
   fn brr_br_mut(&mut self) -> &mut Self::BrrBr;
   fn bsrr_br(&self) -> &Self::BsrrBr;
   fn bsrr_br_mut(&mut self) -> &mut Self::BsrrBr;
@@ -253,6 +265,9 @@ macro_rules! gpio_pin {
         #[cfg(any(feature = "stm32l4x6"))]
         pub $gpio_ascr_asc: $gpio::ascr::$asc_ty<T>,
       )*
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107", feature = "stm32l4x6"))]
       pub $gpio_brr_br: $gpio::brr::$br_ty<T>,
       pub $gpio_bsrr_br: $gpio::bsrr::$br_ty<T>,
       pub $gpio_bsrr_bs: $gpio::bsrr::$bs_ty<T>,
@@ -291,20 +306,20 @@ macro_rules! gpio_pin {
     macro_rules! $name_macro {
       ($regs:ident) => {
         $crate::peripherals::gpio::$name {
-          $gpio_afr_afr: $regs.$gpio_afr.$afr,
+          $gpio_afr_afr: $regs.$gpio_afr.$afr.into(),
           $(
-            $gpio_ascr_asc: $regs.$gpio_ascr.$asc,
+            $gpio_ascr_asc: $regs.$gpio_ascr.$asc.into(),
           )*
-          $gpio_brr_br: $regs.$gpio_brr.$br,
-          $gpio_bsrr_br: $regs.$gpio_bsrr.$br,
-          $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs,
-          $gpio_idr_idr: $regs.$gpio_idr.$idr,
-          $gpio_lckr_lck: $regs.$gpio_lckr.$lck,
-          $gpio_moder_moder: $regs.$gpio_moder.$moder,
-          $gpio_odr_odr: $regs.$gpio_odr.$odr,
-          $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr,
-          $gpio_otyper_ot: $regs.$gpio_otyper.$ot,
-          $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr,
+          $gpio_brr_br: $regs.$gpio_brr.$br.into(),
+          $gpio_bsrr_br: $regs.$gpio_bsrr.$br.into(),
+          $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs.into(),
+          $gpio_idr_idr: $regs.$gpio_idr.$idr.into(),
+          $gpio_lckr_lck: $regs.$gpio_lckr.$lck.into(),
+          $gpio_moder_moder: $regs.$gpio_moder.$moder.into(),
+          $gpio_odr_odr: $regs.$gpio_odr.$odr.into(),
+          $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr.into(),
+          $gpio_otyper_ot: $regs.$gpio_otyper.$ot.into(),
+          $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr.into(),
         }
       }
     }
@@ -316,17 +331,16 @@ macro_rules! gpio_pin {
     macro_rules! $name_macro {
       ($regs:ident) => {
         $crate::peripherals::gpio::$name {
-          $gpio_afr_afr: $regs.$gpio_afr.$afr,
-          $gpio_brr_br: $regs.$gpio_brr.$br,
-          $gpio_bsrr_br: $regs.$gpio_bsrr.$br,
-          $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs,
-          $gpio_idr_idr: $regs.$gpio_idr.$idr,
-          $gpio_lckr_lck: $regs.$gpio_lckr.$lck,
-          $gpio_moder_moder: $regs.$gpio_moder.$moder,
-          $gpio_odr_odr: $regs.$gpio_odr.$odr,
-          $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr,
-          $gpio_otyper_ot: $regs.$gpio_otyper.$ot,
-          $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr,
+          $gpio_afr_afr: $regs.$gpio_afr.$afr.into(),
+          $gpio_bsrr_br: $regs.$gpio_bsrr.$br.into(),
+          $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs.into(),
+          $gpio_idr_idr: $regs.$gpio_idr.$idr.into(),
+          $gpio_lckr_lck: $regs.$gpio_lckr.$lck.into(),
+          $gpio_moder_moder: $regs.$gpio_moder.$moder.into(),
+          $gpio_odr_odr: $regs.$gpio_odr.$odr.into(),
+          $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr.into(),
+          $gpio_otyper_ot: $regs.$gpio_otyper.$ot.into(),
+          $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr.into(),
         }
       }
     }
@@ -339,14 +353,14 @@ macro_rules! gpio_pin {
     macro_rules! $name_macro {
       ($regs:ident) => {
         $crate::peripherals::gpio::$name {
-          $gpio_brr_br: $regs.$gpio_brr_br,
-          $gpio_bsrr_br: $regs.$gpio_bsrr_br,
-          $gpio_bsrr_bs: $regs.$gpio_bsrr_bs,
-          $gpio_cr_cnf: $regs.$gpio_cr_cnf,
-          $gpio_cr_mode: $regs.$gpio_cr_mode,
-          $gpio_idr_idr: $regs.$gpio_idr_idr,
-          $gpio_lckr_lck: $regs.$gpio_lckr_lck,
-          $gpio_odr_odr: $regs.$gpio_odr_odr,
+          $gpio_brr_br: $regs.$gpio_brr_br.into(),
+          $gpio_bsrr_br: $regs.$gpio_bsrr_br.into(),
+          $gpio_bsrr_bs: $regs.$gpio_bsrr_bs.into(),
+          $gpio_cr_cnf: $regs.$gpio_cr_cnf.into(),
+          $gpio_cr_mode: $regs.$gpio_cr_mode.into(),
+          $gpio_idr_idr: $regs.$gpio_idr_idr.into(),
+          $gpio_lckr_lck: $regs.$gpio_lckr_lck.into(),
+          $gpio_odr_odr: $regs.$gpio_odr_odr.into(),
         }
       }
     }
@@ -360,7 +374,13 @@ macro_rules! gpio_pin {
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       type AfrAfr = $gpio::$afr_path::$afr_ty<T>;
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107", feature = "stm32l4x6"))]
       type Brr = $gpio::brr::Reg<T>;
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107", feature = "stm32l4x6"))]
       type BrrBr = $gpio::brr::$br_ty<T>;
       type Bsrr = $gpio::bsrr::Reg<T>;
       type BsrrBr = $gpio::bsrr::$br_ty<T>;
@@ -432,11 +452,17 @@ macro_rules! gpio_pin {
         &mut self.$gpio_afr_afr
       }
 
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107", feature = "stm32l4x6"))]
       #[inline(always)]
       fn brr_br(&self) -> &Self::BrrBr {
         &self.$gpio_brr_br
       }
 
+      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
+                feature = "stm32f102", feature = "stm32f103",
+                feature = "stm32f107", feature = "stm32l4x6"))]
       #[inline(always)]
       fn brr_br_mut(&mut self) -> &mut Self::BrrBr {
         &mut self.$gpio_brr_br
@@ -615,8 +641,8 @@ macro_rules! gpio_pin {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 0.",
-  Gpioa0,
-  peripheral_gpioa_0,
+  GpioA0,
+  peripheral_gpio_a0,
   gpioa,
   afrl,
   crl,
@@ -683,8 +709,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 1.",
-  Gpioa1,
-  peripheral_gpioa_1,
+  GpioA1,
+  peripheral_gpio_a1,
   gpioa,
   afrl,
   crl,
@@ -751,8 +777,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 2.",
-  Gpioa2,
-  peripheral_gpioa_2,
+  GpioA2,
+  peripheral_gpio_a2,
   gpioa,
   afrl,
   crl,
@@ -819,8 +845,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 3.",
-  Gpioa3,
-  peripheral_gpioa_3,
+  GpioA3,
+  peripheral_gpio_a3,
   gpioa,
   afrl,
   crl,
@@ -887,8 +913,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 4.",
-  Gpioa4,
-  peripheral_gpioa_4,
+  GpioA4,
+  peripheral_gpio_a4,
   gpioa,
   afrl,
   crl,
@@ -955,8 +981,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 5.",
-  Gpioa5,
-  peripheral_gpioa_5,
+  GpioA5,
+  peripheral_gpio_a5,
   gpioa,
   afrl,
   crl,
@@ -1023,8 +1049,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 6.",
-  Gpioa6,
-  peripheral_gpioa_6,
+  GpioA6,
+  peripheral_gpio_a6,
   gpioa,
   afrl,
   crl,
@@ -1091,8 +1117,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 7.",
-  Gpioa7,
-  peripheral_gpioa_7,
+  GpioA7,
+  peripheral_gpio_a7,
   gpioa,
   afrl,
   crl,
@@ -1159,8 +1185,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 8.",
-  Gpioa8,
-  peripheral_gpioa_8,
+  GpioA8,
+  peripheral_gpio_a8,
   gpioa,
   afrh,
   crh,
@@ -1227,8 +1253,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 9.",
-  Gpioa9,
-  peripheral_gpioa_9,
+  GpioA9,
+  peripheral_gpio_a9,
   gpioa,
   afrh,
   crh,
@@ -1295,8 +1321,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 10.",
-  Gpioa10,
-  peripheral_gpioa_10,
+  GpioA10,
+  peripheral_gpio_a10,
   gpioa,
   afrh,
   crh,
@@ -1363,8 +1389,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 11.",
-  Gpioa11,
-  peripheral_gpioa_11,
+  GpioA11,
+  peripheral_gpio_a11,
   gpioa,
   afrh,
   crh,
@@ -1431,8 +1457,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 12.",
-  Gpioa12,
-  peripheral_gpioa_12,
+  GpioA12,
+  peripheral_gpio_a12,
   gpioa,
   afrh,
   crh,
@@ -1499,8 +1525,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 13.",
-  Gpioa13,
-  peripheral_gpioa_13,
+  GpioA13,
+  peripheral_gpio_a13,
   gpioa,
   afrh,
   crh,
@@ -1567,8 +1593,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 14.",
-  Gpioa14,
-  peripheral_gpioa_14,
+  GpioA14,
+  peripheral_gpio_a14,
   gpioa,
   afrh,
   crh,
@@ -1635,8 +1661,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port A pin 15.",
-  Gpioa15,
-  peripheral_gpioa_15,
+  GpioA15,
+  peripheral_gpio_a15,
   gpioa,
   afrh,
   crh,
@@ -1703,8 +1729,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 0.",
-  Gpiob0,
-  peripheral_gpiob_0,
+  GpioB0,
+  peripheral_gpio_b0,
   gpiob,
   afrl,
   crl,
@@ -1771,8 +1797,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 1.",
-  Gpiob1,
-  peripheral_gpiob_1,
+  GpioB1,
+  peripheral_gpio_b1,
   gpiob,
   afrl,
   crl,
@@ -1839,8 +1865,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 2.",
-  Gpiob2,
-  peripheral_gpiob_2,
+  GpioB2,
+  peripheral_gpio_b2,
   gpiob,
   afrl,
   crl,
@@ -1907,8 +1933,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 3.",
-  Gpiob3,
-  peripheral_gpiob_3,
+  GpioB3,
+  peripheral_gpio_b3,
   gpiob,
   afrl,
   crl,
@@ -1975,8 +2001,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 4.",
-  Gpiob4,
-  peripheral_gpiob_4,
+  GpioB4,
+  peripheral_gpio_b4,
   gpiob,
   afrl,
   crl,
@@ -2043,8 +2069,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 5.",
-  Gpiob5,
-  peripheral_gpiob_5,
+  GpioB5,
+  peripheral_gpio_b5,
   gpiob,
   afrl,
   crl,
@@ -2111,8 +2137,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 6.",
-  Gpiob6,
-  peripheral_gpiob_6,
+  GpioB6,
+  peripheral_gpio_b6,
   gpiob,
   afrl,
   crl,
@@ -2179,8 +2205,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 7.",
-  Gpiob7,
-  peripheral_gpiob_7,
+  GpioB7,
+  peripheral_gpio_b7,
   gpiob,
   afrl,
   crl,
@@ -2247,8 +2273,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 8.",
-  Gpiob8,
-  peripheral_gpiob_8,
+  GpioB8,
+  peripheral_gpio_b8,
   gpiob,
   afrh,
   crh,
@@ -2315,8 +2341,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 9.",
-  Gpiob9,
-  peripheral_gpiob_9,
+  GpioB9,
+  peripheral_gpio_b9,
   gpiob,
   afrh,
   crh,
@@ -2383,8 +2409,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 10.",
-  Gpiob10,
-  peripheral_gpiob_10,
+  GpioB10,
+  peripheral_gpio_b10,
   gpiob,
   afrh,
   crh,
@@ -2451,8 +2477,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 11.",
-  Gpiob11,
-  peripheral_gpiob_11,
+  GpioB11,
+  peripheral_gpio_b11,
   gpiob,
   afrh,
   crh,
@@ -2519,8 +2545,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 12.",
-  Gpiob12,
-  peripheral_gpiob_12,
+  GpioB12,
+  peripheral_gpio_b12,
   gpiob,
   afrh,
   crh,
@@ -2587,8 +2613,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 13.",
-  Gpiob13,
-  peripheral_gpiob_13,
+  GpioB13,
+  peripheral_gpio_b13,
   gpiob,
   afrh,
   crh,
@@ -2655,8 +2681,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 14.",
-  Gpiob14,
-  peripheral_gpiob_14,
+  GpioB14,
+  peripheral_gpio_b14,
   gpiob,
   afrh,
   crh,
@@ -2723,8 +2749,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port B pin 15.",
-  Gpiob15,
-  peripheral_gpiob_15,
+  GpioB15,
+  peripheral_gpio_b15,
   gpiob,
   afrh,
   crh,
@@ -2791,8 +2817,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 0.",
-  Gpioc0,
-  peripheral_gpioc_0,
+  GpioC0,
+  peripheral_gpio_c0,
   gpioc,
   afrl,
   crl,
@@ -2859,8 +2885,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 1.",
-  Gpioc1,
-  peripheral_gpioc_1,
+  GpioC1,
+  peripheral_gpio_c1,
   gpioc,
   afrl,
   crl,
@@ -2927,8 +2953,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 2.",
-  Gpioc2,
-  peripheral_gpioc_2,
+  GpioC2,
+  peripheral_gpio_c2,
   gpioc,
   afrl,
   crl,
@@ -2995,8 +3021,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 3.",
-  Gpioc3,
-  peripheral_gpioc_3,
+  GpioC3,
+  peripheral_gpio_c3,
   gpioc,
   afrl,
   crl,
@@ -3063,8 +3089,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 4.",
-  Gpioc4,
-  peripheral_gpioc_4,
+  GpioC4,
+  peripheral_gpio_c4,
   gpioc,
   afrl,
   crl,
@@ -3131,8 +3157,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 5.",
-  Gpioc5,
-  peripheral_gpioc_5,
+  GpioC5,
+  peripheral_gpio_c5,
   gpioc,
   afrl,
   crl,
@@ -3199,8 +3225,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 6.",
-  Gpioc6,
-  peripheral_gpioc_6,
+  GpioC6,
+  peripheral_gpio_c6,
   gpioc,
   afrl,
   crl,
@@ -3267,8 +3293,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 7.",
-  Gpioc7,
-  peripheral_gpioc_7,
+  GpioC7,
+  peripheral_gpio_c7,
   gpioc,
   afrl,
   crl,
@@ -3335,8 +3361,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 8.",
-  Gpioc8,
-  peripheral_gpioc_8,
+  GpioC8,
+  peripheral_gpio_c8,
   gpioc,
   afrh,
   crh,
@@ -3403,8 +3429,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 9.",
-  Gpioc9,
-  peripheral_gpioc_9,
+  GpioC9,
+  peripheral_gpio_c9,
   gpioc,
   afrh,
   crh,
@@ -3471,8 +3497,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 10.",
-  Gpioc10,
-  peripheral_gpioc_10,
+  GpioC10,
+  peripheral_gpio_c10,
   gpioc,
   afrh,
   crh,
@@ -3539,8 +3565,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 11.",
-  Gpioc11,
-  peripheral_gpioc_11,
+  GpioC11,
+  peripheral_gpio_c11,
   gpioc,
   afrh,
   crh,
@@ -3607,8 +3633,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 12.",
-  Gpioc12,
-  peripheral_gpioc_12,
+  GpioC12,
+  peripheral_gpio_c12,
   gpioc,
   afrh,
   crh,
@@ -3675,8 +3701,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 13.",
-  Gpioc13,
-  peripheral_gpioc_13,
+  GpioC13,
+  peripheral_gpio_c13,
   gpioc,
   afrh,
   crh,
@@ -3743,8 +3769,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 14.",
-  Gpioc14,
-  peripheral_gpioc_14,
+  GpioC14,
+  peripheral_gpio_c14,
   gpioc,
   afrh,
   crh,
@@ -3811,8 +3837,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port C pin 15.",
-  Gpioc15,
-  peripheral_gpioc_15,
+  GpioC15,
+  peripheral_gpio_c15,
   gpioc,
   afrh,
   crh,
@@ -3879,8 +3905,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 0.",
-  Gpiod0,
-  peripheral_gpiod_0,
+  GpioD0,
+  peripheral_gpio_d0,
   gpiod,
   afrl,
   crl,
@@ -3947,8 +3973,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 1.",
-  Gpiod1,
-  peripheral_gpiod_1,
+  GpioD1,
+  peripheral_gpio_d1,
   gpiod,
   afrl,
   crl,
@@ -4015,8 +4041,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 2.",
-  Gpiod2,
-  peripheral_gpiod_2,
+  GpioD2,
+  peripheral_gpio_d2,
   gpiod,
   afrl,
   crl,
@@ -4083,8 +4109,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 3.",
-  Gpiod3,
-  peripheral_gpiod_3,
+  GpioD3,
+  peripheral_gpio_d3,
   gpiod,
   afrl,
   crl,
@@ -4151,8 +4177,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 4.",
-  Gpiod4,
-  peripheral_gpiod_4,
+  GpioD4,
+  peripheral_gpio_d4,
   gpiod,
   afrl,
   crl,
@@ -4219,8 +4245,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 5.",
-  Gpiod5,
-  peripheral_gpiod_5,
+  GpioD5,
+  peripheral_gpio_d5,
   gpiod,
   afrl,
   crl,
@@ -4287,8 +4313,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 6.",
-  Gpiod6,
-  peripheral_gpiod_6,
+  GpioD6,
+  peripheral_gpio_d6,
   gpiod,
   afrl,
   crl,
@@ -4355,8 +4381,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 7.",
-  Gpiod7,
-  peripheral_gpiod_7,
+  GpioD7,
+  peripheral_gpio_d7,
   gpiod,
   afrl,
   crl,
@@ -4423,8 +4449,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 8.",
-  Gpiod8,
-  peripheral_gpiod_8,
+  GpioD8,
+  peripheral_gpio_d8,
   gpiod,
   afrh,
   crh,
@@ -4491,8 +4517,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 9.",
-  Gpiod9,
-  peripheral_gpiod_9,
+  GpioD9,
+  peripheral_gpio_d9,
   gpiod,
   afrh,
   crh,
@@ -4559,8 +4585,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 10.",
-  Gpiod10,
-  peripheral_gpiod_10,
+  GpioD10,
+  peripheral_gpio_d10,
   gpiod,
   afrh,
   crh,
@@ -4627,8 +4653,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 11.",
-  Gpiod11,
-  peripheral_gpiod_11,
+  GpioD11,
+  peripheral_gpio_d11,
   gpiod,
   afrh,
   crh,
@@ -4695,8 +4721,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 12.",
-  Gpiod12,
-  peripheral_gpiod_12,
+  GpioD12,
+  peripheral_gpio_d12,
   gpiod,
   afrh,
   crh,
@@ -4763,8 +4789,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 13.",
-  Gpiod13,
-  peripheral_gpiod_13,
+  GpioD13,
+  peripheral_gpio_d13,
   gpiod,
   afrh,
   crh,
@@ -4831,8 +4857,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 14.",
-  Gpiod14,
-  peripheral_gpiod_14,
+  GpioD14,
+  peripheral_gpio_d14,
   gpiod,
   afrh,
   crh,
@@ -4899,8 +4925,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port D pin 15.",
-  Gpiod15,
-  peripheral_gpiod_15,
+  GpioD15,
+  peripheral_gpio_d15,
   gpiod,
   afrh,
   crh,
@@ -4967,8 +4993,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 0.",
-  Gpioe0,
-  peripheral_gpioe_0,
+  GpioE0,
+  peripheral_gpio_e0,
   gpioe,
   afrl,
   crl,
@@ -5035,8 +5061,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 1.",
-  Gpioe1,
-  peripheral_gpioe_1,
+  GpioE1,
+  peripheral_gpio_e1,
   gpioe,
   afrl,
   crl,
@@ -5103,8 +5129,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 2.",
-  Gpioe2,
-  peripheral_gpioe_2,
+  GpioE2,
+  peripheral_gpio_e2,
   gpioe,
   afrl,
   crl,
@@ -5171,8 +5197,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 3.",
-  Gpioe3,
-  peripheral_gpioe_3,
+  GpioE3,
+  peripheral_gpio_e3,
   gpioe,
   afrl,
   crl,
@@ -5239,8 +5265,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 4.",
-  Gpioe4,
-  peripheral_gpioe_4,
+  GpioE4,
+  peripheral_gpio_e4,
   gpioe,
   afrl,
   crl,
@@ -5307,8 +5333,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 5.",
-  Gpioe5,
-  peripheral_gpioe_5,
+  GpioE5,
+  peripheral_gpio_e5,
   gpioe,
   afrl,
   crl,
@@ -5375,8 +5401,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 6.",
-  Gpioe6,
-  peripheral_gpioe_6,
+  GpioE6,
+  peripheral_gpio_e6,
   gpioe,
   afrl,
   crl,
@@ -5443,8 +5469,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 7.",
-  Gpioe7,
-  peripheral_gpioe_7,
+  GpioE7,
+  peripheral_gpio_e7,
   gpioe,
   afrl,
   crl,
@@ -5511,8 +5537,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 8.",
-  Gpioe8,
-  peripheral_gpioe_8,
+  GpioE8,
+  peripheral_gpio_e8,
   gpioe,
   afrh,
   crh,
@@ -5579,8 +5605,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 9.",
-  Gpioe9,
-  peripheral_gpioe_9,
+  GpioE9,
+  peripheral_gpio_e9,
   gpioe,
   afrh,
   crh,
@@ -5647,8 +5673,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 10.",
-  Gpioe10,
-  peripheral_gpioe_10,
+  GpioE10,
+  peripheral_gpio_e10,
   gpioe,
   afrh,
   crh,
@@ -5715,8 +5741,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 11.",
-  Gpioe11,
-  peripheral_gpioe_11,
+  GpioE11,
+  peripheral_gpio_e11,
   gpioe,
   afrh,
   crh,
@@ -5783,8 +5809,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 12.",
-  Gpioe12,
-  peripheral_gpioe_12,
+  GpioE12,
+  peripheral_gpio_e12,
   gpioe,
   afrh,
   crh,
@@ -5851,8 +5877,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 13.",
-  Gpioe13,
-  peripheral_gpioe_13,
+  GpioE13,
+  peripheral_gpio_e13,
   gpioe,
   afrh,
   crh,
@@ -5919,8 +5945,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 14.",
-  Gpioe14,
-  peripheral_gpioe_14,
+  GpioE14,
+  peripheral_gpio_e14,
   gpioe,
   afrh,
   crh,
@@ -5987,8 +6013,8 @@ gpio_pin! {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port E pin 15.",
-  Gpioe15,
-  peripheral_gpioe_15,
+  GpioE15,
+  peripheral_gpio_e15,
   gpioe,
   afrh,
   crh,
@@ -6054,8 +6080,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 0.",
-  Gpiof0,
-  peripheral_gpiof_0,
+  GpioF0,
+  peripheral_gpio_f0,
   gpiof,
   afrl,
   crl,
@@ -6121,8 +6147,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 1.",
-  Gpiof1,
-  peripheral_gpiof_1,
+  GpioF1,
+  peripheral_gpio_f1,
   gpiof,
   afrl,
   crl,
@@ -6188,8 +6214,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 2.",
-  Gpiof2,
-  peripheral_gpiof_2,
+  GpioF2,
+  peripheral_gpio_f2,
   gpiof,
   afrl,
   crl,
@@ -6255,8 +6281,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 3.",
-  Gpiof3,
-  peripheral_gpiof_3,
+  GpioF3,
+  peripheral_gpio_f3,
   gpiof,
   afrl,
   crl,
@@ -6322,8 +6348,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 4.",
-  Gpiof4,
-  peripheral_gpiof_4,
+  GpioF4,
+  peripheral_gpio_f4,
   gpiof,
   afrl,
   crl,
@@ -6389,8 +6415,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 5.",
-  Gpiof5,
-  peripheral_gpiof_5,
+  GpioF5,
+  peripheral_gpio_f5,
   gpiof,
   afrl,
   crl,
@@ -6456,8 +6482,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 6.",
-  Gpiof6,
-  peripheral_gpiof_6,
+  GpioF6,
+  peripheral_gpio_f6,
   gpiof,
   afrl,
   crl,
@@ -6523,8 +6549,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 7.",
-  Gpiof7,
-  peripheral_gpiof_7,
+  GpioF7,
+  peripheral_gpio_f7,
   gpiof,
   afrl,
   crl,
@@ -6590,8 +6616,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 8.",
-  Gpiof8,
-  peripheral_gpiof_8,
+  GpioF8,
+  peripheral_gpio_f8,
   gpiof,
   afrh,
   crh,
@@ -6657,8 +6683,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 9.",
-  Gpiof9,
-  peripheral_gpiof_9,
+  GpioF9,
+  peripheral_gpio_f9,
   gpiof,
   afrh,
   crh,
@@ -6724,8 +6750,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 10.",
-  Gpiof10,
-  peripheral_gpiof_10,
+  GpioF10,
+  peripheral_gpio_f10,
   gpiof,
   afrh,
   crh,
@@ -6791,8 +6817,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 11.",
-  Gpiof11,
-  peripheral_gpiof_11,
+  GpioF11,
+  peripheral_gpio_f11,
   gpiof,
   afrh,
   crh,
@@ -6858,8 +6884,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 12.",
-  Gpiof12,
-  peripheral_gpiof_12,
+  GpioF12,
+  peripheral_gpio_f12,
   gpiof,
   afrh,
   crh,
@@ -6925,8 +6951,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 13.",
-  Gpiof13,
-  peripheral_gpiof_13,
+  GpioF13,
+  peripheral_gpio_f13,
   gpiof,
   afrh,
   crh,
@@ -6992,8 +7018,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 14.",
-  Gpiof14,
-  peripheral_gpiof_14,
+  GpioF14,
+  peripheral_gpio_f14,
   gpiof,
   afrh,
   crh,
@@ -7059,8 +7085,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port F pin 15.",
-  Gpiof15,
-  peripheral_gpiof_15,
+  GpioF15,
+  peripheral_gpio_f15,
   gpiof,
   afrh,
   crh,
@@ -7126,8 +7152,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 0.",
-  Gpiog0,
-  peripheral_gpiog_0,
+  GpioG0,
+  peripheral_gpio_g0,
   gpiog,
   afrl,
   crl,
@@ -7193,8 +7219,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 1.",
-  Gpiog1,
-  peripheral_gpiog_1,
+  GpioG1,
+  peripheral_gpio_g1,
   gpiog,
   afrl,
   crl,
@@ -7260,8 +7286,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 2.",
-  Gpiog2,
-  peripheral_gpiog_2,
+  GpioG2,
+  peripheral_gpio_g2,
   gpiog,
   afrl,
   crl,
@@ -7327,8 +7353,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 3.",
-  Gpiog3,
-  peripheral_gpiog_3,
+  GpioG3,
+  peripheral_gpio_g3,
   gpiog,
   afrl,
   crl,
@@ -7394,8 +7420,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 4.",
-  Gpiog4,
-  peripheral_gpiog_4,
+  GpioG4,
+  peripheral_gpio_g4,
   gpiog,
   afrl,
   crl,
@@ -7461,8 +7487,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 5.",
-  Gpiog5,
-  peripheral_gpiog_5,
+  GpioG5,
+  peripheral_gpio_g5,
   gpiog,
   afrl,
   crl,
@@ -7528,8 +7554,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 6.",
-  Gpiog6,
-  peripheral_gpiog_6,
+  GpioG6,
+  peripheral_gpio_g6,
   gpiog,
   afrl,
   crl,
@@ -7595,8 +7621,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 7.",
-  Gpiog7,
-  peripheral_gpiog_7,
+  GpioG7,
+  peripheral_gpio_g7,
   gpiog,
   afrl,
   crl,
@@ -7662,8 +7688,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 8.",
-  Gpiog8,
-  peripheral_gpiog_8,
+  GpioG8,
+  peripheral_gpio_g8,
   gpiog,
   afrh,
   crh,
@@ -7729,8 +7755,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 9.",
-  Gpiog9,
-  peripheral_gpiog_9,
+  GpioG9,
+  peripheral_gpio_g9,
   gpiog,
   afrh,
   crh,
@@ -7796,8 +7822,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 10.",
-  Gpiog10,
-  peripheral_gpiog_10,
+  GpioG10,
+  peripheral_gpio_g10,
   gpiog,
   afrh,
   crh,
@@ -7863,8 +7889,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 11.",
-  Gpiog11,
-  peripheral_gpiog_11,
+  GpioG11,
+  peripheral_gpio_g11,
   gpiog,
   afrh,
   crh,
@@ -7930,8 +7956,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 12.",
-  Gpiog12,
-  peripheral_gpiog_12,
+  GpioG12,
+  peripheral_gpio_g12,
   gpiog,
   afrh,
   crh,
@@ -7997,8 +8023,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 13.",
-  Gpiog13,
-  peripheral_gpiog_13,
+  GpioG13,
+  peripheral_gpio_g13,
   gpiog,
   afrh,
   crh,
@@ -8064,8 +8090,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 14.",
-  Gpiog14,
-  peripheral_gpiog_14,
+  GpioG14,
+  peripheral_gpio_g14,
   gpiog,
   afrh,
   crh,
@@ -8131,8 +8157,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port G pin 15.",
-  Gpiog15,
-  peripheral_gpiog_15,
+  GpioG15,
+  peripheral_gpio_g15,
   gpiog,
   afrh,
   crh,
@@ -8197,8 +8223,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 0.",
-  Gpioh0,
-  peripheral_gpioh_0,
+  GpioH0,
+  peripheral_gpio_h0,
   gpioh,
   afrl,
   crl,
@@ -8263,8 +8289,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 1.",
-  Gpioh1,
-  peripheral_gpioh_1,
+  GpioH1,
+  peripheral_gpio_h1,
   gpioh,
   afrl,
   crl,
@@ -8329,8 +8355,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 2.",
-  Gpioh2,
-  peripheral_gpioh_2,
+  GpioH2,
+  peripheral_gpio_h2,
   gpioh,
   afrl,
   crl,
@@ -8395,8 +8421,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 3.",
-  Gpioh3,
-  peripheral_gpioh_3,
+  GpioH3,
+  peripheral_gpio_h3,
   gpioh,
   afrl,
   crl,
@@ -8461,8 +8487,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 4.",
-  Gpioh4,
-  peripheral_gpioh_4,
+  GpioH4,
+  peripheral_gpio_h4,
   gpioh,
   afrl,
   crl,
@@ -8527,8 +8553,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 5.",
-  Gpioh5,
-  peripheral_gpioh_5,
+  GpioH5,
+  peripheral_gpio_h5,
   gpioh,
   afrl,
   crl,
@@ -8593,8 +8619,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 6.",
-  Gpioh6,
-  peripheral_gpioh_6,
+  GpioH6,
+  peripheral_gpio_h6,
   gpioh,
   afrl,
   crl,
@@ -8659,8 +8685,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 7.",
-  Gpioh7,
-  peripheral_gpioh_7,
+  GpioH7,
+  peripheral_gpio_h7,
   gpioh,
   afrl,
   crl,
@@ -8725,8 +8751,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 8.",
-  Gpioh8,
-  peripheral_gpioh_8,
+  GpioH8,
+  peripheral_gpio_h8,
   gpioh,
   afrh,
   crh,
@@ -8791,8 +8817,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 9.",
-  Gpioh9,
-  peripheral_gpioh_9,
+  GpioH9,
+  peripheral_gpio_h9,
   gpioh,
   afrh,
   crh,
@@ -8857,8 +8883,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 10.",
-  Gpioh10,
-  peripheral_gpioh_10,
+  GpioH10,
+  peripheral_gpio_h10,
   gpioh,
   afrh,
   crh,
@@ -8923,8 +8949,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 11.",
-  Gpioh11,
-  peripheral_gpioh_11,
+  GpioH11,
+  peripheral_gpio_h11,
   gpioh,
   afrh,
   crh,
@@ -8989,8 +9015,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 12.",
-  Gpioh12,
-  peripheral_gpioh_12,
+  GpioH12,
+  peripheral_gpio_h12,
   gpioh,
   afrh,
   crh,
@@ -9055,8 +9081,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 13.",
-  Gpioh13,
-  peripheral_gpioh_13,
+  GpioH13,
+  peripheral_gpio_h13,
   gpioh,
   afrh,
   crh,
@@ -9121,8 +9147,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 14.",
-  Gpioh14,
-  peripheral_gpioh_14,
+  GpioH14,
+  peripheral_gpio_h14,
   gpioh,
   afrh,
   crh,
@@ -9187,8 +9213,8 @@ gpio_pin! {
           feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port H pin 15.",
-  Gpioh15,
-  peripheral_gpioh_15,
+  GpioH15,
+  peripheral_gpio_h15,
   gpioh,
   afrh,
   crh,
@@ -9251,8 +9277,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 0.",
-  Gpioi0,
-  peripheral_gpioi_0,
+  GpioI0,
+  peripheral_gpio_i0,
   gpioi,
   afrl,
   crl,
@@ -9312,8 +9338,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 1.",
-  Gpioi1,
-  peripheral_gpioi_1,
+  GpioI1,
+  peripheral_gpio_i1,
   gpioi,
   afrl,
   crl,
@@ -9373,8 +9399,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 2.",
-  Gpioi2,
-  peripheral_gpioi_2,
+  GpioI2,
+  peripheral_gpio_i2,
   gpioi,
   afrl,
   crl,
@@ -9434,8 +9460,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 3.",
-  Gpioi3,
-  peripheral_gpioi_3,
+  GpioI3,
+  peripheral_gpio_i3,
   gpioi,
   afrl,
   crl,
@@ -9495,8 +9521,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 4.",
-  Gpioi4,
-  peripheral_gpioi_4,
+  GpioI4,
+  peripheral_gpio_i4,
   gpioi,
   afrl,
   crl,
@@ -9556,8 +9582,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 5.",
-  Gpioi5,
-  peripheral_gpioi_5,
+  GpioI5,
+  peripheral_gpio_i5,
   gpioi,
   afrl,
   crl,
@@ -9617,8 +9643,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 6.",
-  Gpioi6,
-  peripheral_gpioi_6,
+  GpioI6,
+  peripheral_gpio_i6,
   gpioi,
   afrl,
   crl,
@@ -9678,8 +9704,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 7.",
-  Gpioi7,
-  peripheral_gpioi_7,
+  GpioI7,
+  peripheral_gpio_i7,
   gpioi,
   afrl,
   crl,
@@ -9739,8 +9765,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 8.",
-  Gpioi8,
-  peripheral_gpioi_8,
+  GpioI8,
+  peripheral_gpio_i8,
   gpioi,
   afrh,
   crh,
@@ -9800,8 +9826,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 9.",
-  Gpioi9,
-  peripheral_gpioi_9,
+  GpioI9,
+  peripheral_gpio_i9,
   gpioi,
   afrh,
   crh,
@@ -9861,8 +9887,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 10.",
-  Gpioi10,
-  peripheral_gpioi_10,
+  GpioI10,
+  peripheral_gpio_i10,
   gpioi,
   afrh,
   crh,
@@ -9922,8 +9948,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 11.",
-  Gpioi11,
-  peripheral_gpioi_11,
+  GpioI11,
+  peripheral_gpio_i11,
   gpioi,
   afrh,
   crh,
@@ -9983,8 +10009,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 12.",
-  Gpioi12,
-  peripheral_gpioi_12,
+  GpioI12,
+  peripheral_gpio_i12,
   gpioi,
   afrh,
   crh,
@@ -10044,8 +10070,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 13.",
-  Gpioi13,
-  peripheral_gpioi_13,
+  GpioI13,
+  peripheral_gpio_i13,
   gpioi,
   afrh,
   crh,
@@ -10105,8 +10131,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 14.",
-  Gpioi14,
-  peripheral_gpioi_14,
+  GpioI14,
+  peripheral_gpio_i14,
   gpioi,
   afrh,
   crh,
@@ -10166,8 +10192,8 @@ gpio_pin! {
 #[cfg(any(feature = "stm32l4x6"))]
 gpio_pin! {
   "GPIO port I pin 15.",
-  Gpioi15,
-  peripheral_gpioi_15,
+  GpioI15,
+  peripheral_gpio_i15,
   gpioi,
   afrh,
   crh,

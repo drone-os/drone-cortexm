@@ -7,13 +7,13 @@ pub struct RegExcl<T> {
 }
 
 /// `RegExl` for `RegHold`.
-pub trait RegHoldExcl<T: RegShared, U: Reg<T>>: Sized {
+pub trait RegHoldExcl<T: RegAtomic, U: Reg<T>>: Sized {
   /// Downgrades to the underlying value.
   fn val(self) -> RegExcl<U::Val>;
 }
 
 /// Raw shared register value type.
-pub trait RegRawShared: Sized {
+pub trait RegRawAtomic: Sized {
   /// Loads the value with `ldrex` instruction.
   unsafe fn load_excl(address: usize) -> Self;
 
@@ -22,7 +22,7 @@ pub trait RegRawShared: Sized {
 }
 
 /// Register that can read and write its value in a multi-threaded context.
-pub trait RwRegShared<T: RegShared>: RReg<T> + WReg<T> {
+pub trait RwRegAtomic<T: RegAtomic>: RReg<T> + WReg<T> {
   /// Loads the value with `ldrex` instruction.
   fn load_excl<'a>(&'a self) -> RegExcl<<Self as RegRef<'a, T>>::Hold>
   where
@@ -34,9 +34,9 @@ pub trait RwRegShared<T: RegShared>: RReg<T> + WReg<T> {
 
 /// Register that can update its value in a multi-threaded context.
 // FIXME https://github.com/rust-lang/rust/issues/46397
-pub trait RwRegSharedRef<'a, T: RegShared>
+pub trait RwRegAtomicRef<'a, T: RegAtomic>
 where
-  Self: RwRegShared<T> + WRegShared<'a, T> + RegRef<'a, T>,
+  Self: RwRegAtomic<T> + WRegAtomic<'a, T> + RegRef<'a, T>,
 {
   /// Atomically updates the register's value.
   fn modify<F>(&'a self, f: F)
@@ -46,10 +46,10 @@ where
 }
 
 /// Write field of shared read-write register.
-pub trait WRwRegFieldShared<T: RegShared>
+pub trait WRwRegFieldAtomic<T: RegAtomic>
 where
   Self: WRegField<T>,
-  Self::Reg: RwRegShared<T>,
+  Self::Reg: RwRegAtomic<T>,
 {
   /// Loads the value with `ldrex` instruction.
   fn load_excl(&self) -> RegExcl<<Self::Reg as Reg<T>>::Val>;
@@ -64,10 +64,10 @@ where
 }
 
 /// Single-bit write field of shared read-write register.
-pub trait WRwRegFieldBitShared<T: RegShared>
+pub trait WRwRegFieldBitAtomic<T: RegAtomic>
 where
-  Self: WRwRegFieldShared<T> + RegFieldBit<T>,
-  Self::Reg: RwRegShared<T>,
+  Self: WRwRegFieldAtomic<T> + RegFieldBit<T>,
+  Self::Reg: RwRegAtomic<T>,
 {
   /// Sets the bit in memory.
   fn set_bit(&self);
@@ -80,20 +80,20 @@ where
 }
 
 /// Multiple-bits write field of shared read-write register.
-pub trait WRwRegFieldBitsShared<T: RegShared>
+pub trait WRwRegFieldBitsAtomic<T: RegAtomic>
 where
-  Self: WRwRegFieldShared<T> + RegFieldBits<T>,
-  Self::Reg: RwRegShared<T>,
+  Self: WRwRegFieldAtomic<T> + RegFieldBits<T>,
+  Self::Reg: RwRegAtomic<T>,
 {
   /// Sets the bit in memory.
   fn write_bits(&self, bits: <<Self::Reg as Reg<T>>::Val as RegVal>::Raw);
 }
 
-impl<T, U> RwRegShared<T> for U
+impl<T, U> RwRegAtomic<T> for U
 where
-  T: RegShared,
+  T: RegAtomic,
   U: RReg<T> + WReg<T>,
-  <U::Val as RegVal>::Raw: RegRawShared,
+  <U::Val as RegVal>::Raw: RegRawAtomic,
 {
   #[inline(always)]
   fn load_excl<'a>(&'a self) -> RegExcl<<Self as RegRef<'a, T>>::Hold>
@@ -113,11 +113,11 @@ where
   }
 }
 
-impl<'a, T, U> RwRegSharedRef<'a, T> for U
+impl<'a, T, U> RwRegAtomicRef<'a, T> for U
 where
-  T: RegShared,
-  U: RReg<T> + WRegShared<'a, T> + RegRef<'a, T>,
-  <U::Val as RegVal>::Raw: RegRawShared,
+  T: RegAtomic,
+  U: RReg<T> + WRegAtomic<'a, T> + RegRef<'a, T>,
+  <U::Val as RegVal>::Raw: RegRawAtomic,
 {
   #[inline(always)]
   fn modify<F>(&'a self, f: F)
@@ -135,12 +135,12 @@ where
   }
 }
 
-impl<T, U> WRwRegFieldShared<T> for U
+impl<T, U> WRwRegFieldAtomic<T> for U
 where
-  T: RegShared,
+  T: RegAtomic,
   U: WRegField<T>,
-  U::Reg: RwRegShared<T>,
-  <<U::Reg as Reg<T>>::Val as RegVal>::Raw: RegRawShared,
+  U::Reg: RwRegAtomic<T>,
+  <<U::Reg as Reg<T>>::Val as RegVal>::Raw: RegRawAtomic,
 {
   #[inline(always)]
   fn load_excl(&self) -> RegExcl<<U::Reg as Reg<T>>::Val> {
@@ -171,11 +171,11 @@ where
   }
 }
 
-impl<T, U> WRwRegFieldBitShared<T> for U
+impl<T, U> WRwRegFieldBitAtomic<T> for U
 where
-  T: RegShared,
-  U: WRwRegFieldShared<T> + RegFieldBit<T>,
-  U::Reg: RwRegShared<T>,
+  T: RegAtomic,
+  U: WRwRegFieldAtomic<T> + RegFieldBit<T>,
+  U::Reg: RwRegAtomic<T>,
 {
   #[inline(always)]
   fn set_bit(&self) {
@@ -199,11 +199,11 @@ where
   }
 }
 
-impl<T, U> WRwRegFieldBitsShared<T> for U
+impl<T, U> WRwRegFieldBitsAtomic<T> for U
 where
-  T: RegShared,
-  U: WRwRegFieldShared<T> + RegFieldBits<T>,
-  U::Reg: RwRegShared<T>,
+  T: RegAtomic,
+  U: WRwRegFieldAtomic<T> + RegFieldBits<T>,
+  U::Reg: RwRegAtomic<T>,
 {
   #[inline(always)]
   fn write_bits(&self, bits: <<U::Reg as Reg<T>>::Val as RegVal>::Raw) {
@@ -243,7 +243,7 @@ impl<T> RegExcl<T> {
 
 impl<'a, T, U, V> RegHoldExcl<T, U> for RegExcl<V>
 where
-  T: RegShared,
+  T: RegAtomic,
   U: Reg<T>,
   V: RegHold<'a, T, U>,
 {
@@ -255,7 +255,7 @@ where
 macro_rules! reg_raw_shared
 {
   ($type:ty, $ldrex:expr, $strex:expr) => {
-    impl RegRawShared for $type {
+    impl RegRawAtomic for $type {
       #[inline(always)]
       unsafe fn load_excl(address: usize) -> Self
       {

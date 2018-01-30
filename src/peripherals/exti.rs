@@ -1,6 +1,6 @@
 //! Extended interrupts and events controller.
 
-use drone_core::peripheral::{PeripheralDevice, PeripheralTokens};
+use drone_core::peripherals::{PeripheralDevice, PeripheralTokens};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
@@ -37,14 +37,14 @@ pub struct ExtiLn<T: ExtiLnTokens>(T);
 /// Generic EXTI line tokens.
 #[allow(missing_docs)]
 pub trait ExtiLnTokens: PeripheralTokens {
-  type Emr: RwRegShared<Srt> + RegBitBand<Srt>;
+  type Emr: RwRegAtomic<Srt> + RegBitBand<Srt>;
   type EmrMr: RegField<Srt, Reg = Self::Emr>
-    + WRwRegFieldBitShared<Srt>
+    + WRwRegFieldBitAtomic<Srt>
     + RRegFieldBitBand<Srt>
     + WRegFieldBitBand<Srt>;
-  type Imr: RwRegShared<Srt> + RegBitBand<Srt>;
+  type Imr: RwRegAtomic<Srt> + RegBitBand<Srt>;
   type ImrMr: RegField<Srt, Reg = Self::Imr>
-    + WRwRegFieldBitShared<Srt>
+    + WRwRegFieldBitAtomic<Srt>
     + RRegFieldBitBand<Srt>
     + WRegFieldBitBand<Srt>;
 
@@ -55,25 +55,25 @@ pub trait ExtiLnTokens: PeripheralTokens {
 /// Generic configurable EXTI line tokens.
 #[allow(missing_docs)]
 pub trait ExtiLnTokensConf: ExtiLnTokens {
-  type Ftsr: RwRegShared<Srt> + RegBitBand<Srt>;
+  type Ftsr: RwRegAtomic<Srt> + RegBitBand<Srt>;
   type FtsrFt: RegField<Srt, Reg = Self::Ftsr>
-    + WRwRegFieldBitShared<Srt>
+    + WRwRegFieldBitAtomic<Srt>
     + RRegFieldBitBand<Srt>
     + WRegFieldBitBand<Srt>;
-  type Pr: RwRegShared<Frt> + RegBitBand<Frt>;
+  type Pr: RwRegAtomic<Frt> + RegBitBand<Frt>;
   type PrPif: RegField<Frt, Reg = Self::Pr>
-    + WRwRegFieldBitShared<Frt>
+    + WRwRegFieldBitAtomic<Frt>
     + RRegFieldBitBand<Frt>
     + WRegFieldBitBand<Frt>
     + RegFork;
-  type Rtsr: RwRegShared<Srt> + RegBitBand<Srt>;
+  type Rtsr: RwRegAtomic<Srt> + RegBitBand<Srt>;
   type RtsrRt: RegField<Srt, Reg = Self::Rtsr>
-    + WRwRegFieldBitShared<Srt>
+    + WRwRegFieldBitAtomic<Srt>
     + RRegFieldBitBand<Srt>
     + WRegFieldBitBand<Srt>;
-  type Swier: RwRegShared<Srt> + RegBitBand<Srt>;
+  type Swier: RwRegAtomic<Srt> + RegBitBand<Srt>;
   type SwierSwi: RegField<Srt, Reg = Self::Swier>
-    + WRwRegFieldBitShared<Srt>
+    + WRwRegFieldBitAtomic<Srt>
     + RRegFieldBitBand<Srt>
     + WRegFieldBitBand<Srt>;
 
@@ -88,16 +88,18 @@ pub trait ExtiLnTokensConf: ExtiLnTokens {
 #[allow(missing_docs)]
 pub trait ExtiLnTokensExt: ExtiLnTokens {
   type Irq: IrqToken<Ltt>;
-  type Exticr: RwRegShared<Srt>;
+  type Exticr: RwRegAtomic<Srt>;
   type ExticrExti: RegField<Srt, Reg = Self::Exticr>
     + RRegFieldBits<Srt>
-    + WRwRegFieldBitsShared<Srt>;
+    + WRwRegFieldBitsAtomic<Srt>;
 
   fn irq(&self) -> Self::Irq;
   fn exticr_exti(&self) -> &Self::ExticrExti;
 }
 
-impl<T: ExtiLnTokens> PeripheralDevice<T> for ExtiLn<T> {
+impl<T: ExtiLnTokens> PeripheralDevice for ExtiLn<T> {
+  type Tokens = T;
+
   #[inline(always)]
   fn from_tokens(tokens: T::InputTokens) -> Self {
     ExtiLn(tokens.into())
