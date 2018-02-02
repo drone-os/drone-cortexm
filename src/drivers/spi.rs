@@ -2,19 +2,19 @@
 
 #[allow(unused_imports)]
 use core::ptr::{read_volatile, write_volatile};
-use drone_core::peripherals::{PeripheralDevice, PeripheralTokens};
-use peripherals::dma::{Dma, DmaTokens};
+use drivers::dma::{Dma, DmaRes};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
-use peripherals::dma::{Dma1Ch2Tokens, Dma1Ch3Tokens, Dma1Ch4Tokens,
-                       Dma1Ch5Tokens, Dma2Ch1Tokens, Dma2Ch2Tokens};
+use drivers::dma::{Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma2Ch1Res,
+                   Dma2Ch2Res};
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
-use peripherals::dma::{Dma2Ch3Tokens, Dma2Ch4Tokens};
+use drivers::dma::{Dma2Ch3Res, Dma2Ch4Res};
+use drone_core::drivers::{Driver, Resource};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
@@ -45,14 +45,14 @@ use thread::irq::{IrqDma2Channel3 as IrqDma2Ch3, IrqDma2Channel4 as IrqDma2Ch4};
 use thread::irq::{IrqSpi1, IrqSpi2, IrqSpi3};
 use thread::prelude::*;
 
-/// Generic SPI.
-pub struct Spi<T: SpiTokens>(T);
+/// SPI driver.
+pub struct Spi<T: SpiRes>(T);
 
-/// Generic DMA-driven SPI tokens.
+/// DMA-driven SPI driver.
 pub trait SpiDmaTx<T, Tx>
 where
-  T: SpiTokensDmaTx<Tx>,
-  Tx: DmaTokens,
+  T: SpiDmaTxRes<Tx>,
+  Tx: DmaRes,
 {
   /// Initializes DMA for the SPI as peripheral.
   fn dma_tx_init(&self, dma_tx: &Dma<Tx>);
@@ -61,11 +61,11 @@ where
   fn dma_tx_paddr_init(&self, dma_tx: &Dma<Tx>);
 }
 
-/// Generic DMA-driven SPI tokens.
+/// DMA-driven SPI driver.
 pub trait SpiDmaRx<T, Rx>
 where
-  T: SpiTokensDmaRx<Rx>,
-  Rx: DmaTokens,
+  T: SpiDmaRxRes<Rx>,
+  Rx: DmaRes,
 {
   /// Initializes DMA for the SPI as peripheral.
   fn dma_rx_init(&self, dma_rx: &Dma<Rx>);
@@ -74,12 +74,12 @@ where
   fn dma_rx_paddr_init(&self, dma_rx: &Dma<Rx>);
 }
 
-/// Generic DMA-driven SPI tokens.
+/// DMA-driven SPI driver.
 pub trait SpiDmaDx<T, Tx, Rx>
 where
-  T: SpiTokensDmaTx<Tx> + SpiTokensDmaRx<Rx>,
-  Tx: DmaTokens,
-  Rx: DmaTokens,
+  T: SpiDmaTxRes<Tx> + SpiDmaRxRes<Rx>,
+  Tx: DmaRes,
+  Rx: DmaRes,
 {
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
@@ -87,7 +87,7 @@ where
   /// Initializes DMA for the SPI as peripheral.
   fn dma_dx_init(&self, dma_tx: &Dma<Tx>, dma_rx: &Dma<Rx>)
   where
-    Tx: DmaTokens<Cselr = Rx::Cselr>;
+    Tx: DmaRes<Cselr = Rx::Cselr>;
 
   #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
@@ -99,9 +99,9 @@ where
   fn dma_dx_paddr_init(&self, dma_tx: &Dma<Tx>, dma_rx: &Dma<Rx>);
 }
 
-/// Generic SPI tokens.
+/// SPI resource.
 #[allow(missing_docs)]
-pub trait SpiTokens: PeripheralTokens<InputTokens = Self> {
+pub trait SpiRes: Resource<Input = Self> {
   type Cr1: for<'a> RwRegAtomicRef<'a, Srt> + RegBitBand<Srt>;
   type Cr2: for<'a> RwRegAtomicRef<'a, Srt> + RegBitBand<Srt>;
   type Crcpr: for<'a> RwRegAtomicRef<'a, Srt>;
@@ -121,30 +121,30 @@ pub trait SpiTokens: PeripheralTokens<InputTokens = Self> {
   fn txcrcr(&self) -> &Self::Txcrcr;
 }
 
-/// Generic interrupt-driven SPI tokens.
+/// Interrupt-driven SPI resource.
 #[allow(missing_docs)]
-pub trait SpiTokensIrq: SpiTokens {
-  type WithoutIrq: SpiTokens;
+pub trait SpiIrqRes: SpiRes {
+  type WithoutIrq: SpiRes;
   type Irq: IrqToken<Ltt>;
 
-  fn join_irq(tokens: Self::WithoutIrq, irq: Self::Irq) -> Self;
+  fn join_irq(res: Self::WithoutIrq, irq: Self::Irq) -> Self;
   fn split_irq(self) -> (Self::WithoutIrq, Self::Irq);
 
   fn irq(&self) -> Self::Irq;
 }
 
-/// Generic DMA-driven SPI tokens.
+/// DMA-driven SPI resource.
 #[allow(missing_docs)]
-pub trait SpiTokensDmaTx<T: DmaTokens>: SpiTokens {
+pub trait SpiDmaTxRes<T: DmaRes>: SpiRes {
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
   fn dma_tx_ch_init(&self, cs_val: &mut CselrVal<T>, dma: &Dma<T>);
 }
 
-/// Generic DMA-driven SPI tokens.
+/// DMA-driven SPI resource.
 #[allow(missing_docs)]
-pub trait SpiTokensDmaRx<T: DmaTokens>: SpiTokens {
+pub trait SpiDmaRxRes<T: DmaRes>: SpiRes {
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
@@ -154,24 +154,24 @@ pub trait SpiTokensDmaRx<T: DmaTokens>: SpiTokens {
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
-type CselrVal<T> = <<T as DmaTokens>::Cselr as Reg<Srt>>::Val;
+type CselrVal<T> = <<T as DmaRes>::Cselr as Reg<Srt>>::Val;
 
-impl<T: SpiTokens> PeripheralDevice for Spi<T> {
-  type Tokens = T;
+impl<T: SpiRes> Driver for Spi<T> {
+  type Resource = T;
 
   #[inline(always)]
-  fn from_tokens(tokens: T::InputTokens) -> Self {
-    Spi(tokens)
+  fn from_res(res: T::Input) -> Self {
+    Spi(res)
   }
 
   #[inline(always)]
-  fn into_tokens(self) -> T {
+  fn into_res(self) -> T {
     self.0
   }
 }
 
 #[allow(missing_docs)]
-impl<T: SpiTokens> Spi<T> {
+impl<T: SpiRes> Spi<T> {
   #[inline(always)]
   pub fn cr1(&self) -> &T::Cr1 {
     self.0.cr1()
@@ -243,16 +243,16 @@ impl<T: SpiTokens> Spi<T> {
 }
 
 #[allow(missing_docs)]
-impl<T: SpiTokensIrq> Spi<T> {
+impl<T: SpiIrqRes> Spi<T> {
   #[inline(always)]
-  pub fn join_irq(tokens: Spi<T::WithoutIrq>, irq: T::Irq) -> Spi<T> {
-    Spi(T::join_irq(tokens.0, irq))
+  pub fn join_irq(res: Spi<T::WithoutIrq>, irq: T::Irq) -> Spi<T> {
+    Spi(T::join_irq(res.0, irq))
   }
 
   #[inline(always)]
   pub fn split_irq(self) -> (Spi<T::WithoutIrq>, T::Irq) {
-    let (tokens, irq) = self.0.split_irq();
-    (Spi(tokens), irq)
+    let (res, irq) = self.0.split_irq();
+    (Spi(res), irq)
   }
 
   #[inline(always)]
@@ -264,8 +264,8 @@ impl<T: SpiTokensIrq> Spi<T> {
 #[allow(missing_docs)]
 impl<T, Tx> SpiDmaTx<T, Tx> for Spi<T>
 where
-  T: SpiTokensDmaTx<Tx>,
-  Tx: DmaTokens,
+  T: SpiDmaTxRes<Tx>,
+  Tx: DmaRes,
 {
   #[inline(always)]
   fn dma_tx_init(&self, dma_tx: &Dma<Tx>) {
@@ -287,8 +287,8 @@ where
 #[allow(missing_docs)]
 impl<T, Rx> SpiDmaRx<T, Rx> for Spi<T>
 where
-  T: SpiTokensDmaRx<Rx>,
-  Rx: DmaTokens,
+  T: SpiDmaRxRes<Rx>,
+  Rx: DmaRes,
 {
   #[inline(always)]
   fn dma_rx_init(&self, dma_rx: &Dma<Rx>) {
@@ -310,9 +310,9 @@ where
 #[allow(missing_docs)]
 impl<T, Tx, Rx> SpiDmaDx<T, Tx, Rx> for Spi<T>
 where
-  T: SpiTokensDmaTx<Tx> + SpiTokensDmaRx<Rx>,
-  Tx: DmaTokens,
-  Rx: DmaTokens,
+  T: SpiDmaTxRes<Tx> + SpiDmaRxRes<Rx>,
+  Tx: DmaRes,
+  Rx: DmaRes,
 {
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
@@ -320,7 +320,7 @@ where
   #[inline(always)]
   fn dma_dx_init(&self, dma_tx: &Dma<Tx>, dma_rx: &Dma<Rx>)
   where
-    Tx: DmaTokens<Cselr = Rx::Cselr>,
+    Tx: DmaRes<Cselr = Rx::Cselr>,
   {
     self.dma_dx_paddr_init(dma_tx, dma_rx);
     dma_tx.cselr_cs().modify(|r| {
@@ -355,24 +355,24 @@ macro_rules! spi_shared {
     $spi_rxcrcr:ident,
     $spi_sr:ident,
     $spi_txcrcr:ident,
-    $name_tokens:ident,
+    $name_res:ident,
     ($($tp:ident: $bound:path),*),
     ($((
       [$($dma_tx_attr:meta,)*],
-      $dma_tx_tokens:ident,
+      $dma_tx_res:ident,
       $irq_dma_tx:ident,
       $dma_tx_cs:expr,
       ($($dma_tx_tp:ident: $dma_tx_bound:path),*)
     ),)*),
     ($((
       [$($dma_rx_attr:meta,)*],
-      $dma_rx_tokens:ident,
+      $dma_rx_res:ident,
       $irq_dma_rx:ident,
       $dma_rx_cs:expr,
       ($($dma_rx_tp:ident: $dma_rx_bound:path),*)
     ),)*),
   ) => {
-    impl<$($tp: $bound,)*> SpiTokens for $name_tokens<$($tp),*> {
+    impl<$($tp: $bound,)*> SpiRes for $name_res<$($tp),*> {
       type Cr1 = $spi::Cr1<Srt>;
       type Cr2 = $spi::Cr2<Srt>;
       type Crcpr = $spi::Crcpr<Srt>;
@@ -425,8 +425,8 @@ macro_rules! spi_shared {
 
     $(
       $(#[$dma_tx_attr])*
-      impl<$($dma_tx_tp,)* Tx> SpiTokensDmaTx<$dma_tx_tokens<Tx, Frt>>
-        for $name_tokens<$($dma_tx_tp),*>
+      impl<$($dma_tx_tp,)* Tx> SpiDmaTxRes<$dma_tx_res<Tx, Frt>>
+        for $name_res<$($dma_tx_tp),*>
       where
         Tx: $irq_dma_tx<Ltt>,
         $($dma_tx_tp: $dma_tx_bound,)*
@@ -437,8 +437,8 @@ macro_rules! spi_shared {
         #[inline(always)]
         fn dma_tx_ch_init(
           &self,
-          cs_val: &mut CselrVal<$dma_tx_tokens<Tx, Frt>>,
-          dma: &Dma<$dma_tx_tokens<Tx, Frt>>,
+          cs_val: &mut CselrVal<$dma_tx_res<Tx, Frt>>,
+          dma: &Dma<$dma_tx_res<Tx, Frt>>,
         ) {
           dma.cselr_cs().write(cs_val, $dma_tx_cs);
         }
@@ -447,8 +447,8 @@ macro_rules! spi_shared {
 
     $(
       $(#[$dma_rx_attr])*
-      impl<$($dma_rx_tp,)* Rx> SpiTokensDmaRx<$dma_rx_tokens<Rx, Frt>>
-        for $name_tokens<$($dma_rx_tp),*>
+      impl<$($dma_rx_tp,)* Rx> SpiDmaRxRes<$dma_rx_res<Rx, Frt>>
+        for $name_res<$($dma_rx_tp),*>
       where
         Rx: $irq_dma_rx<Ltt>,
         $($dma_rx_tp: $dma_rx_bound,)*
@@ -459,8 +459,8 @@ macro_rules! spi_shared {
         #[inline(always)]
         fn dma_rx_ch_init(
           &self,
-          cs_val: &mut CselrVal<$dma_rx_tokens<Rx, Frt>>,
-          dma: &Dma<$dma_rx_tokens<Rx, Frt>>,
+          cs_val: &mut CselrVal<$dma_rx_res<Rx, Frt>>,
+          dma: &Dma<$dma_rx_res<Rx, Frt>>,
         ) {
           dma.cselr_cs().write(cs_val, $dma_rx_cs);
         }
@@ -478,10 +478,10 @@ macro_rules! spi {
     $doc_irq:expr,
     $name_irq:ident,
     $name_irq_macro:ident,
-    $doc_tokens:expr,
-    $name_tokens:ident,
-    $doc_irq_tokens:expr,
-    $name_irq_tokens:ident,
+    $doc_res:expr,
+    $name_res:ident,
+    $doc_irq_res:expr,
+    $name_irq_res:ident,
     $irq_ty:ident,
     $spi:ident,
     $spi_cr1:ident,
@@ -493,26 +493,26 @@ macro_rules! spi {
     $spi_txcrcr:ident,
     ($((
       $(#[$dma_tx_attr:meta])*
-      $dma_tx_tokens:ident,
+      $dma_tx_res:ident,
       $irq_dma_tx:ident,
       $dma_tx_cs:expr
     )),*),
     ($((
       $(#[$dma_rx_attr:meta])*
-      $dma_rx_tokens:ident,
+      $dma_rx_res:ident,
       $irq_dma_rx:ident,
       $dma_rx_cs:expr
     )),*),
   ) => {
     #[doc = $doc]
-    pub type $name = Spi<$name_tokens>;
+    pub type $name = Spi<$name_res>;
 
     #[doc = $doc_irq]
-    pub type $name_irq<I> = Spi<$name_irq_tokens<I>>;
+    pub type $name_irq<I> = Spi<$name_irq_res<I>>;
 
-    #[doc = $doc_tokens]
+    #[doc = $doc_res]
     #[allow(missing_docs)]
-    pub struct $name_tokens {
+    pub struct $name_res {
       pub $spi_cr1: $spi::Cr1<Srt>,
       pub $spi_cr2: $spi::Cr2<Srt>,
       pub $spi_crcpr: $spi::Crcpr<Srt>,
@@ -522,9 +522,9 @@ macro_rules! spi {
       pub $spi_txcrcr: $spi::Txcrcr<Srt>,
     }
 
-    #[doc = $doc_irq_tokens]
+    #[doc = $doc_irq_res]
     #[allow(missing_docs)]
-    pub struct $name_irq_tokens<I: $irq_ty<Ltt>> {
+    pub struct $name_irq_res<I: $irq_ty<Ltt>> {
       pub $spi: I,
       pub $spi_cr1: $spi::Cr1<Srt>,
       pub $spi_cr2: $spi::Cr2<Srt>,
@@ -539,8 +539,8 @@ macro_rules! spi {
     #[macro_export]
     macro_rules! $name_macro {
       ($regs:ident) => {
-        $crate::peripherals::spi::Spi::from_tokens(
-          $crate::peripherals::spi::$name_tokens {
+        $crate::drivers::spi::Spi::from_res(
+          $crate::drivers::spi::$name_res {
             $spi_cr1: $regs.$spi_cr1,
             $spi_cr2: $regs.$spi_cr2,
             $spi_crcpr: $regs.$spi_crcpr,
@@ -557,8 +557,8 @@ macro_rules! spi {
     #[macro_export]
     macro_rules! $name_irq_macro {
       ($regs:ident, $thrd:ident) => {
-        $crate::peripherals::spi::Spi::from_tokens(
-          $crate::peripherals::spi::$name_irq_tokens {
+        $crate::drivers::spi::Spi::from_res(
+          $crate::drivers::spi::$name_irq_res {
             $spi: $thrd.$spi.into(),
             $spi_cr1: $regs.$spi_cr1,
             $spi_cr2: $regs.$spi_cr2,
@@ -572,9 +572,9 @@ macro_rules! spi {
       }
     }
 
-    impl PeripheralTokens for $name_tokens {
+    impl Resource for $name_res {
       // FIXME https://github.com/rust-lang/rust/issues/47385
-      type InputTokens = Self;
+      type Input = Self;
     }
 
     spi_shared! {
@@ -586,15 +586,15 @@ macro_rules! spi {
       $spi_rxcrcr,
       $spi_sr,
       $spi_txcrcr,
-      $name_tokens,
+      $name_res,
       (),
-      ($(([$($dma_tx_attr,)*], $dma_tx_tokens, $irq_dma_tx, $dma_tx_cs, ()),)*),
-      ($(([$($dma_rx_attr,)*], $dma_rx_tokens, $irq_dma_rx, $dma_rx_cs, ()),)*),
+      ($(([$($dma_tx_attr,)*], $dma_tx_res, $irq_dma_tx, $dma_tx_cs, ()),)*),
+      ($(([$($dma_rx_attr,)*], $dma_rx_res, $irq_dma_rx, $dma_rx_cs, ()),)*),
     }
 
-    impl<I: $irq_ty<Ltt>> PeripheralTokens for $name_irq_tokens<I> {
+    impl<I: $irq_ty<Ltt>> Resource for $name_irq_res<I> {
       // FIXME https://github.com/rust-lang/rust/issues/47385
-      type InputTokens = Self;
+      type Input = Self;
     }
 
     spi_shared! {
@@ -606,40 +606,40 @@ macro_rules! spi {
       $spi_rxcrcr,
       $spi_sr,
       $spi_txcrcr,
-      $name_irq_tokens,
+      $name_irq_res,
       (I: $irq_ty<Ltt>),
       ($((
-        [$($dma_tx_attr,)*], $dma_tx_tokens, $irq_dma_tx, $dma_tx_cs,
+        [$($dma_tx_attr,)*], $dma_tx_res, $irq_dma_tx, $dma_tx_cs,
         (I: $irq_ty<Ltt>)
       ),)*),
       ($((
-        [$($dma_rx_attr,)*], $dma_rx_tokens, $irq_dma_rx, $dma_rx_cs,
+        [$($dma_rx_attr,)*], $dma_rx_res, $irq_dma_rx, $dma_rx_cs,
         (I: $irq_ty<Ltt>)
       ),)*),
     }
 
-    impl<I: $irq_ty<Ltt>> SpiTokensIrq for $name_irq_tokens<I> {
-      type WithoutIrq = $name_tokens;
+    impl<I: $irq_ty<Ltt>> SpiIrqRes for $name_irq_res<I> {
+      type WithoutIrq = $name_res;
       type Irq = I;
 
       #[inline(always)]
-      fn join_irq(tokens: Self::WithoutIrq, irq: Self::Irq) -> Self {
-        $name_irq_tokens {
+      fn join_irq(res: Self::WithoutIrq, irq: Self::Irq) -> Self {
+        $name_irq_res {
           $spi: irq,
-          $spi_cr1: tokens.$spi_cr1,
-          $spi_cr2: tokens.$spi_cr2,
-          $spi_crcpr: tokens.$spi_crcpr,
-          $spi_dr: tokens.$spi_dr,
-          $spi_rxcrcr: tokens.$spi_rxcrcr,
-          $spi_sr: tokens.$spi_sr,
-          $spi_txcrcr: tokens.$spi_txcrcr,
+          $spi_cr1: res.$spi_cr1,
+          $spi_cr2: res.$spi_cr2,
+          $spi_crcpr: res.$spi_crcpr,
+          $spi_dr: res.$spi_dr,
+          $spi_rxcrcr: res.$spi_rxcrcr,
+          $spi_sr: res.$spi_sr,
+          $spi_txcrcr: res.$spi_txcrcr,
         }
       }
 
       #[inline(always)]
       fn split_irq(self) -> (Self::WithoutIrq, Self::Irq) {
         (
-          $name_tokens {
+          $name_res {
             $spi_cr1: self.$spi_cr1,
             $spi_cr2: self.$spi_cr2,
             $spi_crcpr: self.$spi_crcpr,
@@ -666,16 +666,16 @@ macro_rules! spi {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 spi! {
-  "SPI1.",
+  "SPI1 driver.",
   Spi1,
-  peripheral_spi1,
-  "SPI1 with interrupt.",
+  drv_spi1,
+  "SPI1 driver with interrupt.",
   Spi1Irq,
-  peripheral_spi1_irq,
-  "SPI1 tokens.",
-  Spi1Tokens,
-  "SPI1 with interrupt tokens.",
-  Spi1IrqTokens,
+  drv_spi1_irq,
+  "SPI1 resource.",
+  Spi1Res,
+  "SPI1 resource with interrupt.",
+  Spi1IrqRes,
   IrqSpi1,
   spi1,
   spi1_cr1,
@@ -686,21 +686,21 @@ spi! {
   spi1_sr,
   spi1_txcrcr,
   (
-    (Dma1Ch3Tokens, IrqDma1Ch3, 0b0001),
+    (Dma1Ch3Res, IrqDma1Ch3, 0b0001),
     (
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      Dma2Ch4Tokens, IrqDma2Ch4, 0b0100
+      Dma2Ch4Res, IrqDma2Ch4, 0b0100
     )
   ),
   (
-    (Dma1Ch2Tokens, IrqDma1Ch2, 0b0001),
+    (Dma1Ch2Res, IrqDma1Ch2, 0b0001),
     (
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      Dma2Ch3Tokens, IrqDma2Ch3, 0b0100
+      Dma2Ch3Res, IrqDma2Ch3, 0b0100
     )
   ),
 }
@@ -711,16 +711,16 @@ spi! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 spi! {
-  "SPI2.",
+  "SPI2 driver.",
   Spi2,
-  peripheral_spi2,
-  "SPI2 with interrupt.",
+  drv_spi2,
+  "SPI2 driver with interrupt.",
   Spi2Irq,
-  peripheral_spi2_irq,
-  "SPI2 tokens.",
-  Spi2Tokens,
-  "SPI2 with interrupt tokens.",
-  Spi2IrqTokens,
+  drv_spi2_irq,
+  "SPI2 resource.",
+  Spi2Res,
+  "SPI2 resource with interrupt.",
+  Spi2IrqRes,
   IrqSpi2,
   spi2,
   spi2_cr1,
@@ -730,8 +730,8 @@ spi! {
   spi2_rxcrcr,
   spi2_sr,
   spi2_txcrcr,
-  ((Dma1Ch5Tokens, IrqDma1Ch5, 0b0001)),
-  ((Dma1Ch4Tokens, IrqDma1Ch4, 0b0001)),
+  ((Dma1Ch5Res, IrqDma1Ch5, 0b0001)),
+  ((Dma1Ch4Res, IrqDma1Ch4, 0b0001)),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -740,16 +740,16 @@ spi! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 spi! {
-  "SPI3.",
+  "SPI3 driver.",
   Spi3,
-  peripheral_spi3,
-  "SPI3 with interrupt.",
+  drv_spi3,
+  "SPI3 driver with interrupt.",
   Spi3Irq,
-  peripheral_spi3_irq,
-  "SPI3 tokens.",
-  Spi3Tokens,
-  "SPI3 with interrupt tokens.",
-  Spi3IrqTokens,
+  drv_spi3_irq,
+  "SPI3 resource.",
+  Spi3Res,
+  "SPI3 resource with interrupt.",
+  Spi3IrqRes,
   IrqSpi3,
   spi3,
   spi3_cr1,
@@ -759,6 +759,6 @@ spi! {
   spi3_rxcrcr,
   spi3_sr,
   spi3_txcrcr,
-  ((Dma2Ch2Tokens, IrqDma2Ch2, 0b0011)),
-  ((Dma2Ch1Tokens, IrqDma2Ch1, 0b0011)),
+  ((Dma2Ch2Res, IrqDma2Ch2, 0b0011)),
+  ((Dma2Ch1Res, IrqDma2Ch1, 0b0011)),
 }

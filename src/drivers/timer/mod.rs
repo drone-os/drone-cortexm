@@ -2,7 +2,7 @@
 
 mod sys_tick;
 
-pub use self::sys_tick::{SysTick, SysTickTokens};
+pub use self::sys_tick::{SysTick, SysTickRes};
 
 use reg::prelude::*;
 
@@ -12,7 +12,7 @@ use reg::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TimerOverflow;
 
-/// Generic timer tokens.
+/// Generic timer.
 pub trait Timer: Sized + Send + Sync + 'static {
   /// Duration type.
   type Duration;

@@ -1,6 +1,6 @@
 use super::{Timer, TimerOverflow};
+use drone_core::drivers::{Driver, Resource};
 use drone_core::fiber::{FiberFuture, FiberStreamUnit};
-use drone_core::peripherals::{PeripheralDevice, PeripheralTokens};
 use reg::prelude::*;
 use reg::stk;
 use thread::irq::IrqSysTick;
@@ -8,10 +8,10 @@ use thread::prelude::*;
 
 /// Creates a new `SysTick`.
 #[macro_export]
-macro_rules! peripheral_sys_tick {
+macro_rules! drv_sys_tick {
   ($regs:ident, $thrd:ident) => {
-    $crate::peripherals::timer::SysTick::from_tokens(
-      $crate::peripherals::timer::SysTickTokens {
+    $crate::drivers::timer::SysTick::from_res(
+      $crate::drivers::timer::SysTickRes {
         sys_tick: $thrd.sys_tick.into(),
         stk_ctrl: $regs.stk_ctrl,
         stk_load: $regs.stk_load,
@@ -21,44 +21,44 @@ macro_rules! peripheral_sys_tick {
   }
 }
 
-/// SysTick timer.
-pub struct SysTick<I: IrqSysTick<Ltt>>(SysTickTokens<I, Frt>);
+/// SysTick driver.
+pub struct SysTick<I: IrqSysTick<Ltt>>(SysTickRes<I, Frt>);
 
-/// SysTick timer tokens.
+/// SysTick resource.
 #[allow(missing_docs)]
-pub struct SysTickTokens<I: IrqSysTick<Ltt>, Rt: RegTag> {
+pub struct SysTickRes<I: IrqSysTick<Ltt>, Rt: RegTag> {
   pub sys_tick: I,
   pub stk_ctrl: stk::Ctrl<Rt>,
   pub stk_load: stk::Load<Srt>,
   pub stk_val: stk::Val<Srt>,
 }
 
-impl<I: IrqSysTick<Ltt>> PeripheralTokens for SysTickTokens<I, Frt> {
-  type InputTokens = SysTickTokens<I, Srt>;
+impl<I: IrqSysTick<Ltt>> Resource for SysTickRes<I, Frt> {
+  type Input = SysTickRes<I, Srt>;
 }
 
-impl<I: IrqSysTick<Ltt>> From<SysTickTokens<I, Srt>> for SysTickTokens<I, Frt> {
+impl<I: IrqSysTick<Ltt>> From<SysTickRes<I, Srt>> for SysTickRes<I, Frt> {
   #[inline(always)]
-  fn from(tokens: SysTickTokens<I, Srt>) -> Self {
+  fn from(res: SysTickRes<I, Srt>) -> Self {
     Self {
-      sys_tick: tokens.sys_tick,
-      stk_ctrl: tokens.stk_ctrl.into(),
-      stk_load: tokens.stk_load,
-      stk_val: tokens.stk_val,
+      sys_tick: res.sys_tick,
+      stk_ctrl: res.stk_ctrl.into(),
+      stk_load: res.stk_load,
+      stk_val: res.stk_val,
     }
   }
 }
 
-impl<I: IrqSysTick<Ltt>> PeripheralDevice for SysTick<I> {
-  type Tokens = SysTickTokens<I, Frt>;
+impl<I: IrqSysTick<Ltt>> Driver for SysTick<I> {
+  type Resource = SysTickRes<I, Frt>;
 
   #[inline(always)]
-  fn from_tokens(tokens: SysTickTokens<I, Srt>) -> Self {
-    SysTick(tokens.into())
+  fn from_res(res: SysTickRes<I, Srt>) -> Self {
+    SysTick(res.into())
   }
 
   #[inline(always)]
-  fn into_tokens(self) -> SysTickTokens<I, Frt> {
+  fn into_res(self) -> SysTickRes<I, Frt> {
     self.0
   }
 }

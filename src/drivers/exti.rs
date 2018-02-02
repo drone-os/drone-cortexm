@@ -1,6 +1,6 @@
 //! Extended interrupts and events controller.
 
-use drone_core::peripherals::{PeripheralDevice, PeripheralTokens};
+use drone_core::drivers::{Driver, Resource};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
@@ -31,12 +31,12 @@ use thread::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExtiLnOverflow;
 
-/// Generic EXTI line.
-pub struct ExtiLn<T: ExtiLnTokens>(T);
+/// EXTI line driver.
+pub struct ExtiLn<T: ExtiLnRes>(T);
 
-/// Generic EXTI line tokens.
+/// EXTI line resource.
 #[allow(missing_docs)]
-pub trait ExtiLnTokens: PeripheralTokens {
+pub trait ExtiLnRes: Resource {
   type Emr: RwRegAtomic<Srt> + RegBitBand<Srt>;
   type EmrMr: RegField<Srt, Reg = Self::Emr>
     + WRwRegFieldBitAtomic<Srt>
@@ -52,9 +52,9 @@ pub trait ExtiLnTokens: PeripheralTokens {
   fn imr_mr(&self) -> &Self::ImrMr;
 }
 
-/// Generic configurable EXTI line tokens.
+/// Configurable EXTI line resource.
 #[allow(missing_docs)]
-pub trait ExtiLnTokensConf: ExtiLnTokens {
+pub trait ExtiLnConfRes: ExtiLnRes {
   type Ftsr: RwRegAtomic<Srt> + RegBitBand<Srt>;
   type FtsrFt: RegField<Srt, Reg = Self::Ftsr>
     + WRwRegFieldBitAtomic<Srt>
@@ -84,9 +84,9 @@ pub trait ExtiLnTokensConf: ExtiLnTokens {
   fn swier_swi(&self) -> &Self::SwierSwi;
 }
 
-/// Generic EXTI line tokens with external interrupt support.
+/// EXTI line resource with external interrupt support.
 #[allow(missing_docs)]
-pub trait ExtiLnTokensExt: ExtiLnTokens {
+pub trait ExtiLnExtRes: ExtiLnRes {
   type Irq: IrqToken<Ltt>;
   type Exticr: RwRegAtomic<Srt>;
   type ExticrExti: RegField<Srt, Reg = Self::Exticr>
@@ -97,22 +97,22 @@ pub trait ExtiLnTokensExt: ExtiLnTokens {
   fn exticr_exti(&self) -> &Self::ExticrExti;
 }
 
-impl<T: ExtiLnTokens> PeripheralDevice for ExtiLn<T> {
-  type Tokens = T;
+impl<T: ExtiLnRes> Driver for ExtiLn<T> {
+  type Resource = T;
 
   #[inline(always)]
-  fn from_tokens(tokens: T::InputTokens) -> Self {
-    ExtiLn(tokens.into())
+  fn from_res(res: T::Input) -> Self {
+    ExtiLn(res.into())
   }
 
   #[inline(always)]
-  fn into_tokens(self) -> T {
+  fn into_res(self) -> T {
     self.0
   }
 }
 
 #[allow(missing_docs)]
-impl<T: ExtiLnTokens> ExtiLn<T> {
+impl<T: ExtiLnRes> ExtiLn<T> {
   #[inline(always)]
   pub fn emr_mr(&self) -> &T::EmrMr {
     self.0.emr_mr()
@@ -125,7 +125,7 @@ impl<T: ExtiLnTokens> ExtiLn<T> {
 }
 
 #[allow(missing_docs)]
-impl<T: ExtiLnTokensConf> ExtiLn<T> {
+impl<T: ExtiLnConfRes> ExtiLn<T> {
   #[inline(always)]
   pub fn ftsr_ft(&self) -> &T::FtsrFt {
     self.0.ftsr_ft()
@@ -148,7 +148,7 @@ impl<T: ExtiLnTokensConf> ExtiLn<T> {
 }
 
 #[allow(missing_docs)]
-impl<T: ExtiLnTokensExt> ExtiLn<T> {
+impl<T: ExtiLnExtRes> ExtiLn<T> {
   #[inline(always)]
   pub fn irq(&self) -> T::Irq {
     self.0.irq()
@@ -160,7 +160,7 @@ impl<T: ExtiLnTokensExt> ExtiLn<T> {
   }
 }
 
-impl<T: ExtiLnTokensExt + ExtiLnTokensConf> ExtiLn<T> {
+impl<T: ExtiLnExtRes + ExtiLnConfRes> ExtiLn<T> {
   /// Returns a future, which resolves to `Ok(())` when the event is triggered.
   pub fn future(&mut self) -> impl Future<Item = (), Error = !> {
     let pif = self.0.pr_pif_mut().fork();
@@ -208,8 +208,8 @@ macro_rules! exti_line {
     $doc:expr,
     $name:ident,
     $name_macro:ident,
-    $doc_tokens:expr,
-    $name_tokens:ident,
+    $doc_res:expr,
+    $name_res:ident,
     $mr_ty:ident,
     $emr_path:ident,
     $imr_path:ident,
@@ -254,11 +254,11 @@ macro_rules! exti_line {
     ))*),
   ) => {
     #[doc = $doc]
-    pub type $name<$($i_tp,)*> = ExtiLn<$name_tokens<$($i_tp,)* $($frt,)*>>;
+    pub type $name<$($i_tp,)*> = ExtiLn<$name_res<$($i_tp,)* $($frt,)*>>;
 
-    #[doc = $doc_tokens]
+    #[doc = $doc_res]
     #[allow(missing_docs)]
-    pub struct $name_tokens<$($i_tp: $irq_ty<Ltt>,)* $($rt_tp: RegTag,)*> {
+    pub struct $name_res<$($i_tp: $irq_ty<Ltt>,)* $($rt_tp: RegTag,)*> {
       $(
         pub $irq: $i_tp,
         pub $exticr_exti: $($exticr_path)::*::$exti_ty<Srt>,
@@ -277,8 +277,8 @@ macro_rules! exti_line {
     #[macro_export]
     macro_rules! $name_macro {
       ($regs:ident, $thrd:ident) => {
-        $crate::peripherals::exti::ExtiLn::from_tokens(
-          $crate::peripherals::exti::$name_tokens {
+        $crate::drivers::exti::ExtiLn::from_res(
+          $crate::drivers::exti::$name_res {
             $(
               $irq: $thrd.$irq.into(),
               $exticr_exti: $regs.$exticr.$exti,
@@ -297,37 +297,37 @@ macro_rules! exti_line {
     }
 
     $(
-      impl<$($i_tp_c,)*> From<$name_tokens<$($i_tp_c,)* $srt>>
-        for $name_tokens<$($i_tp_c,)* $frt>
+      impl<$($i_tp_c,)*> From<$name_res<$($i_tp_c,)* $srt>>
+        for $name_res<$($i_tp_c,)* $frt>
       where
         $($i_tp_c: $irq_ty_c<Ltt>,)*
       {
         #[inline(always)]
-        fn from(tokens: $name_tokens<$($i_tp_c,)* $srt>) -> Self {
+        fn from(res: $name_res<$($i_tp_c,)* $srt>) -> Self {
           Self {
             $(
-              $irq_c: tokens.$irq_c,
-              $exticr_exti_c: tokens.$exticr_exti_c,
+              $irq_c: res.$irq_c,
+              $exticr_exti_c: res.$exticr_exti_c,
             )*
-            $exti_ftsr_ft: tokens.$exti_ftsr_ft,
-            $exti_pr_pif: tokens.$exti_pr_pif.into(),
-            $exti_rtsr_rt: tokens.$exti_rtsr_rt,
-            $exti_swier_swi: tokens.$exti_swier_swi,
-            $exti_emr_mr: tokens.$exti_emr_mr,
-            $exti_imr_mr: tokens.$exti_imr_mr,
+            $exti_ftsr_ft: res.$exti_ftsr_ft,
+            $exti_pr_pif: res.$exti_pr_pif.into(),
+            $exti_rtsr_rt: res.$exti_rtsr_rt,
+            $exti_swier_swi: res.$exti_swier_swi,
+            $exti_emr_mr: res.$exti_emr_mr,
+            $exti_imr_mr: res.$exti_imr_mr,
           }
         }
       }
     )*
 
-    impl<$($i_tp,)*> PeripheralTokens for $name_tokens<$($i_tp,)* $($frt,)*>
+    impl<$($i_tp,)*> Resource for $name_res<$($i_tp,)* $($frt,)*>
     where
       $($i_tp: $irq_ty<Ltt>,)*
     {
-      type InputTokens = $name_tokens<$($i_tp,)* $($srt,)*>;
+      type Input = $name_res<$($i_tp,)* $($srt,)*>;
     }
 
-    impl<$($i_tp,)*> ExtiLnTokens for $name_tokens<$($i_tp,)* $($frt,)*>
+    impl<$($i_tp,)*> ExtiLnRes for $name_res<$($i_tp,)* $($frt,)*>
     where
       $($i_tp: $irq_ty<Ltt>,)*
     {
@@ -348,7 +348,7 @@ macro_rules! exti_line {
     }
 
     $(
-      impl<$($i_tp_c,)*> ExtiLnTokensConf for $name_tokens<$($i_tp_c,)* Frt>
+      impl<$($i_tp_c,)*> ExtiLnConfRes for $name_res<$($i_tp_c,)* Frt>
       where
         $($i_tp_c: $irq_ty_c<Ltt>,)*
       {
@@ -389,7 +389,7 @@ macro_rules! exti_line {
     )*
 
     $(
-      impl<$i_tp> ExtiLnTokensExt for $name_tokens<$i_tp, $($frt_i,)*>
+      impl<$i_tp> ExtiLnExtRes for $name_res<$i_tp, $($frt_i,)*>
       where
         $i_tp: $irq_ty<Ltt>,
       {
@@ -415,11 +415,11 @@ macro_rules! exti_line {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 0",
+  "EXTI Line 0 driver.",
   ExtiLn0,
-  peripheral_exti_ln_0,
-  "EXTI Line 0 tokens",
-  ExtiLn0Tokens,
+  drv_exti_ln_0,
+  "EXTI Line 0 resource.",
+  ExtiLn0Res,
   Mr0,
   emr,
   imr,
@@ -468,11 +468,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 1",
+  "EXTI Line 1 driver.",
   ExtiLn1,
-  peripheral_exti_ln_1,
-  "EXTI Line 1 tokens",
-  ExtiLn1Tokens,
+  drv_exti_ln_1,
+  "EXTI Line 1 resource.",
+  ExtiLn1Res,
   Mr1,
   emr,
   imr,
@@ -521,11 +521,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 2",
+  "EXTI Line 2 driver.",
   ExtiLn2,
-  peripheral_exti_ln_2,
-  "EXTI Line 2 tokens",
-  ExtiLn2Tokens,
+  drv_exti_ln_2,
+  "EXTI Line 2 resource.",
+  ExtiLn2Res,
   Mr2,
   emr,
   imr,
@@ -574,11 +574,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 3",
+  "EXTI Line 3 driver.",
   ExtiLn3,
-  peripheral_exti_ln_3,
-  "EXTI Line 3 tokens",
-  ExtiLn3Tokens,
+  drv_exti_ln_3,
+  "EXTI Line 3 resource.",
+  ExtiLn3Res,
   Mr3,
   emr,
   imr,
@@ -627,11 +627,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 4",
+  "EXTI Line 4 driver.",
   ExtiLn4,
-  peripheral_exti_ln_4,
-  "EXTI Line 4 tokens",
-  ExtiLn4Tokens,
+  drv_exti_ln_4,
+  "EXTI Line 4 resource.",
+  ExtiLn4Res,
   Mr4,
   emr,
   imr,
@@ -680,11 +680,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 5",
+  "EXTI Line 5 driver.",
   ExtiLn5,
-  peripheral_exti_ln_5,
-  "EXTI Line 5 tokens",
-  ExtiLn5Tokens,
+  drv_exti_ln_5,
+  "EXTI Line 5 resource.",
+  ExtiLn5Res,
   Mr5,
   emr,
   imr,
@@ -733,11 +733,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 6",
+  "EXTI Line 6 driver.",
   ExtiLn6,
-  peripheral_exti_ln_6,
-  "EXTI Line 6 tokens",
-  ExtiLn6Tokens,
+  drv_exti_ln_6,
+  "EXTI Line 6 resource.",
+  ExtiLn6Res,
   Mr6,
   emr,
   imr,
@@ -786,11 +786,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 7",
+  "EXTI Line 7 driver.",
   ExtiLn7,
-  peripheral_exti_ln_7,
-  "EXTI Line 7 tokens",
-  ExtiLn7Tokens,
+  drv_exti_ln_7,
+  "EXTI Line 7 resource.",
+  ExtiLn7Res,
   Mr7,
   emr,
   imr,
@@ -839,11 +839,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 8",
+  "EXTI Line 8 driver.",
   ExtiLn8,
-  peripheral_exti_ln_8,
-  "EXTI Line 8 tokens",
-  ExtiLn8Tokens,
+  drv_exti_ln_8,
+  "EXTI Line 8 resource.",
+  ExtiLn8Res,
   Mr8,
   emr,
   imr,
@@ -892,11 +892,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 9",
+  "EXTI Line 9 driver.",
   ExtiLn9,
-  peripheral_exti_ln_9,
-  "EXTI Line 9 tokens",
-  ExtiLn9Tokens,
+  drv_exti_ln_9,
+  "EXTI Line 9 resource.",
+  ExtiLn9Res,
   Mr9,
   emr,
   imr,
@@ -945,11 +945,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 10",
+  "EXTI Line 10 driver.",
   ExtiLn10,
-  peripheral_exti_ln_10,
-  "EXTI Line 10 tokens",
-  ExtiLn10Tokens,
+  drv_exti_ln_10,
+  "EXTI Line 10 resource.",
+  ExtiLn10Res,
   Mr10,
   emr,
   imr,
@@ -998,11 +998,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 11",
+  "EXTI Line 11 driver.",
   ExtiLn11,
-  peripheral_exti_ln_11,
-  "EXTI Line 11 tokens",
-  ExtiLn11Tokens,
+  drv_exti_ln_11,
+  "EXTI Line 11 resource.",
+  ExtiLn11Res,
   Mr11,
   emr,
   imr,
@@ -1051,11 +1051,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 12",
+  "EXTI Line 12 driver.",
   ExtiLn12,
-  peripheral_exti_ln_12,
-  "EXTI Line 12 tokens",
-  ExtiLn12Tokens,
+  drv_exti_ln_12,
+  "EXTI Line 12 resource.",
+  ExtiLn12Res,
   Mr12,
   emr,
   imr,
@@ -1104,11 +1104,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 13",
+  "EXTI Line 13 driver.",
   ExtiLn13,
-  peripheral_exti_ln_13,
-  "EXTI Line 13 tokens",
-  ExtiLn13Tokens,
+  drv_exti_ln_13,
+  "EXTI Line 13 resource.",
+  ExtiLn13Res,
   Mr13,
   emr,
   imr,
@@ -1157,11 +1157,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 14",
+  "EXTI Line 14 driver.",
   ExtiLn14,
-  peripheral_exti_ln_14,
-  "EXTI Line 14 tokens",
-  ExtiLn14Tokens,
+  drv_exti_ln_14,
+  "EXTI Line 14 resource.",
+  ExtiLn14Res,
   Mr14,
   emr,
   imr,
@@ -1210,11 +1210,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 15",
+  "EXTI Line 15 driver.",
   ExtiLn15,
-  peripheral_exti_ln_15,
-  "EXTI Line 15 tokens",
-  ExtiLn15Tokens,
+  drv_exti_ln_15,
+  "EXTI Line 15 resource.",
+  ExtiLn15Res,
   Mr15,
   emr,
   imr,
@@ -1263,11 +1263,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 16",
+  "EXTI Line 16 driver.",
   ExtiLn16,
-  peripheral_exti_ln_16,
-  "EXTI Line 16 tokens",
-  ExtiLn16Tokens,
+  drv_exti_ln_16,
+  "EXTI Line 16 resource.",
+  ExtiLn16Res,
   Mr16,
   emr,
   imr,
@@ -1307,11 +1307,11 @@ exti_line! {
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 17",
+  "EXTI Line 17 driver.",
   ExtiLn17,
-  peripheral_exti_ln_17,
-  "EXTI Line 17 tokens",
-  ExtiLn17Tokens,
+  drv_exti_ln_17,
+  "EXTI Line 17 resource.",
+  ExtiLn17Res,
   Mr17,
   emr,
   imr,
@@ -1350,11 +1350,11 @@ exti_line! {
 #[cfg(any(feature = "stm32f101", feature = "stm32f102",
           feature = "stm32f103", feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 18",
+  "EXTI Line 18 driver.",
   ExtiLn18,
-  peripheral_exti_ln_18,
-  "EXTI Line 18 tokens",
-  ExtiLn18Tokens,
+  drv_exti_ln_18,
+  "EXTI Line 18 resource.",
+  ExtiLn18Res,
   Mr18,
   emr,
   imr,
@@ -1392,11 +1392,11 @@ exti_line! {
 
 #[cfg(any(feature = "stm32f107"))]
 exti_line! {
-  "EXTI Line 19",
+  "EXTI Line 19 driver.",
   ExtiLn19,
-  peripheral_exti_ln_19,
-  "EXTI Line 19 tokens",
-  ExtiLn19Tokens,
+  drv_exti_ln_19,
+  "EXTI Line 19 resource.",
+  ExtiLn19Res,
   Mr19,
   emr,
   imr,
@@ -1436,11 +1436,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 0",
+  "EXTI Line 0 driver.",
   ExtiLn0,
-  peripheral_exti_ln_0,
-  "EXTI Line 0 tokens",
-  ExtiLn0Tokens,
+  drv_exti_ln_0,
+  "EXTI Line 0 resource.",
+  ExtiLn0Res,
   Mr0,
   emr1,
   imr1,
@@ -1489,11 +1489,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 1",
+  "EXTI Line 1 driver.",
   ExtiLn1,
-  peripheral_exti_ln_1,
-  "EXTI Line 1 tokens",
-  ExtiLn1Tokens,
+  drv_exti_ln_1,
+  "EXTI Line 1 resource.",
+  ExtiLn1Res,
   Mr1,
   emr1,
   imr1,
@@ -1542,11 +1542,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 2",
+  "EXTI Line 2 driver.",
   ExtiLn2,
-  peripheral_exti_ln_2,
-  "EXTI Line 2 tokens",
-  ExtiLn2Tokens,
+  drv_exti_ln_2,
+  "EXTI Line 2 resource.",
+  ExtiLn2Res,
   Mr2,
   emr1,
   imr1,
@@ -1595,11 +1595,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 3",
+  "EXTI Line 3 driver.",
   ExtiLn3,
-  peripheral_exti_ln_3,
-  "EXTI Line 3 tokens",
-  ExtiLn3Tokens,
+  drv_exti_ln_3,
+  "EXTI Line 3 resource.",
+  ExtiLn3Res,
   Mr3,
   emr1,
   imr1,
@@ -1648,11 +1648,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 4",
+  "EXTI Line 4 driver.",
   ExtiLn4,
-  peripheral_exti_ln_4,
-  "EXTI Line 4 tokens",
-  ExtiLn4Tokens,
+  drv_exti_ln_4,
+  "EXTI Line 4 resource.",
+  ExtiLn4Res,
   Mr4,
   emr1,
   imr1,
@@ -1701,11 +1701,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 5",
+  "EXTI Line 5 driver.",
   ExtiLn5,
-  peripheral_exti_ln_5,
-  "EXTI Line 5 tokens",
-  ExtiLn5Tokens,
+  drv_exti_ln_5,
+  "EXTI Line 5 resource.",
+  ExtiLn5Res,
   Mr5,
   emr1,
   imr1,
@@ -1754,11 +1754,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 6",
+  "EXTI Line 6 driver.",
   ExtiLn6,
-  peripheral_exti_ln_6,
-  "EXTI Line 6 tokens",
-  ExtiLn6Tokens,
+  drv_exti_ln_6,
+  "EXTI Line 6 resource.",
+  ExtiLn6Res,
   Mr6,
   emr1,
   imr1,
@@ -1807,11 +1807,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 7",
+  "EXTI Line 7 driver.",
   ExtiLn7,
-  peripheral_exti_ln_7,
-  "EXTI Line 7 tokens",
-  ExtiLn7Tokens,
+  drv_exti_ln_7,
+  "EXTI Line 7 resource.",
+  ExtiLn7Res,
   Mr7,
   emr1,
   imr1,
@@ -1860,11 +1860,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 8",
+  "EXTI Line 8 driver.",
   ExtiLn8,
-  peripheral_exti_ln_8,
-  "EXTI Line 8 tokens",
-  ExtiLn8Tokens,
+  drv_exti_ln_8,
+  "EXTI Line 8 resource.",
+  ExtiLn8Res,
   Mr8,
   emr1,
   imr1,
@@ -1913,11 +1913,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 9",
+  "EXTI Line 9 driver.",
   ExtiLn9,
-  peripheral_exti_ln_9,
-  "EXTI Line 9 tokens",
-  ExtiLn9Tokens,
+  drv_exti_ln_9,
+  "EXTI Line 9 resource.",
+  ExtiLn9Res,
   Mr9,
   emr1,
   imr1,
@@ -1966,11 +1966,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 10",
+  "EXTI Line 10 driver.",
   ExtiLn10,
-  peripheral_exti_ln_10,
-  "EXTI Line 10 tokens",
-  ExtiLn10Tokens,
+  drv_exti_ln_10,
+  "EXTI Line 10 resource.",
+  ExtiLn10Res,
   Mr10,
   emr1,
   imr1,
@@ -2019,11 +2019,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 11",
+  "EXTI Line 11 driver.",
   ExtiLn11,
-  peripheral_exti_ln_11,
-  "EXTI Line 11 tokens",
-  ExtiLn11Tokens,
+  drv_exti_ln_11,
+  "EXTI Line 11 resource.",
+  ExtiLn11Res,
   Mr11,
   emr1,
   imr1,
@@ -2072,11 +2072,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 12",
+  "EXTI Line 12 driver.",
   ExtiLn12,
-  peripheral_exti_ln_12,
-  "EXTI Line 12 tokens",
-  ExtiLn12Tokens,
+  drv_exti_ln_12,
+  "EXTI Line 12 resource.",
+  ExtiLn12Res,
   Mr12,
   emr1,
   imr1,
@@ -2125,11 +2125,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 13",
+  "EXTI Line 13 driver.",
   ExtiLn13,
-  peripheral_exti_ln_13,
-  "EXTI Line 13 tokens",
-  ExtiLn13Tokens,
+  drv_exti_ln_13,
+  "EXTI Line 13 resource.",
+  ExtiLn13Res,
   Mr13,
   emr1,
   imr1,
@@ -2178,11 +2178,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 14",
+  "EXTI Line 14 driver.",
   ExtiLn14,
-  peripheral_exti_ln_14,
-  "EXTI Line 14 tokens",
-  ExtiLn14Tokens,
+  drv_exti_ln_14,
+  "EXTI Line 14 resource.",
+  ExtiLn14Res,
   Mr14,
   emr1,
   imr1,
@@ -2231,11 +2231,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 15",
+  "EXTI Line 15 driver.",
   ExtiLn15,
-  peripheral_exti_ln_15,
-  "EXTI Line 15 tokens",
-  ExtiLn15Tokens,
+  drv_exti_ln_15,
+  "EXTI Line 15 resource.",
+  ExtiLn15Res,
   Mr15,
   emr1,
   imr1,
@@ -2284,11 +2284,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 16",
+  "EXTI Line 16 driver.",
   ExtiLn16,
-  peripheral_exti_ln_16,
-  "EXTI Line 16 tokens",
-  ExtiLn16Tokens,
+  drv_exti_ln_16,
+  "EXTI Line 16 resource.",
+  ExtiLn16Res,
   Mr16,
   emr1,
   imr1,
@@ -2328,11 +2328,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 17",
+  "EXTI Line 17 driver.",
   ExtiLn17,
-  peripheral_exti_ln_17,
-  "EXTI Line 17 tokens",
-  ExtiLn17Tokens,
+  drv_exti_ln_17,
+  "EXTI Line 17 resource.",
+  ExtiLn17Res,
   Mr17,
   emr1,
   imr1,
@@ -2349,11 +2349,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 18",
+  "EXTI Line 18 driver.",
   ExtiLn18,
-  peripheral_exti_ln_18,
-  "EXTI Line 18 tokens",
-  ExtiLn18Tokens,
+  drv_exti_ln_18,
+  "EXTI Line 18 resource.",
+  ExtiLn18Res,
   Mr18,
   emr1,
   imr1,
@@ -2393,11 +2393,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 19",
+  "EXTI Line 19 driver.",
   ExtiLn19,
-  peripheral_exti_ln_19,
-  "EXTI Line 19 tokens",
-  ExtiLn19Tokens,
+  drv_exti_ln_19,
+  "EXTI Line 19 resource.",
+  ExtiLn19Res,
   Mr19,
   emr1,
   imr1,
@@ -2437,11 +2437,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 20",
+  "EXTI Line 20 driver.",
   ExtiLn20,
-  peripheral_exti_ln_20,
-  "EXTI Line 20 tokens",
-  ExtiLn20Tokens,
+  drv_exti_ln_20,
+  "EXTI Line 20 resource.",
+  ExtiLn20Res,
   Mr20,
   emr1,
   imr1,
@@ -2481,11 +2481,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 21",
+  "EXTI Line 21 driver.",
   ExtiLn21,
-  peripheral_exti_ln_21,
-  "EXTI Line 21 tokens",
-  ExtiLn21Tokens,
+  drv_exti_ln_21,
+  "EXTI Line 21 resource.",
+  ExtiLn21Res,
   Mr21,
   emr1,
   imr1,
@@ -2525,11 +2525,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 22",
+  "EXTI Line 22 driver.",
   ExtiLn22,
-  peripheral_exti_ln_22,
-  "EXTI Line 22 tokens",
-  ExtiLn22Tokens,
+  drv_exti_ln_22,
+  "EXTI Line 22 resource.",
+  ExtiLn22Res,
   Mr22,
   emr1,
   imr1,
@@ -2569,11 +2569,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 23",
+  "EXTI Line 23 driver.",
   ExtiLn23,
-  peripheral_exti_ln_23,
-  "EXTI Line 23 tokens",
-  ExtiLn23Tokens,
+  drv_exti_ln_23,
+  "EXTI Line 23 resource.",
+  ExtiLn23Res,
   Mr23,
   emr1,
   imr1,
@@ -2590,11 +2590,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 24",
+  "EXTI Line 24 driver.",
   ExtiLn24,
-  peripheral_exti_ln_24,
-  "EXTI Line 24 tokens",
-  ExtiLn24Tokens,
+  drv_exti_ln_24,
+  "EXTI Line 24 resource.",
+  ExtiLn24Res,
   Mr24,
   emr1,
   imr1,
@@ -2611,11 +2611,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 25",
+  "EXTI Line 25 driver.",
   ExtiLn25,
-  peripheral_exti_ln_25,
-  "EXTI Line 25 tokens",
-  ExtiLn25Tokens,
+  drv_exti_ln_25,
+  "EXTI Line 25 resource.",
+  ExtiLn25Res,
   Mr25,
   emr1,
   imr1,
@@ -2632,11 +2632,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 26",
+  "EXTI Line 26 driver.",
   ExtiLn26,
-  peripheral_exti_ln_26,
-  "EXTI Line 26 tokens",
-  ExtiLn26Tokens,
+  drv_exti_ln_26,
+  "EXTI Line 26 resource.",
+  ExtiLn26Res,
   Mr26,
   emr1,
   imr1,
@@ -2653,11 +2653,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 27",
+  "EXTI Line 27 driver.",
   ExtiLn27,
-  peripheral_exti_ln_27,
-  "EXTI Line 27 tokens",
-  ExtiLn27Tokens,
+  drv_exti_ln_27,
+  "EXTI Line 27 resource.",
+  ExtiLn27Res,
   Mr27,
   emr1,
   imr1,
@@ -2674,11 +2674,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 28",
+  "EXTI Line 28 driver.",
   ExtiLn28,
-  peripheral_exti_ln_28,
-  "EXTI Line 28 tokens",
-  ExtiLn28Tokens,
+  drv_exti_ln_28,
+  "EXTI Line 28 resource.",
+  ExtiLn28Res,
   Mr28,
   emr1,
   imr1,
@@ -2695,11 +2695,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 29",
+  "EXTI Line 29 driver.",
   ExtiLn29,
-  peripheral_exti_ln_29,
-  "EXTI Line 29 tokens",
-  ExtiLn29Tokens,
+  drv_exti_ln_29,
+  "EXTI Line 29 resource.",
+  ExtiLn29Res,
   Mr29,
   emr1,
   imr1,
@@ -2716,11 +2716,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 30",
+  "EXTI Line 30 driver.",
   ExtiLn30,
-  peripheral_exti_ln_30,
-  "EXTI Line 30 tokens",
-  ExtiLn30Tokens,
+  drv_exti_ln_30,
+  "EXTI Line 30 resource.",
+  ExtiLn30Res,
   Mr30,
   emr1,
   imr1,
@@ -2737,11 +2737,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 31",
+  "EXTI Line 31 driver.",
   ExtiLn31,
-  peripheral_exti_ln_31,
-  "EXTI Line 31 tokens",
-  ExtiLn31Tokens,
+  drv_exti_ln_31,
+  "EXTI Line 31 resource.",
+  ExtiLn31Res,
   Mr31,
   emr1,
   imr1,
@@ -2758,11 +2758,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 32",
+  "EXTI Line 32 driver.",
   ExtiLn32,
-  peripheral_exti_ln_32,
-  "EXTI Line 32 tokens",
-  ExtiLn32Tokens,
+  drv_exti_ln_32,
+  "EXTI Line 32 resource.",
+  ExtiLn32Res,
   Mr32,
   emr2,
   imr2,
@@ -2779,11 +2779,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 33",
+  "EXTI Line 33 driver.",
   ExtiLn33,
-  peripheral_exti_ln_33,
-  "EXTI Line 33 tokens",
-  ExtiLn33Tokens,
+  drv_exti_ln_33,
+  "EXTI Line 33 resource.",
+  ExtiLn33Res,
   Mr33,
   emr2,
   imr2,
@@ -2800,11 +2800,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 34",
+  "EXTI Line 34 driver.",
   ExtiLn34,
-  peripheral_exti_ln_34,
-  "EXTI Line 34 tokens",
-  ExtiLn34Tokens,
+  drv_exti_ln_34,
+  "EXTI Line 34 resource.",
+  ExtiLn34Res,
   Mr34,
   emr2,
   imr2,
@@ -2821,11 +2821,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 35",
+  "EXTI Line 35 driver.",
   ExtiLn35,
-  peripheral_exti_ln_35,
-  "EXTI Line 35 tokens",
-  ExtiLn35Tokens,
+  drv_exti_ln_35,
+  "EXTI Line 35 resource.",
+  ExtiLn35Res,
   Mr35,
   emr2,
   imr2,
@@ -2865,11 +2865,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 36",
+  "EXTI Line 36 driver.",
   ExtiLn36,
-  peripheral_exti_ln_36,
-  "EXTI Line 36 tokens",
-  ExtiLn36Tokens,
+  drv_exti_ln_36,
+  "EXTI Line 36 resource.",
+  ExtiLn36Res,
   Mr36,
   emr2,
   imr2,
@@ -2909,11 +2909,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 37",
+  "EXTI Line 37 driver.",
   ExtiLn37,
-  peripheral_exti_ln_37,
-  "EXTI Line 37 tokens",
-  ExtiLn37Tokens,
+  drv_exti_ln_37,
+  "EXTI Line 37 resource.",
+  ExtiLn37Res,
   Mr37,
   emr2,
   imr2,
@@ -2953,11 +2953,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 38",
+  "EXTI Line 38 driver.",
   ExtiLn38,
-  peripheral_exti_ln_38,
-  "EXTI Line 38 tokens",
-  ExtiLn38Tokens,
+  drv_exti_ln_38,
+  "EXTI Line 38 resource.",
+  ExtiLn38Res,
   Mr38,
   emr2,
   imr2,
@@ -2997,11 +2997,11 @@ exti_line! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 exti_line! {
-  "EXTI Line 39",
+  "EXTI Line 39 driver.",
   ExtiLn39,
-  peripheral_exti_ln_39,
-  "EXTI Line 39 tokens",
-  ExtiLn39Tokens,
+  drv_exti_ln_39,
+  "EXTI Line 39 resource.",
+  ExtiLn39Res,
   Mr39,
   emr2,
   imr2,

@@ -19,7 +19,7 @@ use reg::gpioh;
 use reg::gpioi;
 use reg::prelude::*;
 
-/// Generic GPIO pin.
+/// GPIO pin.
 #[allow(missing_docs)]
 pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -180,7 +180,7 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
   fn pupdr_mut(&mut self) -> &mut Self::PupdrPupdr;
 }
 
-/// Generic GPIO pin with `ASCR` register.
+/// GPIO pin with `ASCR` register.
 #[cfg(any(feature = "stm32l4x6"))]
 #[allow(missing_docs)]
 pub trait GpioPinAscr<T: RegTag>: GpioPin<T> {
@@ -305,7 +305,7 @@ macro_rules! gpio_pin {
     #[macro_export]
     macro_rules! $name_macro {
       ($regs:ident) => {
-        $crate::peripherals::gpio::$name {
+        $crate::drivers::gpio::$name {
           $gpio_afr_afr: $regs.$gpio_afr.$afr.into(),
           $(
             $gpio_ascr_asc: $regs.$gpio_ascr.$asc.into(),
@@ -330,7 +330,7 @@ macro_rules! gpio_pin {
     #[macro_export]
     macro_rules! $name_macro {
       ($regs:ident) => {
-        $crate::peripherals::gpio::$name {
+        $crate::drivers::gpio::$name {
           $gpio_afr_afr: $regs.$gpio_afr.$afr.into(),
           $gpio_bsrr_br: $regs.$gpio_bsrr.$br.into(),
           $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs.into(),
@@ -352,7 +352,7 @@ macro_rules! gpio_pin {
     #[macro_export]
     macro_rules! $name_macro {
       ($regs:ident) => {
-        $crate::peripherals::gpio::$name {
+        $crate::drivers::gpio::$name {
           $gpio_brr_br: $regs.$gpio_brr_br.into(),
           $gpio_bsrr_br: $regs.$gpio_bsrr_br.into(),
           $gpio_bsrr_bs: $regs.$gpio_bsrr_bs.into(),
@@ -642,7 +642,7 @@ macro_rules! gpio_pin {
 gpio_pin! {
   "GPIO port A pin 0.",
   GpioA0,
-  peripheral_gpio_a0,
+  drv_gpio_a0,
   gpioa,
   afrl,
   crl,
@@ -710,7 +710,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 1.",
   GpioA1,
-  peripheral_gpio_a1,
+  drv_gpio_a1,
   gpioa,
   afrl,
   crl,
@@ -778,7 +778,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 2.",
   GpioA2,
-  peripheral_gpio_a2,
+  drv_gpio_a2,
   gpioa,
   afrl,
   crl,
@@ -846,7 +846,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 3.",
   GpioA3,
-  peripheral_gpio_a3,
+  drv_gpio_a3,
   gpioa,
   afrl,
   crl,
@@ -914,7 +914,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 4.",
   GpioA4,
-  peripheral_gpio_a4,
+  drv_gpio_a4,
   gpioa,
   afrl,
   crl,
@@ -982,7 +982,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 5.",
   GpioA5,
-  peripheral_gpio_a5,
+  drv_gpio_a5,
   gpioa,
   afrl,
   crl,
@@ -1050,7 +1050,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 6.",
   GpioA6,
-  peripheral_gpio_a6,
+  drv_gpio_a6,
   gpioa,
   afrl,
   crl,
@@ -1118,7 +1118,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 7.",
   GpioA7,
-  peripheral_gpio_a7,
+  drv_gpio_a7,
   gpioa,
   afrl,
   crl,
@@ -1186,7 +1186,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 8.",
   GpioA8,
-  peripheral_gpio_a8,
+  drv_gpio_a8,
   gpioa,
   afrh,
   crh,
@@ -1254,7 +1254,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 9.",
   GpioA9,
-  peripheral_gpio_a9,
+  drv_gpio_a9,
   gpioa,
   afrh,
   crh,
@@ -1322,7 +1322,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 10.",
   GpioA10,
-  peripheral_gpio_a10,
+  drv_gpio_a10,
   gpioa,
   afrh,
   crh,
@@ -1390,7 +1390,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 11.",
   GpioA11,
-  peripheral_gpio_a11,
+  drv_gpio_a11,
   gpioa,
   afrh,
   crh,
@@ -1458,7 +1458,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 12.",
   GpioA12,
-  peripheral_gpio_a12,
+  drv_gpio_a12,
   gpioa,
   afrh,
   crh,
@@ -1526,7 +1526,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 13.",
   GpioA13,
-  peripheral_gpio_a13,
+  drv_gpio_a13,
   gpioa,
   afrh,
   crh,
@@ -1594,7 +1594,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 14.",
   GpioA14,
-  peripheral_gpio_a14,
+  drv_gpio_a14,
   gpioa,
   afrh,
   crh,
@@ -1662,7 +1662,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port A pin 15.",
   GpioA15,
-  peripheral_gpio_a15,
+  drv_gpio_a15,
   gpioa,
   afrh,
   crh,
@@ -1730,7 +1730,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 0.",
   GpioB0,
-  peripheral_gpio_b0,
+  drv_gpio_b0,
   gpiob,
   afrl,
   crl,
@@ -1798,7 +1798,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 1.",
   GpioB1,
-  peripheral_gpio_b1,
+  drv_gpio_b1,
   gpiob,
   afrl,
   crl,
@@ -1866,7 +1866,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 2.",
   GpioB2,
-  peripheral_gpio_b2,
+  drv_gpio_b2,
   gpiob,
   afrl,
   crl,
@@ -1934,7 +1934,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 3.",
   GpioB3,
-  peripheral_gpio_b3,
+  drv_gpio_b3,
   gpiob,
   afrl,
   crl,
@@ -2002,7 +2002,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 4.",
   GpioB4,
-  peripheral_gpio_b4,
+  drv_gpio_b4,
   gpiob,
   afrl,
   crl,
@@ -2070,7 +2070,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 5.",
   GpioB5,
-  peripheral_gpio_b5,
+  drv_gpio_b5,
   gpiob,
   afrl,
   crl,
@@ -2138,7 +2138,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 6.",
   GpioB6,
-  peripheral_gpio_b6,
+  drv_gpio_b6,
   gpiob,
   afrl,
   crl,
@@ -2206,7 +2206,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 7.",
   GpioB7,
-  peripheral_gpio_b7,
+  drv_gpio_b7,
   gpiob,
   afrl,
   crl,
@@ -2274,7 +2274,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 8.",
   GpioB8,
-  peripheral_gpio_b8,
+  drv_gpio_b8,
   gpiob,
   afrh,
   crh,
@@ -2342,7 +2342,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 9.",
   GpioB9,
-  peripheral_gpio_b9,
+  drv_gpio_b9,
   gpiob,
   afrh,
   crh,
@@ -2410,7 +2410,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 10.",
   GpioB10,
-  peripheral_gpio_b10,
+  drv_gpio_b10,
   gpiob,
   afrh,
   crh,
@@ -2478,7 +2478,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 11.",
   GpioB11,
-  peripheral_gpio_b11,
+  drv_gpio_b11,
   gpiob,
   afrh,
   crh,
@@ -2546,7 +2546,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 12.",
   GpioB12,
-  peripheral_gpio_b12,
+  drv_gpio_b12,
   gpiob,
   afrh,
   crh,
@@ -2614,7 +2614,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 13.",
   GpioB13,
-  peripheral_gpio_b13,
+  drv_gpio_b13,
   gpiob,
   afrh,
   crh,
@@ -2682,7 +2682,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 14.",
   GpioB14,
-  peripheral_gpio_b14,
+  drv_gpio_b14,
   gpiob,
   afrh,
   crh,
@@ -2750,7 +2750,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port B pin 15.",
   GpioB15,
-  peripheral_gpio_b15,
+  drv_gpio_b15,
   gpiob,
   afrh,
   crh,
@@ -2818,7 +2818,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 0.",
   GpioC0,
-  peripheral_gpio_c0,
+  drv_gpio_c0,
   gpioc,
   afrl,
   crl,
@@ -2886,7 +2886,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 1.",
   GpioC1,
-  peripheral_gpio_c1,
+  drv_gpio_c1,
   gpioc,
   afrl,
   crl,
@@ -2954,7 +2954,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 2.",
   GpioC2,
-  peripheral_gpio_c2,
+  drv_gpio_c2,
   gpioc,
   afrl,
   crl,
@@ -3022,7 +3022,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 3.",
   GpioC3,
-  peripheral_gpio_c3,
+  drv_gpio_c3,
   gpioc,
   afrl,
   crl,
@@ -3090,7 +3090,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 4.",
   GpioC4,
-  peripheral_gpio_c4,
+  drv_gpio_c4,
   gpioc,
   afrl,
   crl,
@@ -3158,7 +3158,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 5.",
   GpioC5,
-  peripheral_gpio_c5,
+  drv_gpio_c5,
   gpioc,
   afrl,
   crl,
@@ -3226,7 +3226,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 6.",
   GpioC6,
-  peripheral_gpio_c6,
+  drv_gpio_c6,
   gpioc,
   afrl,
   crl,
@@ -3294,7 +3294,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 7.",
   GpioC7,
-  peripheral_gpio_c7,
+  drv_gpio_c7,
   gpioc,
   afrl,
   crl,
@@ -3362,7 +3362,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 8.",
   GpioC8,
-  peripheral_gpio_c8,
+  drv_gpio_c8,
   gpioc,
   afrh,
   crh,
@@ -3430,7 +3430,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 9.",
   GpioC9,
-  peripheral_gpio_c9,
+  drv_gpio_c9,
   gpioc,
   afrh,
   crh,
@@ -3498,7 +3498,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 10.",
   GpioC10,
-  peripheral_gpio_c10,
+  drv_gpio_c10,
   gpioc,
   afrh,
   crh,
@@ -3566,7 +3566,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 11.",
   GpioC11,
-  peripheral_gpio_c11,
+  drv_gpio_c11,
   gpioc,
   afrh,
   crh,
@@ -3634,7 +3634,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 12.",
   GpioC12,
-  peripheral_gpio_c12,
+  drv_gpio_c12,
   gpioc,
   afrh,
   crh,
@@ -3702,7 +3702,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 13.",
   GpioC13,
-  peripheral_gpio_c13,
+  drv_gpio_c13,
   gpioc,
   afrh,
   crh,
@@ -3770,7 +3770,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 14.",
   GpioC14,
-  peripheral_gpio_c14,
+  drv_gpio_c14,
   gpioc,
   afrh,
   crh,
@@ -3838,7 +3838,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port C pin 15.",
   GpioC15,
-  peripheral_gpio_c15,
+  drv_gpio_c15,
   gpioc,
   afrh,
   crh,
@@ -3906,7 +3906,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 0.",
   GpioD0,
-  peripheral_gpio_d0,
+  drv_gpio_d0,
   gpiod,
   afrl,
   crl,
@@ -3974,7 +3974,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 1.",
   GpioD1,
-  peripheral_gpio_d1,
+  drv_gpio_d1,
   gpiod,
   afrl,
   crl,
@@ -4042,7 +4042,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 2.",
   GpioD2,
-  peripheral_gpio_d2,
+  drv_gpio_d2,
   gpiod,
   afrl,
   crl,
@@ -4110,7 +4110,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 3.",
   GpioD3,
-  peripheral_gpio_d3,
+  drv_gpio_d3,
   gpiod,
   afrl,
   crl,
@@ -4178,7 +4178,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 4.",
   GpioD4,
-  peripheral_gpio_d4,
+  drv_gpio_d4,
   gpiod,
   afrl,
   crl,
@@ -4246,7 +4246,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 5.",
   GpioD5,
-  peripheral_gpio_d5,
+  drv_gpio_d5,
   gpiod,
   afrl,
   crl,
@@ -4314,7 +4314,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 6.",
   GpioD6,
-  peripheral_gpio_d6,
+  drv_gpio_d6,
   gpiod,
   afrl,
   crl,
@@ -4382,7 +4382,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 7.",
   GpioD7,
-  peripheral_gpio_d7,
+  drv_gpio_d7,
   gpiod,
   afrl,
   crl,
@@ -4450,7 +4450,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 8.",
   GpioD8,
-  peripheral_gpio_d8,
+  drv_gpio_d8,
   gpiod,
   afrh,
   crh,
@@ -4518,7 +4518,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 9.",
   GpioD9,
-  peripheral_gpio_d9,
+  drv_gpio_d9,
   gpiod,
   afrh,
   crh,
@@ -4586,7 +4586,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 10.",
   GpioD10,
-  peripheral_gpio_d10,
+  drv_gpio_d10,
   gpiod,
   afrh,
   crh,
@@ -4654,7 +4654,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 11.",
   GpioD11,
-  peripheral_gpio_d11,
+  drv_gpio_d11,
   gpiod,
   afrh,
   crh,
@@ -4722,7 +4722,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 12.",
   GpioD12,
-  peripheral_gpio_d12,
+  drv_gpio_d12,
   gpiod,
   afrh,
   crh,
@@ -4790,7 +4790,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 13.",
   GpioD13,
-  peripheral_gpio_d13,
+  drv_gpio_d13,
   gpiod,
   afrh,
   crh,
@@ -4858,7 +4858,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 14.",
   GpioD14,
-  peripheral_gpio_d14,
+  drv_gpio_d14,
   gpiod,
   afrh,
   crh,
@@ -4926,7 +4926,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port D pin 15.",
   GpioD15,
-  peripheral_gpio_d15,
+  drv_gpio_d15,
   gpiod,
   afrh,
   crh,
@@ -4994,7 +4994,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 0.",
   GpioE0,
-  peripheral_gpio_e0,
+  drv_gpio_e0,
   gpioe,
   afrl,
   crl,
@@ -5062,7 +5062,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 1.",
   GpioE1,
-  peripheral_gpio_e1,
+  drv_gpio_e1,
   gpioe,
   afrl,
   crl,
@@ -5130,7 +5130,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 2.",
   GpioE2,
-  peripheral_gpio_e2,
+  drv_gpio_e2,
   gpioe,
   afrl,
   crl,
@@ -5198,7 +5198,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 3.",
   GpioE3,
-  peripheral_gpio_e3,
+  drv_gpio_e3,
   gpioe,
   afrl,
   crl,
@@ -5266,7 +5266,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 4.",
   GpioE4,
-  peripheral_gpio_e4,
+  drv_gpio_e4,
   gpioe,
   afrl,
   crl,
@@ -5334,7 +5334,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 5.",
   GpioE5,
-  peripheral_gpio_e5,
+  drv_gpio_e5,
   gpioe,
   afrl,
   crl,
@@ -5402,7 +5402,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 6.",
   GpioE6,
-  peripheral_gpio_e6,
+  drv_gpio_e6,
   gpioe,
   afrl,
   crl,
@@ -5470,7 +5470,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 7.",
   GpioE7,
-  peripheral_gpio_e7,
+  drv_gpio_e7,
   gpioe,
   afrl,
   crl,
@@ -5538,7 +5538,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 8.",
   GpioE8,
-  peripheral_gpio_e8,
+  drv_gpio_e8,
   gpioe,
   afrh,
   crh,
@@ -5606,7 +5606,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 9.",
   GpioE9,
-  peripheral_gpio_e9,
+  drv_gpio_e9,
   gpioe,
   afrh,
   crh,
@@ -5674,7 +5674,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 10.",
   GpioE10,
-  peripheral_gpio_e10,
+  drv_gpio_e10,
   gpioe,
   afrh,
   crh,
@@ -5742,7 +5742,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 11.",
   GpioE11,
-  peripheral_gpio_e11,
+  drv_gpio_e11,
   gpioe,
   afrh,
   crh,
@@ -5810,7 +5810,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 12.",
   GpioE12,
-  peripheral_gpio_e12,
+  drv_gpio_e12,
   gpioe,
   afrh,
   crh,
@@ -5878,7 +5878,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 13.",
   GpioE13,
-  peripheral_gpio_e13,
+  drv_gpio_e13,
   gpioe,
   afrh,
   crh,
@@ -5946,7 +5946,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 14.",
   GpioE14,
-  peripheral_gpio_e14,
+  drv_gpio_e14,
   gpioe,
   afrh,
   crh,
@@ -6014,7 +6014,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port E pin 15.",
   GpioE15,
-  peripheral_gpio_e15,
+  drv_gpio_e15,
   gpioe,
   afrh,
   crh,
@@ -6081,7 +6081,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 0.",
   GpioF0,
-  peripheral_gpio_f0,
+  drv_gpio_f0,
   gpiof,
   afrl,
   crl,
@@ -6148,7 +6148,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 1.",
   GpioF1,
-  peripheral_gpio_f1,
+  drv_gpio_f1,
   gpiof,
   afrl,
   crl,
@@ -6215,7 +6215,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 2.",
   GpioF2,
-  peripheral_gpio_f2,
+  drv_gpio_f2,
   gpiof,
   afrl,
   crl,
@@ -6282,7 +6282,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 3.",
   GpioF3,
-  peripheral_gpio_f3,
+  drv_gpio_f3,
   gpiof,
   afrl,
   crl,
@@ -6349,7 +6349,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 4.",
   GpioF4,
-  peripheral_gpio_f4,
+  drv_gpio_f4,
   gpiof,
   afrl,
   crl,
@@ -6416,7 +6416,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 5.",
   GpioF5,
-  peripheral_gpio_f5,
+  drv_gpio_f5,
   gpiof,
   afrl,
   crl,
@@ -6483,7 +6483,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 6.",
   GpioF6,
-  peripheral_gpio_f6,
+  drv_gpio_f6,
   gpiof,
   afrl,
   crl,
@@ -6550,7 +6550,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 7.",
   GpioF7,
-  peripheral_gpio_f7,
+  drv_gpio_f7,
   gpiof,
   afrl,
   crl,
@@ -6617,7 +6617,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 8.",
   GpioF8,
-  peripheral_gpio_f8,
+  drv_gpio_f8,
   gpiof,
   afrh,
   crh,
@@ -6684,7 +6684,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 9.",
   GpioF9,
-  peripheral_gpio_f9,
+  drv_gpio_f9,
   gpiof,
   afrh,
   crh,
@@ -6751,7 +6751,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 10.",
   GpioF10,
-  peripheral_gpio_f10,
+  drv_gpio_f10,
   gpiof,
   afrh,
   crh,
@@ -6818,7 +6818,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 11.",
   GpioF11,
-  peripheral_gpio_f11,
+  drv_gpio_f11,
   gpiof,
   afrh,
   crh,
@@ -6885,7 +6885,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 12.",
   GpioF12,
-  peripheral_gpio_f12,
+  drv_gpio_f12,
   gpiof,
   afrh,
   crh,
@@ -6952,7 +6952,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 13.",
   GpioF13,
-  peripheral_gpio_f13,
+  drv_gpio_f13,
   gpiof,
   afrh,
   crh,
@@ -7019,7 +7019,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 14.",
   GpioF14,
-  peripheral_gpio_f14,
+  drv_gpio_f14,
   gpiof,
   afrh,
   crh,
@@ -7086,7 +7086,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port F pin 15.",
   GpioF15,
-  peripheral_gpio_f15,
+  drv_gpio_f15,
   gpiof,
   afrh,
   crh,
@@ -7153,7 +7153,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 0.",
   GpioG0,
-  peripheral_gpio_g0,
+  drv_gpio_g0,
   gpiog,
   afrl,
   crl,
@@ -7220,7 +7220,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 1.",
   GpioG1,
-  peripheral_gpio_g1,
+  drv_gpio_g1,
   gpiog,
   afrl,
   crl,
@@ -7287,7 +7287,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 2.",
   GpioG2,
-  peripheral_gpio_g2,
+  drv_gpio_g2,
   gpiog,
   afrl,
   crl,
@@ -7354,7 +7354,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 3.",
   GpioG3,
-  peripheral_gpio_g3,
+  drv_gpio_g3,
   gpiog,
   afrl,
   crl,
@@ -7421,7 +7421,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 4.",
   GpioG4,
-  peripheral_gpio_g4,
+  drv_gpio_g4,
   gpiog,
   afrl,
   crl,
@@ -7488,7 +7488,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 5.",
   GpioG5,
-  peripheral_gpio_g5,
+  drv_gpio_g5,
   gpiog,
   afrl,
   crl,
@@ -7555,7 +7555,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 6.",
   GpioG6,
-  peripheral_gpio_g6,
+  drv_gpio_g6,
   gpiog,
   afrl,
   crl,
@@ -7622,7 +7622,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 7.",
   GpioG7,
-  peripheral_gpio_g7,
+  drv_gpio_g7,
   gpiog,
   afrl,
   crl,
@@ -7689,7 +7689,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 8.",
   GpioG8,
-  peripheral_gpio_g8,
+  drv_gpio_g8,
   gpiog,
   afrh,
   crh,
@@ -7756,7 +7756,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 9.",
   GpioG9,
-  peripheral_gpio_g9,
+  drv_gpio_g9,
   gpiog,
   afrh,
   crh,
@@ -7823,7 +7823,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 10.",
   GpioG10,
-  peripheral_gpio_g10,
+  drv_gpio_g10,
   gpiog,
   afrh,
   crh,
@@ -7890,7 +7890,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 11.",
   GpioG11,
-  peripheral_gpio_g11,
+  drv_gpio_g11,
   gpiog,
   afrh,
   crh,
@@ -7957,7 +7957,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 12.",
   GpioG12,
-  peripheral_gpio_g12,
+  drv_gpio_g12,
   gpiog,
   afrh,
   crh,
@@ -8024,7 +8024,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 13.",
   GpioG13,
-  peripheral_gpio_g13,
+  drv_gpio_g13,
   gpiog,
   afrh,
   crh,
@@ -8091,7 +8091,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 14.",
   GpioG14,
-  peripheral_gpio_g14,
+  drv_gpio_g14,
   gpiog,
   afrh,
   crh,
@@ -8158,7 +8158,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port G pin 15.",
   GpioG15,
-  peripheral_gpio_g15,
+  drv_gpio_g15,
   gpiog,
   afrh,
   crh,
@@ -8224,7 +8224,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 0.",
   GpioH0,
-  peripheral_gpio_h0,
+  drv_gpio_h0,
   gpioh,
   afrl,
   crl,
@@ -8290,7 +8290,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 1.",
   GpioH1,
-  peripheral_gpio_h1,
+  drv_gpio_h1,
   gpioh,
   afrl,
   crl,
@@ -8356,7 +8356,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 2.",
   GpioH2,
-  peripheral_gpio_h2,
+  drv_gpio_h2,
   gpioh,
   afrl,
   crl,
@@ -8422,7 +8422,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 3.",
   GpioH3,
-  peripheral_gpio_h3,
+  drv_gpio_h3,
   gpioh,
   afrl,
   crl,
@@ -8488,7 +8488,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 4.",
   GpioH4,
-  peripheral_gpio_h4,
+  drv_gpio_h4,
   gpioh,
   afrl,
   crl,
@@ -8554,7 +8554,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 5.",
   GpioH5,
-  peripheral_gpio_h5,
+  drv_gpio_h5,
   gpioh,
   afrl,
   crl,
@@ -8620,7 +8620,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 6.",
   GpioH6,
-  peripheral_gpio_h6,
+  drv_gpio_h6,
   gpioh,
   afrl,
   crl,
@@ -8686,7 +8686,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 7.",
   GpioH7,
-  peripheral_gpio_h7,
+  drv_gpio_h7,
   gpioh,
   afrl,
   crl,
@@ -8752,7 +8752,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 8.",
   GpioH8,
-  peripheral_gpio_h8,
+  drv_gpio_h8,
   gpioh,
   afrh,
   crh,
@@ -8818,7 +8818,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 9.",
   GpioH9,
-  peripheral_gpio_h9,
+  drv_gpio_h9,
   gpioh,
   afrh,
   crh,
@@ -8884,7 +8884,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 10.",
   GpioH10,
-  peripheral_gpio_h10,
+  drv_gpio_h10,
   gpioh,
   afrh,
   crh,
@@ -8950,7 +8950,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 11.",
   GpioH11,
-  peripheral_gpio_h11,
+  drv_gpio_h11,
   gpioh,
   afrh,
   crh,
@@ -9016,7 +9016,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 12.",
   GpioH12,
-  peripheral_gpio_h12,
+  drv_gpio_h12,
   gpioh,
   afrh,
   crh,
@@ -9082,7 +9082,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 13.",
   GpioH13,
-  peripheral_gpio_h13,
+  drv_gpio_h13,
   gpioh,
   afrh,
   crh,
@@ -9148,7 +9148,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 14.",
   GpioH14,
-  peripheral_gpio_h14,
+  drv_gpio_h14,
   gpioh,
   afrh,
   crh,
@@ -9214,7 +9214,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port H pin 15.",
   GpioH15,
-  peripheral_gpio_h15,
+  drv_gpio_h15,
   gpioh,
   afrh,
   crh,
@@ -9278,7 +9278,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 0.",
   GpioI0,
-  peripheral_gpio_i0,
+  drv_gpio_i0,
   gpioi,
   afrl,
   crl,
@@ -9339,7 +9339,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 1.",
   GpioI1,
-  peripheral_gpio_i1,
+  drv_gpio_i1,
   gpioi,
   afrl,
   crl,
@@ -9400,7 +9400,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 2.",
   GpioI2,
-  peripheral_gpio_i2,
+  drv_gpio_i2,
   gpioi,
   afrl,
   crl,
@@ -9461,7 +9461,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 3.",
   GpioI3,
-  peripheral_gpio_i3,
+  drv_gpio_i3,
   gpioi,
   afrl,
   crl,
@@ -9522,7 +9522,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 4.",
   GpioI4,
-  peripheral_gpio_i4,
+  drv_gpio_i4,
   gpioi,
   afrl,
   crl,
@@ -9583,7 +9583,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 5.",
   GpioI5,
-  peripheral_gpio_i5,
+  drv_gpio_i5,
   gpioi,
   afrl,
   crl,
@@ -9644,7 +9644,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 6.",
   GpioI6,
-  peripheral_gpio_i6,
+  drv_gpio_i6,
   gpioi,
   afrl,
   crl,
@@ -9705,7 +9705,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 7.",
   GpioI7,
-  peripheral_gpio_i7,
+  drv_gpio_i7,
   gpioi,
   afrl,
   crl,
@@ -9766,7 +9766,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 8.",
   GpioI8,
-  peripheral_gpio_i8,
+  drv_gpio_i8,
   gpioi,
   afrh,
   crh,
@@ -9827,7 +9827,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 9.",
   GpioI9,
-  peripheral_gpio_i9,
+  drv_gpio_i9,
   gpioi,
   afrh,
   crh,
@@ -9888,7 +9888,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 10.",
   GpioI10,
-  peripheral_gpio_i10,
+  drv_gpio_i10,
   gpioi,
   afrh,
   crh,
@@ -9949,7 +9949,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 11.",
   GpioI11,
-  peripheral_gpio_i11,
+  drv_gpio_i11,
   gpioi,
   afrh,
   crh,
@@ -10010,7 +10010,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 12.",
   GpioI12,
-  peripheral_gpio_i12,
+  drv_gpio_i12,
   gpioi,
   afrh,
   crh,
@@ -10071,7 +10071,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 13.",
   GpioI13,
-  peripheral_gpio_i13,
+  drv_gpio_i13,
   gpioi,
   afrh,
   crh,
@@ -10132,7 +10132,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 14.",
   GpioI14,
-  peripheral_gpio_i14,
+  drv_gpio_i14,
   gpioi,
   afrh,
   crh,
@@ -10193,7 +10193,7 @@ gpio_pin! {
 gpio_pin! {
   "GPIO port I pin 15.",
   GpioI15,
-  peripheral_gpio_i15,
+  drv_gpio_i15,
   gpioi,
   afrh,
   crh,

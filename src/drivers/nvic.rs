@@ -211,9 +211,9 @@ pub struct Nvic {
 #[cfg(any(feature = "stm32f101"))]
 /// Creates a new `Nvic`.
 #[macro_export]
-macro_rules! peripheral_nvic {
+macro_rules! drv_nvic {
   ($regs:ident) => {
-    $crate::peripherals::nvic::Nvic {
+    $crate::drivers::nvic::Nvic {
       iser0: $regs.nvic_iser0,
       iser1: $regs.nvic_iser1,
       icer0: $regs.nvic_icer0,
@@ -246,9 +246,9 @@ macro_rules! peripheral_nvic {
           feature = "stm32f103"))]
 /// Creates a new `Nvic`.
 #[macro_export]
-macro_rules! peripheral_nvic {
+macro_rules! drv_nvic {
   ($regs:ident) => {
-    $crate::peripherals::nvic::Nvic {
+    $crate::drivers::nvic::Nvic {
       iser0: $regs.nvic_iser0,
       iser1: $regs.nvic_iser1,
       icer0: $regs.nvic_icer0,
@@ -281,9 +281,9 @@ macro_rules! peripheral_nvic {
 #[cfg(any(feature = "stm32f107"))]
 /// Creates a new `Nvic`.
 #[macro_export]
-macro_rules! peripheral_nvic {
+macro_rules! drv_nvic {
   ($regs:ident) => {
-    $crate::peripherals::nvic::Nvic {
+    $crate::drivers::nvic::Nvic {
       iser0: $regs.nvic_iser0,
       iser1: $regs.nvic_iser1,
       iser2: $regs.nvic_iser2,
@@ -325,9 +325,9 @@ macro_rules! peripheral_nvic {
           feature = "stm32l4x6"))]
 /// Creates a new `Nvic`.
 #[macro_export]
-macro_rules! peripheral_nvic {
+macro_rules! drv_nvic {
   ($regs:ident) => {
-    $crate::peripherals::nvic::Nvic {
+    $crate::drivers::nvic::Nvic {
       iser0: $regs.nvic_iser0,
       iser1: $regs.nvic_iser1,
       iser2: $regs.nvic_iser2,

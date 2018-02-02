@@ -118,7 +118,7 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
     #[allow(unused_imports)]
     use ::core::marker::PhantomData;
     #[allow(unused_imports)]
-    use ::drone_cortex_m::peripherals;
+    use ::drone_cortex_m::drivers;
     #[allow(unused_imports)]
     use ::drone_cortex_m::thread::irq::*;
     #[allow(unused_imports)]
@@ -180,7 +180,7 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
 
     impl ThreadTokens for #tokens_name {
       type Thread = #thread_local;
-      type Token = peripherals::nvic::Nvic;
+      type Token = drivers::nvic::Nvic;
 
       fn new(_token: Self::Token) -> Self {
         Self {

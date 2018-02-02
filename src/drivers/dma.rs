@@ -1,6 +1,6 @@
 //! Direct memory access controller.
 
-use drone_core::peripherals::{PeripheralDevice, PeripheralTokens};
+use drone_core::drivers::{Driver, Resource};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
@@ -39,12 +39,12 @@ use thread::irq::IrqDma2Channel45 as IrqDma2Ch4;
 use thread::irq::IrqDma2Channel45 as IrqDma2Ch5;
 use thread::prelude::*;
 
-/// Generic DMA.
-pub struct Dma<T: DmaTokens>(T);
+/// DMA driver.
+pub struct Dma<T: DmaRes>(T);
 
-/// Generic DMA tokens.
+/// DMA resource.
 #[allow(missing_docs)]
-pub trait DmaTokens: PeripheralTokens {
+pub trait DmaRes: Resource {
   type Irq: IrqToken<Ltt>;
   type Ccr: for<'a> RwRegAtomicRef<'a, Srt>;
   type CmarVal: RegVal<Raw = u32>;
@@ -128,22 +128,22 @@ pub trait DmaTokens: PeripheralTokens {
   fn isr_teif_mut(&mut self) -> &mut Self::IsrTeif;
 }
 
-impl<T: DmaTokens> PeripheralDevice for Dma<T> {
-  type Tokens = T;
+impl<T: DmaRes> Driver for Dma<T> {
+  type Resource = T;
 
   #[inline(always)]
-  fn from_tokens(tokens: T::InputTokens) -> Self {
-    Dma(tokens.into())
+  fn from_res(res: T::Input) -> Self {
+    Dma(res.into())
   }
 
   #[inline(always)]
-  fn into_tokens(self) -> T {
+  fn into_res(self) -> T {
     self.0
   }
 }
 
 #[allow(missing_docs)]
-impl<T: DmaTokens> Dma<T> {
+impl<T: DmaRes> Dma<T> {
   #[inline(always)]
   pub fn irq(&self) -> T::Irq {
     self.0.irq()
@@ -298,8 +298,8 @@ macro_rules! dma_ch {
     $doc:expr,
     $name:ident,
     $name_macro:ident,
-    $doc_tokens:expr,
-    $name_tokens:ident,
+    $doc_res:expr,
+    $name_res:ident,
     $irq_ty:ident,
     $ccr_ty:ident,
     $cmar_ty:ident,
@@ -346,11 +346,11 @@ macro_rules! dma_ch {
     $teif:ident,
   ) => {
     #[doc = $doc]
-    pub type $name<I> = Dma<$name_tokens<I, Frt>>;
+    pub type $name<I> = Dma<$name_res<I, Frt>>;
 
-    #[doc = $doc_tokens]
+    #[doc = $doc_res]
     #[allow(missing_docs)]
-    pub struct $name_tokens<I: $irq_ty<Ltt>, Rt: RegTag> {
+    pub struct $name_res<I: $irq_ty<Ltt>, Rt: RegTag> {
       pub $irq: I,
       pub $dma_ccr: $dma::$ccr_ty<Srt>,
       pub $dma_cmar: $dma::$cmar_ty<Srt>,
@@ -377,8 +377,8 @@ macro_rules! dma_ch {
     #[macro_export]
     macro_rules! $name_macro {
       ($regs:ident, $thrd:ident) => {
-        $crate::peripherals::dma::Dma::from_tokens(
-          $crate::peripherals::dma::$name_tokens {
+        $crate::drivers::dma::Dma::from_res(
+          $crate::drivers::dma::$name_res {
             $irq: $thrd.$irq.into(),
             $dma_ccr: $regs.$dma_ccr,
             $dma_cmar: $regs.$dma_cmar,
@@ -405,8 +405,8 @@ macro_rules! dma_ch {
     #[macro_export]
     macro_rules! $name_macro {
       ($regs:ident, $thrd:ident) => {
-        $crate::peripherals::dma::Dma::from_tokens(
-          $crate::peripherals::dma::$name_tokens {
+        $crate::drivers::dma::Dma::from_res(
+          $crate::drivers::dma::$name_res {
             $irq: $thrd.$irq.into(),
             $dma_ccr: $regs.$dma_ccr,
             $dma_cmar: $regs.$dma_cmar,
@@ -425,27 +425,27 @@ macro_rules! dma_ch {
       }
     }
 
-    impl<I: $irq_ty<Ltt>> From<$name_tokens<I, Srt>> for $name_tokens<I, Frt> {
+    impl<I: $irq_ty<Ltt>> From<$name_res<I, Srt>> for $name_res<I, Frt> {
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
-      fn from(tokens: $name_tokens<I, Srt>) -> Self {
+      fn from(res: $name_res<I, Srt>) -> Self {
         Self {
-          $irq: tokens.$irq,
-          $dma_ccr: tokens.$dma_ccr,
-          $dma_cmar: tokens.$dma_cmar,
-          $dma_cndtr: tokens.$dma_cndtr,
-          $dma_cpar: tokens.$dma_cpar,
-          $dma_cselr_cs: tokens.$dma_cselr_cs,
-          $dma_ifcr_cgif: tokens.$dma_ifcr_cgif.into(),
-          $dma_ifcr_chtif: tokens.$dma_ifcr_chtif.into(),
-          $dma_ifcr_ctcif: tokens.$dma_ifcr_ctcif.into(),
-          $dma_ifcr_cteif: tokens.$dma_ifcr_cteif.into(),
-          $dma_isr_gif: tokens.$dma_isr_gif.into(),
-          $dma_isr_htif: tokens.$dma_isr_htif.into(),
-          $dma_isr_tcif: tokens.$dma_isr_tcif.into(),
-          $dma_isr_teif: tokens.$dma_isr_teif.into(),
+          $irq: res.$irq,
+          $dma_ccr: res.$dma_ccr,
+          $dma_cmar: res.$dma_cmar,
+          $dma_cndtr: res.$dma_cndtr,
+          $dma_cpar: res.$dma_cpar,
+          $dma_cselr_cs: res.$dma_cselr_cs,
+          $dma_ifcr_cgif: res.$dma_ifcr_cgif.into(),
+          $dma_ifcr_chtif: res.$dma_ifcr_chtif.into(),
+          $dma_ifcr_ctcif: res.$dma_ifcr_ctcif.into(),
+          $dma_ifcr_cteif: res.$dma_ifcr_cteif.into(),
+          $dma_isr_gif: res.$dma_isr_gif.into(),
+          $dma_isr_htif: res.$dma_isr_htif.into(),
+          $dma_isr_tcif: res.$dma_isr_tcif.into(),
+          $dma_isr_teif: res.$dma_isr_teif.into(),
         }
       }
 
@@ -453,30 +453,30 @@ macro_rules! dma_ch {
                     feature = "stm32l4x3", feature = "stm32l4x5",
                     feature = "stm32l4x6")))]
       #[inline(always)]
-      fn from(tokens: $name_tokens<I, Srt>) -> Self {
+      fn from(res: $name_res<I, Srt>) -> Self {
         Self {
-          $irq: tokens.$irq,
-          $dma_ccr: tokens.$dma_ccr,
-          $dma_cmar: tokens.$dma_cmar,
-          $dma_cndtr: tokens.$dma_cndtr,
-          $dma_cpar: tokens.$dma_cpar,
-          $dma_ifcr_cgif: tokens.$dma_ifcr_cgif.into(),
-          $dma_ifcr_chtif: tokens.$dma_ifcr_chtif.into(),
-          $dma_ifcr_ctcif: tokens.$dma_ifcr_ctcif.into(),
-          $dma_ifcr_cteif: tokens.$dma_ifcr_cteif.into(),
-          $dma_isr_gif: tokens.$dma_isr_gif.into(),
-          $dma_isr_htif: tokens.$dma_isr_htif.into(),
-          $dma_isr_tcif: tokens.$dma_isr_tcif.into(),
-          $dma_isr_teif: tokens.$dma_isr_teif.into(),
+          $irq: res.$irq,
+          $dma_ccr: res.$dma_ccr,
+          $dma_cmar: res.$dma_cmar,
+          $dma_cndtr: res.$dma_cndtr,
+          $dma_cpar: res.$dma_cpar,
+          $dma_ifcr_cgif: res.$dma_ifcr_cgif.into(),
+          $dma_ifcr_chtif: res.$dma_ifcr_chtif.into(),
+          $dma_ifcr_ctcif: res.$dma_ifcr_ctcif.into(),
+          $dma_ifcr_cteif: res.$dma_ifcr_cteif.into(),
+          $dma_isr_gif: res.$dma_isr_gif.into(),
+          $dma_isr_htif: res.$dma_isr_htif.into(),
+          $dma_isr_tcif: res.$dma_isr_tcif.into(),
+          $dma_isr_teif: res.$dma_isr_teif.into(),
         }
       }
     }
 
-    impl<I: $irq_ty<Ltt>> PeripheralTokens for $name_tokens<I, Frt> {
-      type InputTokens = $name_tokens<I, Srt>;
+    impl<I: $irq_ty<Ltt>> Resource for $name_res<I, Frt> {
+      type Input = $name_res<I, Srt>;
     }
 
-    impl<I: $irq_ty<Ltt>> DmaTokens for $name_tokens<I, Frt> {
+    impl<I: $irq_ty<Ltt>> DmaRes for $name_res<I, Frt> {
       type Irq = I;
       type Ccr = $dma::$ccr_ty<Srt>;
       type CmarVal = $dma::$cmar_path::Val;
@@ -644,11 +644,11 @@ macro_rules! dma_ch {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA1 Channel 1.",
+  "DMA1 Channel 1 driver.",
   Dma1Ch1,
-  peripheral_dma1_ch1,
-  "DMA1 Channel 1 tokens.",
-  Dma1Ch1Tokens,
+  drv_dma1_ch1,
+  "DMA1 Channel 1 resource.",
+  Dma1Ch1Res,
   IrqDma1Ch1,
   Ccr1,
   Cmar1,
@@ -701,11 +701,11 @@ dma_ch! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA1 Channel 2.",
+  "DMA1 Channel 2 driver.",
   Dma1Ch2,
-  peripheral_dma1_ch2,
-  "DMA1 Channel 2 tokens.",
-  Dma1Ch2Tokens,
+  drv_dma1_ch2,
+  "DMA1 Channel 2 resource.",
+  Dma1Ch2Res,
   IrqDma1Ch2,
   Ccr2,
   Cmar2,
@@ -758,11 +758,11 @@ dma_ch! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA1 Channel 3.",
+  "DMA1 Channel 3 driver.",
   Dma1Ch3,
-  peripheral_dma1_ch3,
-  "DMA1 Channel 3 tokens.",
-  Dma1Ch3Tokens,
+  drv_dma1_ch3,
+  "DMA1 Channel 3 resource.",
+  Dma1Ch3Res,
   IrqDma1Ch3,
   Ccr3,
   Cmar3,
@@ -815,11 +815,11 @@ dma_ch! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA1 Channel 4.",
+  "DMA1 Channel 4 driver.",
   Dma1Ch4,
-  peripheral_dma1_ch4,
-  "DMA1 Channel 4 tokens.",
-  Dma1Ch4Tokens,
+  drv_dma1_ch4,
+  "DMA1 Channel 4 resource.",
+  Dma1Ch4Res,
   IrqDma1Ch4,
   Ccr4,
   Cmar4,
@@ -872,11 +872,11 @@ dma_ch! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA1 Channel 5.",
+  "DMA1 Channel 5 driver.",
   Dma1Ch5,
-  peripheral_dma1_ch5,
-  "DMA1 Channel 5 tokens.",
-  Dma1Ch5Tokens,
+  drv_dma1_ch5,
+  "DMA1 Channel 5 resource.",
+  Dma1Ch5Res,
   IrqDma1Ch5,
   Ccr5,
   Cmar5,
@@ -929,11 +929,11 @@ dma_ch! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA1 Channel 6.",
+  "DMA1 Channel 6 driver.",
   Dma1Ch6,
-  peripheral_dma1_ch6,
-  "DMA1 Channel 6 tokens.",
-  Dma1Ch6Tokens,
+  drv_dma1_ch6,
+  "DMA1 Channel 6 resource.",
+  Dma1Ch6Res,
   IrqDma1Ch6,
   Ccr6,
   Cmar6,
@@ -986,11 +986,11 @@ dma_ch! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA1 Channel 7.",
+  "DMA1 Channel 7 driver.",
   Dma1Ch7,
-  peripheral_dma1_ch7,
-  "DMA1 Channel 7 tokens.",
-  Dma1Ch7Tokens,
+  drv_dma1_ch7,
+  "DMA1 Channel 7 resource.",
+  Dma1Ch7Res,
   IrqDma1Ch7,
   Ccr7,
   Cmar7,
@@ -1043,11 +1043,11 @@ dma_ch! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA2 Channel 1.",
+  "DMA2 Channel 1 driver.",
   Dma2Ch1,
-  peripheral_dma2_ch1,
-  "DMA2 Channel 1 tokens.",
-  Dma2Ch1Tokens,
+  drv_dma2_ch1,
+  "DMA2 Channel 1 resource.",
+  Dma2Ch1Res,
   IrqDma2Ch1,
   Ccr1,
   Cmar1,
@@ -1100,11 +1100,11 @@ dma_ch! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA2 Channel 2.",
+  "DMA2 Channel 2 driver.",
   Dma2Ch2,
-  peripheral_dma2_ch2,
-  "DMA2 Channel 2 tokens.",
-  Dma2Ch2Tokens,
+  drv_dma2_ch2,
+  "DMA2 Channel 2 resource.",
+  Dma2Ch2Res,
   IrqDma2Ch2,
   Ccr2,
   Cmar2,
@@ -1157,11 +1157,11 @@ dma_ch! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA2 Channel 3.",
+  "DMA2 Channel 3 driver.",
   Dma2Ch3,
-  peripheral_dma2_ch3,
-  "DMA2 Channel 3 tokens.",
-  Dma2Ch3Tokens,
+  drv_dma2_ch3,
+  "DMA2 Channel 3 resource.",
+  Dma2Ch3Res,
   IrqDma2Ch3,
   Ccr3,
   Cmar3,
@@ -1214,11 +1214,11 @@ dma_ch! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA2 Channel 4.",
+  "DMA2 Channel 4 driver.",
   Dma2Ch4,
-  peripheral_dma2_ch4,
-  "DMA2 Channel 4 tokens.",
-  Dma2Ch4Tokens,
+  drv_dma2_ch4,
+  "DMA2 Channel 4 resource.",
+  Dma2Ch4Res,
   IrqDma2Ch4,
   Ccr4,
   Cmar4,
@@ -1271,11 +1271,11 @@ dma_ch! {
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA2 Channel 5.",
+  "DMA2 Channel 5 driver.",
   Dma2Ch5,
-  peripheral_dma2_ch5,
-  "DMA2 Channel 5 tokens.",
-  Dma2Ch5Tokens,
+  drv_dma2_ch5,
+  "DMA2 Channel 5 resource.",
+  Dma2Ch5Res,
   IrqDma2Ch5,
   Ccr5,
   Cmar5,
@@ -1326,11 +1326,11 @@ dma_ch! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA2 Channel 6.",
+  "DMA2 Channel 6 driver.",
   Dma2Ch6,
-  peripheral_dma2_ch6,
-  "DMA2 Channel 6 tokens.",
-  Dma2Ch6Tokens,
+  drv_dma2_ch6,
+  "DMA2 Channel 6 resource.",
+  Dma2Ch6Res,
   IrqDma2Ch6,
   Ccr6,
   Cmar6,
@@ -1381,11 +1381,11 @@ dma_ch! {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 dma_ch! {
-  "DMA2 Channel 7.",
+  "DMA2 Channel 7 driver.",
   Dma2Ch7,
-  peripheral_dma2_ch7,
-  "DMA2 Channel 7 tokens.",
-  Dma2Ch7Tokens,
+  drv_dma2_ch7,
+  "DMA2 Channel 7 resource.",
+  Dma2Ch7Res,
   IrqDma2Ch7,
   Ccr7,
   Cmar7,
