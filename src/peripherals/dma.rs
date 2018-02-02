@@ -219,37 +219,37 @@ impl<T: DmaTokens> Dma<T> {
 
   /// Returns a number of data to transfer.
   #[inline(always)]
-  pub fn number_of_data(&self) -> usize {
+  pub fn size(&self) -> usize {
     self.0.cndtr_ndt().read_bits() as usize
   }
 
   /// Sets the number of data to transfer.
   #[inline(always)]
-  pub fn set_number_of_data(&self, number: usize) {
+  pub fn set_size(&self, number: usize) {
     self.0.cndtr_ndt().write_bits(number as u32);
   }
 
   /// Returns a peripheral address.
   #[inline(always)]
-  pub fn peripheral_addr(&self) -> usize {
+  pub fn paddr(&self) -> usize {
     self.0.cpar_pa().read_bits() as usize
   }
 
   /// Sets the peripheral address.
   #[inline(always)]
-  pub unsafe fn set_peripheral_addr(&self, addr: usize) {
+  pub unsafe fn set_paddr(&self, addr: usize) {
     self.0.cpar_pa().write_bits(addr as u32);
   }
 
   /// Returns a memory address.
   #[inline(always)]
-  pub fn memory_addr(&self) -> usize {
+  pub fn maddr(&self) -> usize {
     self.0.cmar_ma().read_bits() as usize
   }
 
   /// Sets the memory address.
   #[inline(always)]
-  pub unsafe fn set_memory_addr(&self, addr: usize) {
+  pub unsafe fn set_maddr(&self, addr: usize) {
     self.0.cmar_ma().write_bits(addr as u32);
   }
 
@@ -258,13 +258,14 @@ impl<T: DmaTokens> Dma<T> {
     let teif = self.0.isr_teif_mut().fork();
     let tcif = self.0.isr_tcif_mut().fork();
     let cgif = self.0.ifcr_cgif_mut().fork();
+    let ctcif = self.0.ifcr_ctcif_mut().fork();
     self.0.irq().future(move || loop {
       if teif.read_bit_band() {
         cgif.set_bit_band();
         break Err(());
       }
       if tcif.read_bit_band() {
-        cgif.set_bit_band();
+        ctcif.set_bit_band();
         break Ok(());
       }
       yield;
@@ -276,13 +277,14 @@ impl<T: DmaTokens> Dma<T> {
     let teif = self.0.isr_teif_mut().fork();
     let htif = self.0.isr_htif_mut().fork();
     let cgif = self.0.ifcr_cgif_mut().fork();
+    let chtif = self.0.ifcr_chtif_mut().fork();
     self.0.irq().future(move || loop {
       if teif.read_bit_band() {
         cgif.set_bit_band();
         break Err(());
       }
       if htif.read_bit_band() {
-        cgif.set_bit_band();
+        chtif.set_bit_band();
         break Ok(());
       }
       yield;

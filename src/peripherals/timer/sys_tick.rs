@@ -1,6 +1,6 @@
 use super::{Timer, TimerOverflow};
+use drone_core::fiber::{FiberFuture, FiberStreamUnit};
 use drone_core::peripherals::{PeripheralDevice, PeripheralTokens};
-use drone_core::thread::{RoutineFuture, RoutineStreamUnit};
 use reg::prelude::*;
 use reg::stk;
 use thread::irq::IrqSysTick;
@@ -66,9 +66,9 @@ impl<I: IrqSysTick<Ltt>> PeripheralDevice for SysTick<I> {
 impl<I: IrqSysTick<Ltt>> Timer for SysTick<I> {
   type Duration = u32;
   type CtrlVal = stk::ctrl::Val;
-  type SleepFuture = RoutineFuture<(), !>;
-  type IntervalStream = RoutineStreamUnit<TimerOverflow>;
-  type IntervalSkipStream = RoutineStreamUnit<!>;
+  type SleepFuture = FiberFuture<(), !>;
+  type IntervalStream = FiberStreamUnit<TimerOverflow>;
+  type IntervalSkipStream = FiberStreamUnit<!>;
 
   #[inline(always)]
   fn sleep(

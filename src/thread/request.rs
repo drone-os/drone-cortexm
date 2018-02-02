@@ -25,7 +25,7 @@ impl<T: ThreadTrigger, U: IrqToken<T>> ThreadRequest<T> for U {
     F::Future: Send + 'static,
   {
     let mut executor = executor::spawn(f.into_future());
-    self.routine(move || loop {
+    self.fiber(move || loop {
       match executor.poll_future_notify(&NOTIFY_IRQ, U::IRQ_NUMBER) {
         Ok(Async::NotReady) => {}
         Ok(Async::Ready(())) => break,
