@@ -30,8 +30,8 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
   type AfrAfr: RegField<T, Reg = Self::Afr>
-    + RRegFieldBits<T>
-    + WRegFieldBits<T>;
+    + RRRegFieldBits<T>
+    + WWRegFieldBits<T>;
   #[cfg(any(feature = "stm32f100", feature = "stm32f101",
             feature = "stm32f102", feature = "stm32f103",
             feature = "stm32f107", feature = "stm32l4x6"))]
@@ -50,17 +50,21 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
   #[cfg(any(feature = "stm32f100", feature = "stm32f101",
             feature = "stm32f102", feature = "stm32f103",
             feature = "stm32f107"))]
-  type CrCnf: RegField<T, Reg = Self::Cr> + RRegFieldBits<T> + WRegFieldBits<T>;
+  type CrCnf: RegField<T, Reg = Self::Cr>
+    + RRRegFieldBits<T>
+    + WWRegFieldBits<T>;
   #[cfg(any(feature = "stm32f100", feature = "stm32f101",
             feature = "stm32f102", feature = "stm32f103",
             feature = "stm32f107"))]
-  type CrMode: RegField<T, Reg = Self::Cr> + RRegFieldBits<T> + WRegFieldBits<T>;
+  type CrMode: RegField<T, Reg = Self::Cr>
+    + RRRegFieldBits<T>
+    + WWRegFieldBits<T>;
   type Idr: RoReg<T>;
-  type IdrIdr: RegField<T, Reg = Self::Idr> + RRegFieldBit<T>;
+  type IdrIdr: RegField<T, Reg = Self::Idr> + RegFieldBit<T> + RoRRegField<T>;
   type Lckr: RReg<T> + WReg<T>;
   type LckrLck: RegField<T, Reg = Self::Lckr>
-    + RRegFieldBit<T>
-    + WRegFieldBit<T>;
+    + RRRegFieldBit<T>
+    + WWRegFieldBit<T>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
@@ -69,10 +73,12 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
   type ModerModer: RegField<T, Reg = Self::Moder>
-    + RRegFieldBits<T>
-    + WRegFieldBits<T>;
+    + RRRegFieldBits<T>
+    + WWRegFieldBits<T>;
   type Odr: RReg<T> + WReg<T>;
-  type OdrOdr: RegField<T, Reg = Self::Odr> + RRegFieldBit<T> + WRegFieldBit<T>;
+  type OdrOdr: RegField<T, Reg = Self::Odr>
+    + RRRegFieldBit<T>
+    + WWRegFieldBit<T>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
@@ -81,8 +87,8 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
   type OspeedrOspeedr: RegField<T, Reg = Self::Ospeedr>
-    + RRegFieldBits<T>
-    + WRegFieldBits<T>;
+    + RRRegFieldBits<T>
+    + WWRegFieldBits<T>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
@@ -91,8 +97,8 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
   type OtyperOt: RegField<T, Reg = Self::Otyper>
-    + RRegFieldBit<T>
-    + WRegFieldBit<T>;
+    + RRRegFieldBit<T>
+    + WWRegFieldBit<T>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
@@ -101,83 +107,46 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
   type PupdrPupdr: RegField<T, Reg = Self::Pupdr>
-    + RRegFieldBits<T>
-    + WRegFieldBits<T>;
+    + RRRegFieldBits<T>
+    + WWRegFieldBits<T>;
 
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn afr(&self) -> &Self::AfrAfr;
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
-  fn afr_mut(&mut self) -> &mut Self::AfrAfr;
+  res_reg_decl!(AfrAfr, afr, afr_mut);
   #[cfg(any(feature = "stm32f100", feature = "stm32f101",
             feature = "stm32f102", feature = "stm32f103",
             feature = "stm32f107", feature = "stm32l4x6"))]
-  fn brr_br(&self) -> &Self::BrrBr;
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x6"))]
-  fn brr_br_mut(&mut self) -> &mut Self::BrrBr;
-  fn bsrr_br(&self) -> &Self::BsrrBr;
-  fn bsrr_br_mut(&mut self) -> &mut Self::BsrrBr;
-  fn bsrr_bs(&self) -> &Self::BsrrBs;
-  fn bsrr_bs_mut(&mut self) -> &mut Self::BsrrBs;
+  res_reg_decl!(BrrBr, brr_br, brr_br_mut);
+  res_reg_decl!(BsrrBr, bsrr_br, bsrr_br_mut);
+  res_reg_decl!(BsrrBs, bsrr_bs, bsrr_bs_mut);
   #[cfg(any(feature = "stm32f100", feature = "stm32f101",
             feature = "stm32f102", feature = "stm32f103",
             feature = "stm32f107"))]
-  fn cr_cnf(&self) -> &Self::CrCnf;
+  res_reg_decl!(CrCnf, cr_cnf, cr_cnf_mut);
   #[cfg(any(feature = "stm32f100", feature = "stm32f101",
             feature = "stm32f102", feature = "stm32f103",
             feature = "stm32f107"))]
-  fn cr_cnf_mut(&mut self) -> &mut Self::CrCnf;
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107"))]
-  fn cr_mode(&self) -> &Self::CrMode;
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107"))]
-  fn cr_mode_mut(&mut self) -> &mut Self::CrMode;
-  fn idr(&self) -> &Self::IdrIdr;
-  fn idr_mut(&mut self) -> &mut Self::IdrIdr;
-  fn lckr(&self) -> &Self::LckrLck;
-  fn lckr_mut(&mut self) -> &mut Self::LckrLck;
+  res_reg_decl!(CrMode, cr_mode, cr_mode_mut);
+  res_reg_decl!(IdrIdr, idr, idr_mut);
+  res_reg_decl!(LckrLck, lckr, lckr_mut);
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn moder(&self) -> &Self::ModerModer;
+  res_reg_decl!(ModerModer, moder, moder_mut);
+  res_reg_decl!(OdrOdr, odr, odr_mut);
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn moder_mut(&mut self) -> &mut Self::ModerModer;
-  fn odr(&self) -> &Self::OdrOdr;
-  fn odr_mut(&mut self) -> &mut Self::OdrOdr;
+  res_reg_decl!(OspeedrOspeedr, ospeedr, ospeedr_mut);
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn ospeedr(&self) -> &Self::OspeedrOspeedr;
+  res_reg_decl!(OtyperOt, otyper, otyper_mut);
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn ospeedr_mut(&mut self) -> &mut Self::OspeedrOspeedr;
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
-  fn otyper(&self) -> &Self::OtyperOt;
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
-  fn otyper_mut(&mut self) -> &mut Self::OtyperOt;
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
-  fn pupdr(&self) -> &Self::PupdrPupdr;
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
-  fn pupdr_mut(&mut self) -> &mut Self::PupdrPupdr;
+  res_reg_decl!(PupdrPupdr, pupdr, pupdr_mut);
 }
 
 /// GPIO pin with `ASCR` register.
@@ -186,8 +155,7 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
 pub trait GpioPinAscr<T: RegTag>: GpioPin<T> {
   type AscrAsc: RegField<T>;
 
-  fn ascr(&self) -> &Self::AscrAsc;
-  fn ascr_mut(&mut self) -> &mut Self::AscrAsc;
+  res_reg_decl!(AscrAsc, ascr, ascr_mut);
 }
 
 #[allow(unused_macros)]
@@ -439,180 +407,41 @@ macro_rules! gpio_pin {
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn afr(&self) -> &Self::AfrAfr {
-        &self.$gpio_afr_afr
-      }
-
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn afr_mut(&mut self) -> &mut Self::AfrAfr {
-        &mut self.$gpio_afr_afr
-      }
-
+      res_reg_impl!(AfrAfr, afr, afr_mut, $gpio_afr_afr);
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
                 feature = "stm32f102", feature = "stm32f103",
                 feature = "stm32f107", feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn brr_br(&self) -> &Self::BrrBr {
-        &self.$gpio_brr_br
-      }
-
-      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-                feature = "stm32f102", feature = "stm32f103",
-                feature = "stm32f107", feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn brr_br_mut(&mut self) -> &mut Self::BrrBr {
-        &mut self.$gpio_brr_br
-      }
-
-      #[inline(always)]
-      fn bsrr_br(&self) -> &Self::BsrrBr {
-        &self.$gpio_bsrr_br
-      }
-
-      #[inline(always)]
-      fn bsrr_br_mut(&mut self) -> &mut Self::BsrrBr {
-        &mut self.$gpio_bsrr_br
-      }
-
-      #[inline(always)]
-      fn bsrr_bs(&self) -> &Self::BsrrBs {
-        &self.$gpio_bsrr_bs
-      }
-
-      #[inline(always)]
-      fn bsrr_bs_mut(&mut self) -> &mut Self::BsrrBs {
-        &mut self.$gpio_bsrr_bs
-      }
-
+      res_reg_impl!(BrrBr, brr_br, brr_br_mut, $gpio_brr_br);
+      res_reg_impl!(BsrrBr, bsrr_br, bsrr_br_mut, $gpio_bsrr_br);
+      res_reg_impl!(BsrrBs, bsrr_bs, bsrr_bs_mut, $gpio_bsrr_bs);
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
                 feature = "stm32f102", feature = "stm32f103",
                 feature = "stm32f107"))]
-      #[inline(always)]
-      fn cr_cnf(&self) -> &Self::CrCnf {
-        &self.$gpio_cr_cnf
-      }
-
+      res_reg_impl!(CrCnf, cr_cnf, cr_cnf_mut, $gpio_cr_cnf);
       #[cfg(any(feature = "stm32f100", feature = "stm32f101",
                 feature = "stm32f102", feature = "stm32f103",
                 feature = "stm32f107"))]
-      #[inline(always)]
-      fn cr_cnf_mut(&mut self) -> &mut Self::CrCnf {
-        &mut self.$gpio_cr_cnf
-      }
-
-      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-                feature = "stm32f102", feature = "stm32f103",
-                feature = "stm32f107"))]
-      #[inline(always)]
-      fn cr_mode(&self) -> &Self::CrMode {
-        &self.$gpio_cr_mode
-      }
-
-      #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-                feature = "stm32f102", feature = "stm32f103",
-                feature = "stm32f107"))]
-      #[inline(always)]
-      fn cr_mode_mut(&mut self) -> &mut Self::CrMode {
-        &mut self.$gpio_cr_mode
-      }
-
-      #[inline(always)]
-      fn idr(&self) -> &Self::IdrIdr {
-        &self.$gpio_idr_idr
-      }
-
-      #[inline(always)]
-      fn idr_mut(&mut self) -> &mut Self::IdrIdr {
-        &mut self.$gpio_idr_idr
-      }
-
-      #[inline(always)]
-      fn lckr(&self) -> &Self::LckrLck {
-        &self.$gpio_lckr_lck
-      }
-
-      #[inline(always)]
-      fn lckr_mut(&mut self) -> &mut Self::LckrLck {
-        &mut self.$gpio_lckr_lck
-      }
-
+      res_reg_impl!(CrMode, cr_mode, cr_mode_mut, $gpio_cr_mode);
+      res_reg_impl!(IdrIdr, idr, idr_mut, $gpio_idr_idr);
+      res_reg_impl!(LckrLck, lckr, lckr_mut, $gpio_lckr_lck);
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn moder(&self) -> &Self::ModerModer {
-        &self.$gpio_moder_moder
-      }
-
+      res_reg_impl!(ModerModer, moder, moder_mut, $gpio_moder_moder);
+      res_reg_impl!(OdrOdr, odr, odr_mut, $gpio_odr_odr);
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn moder_mut(&mut self) -> &mut Self::ModerModer {
-        &mut self.$gpio_moder_moder
-      }
-
-      #[inline(always)]
-      fn odr(&self) -> &Self::OdrOdr {
-        &self.$gpio_odr_odr
-      }
-
-      #[inline(always)]
-      fn odr_mut(&mut self) -> &mut Self::OdrOdr {
-        &mut self.$gpio_odr_odr
-      }
-
+      res_reg_impl!(OspeedrOspeedr, ospeedr, ospeedr_mut,
+                    $gpio_ospeedr_ospeedr);
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn ospeedr(&self) -> &Self::OspeedrOspeedr {
-        &self.$gpio_ospeedr_ospeedr
-      }
-
+      res_reg_impl!(OtyperOt, otyper, otyper_mut, $gpio_otyper_ot);
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn ospeedr_mut(&mut self) -> &mut Self::OspeedrOspeedr {
-        &mut self.$gpio_ospeedr_ospeedr
-      }
-
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn otyper(&self) -> &Self::OtyperOt {
-        &self.$gpio_otyper_ot
-      }
-
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn otyper_mut(&mut self) -> &mut Self::OtyperOt {
-        &mut self.$gpio_otyper_ot
-      }
-
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn pupdr(&self) -> &Self::PupdrPupdr {
-        &self.$gpio_pupdr_pupdr
-      }
-
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn pupdr_mut(&mut self) -> &mut Self::PupdrPupdr {
-        &mut self.$gpio_pupdr_pupdr
-      }
+      res_reg_impl!(PupdrPupdr, pupdr, pupdr_mut, $gpio_pupdr_pupdr);
     }
 
     $(
@@ -620,15 +449,7 @@ macro_rules! gpio_pin {
       impl<T: RegTag> GpioPinAscr<T> for $name<T> {
         type AscrAsc = $gpio::ascr::$asc_ty<T>;
 
-        #[inline(always)]
-        fn ascr(&self) -> &Self::AscrAsc {
-          &self.$gpio_ascr_asc
-        }
-
-        #[inline(always)]
-        fn ascr_mut(&mut self) -> &mut Self::AscrAsc {
-          &mut self.$gpio_ascr_asc
-        }
+        res_reg_impl!(AscrAsc, ascr, ascr_mut, $gpio_ascr_asc);
       }
     )*
   }

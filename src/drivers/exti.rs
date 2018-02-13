@@ -1,6 +1,6 @@
 //! Extended interrupts and events controller.
 
-use drone_core::drivers::{Driver, Resource};
+use drivers::prelude::*;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
@@ -11,6 +11,7 @@ use reg::afio;
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 use reg::exti;
+use reg::marker::*;
 use reg::prelude::*;
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x3", feature = "stm32l4x5",
@@ -37,64 +38,42 @@ pub struct ExtiLn<T: ExtiLnRes>(T);
 /// EXTI line resource.
 #[allow(missing_docs)]
 pub trait ExtiLnRes: Resource {
-  type Emr: RwRegAtomic<Srt> + RegBitBand<Srt>;
-  type EmrMr: RegField<Srt, Reg = Self::Emr>
-    + WRwRegFieldBitAtomic<Srt>
-    + RRegFieldBitBand<Srt>
-    + WRegFieldBitBand<Srt>;
-  type Imr: RwRegAtomic<Srt> + RegBitBand<Srt>;
-  type ImrMr: RegField<Srt, Reg = Self::Imr>
-    + WRwRegFieldBitAtomic<Srt>
-    + RRegFieldBitBand<Srt>
-    + WRegFieldBitBand<Srt>;
+  type Emr: SRwRegBitBand;
+  type EmrMr: SRwRwRegFieldBitBand<Reg = Self::Emr>;
+  type Imr: SRwRegBitBand;
+  type ImrMr: SRwRwRegFieldBitBand<Reg = Self::Imr>;
 
-  fn emr_mr(&self) -> &Self::EmrMr;
-  fn imr_mr(&self) -> &Self::ImrMr;
+  res_reg_decl!(EmrMr, emr_mr, emr_mr_mut);
+  res_reg_decl!(ImrMr, imr_mr, imr_mr_mut);
 }
 
 /// Configurable EXTI line resource.
 #[allow(missing_docs)]
 pub trait ExtiLnConfRes: ExtiLnRes {
-  type Ftsr: RwRegAtomic<Srt> + RegBitBand<Srt>;
-  type FtsrFt: RegField<Srt, Reg = Self::Ftsr>
-    + WRwRegFieldBitAtomic<Srt>
-    + RRegFieldBitBand<Srt>
-    + WRegFieldBitBand<Srt>;
-  type Pr: RwRegAtomic<Frt> + RegBitBand<Frt>;
-  type PrPif: RegField<Frt, Reg = Self::Pr>
-    + WRwRegFieldBitAtomic<Frt>
-    + RRegFieldBitBand<Frt>
-    + WRegFieldBitBand<Frt>
-    + RegFork;
-  type Rtsr: RwRegAtomic<Srt> + RegBitBand<Srt>;
-  type RtsrRt: RegField<Srt, Reg = Self::Rtsr>
-    + WRwRegFieldBitAtomic<Srt>
-    + RRegFieldBitBand<Srt>
-    + WRegFieldBitBand<Srt>;
-  type Swier: RwRegAtomic<Srt> + RegBitBand<Srt>;
-  type SwierSwi: RegField<Srt, Reg = Self::Swier>
-    + WRwRegFieldBitAtomic<Srt>
-    + RRegFieldBitBand<Srt>
-    + WRegFieldBitBand<Srt>;
+  type Ftsr: SRwRegBitBand;
+  type FtsrFt: SRwRwRegFieldBitBand<Reg = Self::Ftsr>;
+  type Pr: FRwRegBitBand;
+  type PrPif: FRwRwRegFieldBitBand<Reg = Self::Pr>;
+  type Rtsr: SRwRegBitBand;
+  type RtsrRt: SRwRwRegFieldBitBand<Reg = Self::Rtsr>;
+  type Swier: SRwRegBitBand;
+  type SwierSwi: SRwRwRegFieldBitBand<Reg = Self::Swier>;
 
-  fn ftsr_ft(&self) -> &Self::FtsrFt;
-  fn pr_pif(&self) -> &Self::PrPif;
-  fn pr_pif_mut(&mut self) -> &mut Self::PrPif;
-  fn rtsr_rt(&self) -> &Self::RtsrRt;
-  fn swier_swi(&self) -> &Self::SwierSwi;
+  res_reg_decl!(FtsrFt, ftsr_ft, ftsr_ft_mut);
+  res_reg_decl!(PrPif, pr_pif, pr_pif_mut);
+  res_reg_decl!(RtsrRt, rtsr_rt, rtsr_rt_mut);
+  res_reg_decl!(SwierSwi, swier_swi, swier_swi_mut);
 }
 
 /// EXTI line resource with external interrupt support.
 #[allow(missing_docs)]
 pub trait ExtiLnExtRes: ExtiLnRes {
   type Irq: IrqToken<Ltt>;
-  type Exticr: RwRegAtomic<Srt>;
-  type ExticrExti: RegField<Srt, Reg = Self::Exticr>
-    + RRegFieldBits<Srt>
-    + WRwRegFieldBitsAtomic<Srt>;
+  type Exticr: SRwRegBitBand;
+  type ExticrExti: SRwRwRegFieldBits<Reg = Self::Exticr>;
 
   fn irq(&self) -> Self::Irq;
-  fn exticr_exti(&self) -> &Self::ExticrExti;
+  res_reg_decl!(ExticrExti, exticr_exti, exticr_exti_mut);
 }
 
 impl<T: ExtiLnRes> Driver for ExtiLn<T> {
@@ -336,15 +315,8 @@ macro_rules! exti_line {
       type Imr = exti::$imr_path::Reg<Srt>;
       type ImrMr = exti::$imr_path::$mr_ty<Srt>;
 
-      #[inline(always)]
-      fn emr_mr(&self) -> &Self::EmrMr {
-        &self.$exti_emr_mr
-      }
-
-      #[inline(always)]
-      fn imr_mr(&self) -> &Self::ImrMr {
-        &self.$exti_imr_mr
-      }
+      res_reg_impl!(EmrMr, emr_mr, emr_mr_mut, $exti_emr_mr);
+      res_reg_impl!(ImrMr, imr_mr, imr_mr_mut, $exti_imr_mr);
     }
 
     $(
@@ -361,30 +333,10 @@ macro_rules! exti_line {
         type Swier = exti::$swier_path::Reg<Srt>;
         type SwierSwi = exti::$swier_path::$swi_ty<Srt>;
 
-        #[inline(always)]
-        fn ftsr_ft(&self) -> &Self::FtsrFt {
-          &self.$exti_ftsr_ft
-        }
-
-        #[inline(always)]
-        fn pr_pif(&self) -> &Self::PrPif {
-          &self.$exti_pr_pif
-        }
-
-        #[inline(always)]
-        fn pr_pif_mut(&mut self) -> &mut Self::PrPif {
-          &mut self.$exti_pr_pif
-        }
-
-        #[inline(always)]
-        fn rtsr_rt(&self) -> &Self::RtsrRt {
-          &self.$exti_rtsr_rt
-        }
-
-        #[inline(always)]
-        fn swier_swi(&self) -> &Self::SwierSwi {
-          &self.$exti_swier_swi
-        }
+        res_reg_impl!(FtsrFt, ftsr_ft, ftsr_ft_mut, $exti_ftsr_ft);
+        res_reg_impl!(PrPif, pr_pif, pr_pif_mut, $exti_pr_pif);
+        res_reg_impl!(RtsrRt, rtsr_rt, rtsr_rt_mut, $exti_rtsr_rt);
+        res_reg_impl!(SwierSwi, swier_swi, swier_swi_mut, $exti_swier_swi);
       }
     )*
 
@@ -402,10 +354,7 @@ macro_rules! exti_line {
           self.$irq
         }
 
-        #[inline(always)]
-        fn exticr_exti(&self) -> &Self::ExticrExti {
-          &self.$exticr_exti
-        }
+        res_reg_impl!(ExticrExti, exticr_exti, exticr_exti_mut, $exticr_exti);
       }
     )*
   }

@@ -243,16 +243,16 @@ impl Fields {
         let mut traits = Vec::new();
         match field.access.as_ref().or(register.access.as_ref()) {
           Some(&Access::WriteOnly) => {
-            traits.push(Ident::new("WRegField"));
-            traits.push(Ident::new("WoRegField"));
+            traits.push(Ident::new("WWRegField"));
+            traits.push(Ident::new("WoWRegField"));
           }
           Some(&Access::ReadOnly) => {
-            traits.push(Ident::new("RRegField"));
-            traits.push(Ident::new("RoRegField"));
+            traits.push(Ident::new("RRRegField"));
+            traits.push(Ident::new("RoRRegField"));
           }
           Some(&Access::ReadWrite) | None => {
-            traits.push(Ident::new("RRegField"));
-            traits.push(Ident::new("WRegField"));
+            traits.push(Ident::new("RRRegField"));
+            traits.push(Ident::new("WWRegField"));
           }
         }
         quote! {

@@ -1,5 +1,6 @@
 //! Memory-mapped registers.
 
+pub mod marker;
 pub mod prelude;
 
 mod atomic;

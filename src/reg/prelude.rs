@@ -2,6 +2,6 @@
 
 pub use drone_core::reg::prelude::*;
 
-pub use super::{RRegFieldBitBand, RegBitBand, RegExcl, RegHoldExcl,
-                RwRegAtomic, RwRegAtomicRef, WRegFieldBitBand,
-                WRwRegFieldAtomic, WRwRegFieldBitAtomic, WRwRegFieldBitsAtomic};
+pub use super::{RRRegFieldBitBand, RegBitBand, RegExcl, RegHoldExcl,
+                RwRegAtomic, RwRegAtomicRef, WRwRegFieldAtomic,
+                WRwRegFieldBitAtomic, WRwRegFieldBitsAtomic, WWRegFieldBitBand};

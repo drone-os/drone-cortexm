@@ -14,13 +14,14 @@ use drivers::dma::{Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma2Ch1Res,
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 use drivers::dma::{Dma2Ch3Res, Dma2Ch4Res};
-use drone_core::drivers::{Driver, Resource};
+use drivers::prelude::*;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 use reg::{spi1, spi2, spi3};
+use reg::marker::*;
 use reg::prelude::*;
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x6"))]
@@ -102,23 +103,25 @@ where
 /// SPI resource.
 #[allow(missing_docs)]
 pub trait SpiRes: Resource<Input = Self> {
-  type Cr1: for<'a> RwRegAtomicRef<'a, Srt> + RegBitBand<Srt>;
-  type Cr2: for<'a> RwRegAtomicRef<'a, Srt> + RegBitBand<Srt>;
-  type Crcpr: for<'a> RwRegAtomicRef<'a, Srt>;
-  type Dr: for<'a> RwRegAtomicRef<'a, Srt>;
-  type Rxcrcr: RoReg<Srt>;
-  type Sr: for<'a> RwRegAtomicRef<'a, Srt> + RegBitBand<Srt>;
-  type SrBsy: RegField<Srt, Reg = Self::Sr> + RRegFieldBitBand<Srt>;
-  type Txcrcr: RoReg<Srt>;
+  type Cr1: SRwRegBitBand;
+  type Cr2: SRwRegBitBand;
+  type Crcpr: SRwRegBitBand;
+  type Dr: SRwRegBitBand;
+  type Rxcrcr: SRoRegBitBand;
+  type Sr: SRwRegBitBand;
+  type SrBsy: SRoRwRegFieldBitBand<Reg = Self::Sr>;
+  type SrRxne: SRoRwRegFieldBitBand<Reg = Self::Sr>;
+  type Txcrcr: SRoRegBitBand;
 
-  fn cr1(&self) -> &Self::Cr1;
-  fn cr2(&self) -> &Self::Cr2;
-  fn crcpr(&self) -> &Self::Crcpr;
-  fn dr(&self) -> &Self::Dr;
-  fn rxcrcr(&self) -> &Self::Rxcrcr;
-  fn sr(&self) -> &Self::Sr;
-  fn sr_bsy(&self) -> &Self::SrBsy;
-  fn txcrcr(&self) -> &Self::Txcrcr;
+  res_reg_decl!(Cr1, cr1, cr1_mut);
+  res_reg_decl!(Cr2, cr2, cr2_mut);
+  res_reg_decl!(Crcpr, crcpr, crcpr_mut);
+  res_reg_decl!(Dr, dr, dr_mut);
+  res_reg_decl!(Rxcrcr, rxcrcr, rxcrcr_mut);
+  res_reg_decl!(Sr, sr, sr_mut);
+  res_reg_decl!(SrBsy, sr_bsy, sr_bsy_mut);
+  res_reg_decl!(SrRxne, sr_rxne, sr_rxne_mut);
+  res_reg_decl!(Txcrcr, txcrcr, txcrcr_mut);
 }
 
 /// Interrupt-driven SPI resource.
@@ -200,6 +203,16 @@ impl<T: SpiRes> Spi<T> {
   #[inline(always)]
   pub fn sr(&self) -> &T::Sr {
     self.0.sr()
+  }
+
+  #[inline(always)]
+  pub fn sr_bsy(&self) -> &T::SrBsy {
+    self.0.sr_bsy()
+  }
+
+  #[inline(always)]
+  pub fn sr_rxne(&self) -> &T::SrRxne {
+    self.0.sr_rxne()
   }
 
   #[inline(always)]
@@ -380,47 +393,18 @@ macro_rules! spi_shared {
       type Rxcrcr = $spi::Rxcrcr<Srt>;
       type Sr = $spi::Sr<Srt>;
       type SrBsy = $spi::sr::Bsy<Srt>;
+      type SrRxne = $spi::sr::Rxne<Srt>;
       type Txcrcr = $spi::Txcrcr<Srt>;
 
-      #[inline(always)]
-      fn cr1(&self) -> &Self::Cr1 {
-        &self.$spi_cr1
-      }
-
-      #[inline(always)]
-      fn cr2(&self) -> &Self::Cr2 {
-        &self.$spi_cr2
-      }
-
-      #[inline(always)]
-      fn crcpr(&self) -> &Self::Crcpr {
-        &self.$spi_crcpr
-      }
-
-      #[inline(always)]
-      fn dr(&self) -> &Self::Dr {
-        &self.$spi_dr
-      }
-
-      #[inline(always)]
-      fn rxcrcr(&self) -> &Self::Rxcrcr {
-        &self.$spi_rxcrcr
-      }
-
-      #[inline(always)]
-      fn sr(&self) -> &Self::Sr {
-        &self.$spi_sr
-      }
-
-      #[inline(always)]
-      fn sr_bsy(&self) -> &Self::SrBsy {
-        &self.$spi_sr.bsy
-      }
-
-      #[inline(always)]
-      fn txcrcr(&self) -> &Self::Txcrcr {
-        &self.$spi_txcrcr
-      }
+      res_reg_impl!(Cr1, cr1, cr1_mut, $spi_cr1);
+      res_reg_impl!(Cr2, cr2, cr2_mut, $spi_cr2);
+      res_reg_impl!(Crcpr, crcpr, crcpr_mut, $spi_crcpr);
+      res_reg_impl!(Dr, dr, dr_mut, $spi_dr);
+      res_reg_impl!(Rxcrcr, rxcrcr, rxcrcr_mut, $spi_rxcrcr);
+      res_reg_impl!(Sr, sr, sr_mut, $spi_sr);
+      res_reg_field_impl!(SrBsy, sr_bsy, sr_bsy_mut, $spi_sr, bsy);
+      res_reg_field_impl!(SrRxne, sr_rxne, sr_rxne_mut, $spi_sr, rxne);
+      res_reg_impl!(Txcrcr, txcrcr, txcrcr_mut, $spi_txcrcr);
     }
 
     $(

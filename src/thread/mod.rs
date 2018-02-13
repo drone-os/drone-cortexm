@@ -48,7 +48,7 @@ mod request;
 mod stream;
 
 pub use self::control::ThreadControl;
-pub use self::future::PFuture;
+pub use self::future::PltFuture;
 pub use self::request::ThreadRequest;
-pub use self::stream::{PStream, StreamWait};
+pub use self::stream::{PltStream, StreamWait};
 pub use drone_cortex_m_macros::interrupt;

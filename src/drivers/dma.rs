@@ -1,12 +1,14 @@
 //! Direct memory access controller.
 
-use drone_core::drivers::{Driver, Resource};
+use drivers::prelude::*;
+use drone_core::bitfield::Bitfield;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 use reg::{dma1, dma2};
+use reg::marker::*;
 use reg::prelude::*;
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x6"))]
@@ -46,86 +48,78 @@ pub struct Dma<T: DmaRes>(T);
 #[allow(missing_docs)]
 pub trait DmaRes: Resource {
   type Irq: IrqToken<Ltt>;
-  type Ccr: for<'a> RwRegAtomicRef<'a, Srt>;
-  type CmarVal: RegVal<Raw = u32>;
-  type Cmar: Reg<Srt, Val = Self::CmarVal> + for<'a> RwRegAtomicRef<'a, Srt>;
-  type CmarMa: RegField<Srt, Reg = Self::Cmar>
-    + RRegFieldBits<Srt>
-    + WRwRegFieldBitsAtomic<Srt>;
-  type CndtrVal: RegVal<Raw = u32>;
-  type Cndtr: Reg<Srt, Val = Self::CndtrVal> + for<'a> RwRegAtomicRef<'a, Srt>;
-  type CndtrNdt: RegField<Srt, Reg = Self::Cndtr>
-    + RRegFieldBits<Srt>
-    + WRwRegFieldBitsAtomic<Srt>;
-  type CparVal: RegVal<Raw = u32>;
-  type Cpar: Reg<Srt, Val = Self::CparVal> + for<'a> RwRegAtomicRef<'a, Srt>;
-  type CparPa: RegField<Srt, Reg = Self::Cpar>
-    + RRegFieldBits<Srt>
-    + WRwRegFieldBitsAtomic<Srt>;
+  type CcrVal: Bitfield<Bits = u32>;
+  type Ccr: SRwReg<Val = Self::CcrVal>;
+  type CcrMem2Mem: SRwRwRegFieldBit<Reg = Self::Ccr>;
+  type CcrMsize: SRwRwRegFieldBits<Reg = Self::Ccr>;
+  type CcrPsize: SRwRwRegFieldBits<Reg = Self::Ccr>;
+  type CcrMinc: SRwRwRegFieldBit<Reg = Self::Ccr>;
+  type CcrPinc: SRwRwRegFieldBit<Reg = Self::Ccr>;
+  type CcrCirc: SRwRwRegFieldBit<Reg = Self::Ccr>;
+  type CcrDir: SRwRwRegFieldBit<Reg = Self::Ccr>;
+  type CcrTeie: SRwRwRegFieldBit<Reg = Self::Ccr>;
+  type CcrHtie: SRwRwRegFieldBit<Reg = Self::Ccr>;
+  type CcrTcie: SRwRwRegFieldBit<Reg = Self::Ccr>;
+  type CcrEn: SRwRwRegFieldBit<Reg = Self::Ccr>;
+  type CmarVal: Bitfield<Bits = u32>;
+  type Cmar: SRwReg<Val = Self::CmarVal>;
+  type CmarMa: SRwRwRegFieldBits<Reg = Self::Cmar>;
+  type CndtrVal: Bitfield<Bits = u32>;
+  type Cndtr: SRwReg<Val = Self::CndtrVal>;
+  type CndtrNdt: SRwRwRegFieldBits<Reg = Self::Cndtr>;
+  type CparVal: Bitfield<Bits = u32>;
+  type Cpar: SRwReg<Val = Self::CparVal>;
+  type CparPa: SRwRwRegFieldBits<Reg = Self::Cpar>;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  type Cselr: for<'a> RwRegAtomicRef<'a, Srt>;
+  type Cselr: SRwReg;
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  type CselrCs: RegField<Srt, Reg = Self::Cselr>
-    + RRegFieldBits<Srt>
-    + WRwRegFieldBitsAtomic<Srt>;
-  type Ifcr: WoReg<Frt>
-    + for<'a> WRegAtomic<'a, Frt>
-    + RegBitBand<Frt>
-    + RegFork;
-  type IfcrCgif: RegField<Frt, Reg = Self::Ifcr>
-    + WoWoRegFieldBit<Frt>
-    + WRegFieldBitBand<Frt>
-    + RegFork;
-  type IfcrChtif: RegField<Frt, Reg = Self::Ifcr>
-    + WoWoRegFieldBit<Frt>
-    + WRegFieldBitBand<Frt>
-    + RegFork;
-  type IfcrCtcif: RegField<Frt, Reg = Self::Ifcr>
-    + WoWoRegFieldBit<Frt>
-    + WRegFieldBitBand<Frt>
-    + RegFork;
-  type IfcrCteif: RegField<Frt, Reg = Self::Ifcr>
-    + WoWoRegFieldBit<Frt>
-    + WRegFieldBitBand<Frt>
-    + RegFork;
-  type Isr: RoReg<Frt> + RegBitBand<Frt> + RegFork;
-  type IsrGif: RegField<Frt, Reg = Self::Isr> + RRegFieldBitBand<Frt> + RegFork;
-  type IsrHtif: RegField<Frt, Reg = Self::Isr> + RRegFieldBitBand<Frt> + RegFork;
-  type IsrTcif: RegField<Frt, Reg = Self::Isr> + RRegFieldBitBand<Frt> + RegFork;
-  type IsrTeif: RegField<Frt, Reg = Self::Isr> + RRegFieldBitBand<Frt> + RegFork;
+  type CselrCs: SRwRwRegFieldBits<Reg = Self::Cselr>;
+  type Ifcr: FWoRegBitBand;
+  type IfcrCgif: FWoWoRegFieldBitBand<Reg = Self::Ifcr>;
+  type IfcrChtif: FWoWoRegFieldBitBand<Reg = Self::Ifcr>;
+  type IfcrCtcif: FWoWoRegFieldBitBand<Reg = Self::Ifcr>;
+  type IfcrCteif: FWoWoRegFieldBitBand<Reg = Self::Ifcr>;
+  type Isr: FRoRegBitBand;
+  type IsrGif: FRoRoRegFieldBitBand<Reg = Self::Isr>;
+  type IsrHtif: FRoRoRegFieldBitBand<Reg = Self::Isr>;
+  type IsrTcif: FRoRoRegFieldBitBand<Reg = Self::Isr>;
+  type IsrTeif: FRoRoRegFieldBitBand<Reg = Self::Isr>;
 
   fn irq(&self) -> Self::Irq;
-  fn ccr(&self) -> &Self::Ccr;
-  fn cmar(&self) -> &Self::Cmar;
-  fn cmar_ma(&self) -> &Self::CmarMa;
-  fn cndtr(&self) -> &Self::Cndtr;
-  fn cndtr_ndt(&self) -> &Self::CndtrNdt;
-  fn cpar(&self) -> &Self::Cpar;
-  fn cpar_pa(&self) -> &Self::CparPa;
+  res_reg_decl!(Ccr, ccr, ccr_mut);
+  res_reg_decl!(CcrMem2Mem, ccr_mem2mem, ccr_mem2mem_mut);
+  res_reg_decl!(CcrMsize, ccr_msize, ccr_msize_mut);
+  res_reg_decl!(CcrPsize, ccr_psize, ccr_psize_mut);
+  res_reg_decl!(CcrMinc, ccr_minc, ccr_minc_mut);
+  res_reg_decl!(CcrPinc, ccr_pinc, ccr_pinc_mut);
+  res_reg_decl!(CcrCirc, ccr_circ, ccr_circ_mut);
+  res_reg_decl!(CcrDir, ccr_dir, ccr_dir_mut);
+  res_reg_decl!(CcrTeie, ccr_teie, ccr_teie_mut);
+  res_reg_decl!(CcrHtie, ccr_htie, ccr_htie_mut);
+  res_reg_decl!(CcrTcie, ccr_tcie, ccr_tcie_mut);
+  res_reg_decl!(CcrEn, ccr_en, ccr_en_mut);
+  res_reg_decl!(Cmar, cmar, cmar_mut);
+  res_reg_decl!(CmarMa, cmar_ma, cmar_ma_mut);
+  res_reg_decl!(Cndtr, cndtr, cndtr_mut);
+  res_reg_decl!(CndtrNdt, cndtr_ndt, cndtr_ndt_mut);
+  res_reg_decl!(Cpar, cpar, cpar_mut);
+  res_reg_decl!(CparPa, cpar_pa, cpar_pa_mut);
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
             feature = "stm32l4x3", feature = "stm32l4x5",
             feature = "stm32l4x6"))]
-  fn cselr_cs(&self) -> &Self::CselrCs;
-  fn ifcr_cgif(&self) -> &Self::IfcrCgif;
-  fn ifcr_cgif_mut(&mut self) -> &mut Self::IfcrCgif;
-  fn ifcr_chtif(&self) -> &Self::IfcrChtif;
-  fn ifcr_chtif_mut(&mut self) -> &mut Self::IfcrChtif;
-  fn ifcr_ctcif(&self) -> &Self::IfcrCtcif;
-  fn ifcr_ctcif_mut(&mut self) -> &mut Self::IfcrCtcif;
-  fn ifcr_cteif(&self) -> &Self::IfcrCteif;
-  fn ifcr_cteif_mut(&mut self) -> &mut Self::IfcrCteif;
-  fn isr_gif(&self) -> &Self::IsrGif;
-  fn isr_gif_mut(&mut self) -> &mut Self::IsrGif;
-  fn isr_htif(&self) -> &Self::IsrHtif;
-  fn isr_htif_mut(&mut self) -> &mut Self::IsrHtif;
-  fn isr_tcif(&self) -> &Self::IsrTcif;
-  fn isr_tcif_mut(&mut self) -> &mut Self::IsrTcif;
-  fn isr_teif(&self) -> &Self::IsrTeif;
-  fn isr_teif_mut(&mut self) -> &mut Self::IsrTeif;
+  res_reg_decl!(CselrCs, cselr_cs, cselr_cs_mut);
+  res_reg_decl!(IfcrCgif, ifcr_cgif, ifcr_cgif_mut);
+  res_reg_decl!(IfcrChtif, ifcr_chtif, ifcr_chtif_mut);
+  res_reg_decl!(IfcrCtcif, ifcr_ctcif, ifcr_ctcif_mut);
+  res_reg_decl!(IfcrCteif, ifcr_cteif, ifcr_cteif_mut);
+  res_reg_decl!(IsrGif, isr_gif, isr_gif_mut);
+  res_reg_decl!(IsrHtif, isr_htif, isr_htif_mut);
+  res_reg_decl!(IsrTcif, isr_tcif, isr_tcif_mut);
+  res_reg_decl!(IsrTeif, isr_teif, isr_teif_mut);
 }
 
 impl<T: DmaRes> Driver for Dma<T> {
@@ -155,18 +149,58 @@ impl<T: DmaRes> Dma<T> {
   }
 
   #[inline(always)]
-  pub fn cmar(&self) -> &T::Cmar {
-    self.0.cmar()
+  pub fn ccr_mem2mem(&self) -> &T::CcrMem2Mem {
+    self.0.ccr_mem2mem()
   }
 
   #[inline(always)]
-  pub fn cndtr(&self) -> &T::Cndtr {
-    self.0.cndtr()
+  pub fn ccr_msize(&self) -> &T::CcrMsize {
+    self.0.ccr_msize()
   }
 
   #[inline(always)]
-  pub fn cpar(&self) -> &T::Cpar {
-    self.0.cpar()
+  pub fn ccr_psize(&self) -> &T::CcrPsize {
+    self.0.ccr_psize()
+  }
+
+  #[inline(always)]
+  pub fn ccr_minc(&self) -> &T::CcrMinc {
+    self.0.ccr_minc()
+  }
+
+  #[inline(always)]
+  pub fn ccr_pinc(&self) -> &T::CcrPinc {
+    self.0.ccr_pinc()
+  }
+
+  #[inline(always)]
+  pub fn ccr_circ(&self) -> &T::CcrCirc {
+    self.0.ccr_circ()
+  }
+
+  #[inline(always)]
+  pub fn ccr_dir(&self) -> &T::CcrDir {
+    self.0.ccr_dir()
+  }
+
+  #[inline(always)]
+  pub fn ccr_teie(&self) -> &T::CcrTeie {
+    self.0.ccr_teie()
+  }
+
+  #[inline(always)]
+  pub fn ccr_htie(&self) -> &T::CcrHtie {
+    self.0.ccr_htie()
+  }
+
+  #[inline(always)]
+  pub fn ccr_tcie(&self) -> &T::CcrTcie {
+    self.0.ccr_tcie()
+  }
+
+  #[inline(always)]
+  pub fn ccr_en(&self) -> &T::CcrEn {
+    self.0.ccr_en()
   }
 
   #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -332,6 +366,7 @@ macro_rules! dma_ch {
     $dma_isr_htif:ident,
     $dma_isr_tcif:ident,
     $dma_isr_teif:ident,
+    $ccr_path:ident,
     $cmar_path:ident,
     $cndtr_path:ident,
     $cpar_path:ident,
@@ -478,7 +513,19 @@ macro_rules! dma_ch {
 
     impl<I: $irq_ty<Ltt>> DmaRes for $name_res<I, Frt> {
       type Irq = I;
+      type CcrVal = $dma::$ccr_path::Val;
       type Ccr = $dma::$ccr_ty<Srt>;
+      type CcrMem2Mem = $dma::$ccr_path::Mem2Mem<Srt>;
+      type CcrMsize = $dma::$ccr_path::Msize<Srt>;
+      type CcrPsize = $dma::$ccr_path::Psize<Srt>;
+      type CcrMinc = $dma::$ccr_path::Minc<Srt>;
+      type CcrPinc = $dma::$ccr_path::Pinc<Srt>;
+      type CcrCirc = $dma::$ccr_path::Circ<Srt>;
+      type CcrDir = $dma::$ccr_path::Dir<Srt>;
+      type CcrTeie = $dma::$ccr_path::Teie<Srt>;
+      type CcrHtie = $dma::$ccr_path::Htie<Srt>;
+      type CcrTcie = $dma::$ccr_path::Tcie<Srt>;
+      type CcrEn = $dma::$ccr_path::En<Srt>;
       type CmarVal = $dma::$cmar_path::Val;
       type Cmar = $dma::$cmar_ty<Srt>;
       type CmarMa = $dma::$cmar_path::Ma<Srt>;
@@ -512,128 +559,37 @@ macro_rules! dma_ch {
         self.$irq
       }
 
-      #[inline(always)]
-      fn ccr(&self) -> &Self::Ccr {
-        &self.$dma_ccr
-      }
-
-      #[inline(always)]
-      fn cmar(&self) -> &Self::Cmar {
-        &self.$dma_cmar
-      }
-
-      #[inline(always)]
-      fn cmar_ma(&self) -> &Self::CmarMa {
-        &self.$dma_cmar.ma
-      }
-
-      #[inline(always)]
-      fn cndtr(&self) -> &Self::Cndtr {
-        &self.$dma_cndtr
-      }
-
-      #[inline(always)]
-      fn cndtr_ndt(&self) -> &Self::CndtrNdt {
-        &self.$dma_cndtr.ndt
-      }
-
-      #[inline(always)]
-      fn cpar(&self) -> &Self::Cpar {
-        &self.$dma_cpar
-      }
-
-      #[inline(always)]
-      fn cpar_pa(&self) -> &Self::CparPa {
-        &self.$dma_cpar.pa
-      }
-
+      res_reg_impl!(Ccr, ccr, ccr_mut, $dma_ccr);
+      res_reg_field_impl!(CcrMem2Mem, ccr_mem2mem, ccr_mem2mem_mut, $dma_ccr,
+                          mem2mem);
+      res_reg_field_impl!(CcrMsize, ccr_msize, ccr_msize_mut, $dma_ccr, msize);
+      res_reg_field_impl!(CcrPsize, ccr_psize, ccr_psize_mut, $dma_ccr, psize);
+      res_reg_field_impl!(CcrMinc, ccr_minc, ccr_minc_mut, $dma_ccr, minc);
+      res_reg_field_impl!(CcrPinc, ccr_pinc, ccr_pinc_mut, $dma_ccr, pinc);
+      res_reg_field_impl!(CcrCirc, ccr_circ, ccr_circ_mut, $dma_ccr, circ);
+      res_reg_field_impl!(CcrDir, ccr_dir, ccr_dir_mut, $dma_ccr, dir);
+      res_reg_field_impl!(CcrTeie, ccr_teie, ccr_teie_mut, $dma_ccr, teie);
+      res_reg_field_impl!(CcrHtie, ccr_htie, ccr_htie_mut, $dma_ccr, htie);
+      res_reg_field_impl!(CcrTcie, ccr_tcie, ccr_tcie_mut, $dma_ccr, tcie);
+      res_reg_field_impl!(CcrEn, ccr_en, ccr_en_mut, $dma_ccr, en);
+      res_reg_impl!(Cmar, cmar, cmar_mut, $dma_cmar);
+      res_reg_field_impl!(CmarMa, cmar_ma, cmar_ma_mut, $dma_cmar, ma);
+      res_reg_impl!(Cndtr, cndtr, cndtr_mut, $dma_cndtr);
+      res_reg_field_impl!(CndtrNdt, cndtr_ndt, cndtr_ndt_mut, $dma_cndtr, ndt);
+      res_reg_impl!(Cpar, cpar, cpar_mut, $dma_cpar);
+      res_reg_field_impl!(CparPa, cpar_pa, cpar_pa_mut, $dma_cpar, pa);
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      #[inline(always)]
-      fn cselr_cs(&self) -> &Self::CselrCs {
-        &self.$dma_cselr_cs
-      }
-
-      #[inline(always)]
-      fn ifcr_cgif(&self) -> &Self::IfcrCgif {
-        &self.$dma_ifcr_cgif
-      }
-
-      #[inline(always)]
-      fn ifcr_cgif_mut(&mut self) -> &mut Self::IfcrCgif {
-        &mut self.$dma_ifcr_cgif
-      }
-
-      #[inline(always)]
-      fn ifcr_chtif(&self) -> &Self::IfcrChtif {
-        &self.$dma_ifcr_chtif
-      }
-
-      #[inline(always)]
-      fn ifcr_chtif_mut(&mut self) -> &mut Self::IfcrChtif {
-        &mut self.$dma_ifcr_chtif
-      }
-
-      #[inline(always)]
-      fn ifcr_ctcif(&self) -> &Self::IfcrCtcif {
-        &self.$dma_ifcr_ctcif
-      }
-
-      #[inline(always)]
-      fn ifcr_ctcif_mut(&mut self) -> &mut Self::IfcrCtcif {
-        &mut self.$dma_ifcr_ctcif
-      }
-
-      #[inline(always)]
-      fn ifcr_cteif(&self) -> &Self::IfcrCteif {
-        &self.$dma_ifcr_cteif
-      }
-
-      #[inline(always)]
-      fn ifcr_cteif_mut(&mut self) -> &mut Self::IfcrCteif {
-        &mut self.$dma_ifcr_cteif
-      }
-
-      #[inline(always)]
-      fn isr_gif(&self) -> &Self::IsrGif {
-        &self.$dma_isr_gif
-      }
-
-      #[inline(always)]
-      fn isr_gif_mut(&mut self) -> &mut Self::IsrGif {
-        &mut self.$dma_isr_gif
-      }
-
-      #[inline(always)]
-      fn isr_htif(&self) -> &Self::IsrHtif {
-        &self.$dma_isr_htif
-      }
-
-      #[inline(always)]
-      fn isr_htif_mut(&mut self) -> &mut Self::IsrHtif {
-        &mut self.$dma_isr_htif
-      }
-
-      #[inline(always)]
-      fn isr_tcif(&self) -> &Self::IsrTcif {
-        &self.$dma_isr_tcif
-      }
-
-      #[inline(always)]
-      fn isr_tcif_mut(&mut self) -> &mut Self::IsrTcif {
-        &mut self.$dma_isr_tcif
-      }
-
-      #[inline(always)]
-      fn isr_teif(&self) -> &Self::IsrTeif {
-        &self.$dma_isr_teif
-      }
-
-      #[inline(always)]
-      fn isr_teif_mut(&mut self) -> &mut Self::IsrTeif {
-        &mut self.$dma_isr_teif
-      }
+      res_reg_impl!(CselrCs, cselr_cs, cselr_cs_mut, $dma_cselr_cs);
+      res_reg_impl!(IfcrCgif, ifcr_cgif, ifcr_cgif_mut, $dma_ifcr_cgif);
+      res_reg_impl!(IfcrChtif, ifcr_chtif, ifcr_chtif_mut, $dma_ifcr_chtif);
+      res_reg_impl!(IfcrCtcif, ifcr_ctcif, ifcr_ctcif_mut, $dma_ifcr_ctcif);
+      res_reg_impl!(IfcrCteif, ifcr_cteif, ifcr_cteif_mut, $dma_ifcr_cteif);
+      res_reg_impl!(IsrGif, isr_gif, isr_gif_mut, $dma_isr_gif);
+      res_reg_impl!(IsrHtif, isr_htif, isr_htif_mut, $dma_isr_htif);
+      res_reg_impl!(IsrTcif, isr_tcif, isr_tcif_mut, $dma_isr_tcif);
+      res_reg_impl!(IsrTeif, isr_teif, isr_teif_mut, $dma_isr_teif);
     }
   }
 }
@@ -681,6 +637,7 @@ dma_ch! {
   dma1_isr_htif1,
   dma1_isr_tcif1,
   dma1_isr_teif1,
+  ccr1,
   cmar1,
   cndtr1,
   cpar1,
@@ -738,6 +695,7 @@ dma_ch! {
   dma1_isr_htif2,
   dma1_isr_tcif2,
   dma1_isr_teif2,
+  ccr2,
   cmar2,
   cndtr2,
   cpar2,
@@ -795,6 +753,7 @@ dma_ch! {
   dma1_isr_htif3,
   dma1_isr_tcif3,
   dma1_isr_teif3,
+  ccr3,
   cmar3,
   cndtr3,
   cpar3,
@@ -852,6 +811,7 @@ dma_ch! {
   dma1_isr_htif4,
   dma1_isr_tcif4,
   dma1_isr_teif4,
+  ccr4,
   cmar4,
   cndtr4,
   cpar4,
@@ -909,6 +869,7 @@ dma_ch! {
   dma1_isr_htif5,
   dma1_isr_tcif5,
   dma1_isr_teif5,
+  ccr5,
   cmar5,
   cndtr5,
   cpar5,
@@ -966,6 +927,7 @@ dma_ch! {
   dma1_isr_htif6,
   dma1_isr_tcif6,
   dma1_isr_teif6,
+  ccr6,
   cmar6,
   cndtr6,
   cpar6,
@@ -1023,6 +985,7 @@ dma_ch! {
   dma1_isr_htif7,
   dma1_isr_tcif7,
   dma1_isr_teif7,
+  ccr7,
   cmar7,
   cndtr7,
   cpar7,
@@ -1080,6 +1043,7 @@ dma_ch! {
   dma2_isr_htif1,
   dma2_isr_tcif1,
   dma2_isr_teif1,
+  ccr1,
   cmar1,
   cndtr1,
   cpar1,
@@ -1137,6 +1101,7 @@ dma_ch! {
   dma2_isr_htif2,
   dma2_isr_tcif2,
   dma2_isr_teif2,
+  ccr2,
   cmar2,
   cndtr2,
   cpar2,
@@ -1194,6 +1159,7 @@ dma_ch! {
   dma2_isr_htif3,
   dma2_isr_tcif3,
   dma2_isr_teif3,
+  ccr3,
   cmar3,
   cndtr3,
   cpar3,
@@ -1251,6 +1217,7 @@ dma_ch! {
   dma2_isr_htif4,
   dma2_isr_tcif4,
   dma2_isr_teif4,
+  ccr4,
   cmar4,
   cndtr4,
   cpar4,
@@ -1308,6 +1275,7 @@ dma_ch! {
   dma2_isr_htif5,
   dma2_isr_tcif5,
   dma2_isr_teif5,
+  ccr5,
   cmar5,
   cndtr5,
   cpar5,
@@ -1363,6 +1331,7 @@ dma_ch! {
   dma2_isr_htif6,
   dma2_isr_tcif6,
   dma2_isr_teif6,
+  ccr6,
   cmar6,
   cndtr6,
   cpar6,
@@ -1418,6 +1387,7 @@ dma_ch! {
   dma2_isr_htif7,
   dma2_isr_tcif7,
   dma2_isr_teif7,
+  ccr7,
   cmar7,
   cndtr7,
   cpar7,

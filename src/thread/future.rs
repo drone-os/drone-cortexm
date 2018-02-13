@@ -3,12 +3,12 @@ use mcu::wait_for_interrupt;
 use thread::notify::nop::NOTIFY_NOP;
 
 /// Platform future extensions.
-pub trait PFuture: Future {
+pub trait PltFuture: Future {
   /// Blocks the current thread until the future is resolved.
   fn wait(self) -> Result<Self::Item, Self::Error>;
 }
 
-impl<T: Future> PFuture for T {
+impl<T: Future> PltFuture for T {
   fn wait(self) -> Result<Self::Item, Self::Error> {
     let mut executor = executor::spawn(self);
     loop {

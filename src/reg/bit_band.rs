@@ -25,9 +25,9 @@ pub trait RegBitBand<T: RegTag>: Reg<T> {
 }
 
 /// Register field that can read bits through peripheral bit-band region.
-pub trait RRegFieldBitBand<T: RegTag>
+pub trait RRRegFieldBitBand<T: RegTag>
 where
-  Self: RRegFieldBit<T>,
+  Self: RRRegFieldBit<T>,
   Self::Reg: RegBitBand<T> + RReg<T>,
 {
   /// Reads the state of the bit through peripheral bit-band region.
@@ -38,9 +38,9 @@ where
 }
 
 /// Register field that can write bits through peripheral bit-band region.
-pub trait WRegFieldBitBand<T: RegTag>
+pub trait WWRegFieldBitBand<T: RegTag>
 where
-  Self: WRegFieldBit<T>,
+  Self: WWRegFieldBit<T>,
   Self::Reg: RegBitBand<T> + WReg<T>,
 {
   /// Sets the bit through peripheral bit-band region.
@@ -53,10 +53,10 @@ where
   fn bit_band_mut_ptr(&self) -> *mut usize;
 }
 
-impl<T, U> RRegFieldBitBand<T> for U
+impl<T, U> RRRegFieldBitBand<T> for U
 where
   T: RegTag,
-  U: RRegFieldBit<T>,
+  U: RRRegFieldBit<T>,
   U::Reg: RegBitBand<T> + RReg<T>,
 {
   #[inline(always)]
@@ -70,10 +70,10 @@ where
   }
 }
 
-impl<T, U> WRegFieldBitBand<T> for U
+impl<T, U> WWRegFieldBitBand<T> for U
 where
   T: RegTag,
-  U: WRegFieldBit<T>,
+  U: WWRegFieldBit<T>,
   U::Reg: RegBitBand<T> + WReg<T>,
 {
   #[inline(always)]
