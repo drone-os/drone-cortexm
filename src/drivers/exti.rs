@@ -1,5 +1,6 @@
 //! Extended interrupts and events controller.
 
+use core::marker::PhantomData;
 use drivers::prelude::*;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
@@ -26,11 +27,11 @@ use thread::irq::{IrqExti0, IrqExti1, IrqExti1510, IrqExti2, IrqExti3,
                   IrqExti4, IrqExti95};
 use thread::prelude::*;
 
-/// Error returned from [`ExtiLn::stream`].
+/// Error returned from [`ExtiLn::stream`] on overflow.
 ///
 /// [`ExtiLn::stream`]: struct.ExtiLn.html#method.stream
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExtiLnOverflow;
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct ExtiLnOverflow<T: ExtiLnRes>(PhantomData<T>);
 
 /// EXTI line driver.
 pub struct ExtiLn<T: ExtiLnRes>(T);
@@ -154,11 +155,13 @@ impl<T: ExtiLnExtRes + ExtiLnConfRes> ExtiLn<T> {
 
   /// Returns a stream, which resolves to `Ok(())` each time the event is
   /// triggered. Resolves to `Err(ExtiLnOverflow)` on overflow.
-  pub fn stream(&mut self) -> impl Stream<Item = (), Error = ExtiLnOverflow> {
+  pub fn stream(
+    &mut self,
+  ) -> impl Stream<Item = (), Error = ExtiLnOverflow<T>> {
     self
       .0
       .irq()
-      .stream(|| Err(ExtiLnOverflow), self.stream_routine())
+      .stream(|| Err(ExtiLnOverflow::new()), self.stream_routine())
   }
 
   /// Returns a stream, which resolves to `Ok(())` each time the event is
@@ -178,6 +181,15 @@ impl<T: ExtiLnExtRes + ExtiLnConfRes> ExtiLn<T> {
       }
       yield None;
     }
+  }
+}
+
+#[cfg_attr(feature = "clippy", allow(new_without_default_derive))]
+impl<T: ExtiLnRes> ExtiLnOverflow<T> {
+  /// Creates a new `ExtiLnOverflow`.
+  #[inline(always)]
+  pub fn new() -> Self {
+    ExtiLnOverflow(PhantomData)
   }
 }
 

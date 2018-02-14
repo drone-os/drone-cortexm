@@ -53,7 +53,7 @@ impl<I: IrqSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
   type Duration = u32;
   type CtrlVal = stk::ctrl::Val;
   type SleepFuture = FiberFuture<(), !>;
-  type IntervalStream = FiberStreamUnit<TimerOverflow>;
+  type IntervalStream = FiberStreamUnit<TimerOverflow<Self>>;
   type IntervalSkipStream = FiberStreamUnit<!>;
 
   #[inline(always)]
@@ -83,7 +83,7 @@ impl<I: IrqSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
   ) -> Self::IntervalStream {
     self.interval_stream(dur, ctrl_val, |irq| {
       irq.stream(
-        || Err(TimerOverflow),
+        || Err(TimerOverflow::new()),
         || loop {
           yield Some(());
         },
