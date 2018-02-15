@@ -1,6 +1,6 @@
-//! Drone for ARM Cortex-M. Procedural macros.
+//! Drone for STM32. Procedural macros.
 //!
-//! See `drone-cortex-m` documentation for details.
+//! See `drone-stm32` documentation for details.
 
 #![feature(proc_macro)]
 #![recursion_limit = "256"]

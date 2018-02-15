@@ -51,4 +51,4 @@ pub use self::control::ThreadControl;
 pub use self::future::PltFuture;
 pub use self::request::ThreadRequest;
 pub use self::stream::{PltStream, StreamWait};
-pub use drone_cortex_m_macros::interrupt;
+pub use drone_stm32_macros::interrupt;

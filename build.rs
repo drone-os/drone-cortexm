@@ -1,7 +1,7 @@
-extern crate drone_cortex_m_svd;
+extern crate drone_stm32_svd;
 extern crate failure;
 
-use drone_cortex_m_svd::svd_generate;
+use drone_stm32_svd::svd_generate;
 use failure::Error;
 use std::env;
 use std::fs::File;

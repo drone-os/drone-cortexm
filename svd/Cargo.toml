@@ -1,11 +1,11 @@
 [package]
-name = "drone-cortex-m-svd"
+name = "drone-stm32-svd"
 version = "0.8.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
-description = "Drone for ARM Cortex-M bindings generator."
+description = "Drone for STM32 bindings generator."
 readme = "README.md"
 license = "MIT/Apache-2.0"
-repository = "https://github.com/drone-os/drone-cortex-m"
+repository = "https://github.com/drone-os/drone-stm32"
 
 [dependencies]
 failure = "0.1"

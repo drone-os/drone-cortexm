@@ -1,4 +1,4 @@
-//! The Drone Cortex-M Prelude.
+//! The Drone STM32 Prelude.
 //!
 //! It is an analogue of [`std::prelude`], which is not available in
 //! `#![no_std]` contexts.
@@ -11,7 +11,7 @@
 //!
 //! #[prelude_import]
 //! #[allow(unused_imports)]
-//! use drone_cortex_m::prelude::*;
+//! use drone_stm32::prelude::*;
 //! ```
 //!
 //! [`std::prelude`]: https://doc.rust-lang.org/std/prelude/

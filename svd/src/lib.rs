@@ -1,6 +1,6 @@
-//! Drone ARM Cortex-M SVD bindings generator.
+//! Drone STM32 SVD bindings generator.
 //!
-//! See `drone-cortex-m` documentation for details.
+//! See `drone-stm32` documentation for details.
 
 #![feature(range_contains)]
 #![warn(missing_docs)]

@@ -14,15 +14,15 @@
 extern crate alloc;
 extern crate compiler_builtins;
 extern crate drone_core;
-extern crate drone_cortex_m;
+extern crate drone_stm32;
 extern crate test;
 
 #[prelude_import]
 #[allow(unused_imports)]
-use drone_cortex_m::prelude::*;
+use drone_stm32::prelude::*;
 
 use core::mem::size_of;
-use drone_cortex_m::thread::prelude::*;
+use drone_stm32::thread::prelude::*;
 
 drone_core::heap! {
   Heap;
@@ -40,7 +40,7 @@ mod vtable1 {
   trait Irq10<T: ThreadTag>: IrqToken<T> {}
   trait Irq5<T: ThreadTag>: IrqToken<T> {}
 
-  drone_cortex_m::vtable! {
+  drone_stm32::vtable! {
     /// Test doc attribute
     #[doc = "test attribute"]
     VectorTable;
@@ -73,7 +73,7 @@ mod vtable2 {
   use super::*;
 
   drone_core::thread::thread_local!(ThreadLocal; THREADS);
-  drone_cortex_m::vtable!(VectorTable; ThreadIndex; THREADS; ThreadLocal);
+  drone_stm32::vtable!(VectorTable; ThreadIndex; THREADS; ThreadLocal);
 }
 
 #[test]

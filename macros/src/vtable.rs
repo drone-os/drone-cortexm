@@ -118,13 +118,13 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
     #[allow(unused_imports)]
     use ::core::marker::PhantomData;
     #[allow(unused_imports)]
-    use ::drone_cortex_m::drivers;
+    use ::drone_stm32::drivers;
     #[allow(unused_imports)]
-    use ::drone_cortex_m::thread::irq::*;
+    use ::drone_stm32::thread::irq::*;
     #[allow(unused_imports)]
-    use ::drone_cortex_m::thread::prelude::*;
+    use ::drone_stm32::thread::prelude::*;
     #[allow(unused_imports)]
-    use ::drone_cortex_m::thread::vtable::{Handler, Reserved, ResetHandler};
+    use ::drone_stm32::thread::vtable::{Handler, Reserved, ResetHandler};
 
     #(#attrs)*
     #[allow(dead_code)]
