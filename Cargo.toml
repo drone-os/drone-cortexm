@@ -3,7 +3,7 @@ members = ["macros", "svd"]
 
 [package]
 name = "drone-stm32"
-version = "0.8.0"
+version = "0.8.0" # remember to update html_root_url
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 description = "Drone for STM32."
 readme = "README.md"
@@ -35,6 +35,14 @@ path = "../drone-core"
 version = "0.1"
 default-features = false
 
+[dependencies.failure]
+version = "0.1"
+default-features = false
+
+[dependencies.failure_derive]
+version = "0.1"
+default-features = false
+
 [dependencies.clippy]
 version = "0.0"
 optional = true
@@ -44,8 +52,11 @@ version = "0.2"
 features = []
 path = "../drone-test"
 
-[build-dependencies]
-failure = "0.1"
+[build-dependencies.failure-dup]
+git = "https://github.com/drone-os/failure-dup"
+branch = "version-0.1"
+default-features = false
+features = ["std"]
 
 [build-dependencies.drone-stm32-svd]
 version = "0.8.0"

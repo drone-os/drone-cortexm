@@ -4,11 +4,12 @@
 
 #![feature(range_contains)]
 #![warn(missing_docs)]
+#![doc(html_root_url = "https://docs.rs/drone-stm32-svd/0.8.0")]
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![cfg_attr(feature = "clippy", allow(precedence))]
 
-extern crate failure;
+extern crate failure_dup as failure;
 #[macro_use]
 extern crate quote;
 extern crate serde;

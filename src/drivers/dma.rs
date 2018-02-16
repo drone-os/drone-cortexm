@@ -1,6 +1,5 @@
 //! Direct memory access controller.
 
-use core::marker::PhantomData;
 use drivers::prelude::*;
 use drone_core::bitfield::Bitfield;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -42,9 +41,10 @@ use thread::irq::IrqDma2Channel45 as IrqDma2Ch4;
 use thread::irq::IrqDma2Channel45 as IrqDma2Ch5;
 use thread::prelude::*;
 
-/// Error returned when corresponding `TEIFx` flag in `DMA_ISR` register is set.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct DmaTransferError<T: DmaRes>(PhantomData<T>);
+/// Error returned when `DMA_ISR_TEIFx` flag in set.
+#[derive(Debug, Fail)]
+#[fail(display = "DMA transfer error.")]
+pub struct DmaTransferError;
 
 /// DMA driver.
 pub struct Dma<T: DmaRes>(T);
@@ -295,7 +295,7 @@ impl<T: DmaRes> Dma<T> {
   /// Returns a future, which resolves on DMA transfer complete event.
   pub fn transfer_complete(
     &mut self,
-  ) -> impl Future<Item = (), Error = DmaTransferError<T>> {
+  ) -> impl Future<Item = (), Error = DmaTransferError> {
     let teif = self.0.isr_teif_mut().fork();
     let tcif = self.0.isr_tcif_mut().fork();
     let cgif = self.0.ifcr_cgif_mut().fork();
@@ -303,7 +303,7 @@ impl<T: DmaRes> Dma<T> {
     self.0.irq().future(move || loop {
       if teif.read_bit_band() {
         cgif.set_bit_band();
-        break Err(DmaTransferError::new());
+        break Err(DmaTransferError);
       }
       if tcif.read_bit_band() {
         ctcif.set_bit_band();
@@ -316,7 +316,7 @@ impl<T: DmaRes> Dma<T> {
   /// Returns a future, which resolves on DMA half transfer event.
   pub fn half_transfer(
     &mut self,
-  ) -> impl Future<Item = (), Error = DmaTransferError<T>> {
+  ) -> impl Future<Item = (), Error = DmaTransferError> {
     let teif = self.0.isr_teif_mut().fork();
     let htif = self.0.isr_htif_mut().fork();
     let cgif = self.0.ifcr_cgif_mut().fork();
@@ -324,7 +324,7 @@ impl<T: DmaRes> Dma<T> {
     self.0.irq().future(move || loop {
       if teif.read_bit_band() {
         cgif.set_bit_band();
-        break Err(DmaTransferError::new());
+        break Err(DmaTransferError);
       }
       if htif.read_bit_band() {
         chtif.set_bit_band();
@@ -332,15 +332,6 @@ impl<T: DmaRes> Dma<T> {
       }
       yield;
     })
-  }
-}
-
-#[cfg_attr(feature = "clippy", allow(new_without_default_derive))]
-impl<T: DmaRes> DmaTransferError<T> {
-  /// Creates a new `DmaTransferError`.
-  #[inline(always)]
-  pub fn new() -> Self {
-    DmaTransferError(PhantomData)
   }
 }
 

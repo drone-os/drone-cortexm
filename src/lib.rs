@@ -46,6 +46,7 @@
 #![feature(untagged_unions)]
 #![no_std]
 #![warn(missing_docs)]
+#![doc(html_root_url = "https://docs.rs/drone-stm32/0.8.0")]
 #![cfg_attr(test, feature(alloc))]
 #![cfg_attr(test, feature(allocator_api))]
 #![cfg_attr(test, feature(allocator_internals))]
@@ -66,6 +67,9 @@ extern crate compiler_builtins;
 #[macro_use]
 extern crate drone_core;
 extern crate drone_stm32_macros;
+extern crate failure;
+#[macro_use]
+extern crate failure_derive;
 extern crate futures;
 #[cfg(test)]
 #[macro_use]

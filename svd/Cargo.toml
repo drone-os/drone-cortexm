@@ -1,6 +1,6 @@
 [package]
 name = "drone-stm32-svd"
-version = "0.8.0"
+version = "0.8.0" # remember to update html_root_url
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 description = "Drone for STM32 bindings generator."
 readme = "README.md"
@@ -8,12 +8,17 @@ license = "MIT/Apache-2.0"
 repository = "https://github.com/drone-os/drone-stm32"
 
 [dependencies]
-failure = "0.1"
 serde = "1"
 serde_derive = "1"
 serde-xml-rs = "0.2"
 quote = "0.3"
 syn = "0.11"
+
+[dependencies.failure-dup]
+git = "https://github.com/drone-os/failure-dup"
+branch = "version-0.1"
+default-features = false
+features = ["std"]
 
 [dependencies.clippy]
 version = "0.0"

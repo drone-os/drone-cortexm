@@ -1,5 +1,5 @@
 extern crate drone_stm32_svd;
-extern crate failure;
+extern crate failure_dup as failure;
 
 use drone_stm32_svd::svd_generate;
 use failure::Error;

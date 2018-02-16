@@ -47,6 +47,20 @@ use thread::irq::{IrqDma2Channel3 as IrqDma2Ch3, IrqDma2Channel4 as IrqDma2Ch4};
 use thread::irq::{IrqSpi1, IrqSpi2, IrqSpi3};
 use thread::prelude::*;
 
+/// Motorola SPI mode error.
+#[derive(Debug, Fail)]
+pub enum SpiError {
+  /// CRC value received does not match the `SPIx_RXCRCR` value.
+  #[fail(display = "SPI CRC mismatch.")]
+  Crcerr,
+  /// Overrun occurred.
+  #[fail(display = "SPI queue overrun.")]
+  Ovr,
+  /// Mode fault occurred.
+  #[fail(display = "SPI mode fault.")]
+  Modf,
+}
+
 /// SPI driver.
 pub struct Spi<T: SpiRes>(T);
 
@@ -124,8 +138,12 @@ pub trait SpiRes: Resource<Input = Self> {
   type Crcpr: SRwRegBitBand;
   type Dr: SRwRegBitBand;
   type Rxcrcr: SRoRegBitBand;
-  type Sr: SRwRegBitBand;
+  type SrVal: Bitfield<Bits = u32>;
+  type Sr: SRwRegBitBand<Val = Self::SrVal>;
   type SrBsy: SRoRwRegFieldBitBand<Reg = Self::Sr>;
+  type SrOvr: SRoRwRegFieldBitBand<Reg = Self::Sr>;
+  type SrModf: SRoRwRegFieldBitBand<Reg = Self::Sr>;
+  type SrCrcerr: SRwRwRegFieldBitBand<Reg = Self::Sr>;
   type SrRxne: SRoRwRegFieldBitBand<Reg = Self::Sr>;
   type Txcrcr: SRoRegBitBand;
 
@@ -149,6 +167,9 @@ pub trait SpiRes: Resource<Input = Self> {
   res_reg_decl!(Rxcrcr, rxcrcr, rxcrcr_mut);
   res_reg_decl!(Sr, sr, sr_mut);
   res_reg_decl!(SrBsy, sr_bsy, sr_bsy_mut);
+  res_reg_decl!(SrOvr, sr_ovr, sr_ovr_mut);
+  res_reg_decl!(SrModf, sr_modf, sr_modf_mut);
+  res_reg_decl!(SrCrcerr, sr_crcerr, sr_crcerr_mut);
   res_reg_decl!(SrRxne, sr_rxne, sr_rxne_mut);
   res_reg_decl!(Txcrcr, txcrcr, txcrcr_mut);
 
@@ -310,6 +331,21 @@ impl<T: SpiRes> Spi<T> {
   }
 
   #[inline(always)]
+  pub fn sr_ovr(&self) -> &T::SrOvr {
+    self.0.sr_ovr()
+  }
+
+  #[inline(always)]
+  pub fn sr_modf(&self) -> &T::SrModf {
+    self.0.sr_modf()
+  }
+
+  #[inline(always)]
+  pub fn sr_crcerr(&self) -> &T::SrCrcerr {
+    self.0.sr_crcerr()
+  }
+
+  #[inline(always)]
   pub fn sr_rxne(&self) -> &T::SrRxne {
     self.0.sr_rxne()
   }
@@ -360,6 +396,20 @@ impl<T: SpiRes> Spi<T> {
   #[inline(always)]
   pub fn busy_wait(&self) {
     while self.0.sr_bsy().read_bit_band() {}
+  }
+
+  /// Checks for SPI mode errors.
+  #[inline(always)]
+  pub fn spi_errck(&self, sr: &T::SrVal) -> Result<(), SpiError> {
+    if self.sr_ovr().read(sr) {
+      Err(SpiError::Ovr)
+    } else if self.sr_modf().read(sr) {
+      Err(SpiError::Modf)
+    } else if self.sr_crcerr().read(sr) {
+      Err(SpiError::Crcerr)
+    } else {
+      Ok(())
+    }
   }
 }
 
@@ -514,8 +564,12 @@ macro_rules! spi_shared {
       type Crcpr = $spi::Crcpr<Srt>;
       type Dr = $spi::Dr<Srt>;
       type Rxcrcr = $spi::Rxcrcr<Srt>;
+      type SrVal = $spi::sr::Val;
       type Sr = $spi::Sr<Srt>;
       type SrBsy = $spi::sr::Bsy<Srt>;
+      type SrOvr = $spi::sr::Ovr<Srt>;
+      type SrModf = $spi::sr::Modf<Srt>;
+      type SrCrcerr = $spi::sr::Crcerr<Srt>;
       type SrRxne = $spi::sr::Rxne<Srt>;
       type Txcrcr = $spi::Txcrcr<Srt>;
 
@@ -546,6 +600,9 @@ macro_rules! spi_shared {
       res_reg_impl!(Rxcrcr, rxcrcr, rxcrcr_mut, $spi_rxcrcr);
       res_reg_impl!(Sr, sr, sr_mut, $spi_sr);
       res_reg_field_impl!(SrBsy, sr_bsy, sr_bsy_mut, $spi_sr, bsy);
+      res_reg_field_impl!(SrOvr, sr_ovr, sr_ovr_mut, $spi_sr, ovr);
+      res_reg_field_impl!(SrModf, sr_modf, sr_modf_mut, $spi_sr, modf);
+      res_reg_field_impl!(SrCrcerr, sr_crcerr, sr_crcerr_mut, $spi_sr, crcerr);
       res_reg_field_impl!(SrRxne, sr_rxne, sr_rxne_mut, $spi_sr, rxne);
       res_reg_impl!(Txcrcr, txcrcr, txcrcr_mut, $spi_txcrcr);
 

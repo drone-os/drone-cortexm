@@ -43,16 +43,14 @@ pub unsafe fn init() {
 
 /// Prints `str` to the ITM port #0.
 ///
-/// See [print](../macro.print.html) and [println](../macro.println.html)
-/// macros.
+/// See [`print!`](print!) and [`println!`](println!) macros.
 pub fn write_str(string: &str) {
   Port::new(0).write_str(string).unwrap();
 }
 
 /// Prints `core::fmt::Arguments` to the ITM port #0.
 ///
-/// See [print](../macro.print.html) and [println](../macro.println.html)
-/// macros.
+/// See [`print!`](print!) and [`println!`](println!) macros.
 pub fn write_fmt(args: fmt::Arguments) {
   Port::new(0).write_fmt(args).unwrap();
 }

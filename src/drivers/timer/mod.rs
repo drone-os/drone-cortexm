@@ -4,15 +4,13 @@ mod sys_tick;
 
 pub use self::sys_tick::{SysTick, SysTickRes};
 
-use core::marker::PhantomData;
 use drivers::prelude::*;
 use drone_core::bitfield::Bitfield;
 
-/// Error returned from [`Timer::interval`] on overflow.
-///
-/// [`Timer::interval`]: struct.Timer.html#method.interval
-#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct TimerOverflow<T: TimerRes>(PhantomData<T>);
+/// Error returned from [`Timer::interval`](Timer::interval) on overflow.
+#[derive(Debug, Fail)]
+#[fail(display = "Timer stream overflow.")]
+pub struct TimerOverflow;
 
 /// Timer driver.
 pub struct Timer<T: TimerRes>(T);
@@ -23,7 +21,7 @@ pub trait TimerRes: Resource {
   type Duration;
   type CtrlVal: Bitfield;
   type SleepFuture: Future<Item = (), Error = !> + Send;
-  type IntervalStream: Stream<Item = (), Error = TimerOverflow<Self>> + Send;
+  type IntervalStream: Stream<Item = (), Error = TimerOverflow> + Send;
   type IntervalSkipStream: Stream<Item = (), Error = !> + Send;
 
   fn sleep(
@@ -96,14 +94,5 @@ impl<T: TimerRes> Timer<T> {
   #[inline(always)]
   pub fn stop(&mut self, ctrl_val: T::CtrlVal) {
     self.0.stop(ctrl_val)
-  }
-}
-
-#[cfg_attr(feature = "clippy", allow(new_without_default_derive))]
-impl<T: TimerRes> TimerOverflow<T> {
-  /// Creates a new `TimerOverflow`.
-  #[inline(always)]
-  pub fn new() -> Self {
-    TimerOverflow(PhantomData)
   }
 }
