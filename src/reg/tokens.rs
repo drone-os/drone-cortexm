@@ -17,9 +17,26 @@ tokens! {
 
   include!(concat!(env!("OUT_DIR"), "/svd_tokens.rs"));
 
+  reg::ITM {
+    /// Trace Privilege Register.
+    TPR;
+    /// Trace Control Register.
+    TCR;
+    /// ITM lock access register.
+    LAR;
+  }
+
   reg::SCB {
+    /// Interrupt control and state register.
+    ICSR;
+    /// Application interrupt and reset control register.
+    AIRCR;
     /// System control register.
     SCR;
+    /// Configuration and control register.
+    CCR;
+    /// Debug Exception and Monitor Control Register.
+    DEMCR;
   }
 
   reg::STK {
@@ -31,5 +48,12 @@ tokens! {
     VAL;
     /// SysTick calibration value register.
     CALIB;
+  }
+
+  reg::TPIU {
+    /// Selected Pin Protocol Register.
+    SPPR;
+    /// Formatter and Flush Control Register.
+    FFCR;
   }
 }

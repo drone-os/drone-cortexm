@@ -1,6 +1,6 @@
 use core::iter::FusedIterator;
+use cpu::wait_for_interrupt;
 use futures::executor;
-use mcu::wait_for_interrupt;
 use thread::notify::nop::NOTIFY_NOP;
 
 /// A stream combinator which converts an asynchronous stream to a **blocking

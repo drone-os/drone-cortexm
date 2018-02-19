@@ -1,5 +1,5 @@
+use cpu::wait_for_interrupt;
 use futures::executor;
-use mcu::wait_for_interrupt;
 use thread::notify::nop::NOTIFY_NOP;
 
 /// Platform future extensions.

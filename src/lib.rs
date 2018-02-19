@@ -75,10 +75,10 @@ extern crate futures;
 #[macro_use]
 extern crate test;
 
+pub mod cpu;
 pub mod drivers;
 #[macro_use]
 pub mod itm;
-pub mod mcu;
 pub mod panicking;
 pub mod prelude;
 pub mod reg;

@@ -1,12 +1,11 @@
 //! Panicking support.
 
-use {itm, mcu};
+use {cpu, itm};
 use core::fmt;
 
 /// Panic handler.
 ///
 /// It attempts to write a panic message to ITM and resets the device.
-#[cfg_attr(feature = "clippy", allow(empty_loop))]
 #[linkage = "weak"]
 #[lang = "panic_fmt"]
 unsafe extern "C" fn begin(
@@ -19,6 +18,5 @@ unsafe extern "C" fn begin(
   itm::write_fmt(args);
   println!("', {}:{}", file, line);
   itm::flush();
-  mcu::reset_request();
-  loop {}
+  cpu::self_reset()
 }
