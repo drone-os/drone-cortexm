@@ -35,6 +35,14 @@ tokens! {
     SCR;
     /// Configuration and control register.
     CCR;
+    /// System handler priority register 1.
+    SHPR1;
+    /// System handler priority register 2.
+    SHPR2;
+    /// System handler priority register 3.
+    SHPR3;
+    /// System handler control and state register.
+    SHCSR;
     /// Debug Exception and Monitor Control Register.
     DEMCR;
   }

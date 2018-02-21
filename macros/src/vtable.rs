@@ -118,7 +118,7 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
     #[allow(unused_imports)]
     use ::core::marker::PhantomData;
     #[allow(unused_imports)]
-    use ::drone_stm32::drivers;
+    use ::drone_core::thread::ThreadTokens;
     #[allow(unused_imports)]
     use ::drone_stm32::thread::irq::*;
     #[allow(unused_imports)]
@@ -179,10 +179,8 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
     }
 
     impl ThreadTokens for #tokens_name {
-      type Thread = #thread_local;
-      type Token = drivers::nvic::Nvic;
-
-      fn new(_token: Self::Token) -> Self {
+      #[inline(always)]
+      unsafe fn new() -> Self {
         Self {
           #(#thread_tokens_impl_tokens),*
         }
@@ -300,7 +298,7 @@ fn parse_thread(
       pub #field_name: #struct_name<Ctt>
     },
     quote! {
-      #field_name: unsafe { #struct_name::new() }
+      #field_name: #struct_name::new()
     },
   ))
 }

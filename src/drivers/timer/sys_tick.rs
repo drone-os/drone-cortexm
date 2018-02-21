@@ -1,7 +1,5 @@
 use super::{Timer, TimerOverflow, TimerRes};
-use core::ptr::write_volatile;
 use drivers::prelude::*;
-use drone_core::bitfield::Bitfield;
 use drone_core::fiber::{FiberFuture, FiberStreamUnit};
 use reg::{scb, stk};
 use reg::prelude::*;
@@ -77,7 +75,7 @@ impl<I: IrqSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
     let pendstclr = self.scb_icsr_pendstclr.fork();
     let fut = self.sys_tick.future_fn(move || {
       ctrl.store_val(ctrl_val);
-      set_icsr_field(&pendstclr);
+      pendstclr.store_set();
       Ok(())
     });
     ctrl_val = enable(&mut self.stk_ctrl.hold(ctrl_val)).val();
@@ -167,7 +165,7 @@ impl<I: IrqSysTick<Ltt>> Timer<SysTickRes<I, Frt>> {
   /// Change SysTick exception state to pending.
   #[inline(always)]
   pub fn set_pending(&self) {
-    set_icsr_field(&self.0.scb_icsr_pendstset);
+    self.0.scb_icsr_pendstset.store_set();
   }
 
   /// Returns `true` if SysTick exception is pending.
@@ -179,7 +177,7 @@ impl<I: IrqSysTick<Ltt>> Timer<SysTickRes<I, Frt>> {
   /// Removes the pending state from the SysTick exception.
   #[inline(always)]
   pub fn clear_pending(&self) {
-    set_icsr_field(&self.0.scb_icsr_pendstclr);
+    self.0.scb_icsr_pendstclr.store_set();
   }
 }
 
@@ -201,17 +199,4 @@ fn disable<'a, 'b>(
   ctrl: &'a mut stk::ctrl::Hold<'b, Frt>,
 ) -> &'a mut stk::ctrl::Hold<'b, Frt> {
   ctrl.clear_enable().clear_tickint()
-}
-
-#[inline(always)]
-fn set_icsr_field<F, T>(field: &F)
-where
-  F: RegField<T, Reg = scb::Icsr<T>> + WWRegFieldBit<T>,
-  T: RegTag,
-{
-  unsafe {
-    let mut val = <scb::Icsr<T> as Reg<T>>::Val::default();
-    field.set(&mut val);
-    write_volatile(<scb::Icsr<T> as Reg<T>>::ADDRESS as *mut u32, val.bits());
-  }
 }

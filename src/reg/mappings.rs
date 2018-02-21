@@ -56,15 +56,15 @@ mappings! {
   /// Interrupt control and state register.
   ICSR {
     0xE000_ED04 0x20 0x0000_0000
-    RReg WReg;
+    RReg WReg WoReg;
     /// NMI set-pending bit.
-    NMIPENDSET { 31 1 RRRegField WWRegField }
+    NMIPENDSET { 31 1 RRRegField WWRegField WoWRegField }
     /// PendSV set-pending bit.
-    PENDSVSET { 28 1 RRRegField WWRegField }
+    PENDSVSET { 28 1 RRRegField WWRegField WoWRegField }
     /// PendSV clear-pending bit.
     PENDSVCLR { 27 1 WWRegField WoWRegField }
     /// SysTick exception set-pending bit.
-    PENDSTSET { 26 1 RRRegField WWRegField }
+    PENDSTSET { 26 1 RRRegField WWRegField WoWRegField }
     /// SysTick exception clear-pending bit.
     PENDSTCLR { 25 1 WWRegField WoWRegField }
     /// Interrupt pending flag, excluding NMI and Faults.
@@ -130,6 +130,70 @@ mappings! {
     USERSETMPEND { 1 1 RRRegField WWRegField }
     /// Non-base thread enable.
     NONBASETHRDENA { 0 1 RRRegField WWRegField }
+  }
+
+  /// System handler priority register 1.
+  SHPR1 {
+    0xE000_ED18 0x20 0x0000_0000
+    RReg WReg;
+    /// Priority of system handler 6, usage fault.
+    PRI_USAGE_FAULT { 16 8 RRRegField WWRegField }
+    /// Priority of system handler 5, bus fault.
+    PRI_BUS_FAULT { 8 8 RRRegField WWRegField }
+    /// Priority of system handler 4, memory management fault.
+    PRI_MEM_MANAGE { 0 8 RRRegField WWRegField }
+  }
+
+  /// System handler priority register 2.
+  SHPR2 {
+    0xE000_ED1C 0x20 0x0000_0000
+    RReg WReg;
+    /// Priority of system handler 11, SVCall.
+    PRI_SV_CALL { 24 8 RRRegField WWRegField }
+  }
+
+  /// System handler priority register 3.
+  SHPR3 {
+    0xE000_ED20 0x20 0x0000_0000
+    RReg WReg;
+    /// Priority of system handler 15, SysTick exception.
+    PRI_SYS_TICK { 24 8 RRRegField WWRegField }
+    /// Priority of system handler 14, PendSV.
+    PRI_PEND_SV { 16 8 RRRegField WWRegField }
+  }
+
+  /// System handler control and state register.
+  SHCSR {
+    0xE000_ED24 0x20 0x0000_0000
+    RReg WReg;
+    /// Usage fault enable bit.
+    USGFAULTENA { 18 1 RRRegField WWRegField }
+    /// Bus fault enable bit.
+    BUSFAULTENA { 17 1 RRRegField WWRegField }
+    /// Memory management fault enable bit.
+    MEMFAULTENA { 16 1 RRRegField WWRegField }
+    /// SVC call pending bit.
+    SVCALLPENDED { 15 1 RRRegField WWRegField }
+    /// Bus fault exception pending bit.
+    BUSFAULTPENDED { 14 1 RRRegField WWRegField }
+    /// Memory management fault exception pending bit.
+    MEMFAULTPENDED { 13 1 RRRegField WWRegField }
+    /// Usage fault exception pending bit.
+    USGFAULTPENDED { 12 1 RRRegField WWRegField }
+    /// SysTick exception active bit.
+    SYSTICKACT { 11 1 RRRegField WWRegField }
+    /// PendSV exception active bit.
+    PENDSVACT { 10 1 RRRegField WWRegField }
+    /// Debug monitor active bit.
+    MONITORACT { 8 1 RRRegField WWRegField }
+    /// SVC call active bit.
+    SVCALLACT { 7 1 RRRegField WWRegField }
+    /// Usage fault exception active bit.
+    USGFAULTACT { 3 1 RRRegField WWRegField }
+    /// Bus fault exception active bit.
+    BUSFAULTACT { 1 1 RRRegField WWRegField }
+    /// Memory management fault exception active bit.
+    MEMFAULTACT { 0 1 RRRegField WWRegField }
   }
 
   /// Debug Exception and Monitor Control Register.
