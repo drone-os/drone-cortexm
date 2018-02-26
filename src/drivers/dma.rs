@@ -2,6 +2,7 @@
 
 use drivers::prelude::*;
 use drone_core::bitfield::Bitfield;
+use fiber;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
@@ -300,17 +301,20 @@ impl<T: DmaRes> Dma<T> {
     let tcif = self.0.isr_tcif_mut().fork();
     let cgif = self.0.ifcr_cgif_mut().fork();
     let ctcif = self.0.ifcr_ctcif_mut().fork();
-    self.0.irq().future(move || loop {
-      if teif.read_bit_band() {
-        cgif.set_bit_band();
-        break Err(DmaTransferError);
-      }
-      if tcif.read_bit_band() {
-        ctcif.set_bit_band();
-        break Ok(());
-      }
-      yield;
-    })
+    fiber::spawn_future(
+      self.0.irq(),
+      fiber::new(move || loop {
+        if teif.read_bit_band() {
+          cgif.set_bit_band();
+          break Err(DmaTransferError);
+        }
+        if tcif.read_bit_band() {
+          ctcif.set_bit_band();
+          break Ok(());
+        }
+        yield;
+      }),
+    )
   }
 
   /// Returns a future, which resolves on DMA half transfer event.
@@ -321,17 +325,20 @@ impl<T: DmaRes> Dma<T> {
     let htif = self.0.isr_htif_mut().fork();
     let cgif = self.0.ifcr_cgif_mut().fork();
     let chtif = self.0.ifcr_chtif_mut().fork();
-    self.0.irq().future(move || loop {
-      if teif.read_bit_band() {
-        cgif.set_bit_band();
-        break Err(DmaTransferError);
-      }
-      if htif.read_bit_band() {
-        chtif.set_bit_band();
-        break Ok(());
-      }
-      yield;
-    })
+    fiber::spawn_future(
+      self.0.irq(),
+      fiber::new(move || loop {
+        if teif.read_bit_band() {
+          cgif.set_bit_band();
+          break Err(DmaTransferError);
+        }
+        if htif.read_bit_band() {
+          chtif.set_bit_band();
+          break Ok(());
+        }
+        yield;
+      }),
+    )
   }
 }
 
@@ -420,23 +427,23 @@ macro_rules! dma_ch {
     /// Creates a new `Dma`.
     #[macro_export]
     macro_rules! $name_macro {
-      ($regs:ident, $thrd:ident) => {
+      ($reg:ident, $thd:ident) => {
         $crate::drivers::dma::Dma::from_res(
           $crate::drivers::dma::$name_res {
-            $irq: $thrd.$irq.into(),
-            $dma_ccr: $regs.$dma_ccr,
-            $dma_cmar: $regs.$dma_cmar,
-            $dma_cndtr: $regs.$dma_cndtr,
-            $dma_cpar: $regs.$dma_cpar,
-            $dma_cselr_cs: $regs.$dma_cselr.$cs,
-            $dma_ifcr_cgif: $regs.$dma_ifcr.$cgif,
-            $dma_ifcr_chtif: $regs.$dma_ifcr.$chtif,
-            $dma_ifcr_ctcif: $regs.$dma_ifcr.$ctcif,
-            $dma_ifcr_cteif: $regs.$dma_ifcr.$cteif,
-            $dma_isr_gif: $regs.$dma_isr.$gif,
-            $dma_isr_htif: $regs.$dma_isr.$htif,
-            $dma_isr_tcif: $regs.$dma_isr.$tcif,
-            $dma_isr_teif: $regs.$dma_isr.$teif,
+            $irq: $thd.$irq.into(),
+            $dma_ccr: $reg.$dma_ccr,
+            $dma_cmar: $reg.$dma_cmar,
+            $dma_cndtr: $reg.$dma_cndtr,
+            $dma_cpar: $reg.$dma_cpar,
+            $dma_cselr_cs: $reg.$dma_cselr.$cs,
+            $dma_ifcr_cgif: $reg.$dma_ifcr.$cgif,
+            $dma_ifcr_chtif: $reg.$dma_ifcr.$chtif,
+            $dma_ifcr_ctcif: $reg.$dma_ifcr.$ctcif,
+            $dma_ifcr_cteif: $reg.$dma_ifcr.$cteif,
+            $dma_isr_gif: $reg.$dma_isr.$gif,
+            $dma_isr_htif: $reg.$dma_isr.$htif,
+            $dma_isr_tcif: $reg.$dma_isr.$tcif,
+            $dma_isr_teif: $reg.$dma_isr.$teif,
           }
         )
       }
@@ -448,22 +455,22 @@ macro_rules! dma_ch {
     /// Creates a new `Dma`.
     #[macro_export]
     macro_rules! $name_macro {
-      ($regs:ident, $thrd:ident) => {
+      ($reg:ident, $thd:ident) => {
         $crate::drivers::dma::Dma::from_res(
           $crate::drivers::dma::$name_res {
-            $irq: $thrd.$irq.into(),
-            $dma_ccr: $regs.$dma_ccr,
-            $dma_cmar: $regs.$dma_cmar,
-            $dma_cndtr: $regs.$dma_cndtr,
-            $dma_cpar: $regs.$dma_cpar,
-            $dma_ifcr_cgif: $regs.$dma_ifcr.$cgif,
-            $dma_ifcr_chtif: $regs.$dma_ifcr.$chtif,
-            $dma_ifcr_ctcif: $regs.$dma_ifcr.$ctcif,
-            $dma_ifcr_cteif: $regs.$dma_ifcr.$cteif,
-            $dma_isr_gif: $regs.$dma_isr.$gif,
-            $dma_isr_htif: $regs.$dma_isr.$htif,
-            $dma_isr_tcif: $regs.$dma_isr.$tcif,
-            $dma_isr_teif: $regs.$dma_isr.$teif,
+            $irq: $thd.$irq.into(),
+            $dma_ccr: $reg.$dma_ccr,
+            $dma_cmar: $reg.$dma_cmar,
+            $dma_cndtr: $reg.$dma_cndtr,
+            $dma_cpar: $reg.$dma_cpar,
+            $dma_ifcr_cgif: $reg.$dma_ifcr.$cgif,
+            $dma_ifcr_chtif: $reg.$dma_ifcr.$chtif,
+            $dma_ifcr_ctcif: $reg.$dma_ifcr.$ctcif,
+            $dma_ifcr_cteif: $reg.$dma_ifcr.$cteif,
+            $dma_isr_gif: $reg.$dma_isr.$gif,
+            $dma_isr_htif: $reg.$dma_isr.$htif,
+            $dma_isr_tcif: $reg.$dma_isr.$tcif,
+            $dma_isr_teif: $reg.$dma_isr.$teif,
           }
         )
       }

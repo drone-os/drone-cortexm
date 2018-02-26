@@ -1,6 +1,7 @@
 use super::{Timer, TimerOverflow, TimerRes};
 use drivers::prelude::*;
 use drone_core::fiber::{FiberFuture, FiberStreamUnit};
+use fiber;
 use reg::{scb, stk};
 use reg::prelude::*;
 use thread::irq::IrqSysTick;
@@ -23,15 +24,15 @@ pub struct SysTickRes<I: IrqSysTick<Ltt>, Rt: RegTag> {
 /// Creates a new `SysTick`.
 #[macro_export]
 macro_rules! drv_sys_tick {
-  ($regs:ident, $thrd:ident) => {
+  ($reg:ident, $thd:ident) => {
     $crate::drivers::timer::Timer::from_res(
       $crate::drivers::timer::SysTickRes {
-        sys_tick: $thrd.sys_tick.into(),
-        scb_icsr_pendstclr: $regs.scb_icsr.pendstclr,
-        scb_icsr_pendstset: $regs.scb_icsr.pendstset,
-        stk_ctrl: $regs.stk_ctrl,
-        stk_load: $regs.stk_load,
-        stk_val: $regs.stk_val,
+        sys_tick: $thd.sys_tick.into(),
+        scb_icsr_pendstclr: $reg.scb_icsr.pendstclr,
+        scb_icsr_pendstset: $reg.scb_icsr.pendstset,
+        stk_ctrl: $reg.stk_ctrl,
+        stk_load: $reg.stk_load,
+        stk_val: $reg.stk_val,
       }
     )
   }
@@ -73,11 +74,14 @@ impl<I: IrqSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
     schedule(&self.stk_load, &self.stk_val, dur);
     let ctrl = self.stk_ctrl.fork();
     let pendstclr = self.scb_icsr_pendstclr.fork();
-    let fut = self.sys_tick.future_fn(move || {
-      ctrl.store_val(ctrl_val);
-      pendstclr.store_set();
-      Ok(())
-    });
+    let fut = fiber::spawn_future(
+      self.sys_tick,
+      fiber::new_fn(move || {
+        ctrl.store_val(ctrl_val);
+        pendstclr.store_set();
+        Ok(())
+      }),
+    );
     ctrl_val = enable(&mut self.stk_ctrl.hold(ctrl_val)).val();
     self.stk_ctrl.store_val(ctrl_val);
     fut
@@ -90,11 +94,12 @@ impl<I: IrqSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
     ctrl_val: Self::CtrlVal,
   ) -> Self::IntervalStream {
     self.interval_stream(dur, ctrl_val, |irq| {
-      irq.stream(
+      fiber::spawn_stream(
+        irq,
         || Err(TimerOverflow),
-        || loop {
+        fiber::new(|| loop {
           yield Some(());
-        },
+        }),
       )
     })
   }
@@ -106,9 +111,12 @@ impl<I: IrqSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
     ctrl_val: Self::CtrlVal,
   ) -> Self::IntervalSkipStream {
     self.interval_stream(dur, ctrl_val, |irq| {
-      irq.stream_skip(|| loop {
-        yield Some(());
-      })
+      fiber::spawn_stream_skip(
+        irq,
+        fiber::new(|| loop {
+          yield Some(());
+        }),
+      )
     })
   }
 

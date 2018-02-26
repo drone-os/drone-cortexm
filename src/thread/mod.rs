@@ -50,5 +50,5 @@ mod stream;
 pub use self::control::ThreadControl;
 pub use self::future::PltFuture;
 pub use self::request::ThreadRequest;
-pub use self::stream::{PltStream, StreamWait};
+pub use self::stream::{PltStream, StreamTrunkWait};
 pub use drone_stm32_macros::interrupt;

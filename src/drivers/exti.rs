@@ -1,6 +1,7 @@
 //! Extended interrupts and events controller.
 
 use drivers::prelude::*;
+use fiber::{self, Fiber};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
@@ -140,43 +141,53 @@ impl<T: ExtiLnExtRes> ExtiLn<T> {
 
 impl<T: ExtiLnExtRes + ExtiLnConfRes> ExtiLn<T> {
   /// Returns a future, which resolves to `Ok(())` when the event is triggered.
-  pub fn future(&mut self) -> impl Future<Item = (), Error = !> {
+  pub fn spawn_future(&mut self) -> impl Future<Item = (), Error = !> {
+    fiber::spawn_future(self.0.irq(), self.future_fiber())
+  }
+
+  /// Returns a stream, which resolves to `Ok(())` each time the event is
+  /// triggered. Resolves to `Err(ExtiLnOverflow)` on overflow.
+  pub fn spawn_stream(
+    &mut self,
+  ) -> impl Stream<Item = (), Error = ExtiLnOverflow> {
+    fiber::spawn_stream(
+      self.0.irq(),
+      || Err(ExtiLnOverflow),
+      self.stream_fiber(),
+    )
+  }
+
+  /// Returns a stream, which resolves to `Ok(())` each time the event is
+  /// triggered. Skips on overflow.
+  pub fn spawn_stream_skip(&mut self) -> impl Stream<Item = (), Error = !> {
+    fiber::spawn_stream_skip(self.0.irq(), self.stream_fiber())
+  }
+
+  fn stream_fiber<E: Send>(
+    &mut self,
+  ) -> impl Fiber<Input = (), Yield = Option<()>, Return = Result<Option<()>, E>>
+  {
     let pif = self.0.pr_pif_mut().fork();
-    self.0.irq().future(move || loop {
+    fiber::new(move || loop {
+      if pif.read_bit_band() {
+        pif.set_bit_band();
+        yield Some(());
+      }
+      yield None;
+    })
+  }
+
+  fn future_fiber<E: Send>(
+    &mut self,
+  ) -> impl Fiber<Input = (), Yield = (), Return = Result<(), E>> {
+    let pif = self.0.pr_pif_mut().fork();
+    fiber::new(move || loop {
       if pif.read_bit_band() {
         pif.set_bit_band();
         break Ok(());
       }
       yield;
     })
-  }
-
-  /// Returns a stream, which resolves to `Ok(())` each time the event is
-  /// triggered. Resolves to `Err(ExtiLnOverflow)` on overflow.
-  pub fn stream(&mut self) -> impl Stream<Item = (), Error = ExtiLnOverflow> {
-    self
-      .0
-      .irq()
-      .stream(|| Err(ExtiLnOverflow), self.stream_routine())
-  }
-
-  /// Returns a stream, which resolves to `Ok(())` each time the event is
-  /// triggered. Skips on overflow.
-  pub fn stream_skip(&mut self) -> impl Stream<Item = (), Error = !> {
-    self.0.irq().stream_skip(self.stream_routine())
-  }
-
-  fn stream_routine<E>(
-    &mut self,
-  ) -> impl Generator<Yield = Option<()>, Return = Result<Option<()>, E>> {
-    let pif = self.0.pr_pif_mut().fork();
-    move || loop {
-      if pif.read_bit_band() {
-        pif.set_bit_band();
-        yield Some(());
-      }
-      yield None;
-    }
   }
 }
 
@@ -254,21 +265,21 @@ macro_rules! exti_line {
     /// Creates a new `ExtiLn`.
     #[macro_export]
     macro_rules! $name_macro {
-      ($regs:ident, $thrd:ident) => {
+      ($reg:ident, $thd:ident) => {
         $crate::drivers::exti::ExtiLn::from_res(
           $crate::drivers::exti::$name_res {
             $(
-              $irq: $thrd.$irq.into(),
-              $exticr_exti: $regs.$exticr.$exti,
+              $irq: $thd.$irq.into(),
+              $exticr_exti: $reg.$exticr.$exti,
             )*
             $(
-              $exti_ftsr_ft: $regs.$exti_ftsr.$ft,
-              $exti_pr_pif: $regs.$exti_pr.$pif,
-              $exti_rtsr_rt: $regs.$exti_rtsr.$rt,
-              $exti_swier_swi: $regs.$exti_swier.$swi,
+              $exti_ftsr_ft: $reg.$exti_ftsr.$ft,
+              $exti_pr_pif: $reg.$exti_pr.$pif,
+              $exti_rtsr_rt: $reg.$exti_rtsr.$rt,
+              $exti_swier_swi: $reg.$exti_swier.$swi,
             )*
-            $exti_emr_mr: $regs.$exti_emr.$mr,
-            $exti_imr_mr: $regs.$exti_imr.$mr,
+            $exti_emr_mr: $reg.$exti_emr.$mr,
+            $exti_imr_mr: $reg.$exti_imr.$mr,
           }
         )
       }

@@ -5,7 +5,7 @@ use thread::notify::nop::NOTIFY_NOP;
 
 /// A stream combinator which converts an asynchronous stream to a **blocking
 /// iterator**.
-pub struct StreamWait<T: Stream> {
+pub struct StreamTrunkWait<T: Stream> {
   executor: executor::Spawn<T>,
   exhausted: bool,
 }
@@ -14,22 +14,22 @@ pub struct StreamWait<T: Stream> {
 pub trait PltStream: Stream {
   /// Creates an iterator which blocks the current thread until each item of
   /// this stream is resolved.
-  fn wait(self) -> StreamWait<Self>
+  fn trunk_wait(self) -> StreamTrunkWait<Self>
   where
     Self: Sized;
 }
 
 impl<T: Stream> PltStream for T {
   #[inline(always)]
-  fn wait(self) -> StreamWait<Self>
+  fn trunk_wait(self) -> StreamTrunkWait<Self>
   where
     Self: Sized,
   {
-    StreamWait::new(self)
+    StreamTrunkWait::new(self)
   }
 }
 
-impl<T: Stream> StreamWait<T> {
+impl<T: Stream> StreamTrunkWait<T> {
   #[inline(always)]
   fn new(stream: T) -> Self {
     Self {
@@ -39,7 +39,7 @@ impl<T: Stream> StreamWait<T> {
   }
 }
 
-impl<T: Stream> Iterator for StreamWait<T> {
+impl<T: Stream> Iterator for StreamTrunkWait<T> {
   type Item = Result<T::Item, T::Error>;
 
   fn next(&mut self) -> Option<Self::Item> {
@@ -63,4 +63,4 @@ impl<T: Stream> Iterator for StreamWait<T> {
   }
 }
 
-impl<T: Stream> FusedIterator for StreamWait<T> {}
+impl<T: Stream> FusedIterator for StreamTrunkWait<T> {}

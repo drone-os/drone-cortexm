@@ -731,16 +731,16 @@ macro_rules! spi {
     /// Creates a new `Spi`.
     #[macro_export]
     macro_rules! $name_macro {
-      ($regs:ident) => {
+      ($reg:ident) => {
         $crate::drivers::spi::Spi::from_res(
           $crate::drivers::spi::$name_res {
-            $spi_cr1: $regs.$spi_cr1,
-            $spi_cr2: $regs.$spi_cr2,
-            $spi_crcpr: $regs.$spi_crcpr,
-            $spi_dr: $regs.$spi_dr,
-            $spi_rxcrcr: $regs.$spi_rxcrcr,
-            $spi_sr: $regs.$spi_sr,
-            $spi_txcrcr: $regs.$spi_txcrcr,
+            $spi_cr1: $reg.$spi_cr1,
+            $spi_cr2: $reg.$spi_cr2,
+            $spi_crcpr: $reg.$spi_crcpr,
+            $spi_dr: $reg.$spi_dr,
+            $spi_rxcrcr: $reg.$spi_rxcrcr,
+            $spi_sr: $reg.$spi_sr,
+            $spi_txcrcr: $reg.$spi_txcrcr,
           }
         )
       }
@@ -749,17 +749,17 @@ macro_rules! spi {
     /// Creates a new `SpiIrq`.
     #[macro_export]
     macro_rules! $name_irq_macro {
-      ($regs:ident, $thrd:ident) => {
+      ($reg:ident, $thd:ident) => {
         $crate::drivers::spi::Spi::from_res(
           $crate::drivers::spi::$name_irq_res {
-            $spi: $thrd.$spi.into(),
-            $spi_cr1: $regs.$spi_cr1,
-            $spi_cr2: $regs.$spi_cr2,
-            $spi_crcpr: $regs.$spi_crcpr,
-            $spi_dr: $regs.$spi_dr,
-            $spi_rxcrcr: $regs.$spi_rxcrcr,
-            $spi_sr: $regs.$spi_sr,
-            $spi_txcrcr: $regs.$spi_txcrcr,
+            $spi: $thd.$spi.into(),
+            $spi_cr1: $reg.$spi_cr1,
+            $spi_cr2: $reg.$spi_cr2,
+            $spi_crcpr: $reg.$spi_crcpr,
+            $spi_dr: $reg.$spi_dr,
+            $spi_rxcrcr: $reg.$spi_rxcrcr,
+            $spi_sr: $reg.$spi_sr,
+            $spi_txcrcr: $reg.$spi_txcrcr,
           }
         )
       }

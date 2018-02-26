@@ -38,16 +38,16 @@ pub struct ItmRes {
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 #[macro_export]
 macro_rules! drv_itm {
-  ($regs:ident) => {
+  ($reg:ident) => {
     $crate::drivers::itm::Itm::from_res(
       $crate::drivers::itm::ItmRes {
-        dbgmcu_cr: $regs.dbgmcu_cr,
-        itm_lar: $regs.itm_lar,
-        itm_tcr: $regs.itm_tcr,
-        itm_tpr: $regs.itm_tpr,
-        scb_demcr_trcena: $regs.scb_demcr.trcena,
-        tpiu_ffcr: $regs.tpiu_ffcr,
-        tpiu_sppr: $regs.tpiu_sppr,
+        dbgmcu_cr: $reg.dbgmcu_cr,
+        itm_lar: $reg.itm_lar,
+        itm_tcr: $reg.itm_tcr,
+        itm_tpr: $reg.itm_tpr,
+        scb_demcr_trcena: $reg.scb_demcr.trcena,
+        tpiu_ffcr: $reg.tpiu_ffcr,
+        tpiu_sppr: $reg.tpiu_sppr,
       }
     )
   }

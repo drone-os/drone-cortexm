@@ -272,22 +272,22 @@ macro_rules! gpio_pin {
     /// Creates a new `GpioPin`.
     #[macro_export]
     macro_rules! $name_macro {
-      ($regs:ident) => {
+      ($reg:ident) => {
         $crate::drivers::gpio::$name {
-          $gpio_afr_afr: $regs.$gpio_afr.$afr.into(),
+          $gpio_afr_afr: $reg.$gpio_afr.$afr.into(),
           $(
-            $gpio_ascr_asc: $regs.$gpio_ascr.$asc.into(),
+            $gpio_ascr_asc: $reg.$gpio_ascr.$asc.into(),
           )*
-          $gpio_brr_br: $regs.$gpio_brr.$br.into(),
-          $gpio_bsrr_br: $regs.$gpio_bsrr.$br.into(),
-          $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs.into(),
-          $gpio_idr_idr: $regs.$gpio_idr.$idr.into(),
-          $gpio_lckr_lck: $regs.$gpio_lckr.$lck.into(),
-          $gpio_moder_moder: $regs.$gpio_moder.$moder.into(),
-          $gpio_odr_odr: $regs.$gpio_odr.$odr.into(),
-          $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr.into(),
-          $gpio_otyper_ot: $regs.$gpio_otyper.$ot.into(),
-          $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr.into(),
+          $gpio_brr_br: $reg.$gpio_brr.$br.into(),
+          $gpio_bsrr_br: $reg.$gpio_bsrr.$br.into(),
+          $gpio_bsrr_bs: $reg.$gpio_bsrr.$bs.into(),
+          $gpio_idr_idr: $reg.$gpio_idr.$idr.into(),
+          $gpio_lckr_lck: $reg.$gpio_lckr.$lck.into(),
+          $gpio_moder_moder: $reg.$gpio_moder.$moder.into(),
+          $gpio_odr_odr: $reg.$gpio_odr.$odr.into(),
+          $gpio_ospeedr_ospeedr: $reg.$gpio_ospeedr.$ospeedr.into(),
+          $gpio_otyper_ot: $reg.$gpio_otyper.$ot.into(),
+          $gpio_pupdr_pupdr: $reg.$gpio_pupdr.$pupdr.into(),
         }
       }
     }
@@ -297,18 +297,18 @@ macro_rules! gpio_pin {
     /// Creates a new `GpioPin`.
     #[macro_export]
     macro_rules! $name_macro {
-      ($regs:ident) => {
+      ($reg:ident) => {
         $crate::drivers::gpio::$name {
-          $gpio_afr_afr: $regs.$gpio_afr.$afr.into(),
-          $gpio_bsrr_br: $regs.$gpio_bsrr.$br.into(),
-          $gpio_bsrr_bs: $regs.$gpio_bsrr.$bs.into(),
-          $gpio_idr_idr: $regs.$gpio_idr.$idr.into(),
-          $gpio_lckr_lck: $regs.$gpio_lckr.$lck.into(),
-          $gpio_moder_moder: $regs.$gpio_moder.$moder.into(),
-          $gpio_odr_odr: $regs.$gpio_odr.$odr.into(),
-          $gpio_ospeedr_ospeedr: $regs.$gpio_ospeedr.$ospeedr.into(),
-          $gpio_otyper_ot: $regs.$gpio_otyper.$ot.into(),
-          $gpio_pupdr_pupdr: $regs.$gpio_pupdr.$pupdr.into(),
+          $gpio_afr_afr: $reg.$gpio_afr.$afr.into(),
+          $gpio_bsrr_br: $reg.$gpio_bsrr.$br.into(),
+          $gpio_bsrr_bs: $reg.$gpio_bsrr.$bs.into(),
+          $gpio_idr_idr: $reg.$gpio_idr.$idr.into(),
+          $gpio_lckr_lck: $reg.$gpio_lckr.$lck.into(),
+          $gpio_moder_moder: $reg.$gpio_moder.$moder.into(),
+          $gpio_odr_odr: $reg.$gpio_odr.$odr.into(),
+          $gpio_ospeedr_ospeedr: $reg.$gpio_ospeedr.$ospeedr.into(),
+          $gpio_otyper_ot: $reg.$gpio_otyper.$ot.into(),
+          $gpio_pupdr_pupdr: $reg.$gpio_pupdr.$pupdr.into(),
         }
       }
     }
@@ -319,16 +319,16 @@ macro_rules! gpio_pin {
     /// Creates a new `GpioPin`.
     #[macro_export]
     macro_rules! $name_macro {
-      ($regs:ident) => {
+      ($reg:ident) => {
         $crate::drivers::gpio::$name {
-          $gpio_brr_br: $regs.$gpio_brr_br.into(),
-          $gpio_bsrr_br: $regs.$gpio_bsrr_br.into(),
-          $gpio_bsrr_bs: $regs.$gpio_bsrr_bs.into(),
-          $gpio_cr_cnf: $regs.$gpio_cr_cnf.into(),
-          $gpio_cr_mode: $regs.$gpio_cr_mode.into(),
-          $gpio_idr_idr: $regs.$gpio_idr_idr.into(),
-          $gpio_lckr_lck: $regs.$gpio_lckr_lck.into(),
-          $gpio_odr_odr: $regs.$gpio_odr_odr.into(),
+          $gpio_brr_br: $reg.$gpio_brr_br.into(),
+          $gpio_bsrr_br: $reg.$gpio_bsrr_br.into(),
+          $gpio_bsrr_bs: $reg.$gpio_bsrr_bs.into(),
+          $gpio_cr_cnf: $reg.$gpio_cr_cnf.into(),
+          $gpio_cr_mode: $reg.$gpio_cr_mode.into(),
+          $gpio_idr_idr: $reg.$gpio_idr_idr.into(),
+          $gpio_lckr_lck: $reg.$gpio_lckr_lck.into(),
+          $gpio_odr_odr: $reg.$gpio_odr_odr.into(),
         }
       }
     }

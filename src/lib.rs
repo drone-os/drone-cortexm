@@ -27,6 +27,8 @@
 //! [OpenOCD]: http://openocd.org/
 //! [rules.d]: https://github.com/texane/stlink/tree/master/etc/udev/rules.d
 
+#![feature(alloc)]
+#![feature(allocator_api)]
 #![feature(asm)]
 #![feature(associated_type_defaults)]
 #![feature(conservative_impl_trait)]
@@ -36,6 +38,7 @@
 #![feature(generator_trait)]
 #![feature(lang_items)]
 #![feature(linkage)]
+#![feature(naked_functions)]
 #![feature(never_type)]
 #![feature(pointer_methods)]
 #![feature(prelude_import)]
@@ -47,8 +50,6 @@
 #![no_std]
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/drone-stm32/0.8.0")]
-#![cfg_attr(test, feature(alloc))]
-#![cfg_attr(test, feature(allocator_api))]
 #![cfg_attr(test, feature(allocator_internals))]
 #![cfg_attr(test, feature(compiler_builtins_lib))]
 #![cfg_attr(test, feature(global_allocator))]
@@ -58,7 +59,6 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![cfg_attr(feature = "clippy", allow(precedence, inline_always))]
 
-#[cfg(test)]
 extern crate alloc;
 #[cfg(test)]
 extern crate compiler_builtins;
@@ -75,10 +75,12 @@ extern crate futures;
 #[macro_use]
 extern crate test;
 
-pub mod cpu;
-pub mod drivers;
 #[macro_use]
 pub mod itm;
+
+pub mod cpu;
+pub mod drivers;
+pub mod fiber;
 pub mod panicking;
 pub mod prelude;
 pub mod reg;

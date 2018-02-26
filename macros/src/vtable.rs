@@ -114,8 +114,6 @@ pub(crate) fn vtable(input: TokenStream) -> Result<Tokens, Error> {
 
   Ok(quote! {
     #[allow(unused_imports)]
-    use ::core::ops::Deref;
-    #[allow(unused_imports)]
     use ::core::marker::PhantomData;
     #[allow(unused_imports)]
     use ::drone_core::thread::ThreadTokens;
@@ -255,12 +253,10 @@ fn parse_thread(
         const THREAD_NUMBER: usize = #index;
       }
 
-      impl<T: ThreadTag> Deref for #struct_name<T> {
-        type Target = #thread_local;
-
+      impl<T: ThreadTag> AsRef<#thread_local> for #struct_name<T> {
         #[inline(always)]
-        fn deref(&self) -> &#thread_local {
-          self.as_thread()
+        fn as_ref(&self) -> &#thread_local {
+          self.as_thd()
         }
       }
 
