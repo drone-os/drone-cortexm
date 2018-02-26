@@ -9,14 +9,13 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![cfg_attr(feature = "clippy", allow(precedence))]
 
-#[macro_use]
-extern crate drone_macros_core;
-#[macro_use]
-extern crate failure_dup as failure;
+extern crate drone_macros2_core;
 extern crate inflector;
 extern crate proc_macro;
+extern crate proc_macro2;
 #[macro_use]
 extern crate quote;
+#[macro_use]
 extern crate syn;
 
 mod interrupt;
@@ -24,14 +23,12 @@ mod vtable;
 
 use proc_macro::TokenStream;
 
-#[doc(hidden)]
 #[proc_macro]
 pub fn interrupt(input: TokenStream) -> TokenStream {
-  tokens!(interrupt::interrupt(input))
+  interrupt::proc_macro(input)
 }
 
-#[doc(hidden)]
 #[proc_macro]
 pub fn vtable(input: TokenStream) -> TokenStream {
-  tokens!(vtable::vtable(input))
+  vtable::proc_macro(input)
 }

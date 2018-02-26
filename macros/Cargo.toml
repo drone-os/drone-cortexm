@@ -11,22 +11,14 @@ repository = "https://github.com/drone-os/drone-stm32"
 proc-macro = true
 
 [dependencies]
-quote = "0.3"
 Inflector = "0.11"
+proc-macro2 = { version = "0.2", features = ["nightly"] }
+quote = "0.4"
+syn = "0.12"
 
-[dependencies.drone-macros-core]
+[dependencies.drone-macros2-core]
 version = "0.8"
-path = "../../drone-core/macros-core"
-
-[dependencies.syn]
-version = "0.11"
-features = ["full", "parsing", "printing"]
-
-[dependencies.failure-dup]
-git = "https://github.com/drone-os/failure-dup"
-branch = "version-0.1"
-default-features = false
-features = ["std"]
+path = "../../drone-core/macros2-core"
 
 [dependencies.clippy]
 version = "0.0"

@@ -22,7 +22,6 @@ extern crate test;
 use drone_stm32::prelude::*;
 
 use core::mem::size_of;
-use drone_stm32::thread::prelude::*;
 
 drone_core::heap! {
   Heap;
@@ -30,50 +29,54 @@ drone_core::heap! {
   ALLOC;
 }
 
-mod vtable1 {
+mod vtable {
   #![allow(dead_code)]
 
-  use super::*;
+  use drone_core::thread::thread_local;
+  use drone_stm32::vtable;
 
-  drone_core::thread::thread_local!(ThreadLocal; THREADS);
-
-  trait Irq10<T: ThreadTag>: IrqToken<T> {}
-  trait Irq5<T: ThreadTag>: IrqToken<T> {}
-
-  drone_stm32::vtable! {
+  vtable! {
     /// Test doc attribute
     #[doc = "test attribute"]
-    VectorTable;
+    pub struct VectorTable1;
     /// Test doc attribute
     #[doc = "test attribute"]
-    ThreadIndex;
+    pub struct ThreadIndex1;
     /// Test doc attribute
     #[doc = "test attribute"]
-    THREADS;
-    ThreadLocal;
+    static THREADS1;
+    extern struct ThreadLocal1;
 
     /// Test doc attribute
     #[doc = "test attribute"]
-    NMI;
+    pub NMI;
     /// Test doc attribute
     #[doc = "test attribute"]
-    SYS_TICK;
+    pub SYS_TICK;
     /// Test doc attribute
     #[doc = "test attribute"]
-    10: EXTI4;
+    pub 10: EXTI4;
     /// Test doc attribute
     #[doc = "test attribute"]
-    5: RCC;
+    pub 5: RCC;
   }
-}
 
-mod vtable2 {
-  #![allow(dead_code)]
+  vtable! {
+    pub struct VectorTable2;
+    pub struct ThreadIndex2;
+    static THREADS2;
+    extern struct ThreadLocal2;
+  }
 
-  use super::*;
+  thread_local! {
+    pub struct ThreadLocal1;
+    extern static THREADS1;
+  }
 
-  drone_core::thread::thread_local!(ThreadLocal; THREADS);
-  drone_stm32::vtable!(VectorTable; ThreadIndex; THREADS; ThreadLocal);
+  thread_local! {
+    pub struct ThreadLocal2;
+    extern static THREADS2;
+  }
 }
 
 #[test]
@@ -81,14 +84,14 @@ fn new() {
   unsafe extern "C" fn reset() -> ! {
     loop {}
   }
-  vtable1::VectorTable::new(reset);
-  vtable2::VectorTable::new(reset);
+  vtable::VectorTable1::new(reset);
+  vtable::VectorTable2::new(reset);
 }
 
 #[test]
 fn size() {
   assert_eq!(
-    (size_of::<vtable1::VectorTable>() - size_of::<vtable2::VectorTable>()) / 4,
+    (size_of::<vtable::VectorTable1>() - size_of::<vtable::VectorTable2>()) / 4,
     11
   );
 }

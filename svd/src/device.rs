@@ -171,8 +171,7 @@ impl Interrupts for Vec<Interrupt> {
         quote! {
           interrupt! {
             #[doc = #description]
-            #name;
-            #value;
+            pub trait #name: #value;
           }
         }
       })

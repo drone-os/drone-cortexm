@@ -1,36 +1,46 @@
-use drone_macros_core::parse_own_name;
-use failure::{err_msg, Error};
 use inflector::Inflector;
 use proc_macro::TokenStream;
-use quote::Tokens;
-use syn::{parse_token_trees, Ident, IntTy, Lit, Token, TokenTree};
+use proc_macro2::Span;
+use syn::{parse, Attribute, Ident, LitInt, Visibility};
+use syn::synom::Synom;
 
-pub(crate) fn interrupt(input: TokenStream) -> Result<Tokens, Error> {
-  let input = parse_token_trees(&input.to_string()).map_err(err_msg)?;
-  let mut input = input.into_iter();
-  let (attrs, name) = parse_own_name(&mut input)?;
-  let name =
-    name.ok_or_else(|| format_err!("Unexpected end of macro invokation"))?;
-  let number = match input.next() {
-    Some(TokenTree::Token(Token::Literal(Lit::Int(
-      number,
-      IntTy::Unsuffixed,
-    )))) => match input.next() {
-      Some(TokenTree::Token(Token::Semi)) => number,
-      token => {
-        Err(format_err!("Invalid token after `{}`: {:?}", number, token))?
-      }
-    },
-    token => Err(format_err!("Invalid token: {:?}", token))?,
-  };
+struct Interrupt {
+  attrs: Vec<Attribute>,
+  vis: Visibility,
+  ident: Ident,
+  number: LitInt,
+}
 
-  let irq_name = format!("IRQ_{}", name);
-  let trait_name = Ident::new(irq_name.to_pascal_case());
-  let trait_number = Ident::new(format!("Irq{}", number));
+impl Synom for Interrupt {
+  named!(parse -> Self, do_parse!(
+    attrs: many0!(Attribute::parse_outer) >>
+    vis: syn!(Visibility) >>
+    keyword!(trait) >>
+    ident: syn!(Ident) >>
+    punct!(:) >>
+    number: syn!(LitInt) >>
+    punct!(;) >>
+    (Interrupt { attrs, vis, ident, number })
+  ));
+}
 
-  Ok(quote! {
+pub fn proc_macro(input: TokenStream) -> TokenStream {
+  let call_site = Span::call_site();
+  let Interrupt {
+    attrs,
+    vis,
+    ident,
+    number,
+  } = parse::<Interrupt>(input).unwrap();
+  let irq_name = format!("IRQ_{}", ident);
+  let name_ident = Ident::new(&irq_name.to_pascal_case(), call_site);
+  let number_ident = Ident::new(&format!("Irq{}", number.value()), call_site);
+  let expanded = quote_spanned! { call_site =>
     #(#attrs)*
-    pub trait #trait_number<T: ThreadTag>: IrqToken<T> {}
-    pub use self::#trait_number as #trait_name;
-  })
+    #vis trait #number_ident<T: ThreadTag>: IrqToken<T> {}
+
+    #[allow(unused_imports)]
+    #vis use self::#number_ident as #name_ident;
+  };
+  expanded.into()
 }
