@@ -82,7 +82,7 @@ struct Field {
 }
 
 #[serde(rename_all = "kebab-case")]
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Copy)]
 enum Access {
   WriteOnly,
   ReadOnly,
@@ -100,9 +100,9 @@ impl Device {
     for peripheral in self.peripherals.peripheral.values() {
       let (mapping_tokens, token_tokens, irq_tokens) =
         peripheral.to_tokens(&self.peripherals, &mut irq_names)?;
-      mappings.write_all(mapping_tokens.as_str().as_bytes())?;
-      tokens.write_all(token_tokens.as_str().as_bytes())?;
-      irq.write_all(irq_tokens.as_str().as_bytes())?;
+      mappings.write_all(mapping_tokens.to_string().as_bytes())?;
+      tokens.write_all(token_tokens.to_string().as_bytes())?;
+      irq.write_all(irq_tokens.to_string().as_bytes())?;
     }
     Ok(())
   }
@@ -114,7 +114,15 @@ impl Peripheral {
     peripherals: &Peripherals,
     irq_names: &mut HashSet<String>,
   ) -> Result<(Tokens, Tokens, Tokens), Error> {
-    let parent = if let Some(ref derived_from) = self.derived_from {
+    let &Peripheral {
+      ref derived_from,
+      ref name,
+      ref description,
+      base_address,
+      ref interrupt,
+      ref registers,
+    } = self;
+    let parent = if let &Some(ref derived_from) = derived_from {
       Some(peripherals
         .peripheral
         .get(derived_from)
@@ -122,29 +130,27 @@ impl Peripheral {
     } else {
       None
     };
-    let peripheral_description = self
-      .description
+    let description = description
       .as_ref()
       .or_else(|| parent.and_then(|x| x.description.as_ref()))
       .ok_or_else(|| err_msg("Peripheral description not found"))?;
-    let peripheral_name = Ident::new(self.name.to_owned());
-    let (mappings, tokens) = self
-      .registers
+    let name = Ident::from(name.to_owned());
+    let (mappings, tokens) = registers
       .as_ref()
       .or_else(|| parent.and_then(|x| x.registers.as_ref()))
       .ok_or_else(|| err_msg("Peripheral registers not found"))?
-      .to_tokens(self);
-    let interrupts = self.interrupt.to_tokens(irq_names);
+      .to_tokens(base_address);
+    let interrupts = interrupt.to_tokens(irq_names);
     Ok((
       quote! {
         mappings! {
-          #[doc = #peripheral_description]
-          #peripheral_name;
+          #[doc = #description]
+          #name;
           #(#mappings)*
         }
       },
       quote! {
-        reg::#peripheral_name {
+        reg::#name {
           #(#tokens)*
         }
       },
@@ -165,9 +171,13 @@ impl Interrupts for Vec<Interrupt> {
       .iter()
       .filter(|interrupt| irq_names.insert(interrupt.name.to_owned()))
       .map(|interrupt| {
-        let description = &interrupt.description;
-        let name = Ident::new(interrupt.name.to_owned());
-        let value = Lit::Int(interrupt.value as u64, IntTy::Unsuffixed);
+        let &Interrupt {
+          ref name,
+          ref description,
+          value,
+        } = interrupt;
+        let name = Ident::from(name.to_owned());
+        let value = Lit::Int(value as u64, IntTy::Unsuffixed);
         quote! {
           interrupt! {
             #[doc = #description]
@@ -180,41 +190,49 @@ impl Interrupts for Vec<Interrupt> {
 }
 
 impl Registers {
-  fn to_tokens(&self, peripheral: &Peripheral) -> (Vec<Tokens>, Vec<Tokens>) {
+  fn to_tokens(&self, base_address: u32) -> (Vec<Tokens>, Vec<Tokens>) {
     self
       .register
       .iter()
       .filter_map(|register| {
-        let description = &register.description;
-        let name = Ident::new(register.name.to_owned());
-        let address = peripheral.base_address + register.address_offset;
-        let size = Lit::Int(register.size as u64, IntTy::Unsuffixed);
-        let reset = Lit::Int(register.reset_value as u64, IntTy::Unsuffixed);
+        let &Register {
+          ref name,
+          ref description,
+          address_offset,
+          size,
+          access,
+          reset_value,
+          ref fields,
+        } = register;
+        let name = Ident::from(name.to_owned());
+        let address = base_address + address_offset;
         let mut traits = Vec::new();
-        match register.access {
+        match access {
           Some(Access::WriteOnly) => {
-            traits.push(Ident::new("WReg"));
-            traits.push(Ident::new("WoReg"));
+            traits.push(Ident::from("WReg"));
+            traits.push(Ident::from("WoReg"));
           }
           Some(Access::ReadOnly) => {
-            traits.push(Ident::new("RReg"));
-            traits.push(Ident::new("RoReg"));
+            traits.push(Ident::from("RReg"));
+            traits.push(Ident::from("RoReg"));
           }
           Some(Access::ReadWrite) | None => {
-            traits.push(Ident::new("RReg"));
-            traits.push(Ident::new("WReg"));
+            traits.push(Ident::from("RReg"));
+            traits.push(Ident::from("WReg"));
           }
         }
         if BIT_BAND.contains(address) {
-          traits.push(Ident::new("RegBitBand"));
+          traits.push(Ident::from("RegBitBand"));
         }
         let address = Lit::Int(address as u64, IntTy::Unsuffixed);
-        let fields = register.fields.as_ref()?.to_tokens(register);
+        let size = Lit::Int(size as u64, IntTy::Unsuffixed);
+        let reset_value = Lit::Int(reset_value as u64, IntTy::Unsuffixed);
+        let fields = fields.as_ref()?.to_tokens(access);
         Some((
           quote! {
             #[doc = #description]
             #name {
-              #address #size #reset
+              #address #size #reset_value
               #(#traits)*;
               #(#fields)*
             }
@@ -230,34 +248,40 @@ impl Registers {
 }
 
 impl Fields {
-  fn to_tokens(&self, register: &Register) -> Vec<Tokens> {
+  fn to_tokens(&self, base_access: Option<Access>) -> Vec<Tokens> {
     self
       .field
       .iter()
       .map(|field| {
-        let description = &field.description;
-        let name = Ident::new(field.name.to_owned());
-        let offset = Lit::Int(field.bit_offset as u64, IntTy::Unsuffixed);
-        let width = Lit::Int(field.bit_width as u64, IntTy::Unsuffixed);
+        let &Field {
+          ref name,
+          ref description,
+          bit_offset,
+          bit_width,
+          access,
+        } = field;
+        let name = Ident::from(name.to_owned());
         let mut traits = Vec::new();
-        match field.access.as_ref().or(register.access.as_ref()) {
+        match access.as_ref().or(base_access.as_ref()) {
           Some(&Access::WriteOnly) => {
-            traits.push(Ident::new("WWRegField"));
-            traits.push(Ident::new("WoWRegField"));
+            traits.push(Ident::from("WWRegField"));
+            traits.push(Ident::from("WoWRegField"));
           }
           Some(&Access::ReadOnly) => {
-            traits.push(Ident::new("RRRegField"));
-            traits.push(Ident::new("RoRRegField"));
+            traits.push(Ident::from("RRRegField"));
+            traits.push(Ident::from("RoRRegField"));
           }
           Some(&Access::ReadWrite) | None => {
-            traits.push(Ident::new("RRRegField"));
-            traits.push(Ident::new("WWRegField"));
+            traits.push(Ident::from("RRRegField"));
+            traits.push(Ident::from("WWRegField"));
           }
         }
+        let bit_offset = Lit::Int(bit_offset as u64, IntTy::Unsuffixed);
+        let bit_width = Lit::Int(bit_width as u64, IntTy::Unsuffixed);
         quote! {
           #[doc = #description]
           #name {
-            #offset #width
+            #bit_offset #bit_width
             #(#traits)*
           }
         }

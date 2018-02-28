@@ -2,7 +2,7 @@
 
 use drivers::nvic::Nvic;
 use drivers::prelude::*;
-use drone_core::thread::ThreadTokens;
+use drone_core::thread::ThdTokens;
 use reg::prelude::*;
 use reg::scb;
 
@@ -51,7 +51,7 @@ impl Resource for ThreadRes {
 impl Thread {
   /// Initialized the Drone threading system, and returns an instance of `T`.
   #[inline(always)]
-  pub fn init<T: ThreadTokens>(
+  pub fn init<T: ThdTokens>(
     self,
     scb_ccr_init: impl for<'a, 'b> FnOnce(&'b mut scb::ccr::Hold<'a, Srt>)
       -> &'b mut scb::ccr::Hold<'a, Srt>,

@@ -78,7 +78,7 @@ macro_rules! nvic_methods {
 }
 
 /// NVIC thread control.
-pub trait ThreadControl: IrqToken<Ctt> {
+pub trait ThdControl: IrqToken<Ctt> {
   nvic_methods! {
     NvicIser,
     {
@@ -161,19 +161,19 @@ pub trait ThreadControl: IrqToken<Ctt> {
   /// Returns the interrupt priority.
   #[inline(always)]
   fn priority(&self) -> u8 {
-    unsafe { read_volatile((NVIC_IPR as *const u8).add(Self::IRQ_NUMBER)) }
+    unsafe { read_volatile((NVIC_IPR as *const u8).add(Self::IRQ_NUM)) }
   }
 
   /// Sets the interrupt priority.
   #[inline(always)]
   fn set_priority(&self, priority: u8) {
     unsafe {
-      write_volatile((NVIC_IPR as *mut u8).add(Self::IRQ_NUMBER), priority);
+      write_volatile((NVIC_IPR as *mut u8).add(Self::IRQ_NUM), priority);
     }
   }
 }
 
-impl<T: IrqToken<Ctt>> ThreadControl for T {}
+impl<T: IrqToken<Ctt>> ThdControl for T {}
 
 trait NvicBundle<T: IrqBundle>: Sized {
   const BASE: usize;
@@ -187,7 +187,7 @@ trait NvicBundle<T: IrqBundle>: Sized {
   #[inline(always)]
   fn load() -> Self {
     Self::new(unsafe {
-      read_volatile((Self::BASE as *const u32).add(T::BUNDLE_NUMBER))
+      read_volatile((Self::BASE as *const u32).add(T::BUNDLE_NUM))
     })
   }
 
@@ -200,7 +200,7 @@ trait NvicBundle<T: IrqBundle>: Sized {
     f(&mut value);
     unsafe {
       write_volatile(
-        (Self::BASE as *mut u32).add(T::BUNDLE_NUMBER),
+        (Self::BASE as *mut u32).add(T::BUNDLE_NUM),
         value.inner(),
       );
     }
@@ -219,7 +219,7 @@ trait NvicBundle<T: IrqBundle>: Sized {
 
 #[inline(always)]
 const fn bundle_offset<T: IrqToken<Ctt>>() -> usize {
-  T::IRQ_NUMBER & 0b11_111
+  T::IRQ_NUM & 0b11_111
 }
 
 macro_rules! bundle {

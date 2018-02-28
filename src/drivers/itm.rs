@@ -4,9 +4,11 @@ use drivers::prelude::*;
 use reg::{itm, scb, tpiu};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+          feature = "stm32f107"))]
+use reg::dbg as dbgmcu;
+#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+          feature = "stm32l4x3", feature = "stm32l4x5",
+          feature = "stm32l4x6"))]
 use reg::dbgmcu;
 use reg::prelude::*;
 

@@ -14,38 +14,34 @@
 extern crate alloc;
 extern crate compiler_builtins;
 extern crate drone_core;
-extern crate drone_stm32;
+extern crate drone_stm32 as drone_plfm;
 extern crate test;
 
 #[prelude_import]
 #[allow(unused_imports)]
-use drone_stm32::prelude::*;
+use drone_plfm::prelude::*;
 
 use core::mem::size_of;
+use drone_core::heap;
 
-drone_core::heap! {
-  Heap;
+heap! {
+  struct Heap;
   #[global_allocator]
-  ALLOC;
+  static ALLOC;
+  size = 0;
+  pools = [];
 }
 
 mod vtable {
-  #![allow(dead_code)]
-
-  use drone_core::thread::thread_local;
-  use drone_stm32::vtable;
+  use drone_core::thread;
+  use drone_plfm::vtable;
 
   vtable! {
-    /// Test doc attribute
-    #[doc = "test attribute"]
-    pub struct VectorTable1;
-    /// Test doc attribute
-    #[doc = "test attribute"]
-    pub struct ThreadIndex1;
-    /// Test doc attribute
-    #[doc = "test attribute"]
+    pub struct Vtable1;
+    #[allow(dead_code)]
+    pub struct ThdIdx1;
     static THREADS1;
-    extern struct ThreadLocal1;
+    extern struct Thd1;
 
     /// Test doc attribute
     #[doc = "test attribute"]
@@ -62,19 +58,20 @@ mod vtable {
   }
 
   vtable! {
-    pub struct VectorTable2;
-    pub struct ThreadIndex2;
+    pub struct Vtable2;
+    #[allow(dead_code)]
+    pub struct ThdIdx2;
     static THREADS2;
-    extern struct ThreadLocal2;
+    extern struct Thd2;
   }
 
-  thread_local! {
-    pub struct ThreadLocal1;
+  thread! {
+    pub struct Thd1;
     extern static THREADS1;
   }
 
-  thread_local! {
-    pub struct ThreadLocal2;
+  thread! {
+    pub struct Thd2;
     extern static THREADS2;
   }
 }
@@ -84,14 +81,14 @@ fn new() {
   unsafe extern "C" fn reset() -> ! {
     loop {}
   }
-  vtable::VectorTable1::new(reset);
-  vtable::VectorTable2::new(reset);
+  vtable::Vtable1::new(reset);
+  vtable::Vtable2::new(reset);
 }
 
 #[test]
 fn size() {
   assert_eq!(
-    (size_of::<vtable::VectorTable1>() - size_of::<vtable::VectorTable2>()) / 4,
+    (size_of::<vtable::Vtable1>() - size_of::<vtable::Vtable2>()) / 4,
     11
   );
 }

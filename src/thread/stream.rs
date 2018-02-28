@@ -11,7 +11,7 @@ pub struct StreamTrunkWait<T: Stream> {
 }
 
 /// Platform stream extensions.
-pub trait PltStream: Stream {
+pub trait StreamPlfm: Stream {
   /// Creates an iterator which blocks the current thread until each item of
   /// this stream is resolved.
   fn trunk_wait(self) -> StreamTrunkWait<Self>
@@ -19,7 +19,7 @@ pub trait PltStream: Stream {
     Self: Sized;
 }
 
-impl<T: Stream> PltStream for T {
+impl<T: Stream> StreamPlfm for T {
   #[inline(always)]
   fn trunk_wait(self) -> StreamTrunkWait<Self>
   where

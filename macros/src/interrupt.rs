@@ -1,7 +1,7 @@
 use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-use syn::{parse, Attribute, Ident, LitInt, Visibility};
+use syn::{Attribute, Ident, LitInt, Visibility};
 use syn::synom::Synom;
 
 struct Interrupt {
@@ -31,13 +31,13 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     vis,
     ident,
     number,
-  } = parse::<Interrupt>(input).unwrap();
+  } = try_parse!(call_site, input);
   let irq_name = format!("IRQ_{}", ident);
   let name_ident = Ident::new(&irq_name.to_pascal_case(), call_site);
   let number_ident = Ident::new(&format!("Irq{}", number.value()), call_site);
   let expanded = quote_spanned! { call_site =>
     #(#attrs)*
-    #vis trait #number_ident<T: ThreadTag>: IrqToken<T> {}
+    #vis trait #number_ident<T: ThdTag>: IrqToken<T> {}
 
     #[allow(unused_imports)]
     #vis use self::#number_ident as #name_ident;

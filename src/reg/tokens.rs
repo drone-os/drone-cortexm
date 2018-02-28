@@ -13,7 +13,7 @@ tokens! {
   #[cfg_attr(feature = "stm32l4x3", doc = "Register tokens for STM32L4x3.")]
   #[cfg_attr(feature = "stm32l4x5", doc = "Register tokens for STM32L4x5.")]
   #[cfg_attr(feature = "stm32l4x6", doc = "Register tokens for STM32L4x6.")]
-  RegIndex;
+  RegIdx;
 
   include!(concat!(env!("OUT_DIR"), "/svd_tokens.rs"));
 

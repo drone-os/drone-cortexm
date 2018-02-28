@@ -10,22 +10,22 @@ include!(concat!(env!("OUT_DIR"), "/svd_irq.rs"));
 /// NVIC register bundle.
 pub trait IrqBundle {
   /// A number of NVIC register.
-  const BUNDLE_NUMBER: usize;
+  const BUNDLE_NUM: usize;
 }
 
 /// An interrupt.
-pub trait IrqToken<T: ThreadTag>: ThreadToken<T> {
+pub trait IrqToken<T: ThdTag>: ThdToken<T> {
   /// A number of NVIC register.
   type Bundle: IrqBundle;
 
   /// An interrupt position within the vector table.
-  const IRQ_NUMBER: usize;
+  const IRQ_NUM: usize;
 }
 
 macro_rules! exception {
   ($name:ident, $doc:expr) => {
     #[doc = $doc]
-    pub trait $name<T: ThreadTag>: ThreadToken<T> {}
+    pub trait $name<T: ThdTag>: ThdToken<T> {}
   }
 }
 
@@ -35,7 +35,7 @@ macro_rules! irq_bundle {
     pub struct $name;
 
     impl IrqBundle for $name {
-      const BUNDLE_NUMBER: usize = $number;
+      const BUNDLE_NUM: usize = $number;
     }
   }
 }

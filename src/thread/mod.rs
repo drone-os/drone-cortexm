@@ -7,19 +7,18 @@
 //! ```rust
 //! vtable! {
 //!   /// The vector table.
-//!   VectorTable;
-//!   /// Array of threads.
-//!   THREADS;
-//!   ThreadLocal;
+//!   pub struct Vtable;
+//!   static THREADS;
+//!   extern struct Thd;
 //!
 //!   /// Non maskable interrupt.
-//!   NMI;
+//!   pub NMI;
 //!   /// All classes of fault.
-//!   HARD_FAULT;
+//!   pub HARD_FAULT;
 //!   /// System tick timer.
-//!   SYS_TICK;
+//!   pub SYS_TICK;
 //!   /// RCC global interrupt.
-//!   5: rcc; // Give IRQ5 a name
+//!   pub 5: rcc; // Give IRQ5 a name
 //! }
 //! ```
 //!
@@ -47,8 +46,8 @@ mod notify;
 mod request;
 mod stream;
 
-pub use self::control::ThreadControl;
-pub use self::future::PltFuture;
-pub use self::request::ThreadRequest;
-pub use self::stream::{PltStream, StreamTrunkWait};
+pub use self::control::ThdControl;
+pub use self::future::FuturePlfm;
+pub use self::request::ThdRequest;
+pub use self::stream::{StreamPlfm, StreamTrunkWait};
 pub use drone_stm32_macros::interrupt;

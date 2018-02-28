@@ -94,7 +94,14 @@ use prelude::*;
 
 #[cfg(test)]
 drone_core::heap! {
-  Heap;
+  struct Heap;
   #[global_allocator]
-  ALLOC;
+  static ALLOC;
+  size = 0x40000;
+  pools = [
+    [0x4; 0x4000],
+    [0x20; 0x800],
+    [0x100; 0x100],
+    [0x800; 0x20],
+  ];
 }

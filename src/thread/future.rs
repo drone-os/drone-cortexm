@@ -3,12 +3,12 @@ use futures::executor;
 use thread::notify::nop::NOTIFY_NOP;
 
 /// Platform future extensions.
-pub trait PltFuture: Future {
+pub trait FuturePlfm: Future {
   /// Blocks the current thread until the future is resolved.
   fn trunk_wait(self) -> Result<Self::Item, Self::Error>;
 }
 
-impl<T: Future> PltFuture for T {
+impl<T: Future> FuturePlfm for T {
   fn trunk_wait(self) -> Result<Self::Item, Self::Error> {
     let mut executor = executor::spawn(self);
     loop {

@@ -9,6 +9,7 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![cfg_attr(feature = "clippy", allow(precedence))]
 
+#[macro_use]
 extern crate drone_macros2_core;
 extern crate inflector;
 extern crate proc_macro;
