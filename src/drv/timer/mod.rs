@@ -4,8 +4,8 @@ mod sys_tick;
 
 pub use self::sys_tick::{SysTick, SysTickRes};
 
-use drivers::prelude::*;
 use drone_core::bitfield::Bitfield;
+use drv::prelude::*;
 
 /// Error returned from [`Timer::interval`](Timer::interval) on overflow.
 #[derive(Debug, Fail)]
@@ -49,7 +49,7 @@ impl<T: TimerRes> Driver for Timer<T> {
   type Resource = T;
 
   #[inline(always)]
-  fn from_res(res: T::Input) -> Self {
+  fn from_res(res: T::Source) -> Self {
     Timer(res.into())
   }
 

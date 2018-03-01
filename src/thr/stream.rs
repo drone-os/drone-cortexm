@@ -1,7 +1,7 @@
 use core::iter::FusedIterator;
-use cpu::wait_for_interrupt;
+use cpu::wait_for_int;
 use futures::executor;
-use thread::notify::nop::NOTIFY_NOP;
+use thr::notify::nop::NOTIFY_NOP;
 
 /// A stream combinator which converts an asynchronous stream to a **blocking
 /// iterator**.
@@ -11,7 +11,7 @@ pub struct StreamTrunkWait<T: Stream> {
 }
 
 /// Platform stream extensions.
-pub trait StreamPlfm: Stream {
+pub trait StreamPlat: Stream {
   /// Creates an iterator which blocks the current thread until each item of
   /// this stream is resolved.
   fn trunk_wait(self) -> StreamTrunkWait<Self>
@@ -19,7 +19,7 @@ pub trait StreamPlfm: Stream {
     Self: Sized;
 }
 
-impl<T: Stream> StreamPlfm for T {
+impl<T: Stream> StreamPlat for T {
   #[inline(always)]
   fn trunk_wait(self) -> StreamTrunkWait<Self>
   where
@@ -48,7 +48,7 @@ impl<T: Stream> Iterator for StreamTrunkWait<T> {
     }
     loop {
       match self.executor.poll_stream_notify(&NOTIFY_NOP, 0) {
-        Ok(Async::NotReady) => wait_for_interrupt(),
+        Ok(Async::NotReady) => wait_for_int(),
         Ok(Async::Ready(Some(value))) => break Some(Ok(value)),
         Ok(Async::Ready(None)) => {
           self.exhausted = true;

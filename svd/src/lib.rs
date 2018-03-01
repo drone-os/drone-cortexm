@@ -30,10 +30,10 @@ pub fn svd_generate(
   input: &mut File,
   mappings: &mut File,
   tokens: &mut File,
-  irq: &mut File,
+  int: &mut File,
 ) -> Result<(), Error> {
   let mut xml = String::new();
   input.read_to_string(&mut xml)?;
   let device: Device = serde_xml_rs::deserialize(xml.as_bytes())?;
-  device.generate(mappings, tokens, irq)
+  device.generate(mappings, tokens, int)
 }

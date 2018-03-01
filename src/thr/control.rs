@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 use core::ptr::{read_volatile, write_volatile};
-use thread::irq::IrqBundle;
-use thread::prelude::*;
+use thr::int::IntBundle;
+use thr::prelude::*;
 
 const NVIC_ISER: usize = 0xE000_E100;
 const NVIC_ICER: usize = 0xE000_E180;
@@ -78,14 +78,14 @@ macro_rules! nvic_methods {
 }
 
 /// NVIC thread control.
-pub trait ThdControl: IrqToken<Ctt> {
+pub trait ThrControl: IntToken<Ctt> {
   nvic_methods! {
     NvicIser,
     {
       "Enables multiple interrupts in a batch.",
       enable_batch,
       "Enables the interrupt.",
-      enable_irq,
+      enable_int,
       "Enables the interrupt.",
       enable,
     }
@@ -93,7 +93,7 @@ pub trait ThdControl: IrqToken<Ctt> {
       "Returns enabled state of multiple interrupts.",
       enabled,
       "Returns `true` if the interrupt is enabled.",
-      is_irq_enabled,
+      is_int_enabled,
       "Returns `true` if the interrupt is enabled.",
       is_enabled,
     }
@@ -105,7 +105,7 @@ pub trait ThdControl: IrqToken<Ctt> {
       "Disables multiple interrupts in a batch.",
       disable_batch,
       "Disables the interrupt.",
-      disable_irq,
+      disable_int,
       "Disables the interrupt.",
       disable,
     }
@@ -118,7 +118,7 @@ pub trait ThdControl: IrqToken<Ctt> {
       "Sets multiple interrupts pending in a batch.",
       set_pending_batch,
       "Sets the interrupt pending.",
-      set_pending_irq,
+      set_pending_int,
       "Sets the interrupt pending.",
       set_pending,
     }
@@ -131,7 +131,7 @@ pub trait ThdControl: IrqToken<Ctt> {
       "Clears multiple interrupts pending state in a batch.",
       clear_pending_batch,
       "Clears the interrupt pending state.",
-      clear_pending_irq,
+      clear_pending_int,
       "Clears the interrupt pending state.",
       clear_pending,
     }
@@ -139,7 +139,7 @@ pub trait ThdControl: IrqToken<Ctt> {
       "Returns pending state of multiple interrupts.",
       pending,
       "Returns `true` if the interrupt is pending.",
-      is_irq_pending,
+      is_int_pending,
       "Returns `true` if the interrupt is pending.",
       is_pending,
     }
@@ -152,7 +152,7 @@ pub trait ThdControl: IrqToken<Ctt> {
       "Returns active state of multiple interrupts.",
       active,
       "Returns `true` if the interrupt is active.",
-      is_irq_active,
+      is_int_active,
       "Returns `true` if the interrupt is active.",
       is_active,
     }
@@ -161,21 +161,21 @@ pub trait ThdControl: IrqToken<Ctt> {
   /// Returns the interrupt priority.
   #[inline(always)]
   fn priority(&self) -> u8 {
-    unsafe { read_volatile((NVIC_IPR as *const u8).add(Self::IRQ_NUM)) }
+    unsafe { read_volatile((NVIC_IPR as *const u8).add(Self::INT_NUM)) }
   }
 
   /// Sets the interrupt priority.
   #[inline(always)]
   fn set_priority(&self, priority: u8) {
     unsafe {
-      write_volatile((NVIC_IPR as *mut u8).add(Self::IRQ_NUM), priority);
+      write_volatile((NVIC_IPR as *mut u8).add(Self::INT_NUM), priority);
     }
   }
 }
 
-impl<T: IrqToken<Ctt>> ThdControl for T {}
+impl<T: IntToken<Ctt>> ThrControl for T {}
 
-trait NvicBundle<T: IrqBundle>: Sized {
+trait NvicBundle<T: IntBundle>: Sized {
   const BASE: usize;
 
   fn new(inner: u32) -> Self;
@@ -207,30 +207,30 @@ trait NvicBundle<T: IrqBundle>: Sized {
   }
 
   #[inline(always)]
-  fn read<U: IrqToken<Ctt>>(&self) -> bool {
+  fn read<U: IntToken<Ctt>>(&self) -> bool {
     self.inner() & 1 << bundle_offset::<U>() != 0
   }
 
   #[inline(always)]
-  fn write<U: IrqToken<Ctt>>(&mut self) {
+  fn write<U: IntToken<Ctt>>(&mut self) {
     *self.inner_mut() |= 1 << bundle_offset::<U>();
   }
 }
 
 #[inline(always)]
-const fn bundle_offset<T: IrqToken<Ctt>>() -> usize {
-  T::IRQ_NUM & 0b11_111
+const fn bundle_offset<T: IntToken<Ctt>>() -> usize {
+  T::INT_NUM & 0b11_111
 }
 
 macro_rules! bundle {
   ($name:ident, $base:expr, $doc:expr) => {
     #[doc = $doc]
-    pub struct $name<T: IrqBundle> {
+    pub struct $name<T: IntBundle> {
       _bundle: PhantomData<T>,
       inner: u32,
     }
 
-    impl<T: IrqBundle> NvicBundle<T> for $name<T> {
+    impl<T: IntBundle> NvicBundle<T> for $name<T> {
       const BASE: usize = $base;
 
       #[inline(always)]

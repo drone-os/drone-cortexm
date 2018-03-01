@@ -79,12 +79,12 @@ extern crate test;
 pub mod itm;
 
 pub mod cpu;
-pub mod drivers;
-pub mod fiber;
+pub mod drv;
+pub mod fib;
 pub mod panicking;
 pub mod prelude;
 pub mod reg;
-pub mod thread;
+pub mod thr;
 
 pub use drone_stm32_macros::vtable;
 

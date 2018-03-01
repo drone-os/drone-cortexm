@@ -7,5 +7,5 @@ pub mod itm;
 pub mod nvic;
 pub mod prelude;
 pub mod spi;
-pub mod thread;
+pub mod thr;
 pub mod timer;

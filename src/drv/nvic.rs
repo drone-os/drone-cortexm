@@ -213,7 +213,7 @@ pub struct Nvic {
 #[macro_export]
 macro_rules! drv_nvic {
   ($reg:ident) => {
-    $crate::drivers::nvic::Nvic {
+    $crate::drv::nvic::Nvic {
       iser0: $reg.nvic_iser0,
       iser1: $reg.nvic_iser1,
       icer0: $reg.nvic_icer0,
@@ -248,7 +248,7 @@ macro_rules! drv_nvic {
 #[macro_export]
 macro_rules! drv_nvic {
   ($reg:ident) => {
-    $crate::drivers::nvic::Nvic {
+    $crate::drv::nvic::Nvic {
       iser0: $reg.nvic_iser0,
       iser1: $reg.nvic_iser1,
       icer0: $reg.nvic_icer0,
@@ -283,7 +283,7 @@ macro_rules! drv_nvic {
 #[macro_export]
 macro_rules! drv_nvic {
   ($reg:ident) => {
-    $crate::drivers::nvic::Nvic {
+    $crate::drv::nvic::Nvic {
       iser0: $reg.nvic_iser0,
       iser1: $reg.nvic_iser1,
       iser2: $reg.nvic_iser2,
@@ -327,7 +327,7 @@ macro_rules! drv_nvic {
 #[macro_export]
 macro_rules! drv_nvic {
   ($reg:ident) => {
-    $crate::drivers::nvic::Nvic {
+    $crate::drv::nvic::Nvic {
       iser0: $reg.nvic_iser0,
       iser1: $reg.nvic_iser1,
       iser2: $reg.nvic_iser2,

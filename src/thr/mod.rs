@@ -9,7 +9,7 @@
 //!   /// The vector table.
 //!   pub struct Vtable;
 //!   static THREADS;
-//!   extern struct Thd;
+//!   extern struct Thr;
 //!
 //!   /// Non maskable interrupt.
 //!   pub NMI;
@@ -18,7 +18,7 @@
 //!   /// System tick timer.
 //!   pub SYS_TICK;
 //!   /// RCC global interrupt.
-//!   pub 5: rcc; // Give IRQ5 a name
+//!   pub 5: rcc; // Give INT5 a name
 //! }
 //! ```
 //!
@@ -36,7 +36,7 @@
 //!
 //! [`vtable!`]: ../macro.vtable.html
 
-pub mod irq;
+pub mod int;
 pub mod prelude;
 pub mod vtable;
 
@@ -46,8 +46,8 @@ mod notify;
 mod request;
 mod stream;
 
-pub use self::control::ThdControl;
-pub use self::future::FuturePlfm;
-pub use self::request::ThdRequest;
-pub use self::stream::{StreamPlfm, StreamTrunkWait};
-pub use drone_stm32_macros::interrupt;
+pub use self::control::ThrControl;
+pub use self::future::FuturePlat;
+pub use self::request::ThrRequest;
+pub use self::stream::{StreamPlat, StreamTrunkWait};
+pub use drone_stm32_macros::thr_int as int;

@@ -9,15 +9,15 @@
 //! ```
 //! #![feature(prelude_import)]
 //!
-//! extern crate drone_stm32 as drone_plfm;
+//! extern crate drone_stm32 as drone_plat;
 //!
 //! #[prelude_import]
 //! #[allow(unused_imports)]
-//! use drone_plfm::prelude::*;
+//! use drone_plat::prelude::*;
 //! ```
 //!
 //! [`std::prelude`]: https://doc.rust-lang.org/std/prelude/
 
 pub use drone_core::prelude::*;
 
-pub use thread::{FuturePlfm, StreamPlfm};
+pub use thr::{FuturePlat, StreamPlat};

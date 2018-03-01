@@ -2,20 +2,20 @@
 
 #[allow(unused_imports)]
 use core::ptr::{read_volatile, write_volatile};
-use drivers::dma::{Dma, DmaRes};
+use drone_core::bitfield::Bitfield;
+use drv::dma::{Dma, DmaRes};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
-use drivers::dma::{Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma2Ch1Res,
-                   Dma2Ch2Res};
+use drv::dma::{Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma2Ch1Res,
+               Dma2Ch2Res};
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
-use drivers::dma::{Dma2Ch3Res, Dma2Ch4Res};
-use drivers::prelude::*;
-use drone_core::bitfield::Bitfield;
+use drv::dma::{Dma2Ch3Res, Dma2Ch4Res};
+use drv::prelude::*;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
@@ -26,26 +26,24 @@ use reg::marker::*;
 use reg::prelude::*;
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x6"))]
-use thread::irq::{IrqDma1Ch2, IrqDma1Ch3, IrqDma1Ch4, IrqDma1Ch5, IrqDma2Ch1,
-                  IrqDma2Ch2, IrqDma2Ch3, IrqDma2Ch4};
+use thr::int::{IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5, IntDma2Ch1,
+               IntDma2Ch2, IntDma2Ch3, IntDma2Ch4};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x3",
           feature = "stm32l4x5"))]
-use thread::irq::{IrqDma1Channel2 as IrqDma1Ch2,
-                  IrqDma1Channel3 as IrqDma1Ch3,
-                  IrqDma1Channel4 as IrqDma1Ch4,
-                  IrqDma1Channel5 as IrqDma1Ch5,
-                  IrqDma2Channel1 as IrqDma2Ch1, IrqDma2Channel2 as IrqDma2Ch2};
+use thr::int::{IntDma1Channel2 as IntDma1Ch2, IntDma1Channel3 as IntDma1Ch3,
+               IntDma1Channel4 as IntDma1Ch4, IntDma1Channel5 as IntDma1Ch5,
+               IntDma2Channel1 as IntDma2Ch1, IntDma2Channel2 as IntDma2Ch2};
 #[cfg(any(feature = "stm32l4x3", feature = "stm32l4x5"))]
-use thread::irq::{IrqDma2Channel3 as IrqDma2Ch3, IrqDma2Channel4 as IrqDma2Ch4};
+use thr::int::{IntDma2Channel3 as IntDma2Ch3, IntDma2Channel4 as IntDma2Ch4};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
-use thread::irq::{IrqSpi1, IrqSpi2, IrqSpi3};
-use thread::prelude::*;
+use thr::int::{IntSpi1, IntSpi2, IntSpi3};
+use thr::prelude::*;
 
 /// Motorola SPI mode error.
 #[derive(Debug, Fail)]
@@ -117,7 +115,7 @@ where
 
 /// SPI resource.
 #[allow(missing_docs)]
-pub trait SpiRes: Resource<Input = Self> {
+pub trait SpiRes: Resource<Source = Self> {
   type Cr1Val: Bitfield<Bits = u32>;
   type Cr1: SRwRegBitBand<Val = Self::Cr1Val>;
   type Cr1Bidimode: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
@@ -181,14 +179,14 @@ pub trait SpiRes: Resource<Input = Self> {
 
 /// Interrupt-driven SPI resource.
 #[allow(missing_docs)]
-pub trait SpiIrqRes: SpiRes {
-  type WithoutIrq: SpiRes;
-  type Irq: IrqToken<Ltt>;
+pub trait SpiIntRes: SpiRes {
+  type WithoutInt: SpiRes;
+  type Int: IntToken<Ltt>;
 
-  fn join_irq(res: Self::WithoutIrq, irq: Self::Irq) -> Self;
-  fn split_irq(self) -> (Self::WithoutIrq, Self::Irq);
+  fn join_int(res: Self::WithoutInt, int: Self::Int) -> Self;
+  fn split_int(self) -> (Self::WithoutInt, Self::Int);
 
-  fn irq(&self) -> Self::Irq;
+  fn int(&self) -> Self::Int;
 }
 
 /// DMA-driven SPI resource.
@@ -218,7 +216,7 @@ impl<T: SpiRes> Driver for Spi<T> {
   type Resource = T;
 
   #[inline(always)]
-  fn from_res(res: T::Input) -> Self {
+  fn from_res(res: T::Source) -> Self {
     Spi(res)
   }
 
@@ -414,21 +412,21 @@ impl<T: SpiRes> Spi<T> {
 }
 
 #[allow(missing_docs)]
-impl<T: SpiIrqRes> Spi<T> {
+impl<T: SpiIntRes> Spi<T> {
   #[inline(always)]
-  pub fn join_irq(res: Spi<T::WithoutIrq>, irq: T::Irq) -> Spi<T> {
-    Spi(T::join_irq(res.0, irq))
+  pub fn join_int(res: Spi<T::WithoutInt>, int: T::Int) -> Spi<T> {
+    Spi(T::join_int(res.0, int))
   }
 
   #[inline(always)]
-  pub fn split_irq(self) -> (Spi<T::WithoutIrq>, T::Irq) {
-    let (res, irq) = self.0.split_irq();
-    (Spi(res), irq)
+  pub fn split_int(self) -> (Spi<T::WithoutInt>, T::Int) {
+    let (res, int) = self.0.split_int();
+    (Spi(res), int)
   }
 
   #[inline(always)]
-  pub fn irq(&self) -> T::Irq {
-    self.0.irq()
+  pub fn int(&self) -> T::Int {
+    self.0.int()
   }
 }
 
@@ -531,14 +529,14 @@ macro_rules! spi_shared {
     ($((
       [$($dma_rx_attr:meta,)*],
       $dma_rx_res:ident,
-      $irq_dma_rx:ident,
+      $int_dma_rx:ident,
       $dma_rx_cs:expr,
       ($($dma_rx_tp:ident: $dma_rx_bound:path),*)
     ),)*),
     ($((
       [$($dma_tx_attr:meta,)*],
       $dma_tx_res:ident,
-      $irq_dma_tx:ident,
+      $int_dma_tx:ident,
       $dma_tx_cs:expr,
       ($($dma_tx_tp:ident: $dma_tx_bound:path),*)
     ),)*),
@@ -621,7 +619,7 @@ macro_rules! spi_shared {
       impl<$($dma_rx_tp,)* Rx> SpiDmaRxRes<$dma_rx_res<Rx, Frt>>
         for $name_res<$($dma_rx_tp),*>
       where
-        Rx: $irq_dma_rx<Ltt>,
+        Rx: $int_dma_rx<Ltt>,
         $($dma_rx_tp: $dma_rx_bound,)*
       {
         #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -643,7 +641,7 @@ macro_rules! spi_shared {
       impl<$($dma_tx_tp,)* Tx> SpiDmaTxRes<$dma_tx_res<Tx, Frt>>
         for $name_res<$($dma_tx_tp),*>
       where
-        Tx: $irq_dma_tx<Ltt>,
+        Tx: $int_dma_tx<Ltt>,
         $($dma_tx_tp: $dma_tx_bound,)*
       {
         #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -668,14 +666,14 @@ macro_rules! spi {
     $doc:expr,
     $name:ident,
     $name_macro:ident,
-    $doc_irq:expr,
-    $name_irq:ident,
-    $name_irq_macro:ident,
+    $doc_int:expr,
+    $name_int:ident,
+    $name_int_macro:ident,
     $doc_res:expr,
     $name_res:ident,
-    $doc_irq_res:expr,
-    $name_irq_res:ident,
-    $irq_ty:ident,
+    $doc_int_res:expr,
+    $name_int_res:ident,
+    $int_ty:ident,
     $spi:ident,
     $spi_cr1:ident,
     $spi_cr2:ident,
@@ -687,21 +685,21 @@ macro_rules! spi {
     ($((
       $(#[$dma_rx_attr:meta])*
       $dma_rx_res:ident,
-      $irq_dma_rx:ident,
+      $int_dma_rx:ident,
       $dma_rx_cs:expr
     )),*),
     ($((
       $(#[$dma_tx_attr:meta])*
       $dma_tx_res:ident,
-      $irq_dma_tx:ident,
+      $int_dma_tx:ident,
       $dma_tx_cs:expr
     )),*),
   ) => {
     #[doc = $doc]
     pub type $name = Spi<$name_res>;
 
-    #[doc = $doc_irq]
-    pub type $name_irq<I> = Spi<$name_irq_res<I>>;
+    #[doc = $doc_int]
+    pub type $name_int<I> = Spi<$name_int_res<I>>;
 
     #[doc = $doc_res]
     #[allow(missing_docs)]
@@ -715,9 +713,9 @@ macro_rules! spi {
       pub $spi_txcrcr: $spi::Txcrcr<Srt>,
     }
 
-    #[doc = $doc_irq_res]
+    #[doc = $doc_int_res]
     #[allow(missing_docs)]
-    pub struct $name_irq_res<I: $irq_ty<Ltt>> {
+    pub struct $name_int_res<I: $int_ty<Ltt>> {
       pub $spi: I,
       pub $spi_cr1: $spi::Cr1<Srt>,
       pub $spi_cr2: $spi::Cr2<Srt>,
@@ -732,8 +730,8 @@ macro_rules! spi {
     #[macro_export]
     macro_rules! $name_macro {
       ($reg:ident) => {
-        $crate::drivers::spi::Spi::from_res(
-          $crate::drivers::spi::$name_res {
+        $crate::drv::spi::Spi::from_res(
+          $crate::drv::spi::$name_res {
             $spi_cr1: $reg.$spi_cr1,
             $spi_cr2: $reg.$spi_cr2,
             $spi_crcpr: $reg.$spi_crcpr,
@@ -746,13 +744,13 @@ macro_rules! spi {
       }
     }
 
-    /// Creates a new `SpiIrq`.
+    /// Creates a new `SpiInt`.
     #[macro_export]
-    macro_rules! $name_irq_macro {
-      ($reg:ident, $thd:ident) => {
-        $crate::drivers::spi::Spi::from_res(
-          $crate::drivers::spi::$name_irq_res {
-            $spi: $thd.$spi.into(),
+    macro_rules! $name_int_macro {
+      ($reg:ident, $thr:ident) => {
+        $crate::drv::spi::Spi::from_res(
+          $crate::drv::spi::$name_int_res {
+            $spi: $thr.$spi.into(),
             $spi_cr1: $reg.$spi_cr1,
             $spi_cr2: $reg.$spi_cr2,
             $spi_crcpr: $reg.$spi_crcpr,
@@ -767,7 +765,7 @@ macro_rules! spi {
 
     impl Resource for $name_res {
       // FIXME https://github.com/rust-lang/rust/issues/47385
-      type Input = Self;
+      type Source = Self;
     }
 
     spi_shared! {
@@ -781,13 +779,13 @@ macro_rules! spi {
       $spi_txcrcr,
       $name_res,
       (),
-      ($(([$($dma_rx_attr,)*], $dma_rx_res, $irq_dma_rx, $dma_rx_cs, ()),)*),
-      ($(([$($dma_tx_attr,)*], $dma_tx_res, $irq_dma_tx, $dma_tx_cs, ()),)*),
+      ($(([$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs, ()),)*),
+      ($(([$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs, ()),)*),
     }
 
-    impl<I: $irq_ty<Ltt>> Resource for $name_irq_res<I> {
+    impl<I: $int_ty<Ltt>> Resource for $name_int_res<I> {
       // FIXME https://github.com/rust-lang/rust/issues/47385
-      type Input = Self;
+      type Source = Self;
     }
 
     spi_shared! {
@@ -799,26 +797,26 @@ macro_rules! spi {
       $spi_rxcrcr,
       $spi_sr,
       $spi_txcrcr,
-      $name_irq_res,
-      (I: $irq_ty<Ltt>),
+      $name_int_res,
+      (I: $int_ty<Ltt>),
       ($((
-        [$($dma_rx_attr,)*], $dma_rx_res, $irq_dma_rx, $dma_rx_cs,
-        (I: $irq_ty<Ltt>)
+        [$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs,
+        (I: $int_ty<Ltt>)
       ),)*),
       ($((
-        [$($dma_tx_attr,)*], $dma_tx_res, $irq_dma_tx, $dma_tx_cs,
-        (I: $irq_ty<Ltt>)
+        [$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs,
+        (I: $int_ty<Ltt>)
       ),)*),
     }
 
-    impl<I: $irq_ty<Ltt>> SpiIrqRes for $name_irq_res<I> {
-      type WithoutIrq = $name_res;
-      type Irq = I;
+    impl<I: $int_ty<Ltt>> SpiIntRes for $name_int_res<I> {
+      type WithoutInt = $name_res;
+      type Int = I;
 
       #[inline(always)]
-      fn join_irq(res: Self::WithoutIrq, irq: Self::Irq) -> Self {
-        $name_irq_res {
-          $spi: irq,
+      fn join_int(res: Self::WithoutInt, int: Self::Int) -> Self {
+        $name_int_res {
+          $spi: int,
           $spi_cr1: res.$spi_cr1,
           $spi_cr2: res.$spi_cr2,
           $spi_crcpr: res.$spi_crcpr,
@@ -830,7 +828,7 @@ macro_rules! spi {
       }
 
       #[inline(always)]
-      fn split_irq(self) -> (Self::WithoutIrq, Self::Irq) {
+      fn split_int(self) -> (Self::WithoutInt, Self::Int) {
         (
           $name_res {
             $spi_cr1: self.$spi_cr1,
@@ -846,7 +844,7 @@ macro_rules! spi {
       }
 
       #[inline(always)]
-      fn irq(&self) -> Self::Irq {
+      fn int(&self) -> Self::Int {
         self.$spi
       }
     }
@@ -863,13 +861,13 @@ spi! {
   Spi1,
   drv_spi1,
   "SPI1 driver with interrupt.",
-  Spi1Irq,
-  drv_spi1_irq,
+  Spi1Int,
+  drv_spi1_int,
   "SPI1 resource.",
   Spi1Res,
   "SPI1 resource with interrupt.",
-  Spi1IrqRes,
-  IrqSpi1,
+  Spi1IntRes,
+  IntSpi1,
   spi1,
   spi1_cr1,
   spi1_cr2,
@@ -879,21 +877,21 @@ spi! {
   spi1_sr,
   spi1_txcrcr,
   (
-    (Dma1Ch2Res, IrqDma1Ch2, 0b0001),
+    (Dma1Ch2Res, IntDma1Ch2, 0b0001),
     (
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      Dma2Ch3Res, IrqDma2Ch3, 0b0100
+      Dma2Ch3Res, IntDma2Ch3, 0b0100
     )
   ),
   (
-    (Dma1Ch3Res, IrqDma1Ch3, 0b0001),
+    (Dma1Ch3Res, IntDma1Ch3, 0b0001),
     (
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
-      Dma2Ch4Res, IrqDma2Ch4, 0b0100
+      Dma2Ch4Res, IntDma2Ch4, 0b0100
     )
   ),
 }
@@ -908,13 +906,13 @@ spi! {
   Spi2,
   drv_spi2,
   "SPI2 driver with interrupt.",
-  Spi2Irq,
-  drv_spi2_irq,
+  Spi2Int,
+  drv_spi2_int,
   "SPI2 resource.",
   Spi2Res,
   "SPI2 resource with interrupt.",
-  Spi2IrqRes,
-  IrqSpi2,
+  Spi2IntRes,
+  IntSpi2,
   spi2,
   spi2_cr1,
   spi2_cr2,
@@ -923,8 +921,8 @@ spi! {
   spi2_rxcrcr,
   spi2_sr,
   spi2_txcrcr,
-  ((Dma1Ch4Res, IrqDma1Ch4, 0b0001)),
-  ((Dma1Ch5Res, IrqDma1Ch5, 0b0001)),
+  ((Dma1Ch4Res, IntDma1Ch4, 0b0001)),
+  ((Dma1Ch5Res, IntDma1Ch5, 0b0001)),
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
@@ -937,13 +935,13 @@ spi! {
   Spi3,
   drv_spi3,
   "SPI3 driver with interrupt.",
-  Spi3Irq,
-  drv_spi3_irq,
+  Spi3Int,
+  drv_spi3_int,
   "SPI3 resource.",
   Spi3Res,
   "SPI3 resource with interrupt.",
-  Spi3IrqRes,
-  IrqSpi3,
+  Spi3IntRes,
+  IntSpi3,
   spi3,
   spi3_cr1,
   spi3_cr2,
@@ -952,6 +950,6 @@ spi! {
   spi3_rxcrcr,
   spi3_sr,
   spi3_txcrcr,
-  ((Dma2Ch1Res, IrqDma2Ch1, 0b0011)),
-  ((Dma2Ch2Res, IrqDma2Ch2, 0b0011)),
+  ((Dma2Ch1Res, IntDma2Ch1, 0b0011)),
+  ((Dma2Ch2Res, IntDma2Ch2, 0b0011)),
 }

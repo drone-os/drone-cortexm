@@ -14,12 +14,12 @@
 extern crate alloc;
 extern crate compiler_builtins;
 extern crate drone_core;
-extern crate drone_stm32 as drone_plfm;
+extern crate drone_stm32 as drone_plat;
 extern crate test;
 
 #[prelude_import]
 #[allow(unused_imports)]
-use drone_plfm::prelude::*;
+use drone_plat::prelude::*;
 
 use core::mem::size_of;
 use drone_core::heap;
@@ -33,15 +33,15 @@ heap! {
 }
 
 mod vtable {
-  use drone_core::thread;
-  use drone_plfm::vtable;
+  use drone_core::thr;
+  use drone_plat::vtable;
 
   vtable! {
     pub struct Vtable1;
     #[allow(dead_code)]
-    pub struct ThdIdx1;
+    pub struct ThrIdx1;
     static THREADS1;
-    extern struct Thd1;
+    extern struct Thr1;
 
     /// Test doc attribute
     #[doc = "test attribute"]
@@ -60,18 +60,18 @@ mod vtable {
   vtable! {
     pub struct Vtable2;
     #[allow(dead_code)]
-    pub struct ThdIdx2;
+    pub struct ThrIdx2;
     static THREADS2;
-    extern struct Thd2;
+    extern struct Thr2;
   }
 
-  thread! {
-    pub struct Thd1;
+  thr! {
+    pub struct Thr1;
     extern static THREADS1;
   }
 
-  thread! {
-    pub struct Thd2;
+  thr! {
+    pub struct Thr2;
     extern static THREADS2;
   }
 }

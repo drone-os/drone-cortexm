@@ -3,9 +3,9 @@
 use reg::prelude::*;
 use reg::scb::Aircr;
 
-/// Wait for Interrupt.
+/// Wait for interrupt.
 #[inline(always)]
-pub fn wait_for_interrupt() {
+pub fn wait_for_int() {
   unsafe { asm!("wfi" :::: "volatile") };
 }
 

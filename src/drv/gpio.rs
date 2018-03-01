@@ -273,7 +273,7 @@ macro_rules! gpio_pin {
     #[macro_export]
     macro_rules! $name_macro {
       ($reg:ident) => {
-        $crate::drivers::gpio::$name {
+        $crate::drv::gpio::$name {
           $gpio_afr_afr: $reg.$gpio_afr.$afr.into(),
           $(
             $gpio_ascr_asc: $reg.$gpio_ascr.$asc.into(),
@@ -298,7 +298,7 @@ macro_rules! gpio_pin {
     #[macro_export]
     macro_rules! $name_macro {
       ($reg:ident) => {
-        $crate::drivers::gpio::$name {
+        $crate::drv::gpio::$name {
           $gpio_afr_afr: $reg.$gpio_afr.$afr.into(),
           $gpio_bsrr_br: $reg.$gpio_bsrr.$br.into(),
           $gpio_bsrr_bs: $reg.$gpio_bsrr.$bs.into(),
@@ -320,7 +320,7 @@ macro_rules! gpio_pin {
     #[macro_export]
     macro_rules! $name_macro {
       ($reg:ident) => {
-        $crate::drivers::gpio::$name {
+        $crate::drv::gpio::$name {
           $gpio_brr_br: $reg.$gpio_brr_br.into(),
           $gpio_bsrr_br: $reg.$gpio_bsrr_br.into(),
           $gpio_bsrr_bs: $reg.$gpio_bsrr_bs.into(),

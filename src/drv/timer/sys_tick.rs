@@ -1,18 +1,17 @@
 use super::{Timer, TimerOverflow, TimerRes};
-use drivers::prelude::*;
-use drone_core::fiber::{FiberFuture, FiberStreamUnit};
-use fiber;
+use drv::prelude::*;
+use fib::{self, FiberFuture, FiberStreamUnit};
 use reg::{scb, stk};
 use reg::prelude::*;
-use thread::irq::IrqSysTick;
-use thread::prelude::*;
+use thr::int::IntSysTick;
+use thr::prelude::*;
 
 /// SysTick driver.
 pub type SysTick<I> = Timer<SysTickRes<I, Frt>>;
 
 /// SysTick resource.
 #[allow(missing_docs)]
-pub struct SysTickRes<I: IrqSysTick<Ltt>, Rt: RegTag> {
+pub struct SysTickRes<I: IntSysTick<Ltt>, Rt: RegTag> {
   pub sys_tick: I,
   pub scb_icsr_pendstclr: scb::icsr::Pendstclr<Rt>,
   pub scb_icsr_pendstset: scb::icsr::Pendstset<Srt>,
@@ -24,10 +23,10 @@ pub struct SysTickRes<I: IrqSysTick<Ltt>, Rt: RegTag> {
 /// Creates a new `SysTick`.
 #[macro_export]
 macro_rules! drv_sys_tick {
-  ($reg:ident, $thd:ident) => {
-    $crate::drivers::timer::Timer::from_res(
-      $crate::drivers::timer::SysTickRes {
-        sys_tick: $thd.sys_tick.into(),
+  ($reg:ident, $thr:ident) => {
+    $crate::drv::timer::Timer::from_res(
+      $crate::drv::timer::SysTickRes {
+        sys_tick: $thr.sys_tick.into(),
         scb_icsr_pendstclr: $reg.scb_icsr.pendstclr,
         scb_icsr_pendstset: $reg.scb_icsr.pendstset,
         stk_ctrl: $reg.stk_ctrl,
@@ -38,7 +37,7 @@ macro_rules! drv_sys_tick {
   }
 }
 
-impl<I: IrqSysTick<Ltt>> From<SysTickRes<I, Srt>> for SysTickRes<I, Frt> {
+impl<I: IntSysTick<Ltt>> From<SysTickRes<I, Srt>> for SysTickRes<I, Frt> {
   #[inline(always)]
   fn from(res: SysTickRes<I, Srt>) -> Self {
     Self {
@@ -52,11 +51,11 @@ impl<I: IrqSysTick<Ltt>> From<SysTickRes<I, Srt>> for SysTickRes<I, Frt> {
   }
 }
 
-impl<I: IrqSysTick<Ltt>> Resource for SysTickRes<I, Frt> {
-  type Input = SysTickRes<I, Srt>;
+impl<I: IntSysTick<Ltt>> Resource for SysTickRes<I, Frt> {
+  type Source = SysTickRes<I, Srt>;
 }
 
-impl<I: IrqSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
+impl<I: IntSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
   type Duration = u32;
   type CtrlVal = stk::ctrl::Val;
   type SleepFuture = FiberFuture<(), !>;
@@ -74,9 +73,9 @@ impl<I: IrqSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
     schedule(&self.stk_load, &self.stk_val, dur);
     let ctrl = self.stk_ctrl.fork();
     let pendstclr = self.scb_icsr_pendstclr.fork();
-    let fut = fiber::spawn_future(
+    let fut = fib::spawn_future(
       self.sys_tick,
-      fiber::new_fn(move || {
+      fib::new_fn(move || {
         ctrl.store_val(ctrl_val);
         pendstclr.store_set();
         Ok(())
@@ -93,11 +92,11 @@ impl<I: IrqSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
     dur: Self::Duration,
     ctrl_val: Self::CtrlVal,
   ) -> Self::IntervalStream {
-    self.interval_stream(dur, ctrl_val, |irq| {
-      fiber::spawn_stream(
-        irq,
+    self.interval_stream(dur, ctrl_val, |int| {
+      fib::spawn_stream(
+        int,
         || Err(TimerOverflow),
-        fiber::new(|| loop {
+        fib::new(|| loop {
           yield Some(());
         }),
       )
@@ -110,10 +109,10 @@ impl<I: IrqSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
     dur: Self::Duration,
     ctrl_val: Self::CtrlVal,
   ) -> Self::IntervalSkipStream {
-    self.interval_stream(dur, ctrl_val, |irq| {
-      fiber::spawn_stream_skip(
-        irq,
-        fiber::new(|| loop {
+    self.interval_stream(dur, ctrl_val, |int| {
+      fib::spawn_stream_skip(
+        int,
+        fib::new(|| loop {
           yield Some(());
         }),
       )
@@ -127,7 +126,7 @@ impl<I: IrqSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
   }
 }
 
-impl<I: IrqSysTick<Ltt>> SysTickRes<I, Frt> {
+impl<I: IntSysTick<Ltt>> SysTickRes<I, Frt> {
   fn interval_stream<F, S>(
     &mut self,
     dur: u32,
@@ -149,9 +148,9 @@ impl<I: IrqSysTick<Ltt>> SysTickRes<I, Frt> {
 }
 
 #[allow(missing_docs)]
-impl<I: IrqSysTick<Ltt>> Timer<SysTickRes<I, Frt>> {
+impl<I: IntSysTick<Ltt>> Timer<SysTickRes<I, Frt>> {
   #[inline(always)]
-  pub fn irq(&self) -> I {
+  pub fn int(&self) -> I {
     self.0.sys_tick
   }
 

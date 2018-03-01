@@ -1,27 +1,27 @@
 //! Drone threading system resources.
 
-use drivers::nvic::Nvic;
-use drivers::prelude::*;
-use drone_core::thread::ThdTokens;
+use drone_core::thr::ThrTokens;
+use drv::nvic::Nvic;
+use drv::prelude::*;
 use reg::prelude::*;
 use reg::scb;
 
-/// `Thread` driver.
-pub struct Thread(ThreadRes);
+/// `Thr` driver.
+pub struct Thr(ThrRes);
 
-/// `Thread` resource.
+/// `Thr` resource.
 #[allow(missing_docs)]
-pub struct ThreadRes {
+pub struct ThrRes {
   pub nvic: Nvic,
   pub scb_ccr: scb::Ccr<Srt>,
 }
 
-/// Creates a new `Thread`.
+/// Creates a new `Thr`.
 #[macro_export]
-macro_rules! drv_thd {
+macro_rules! drv_thr {
   ($reg:ident) => {
-    $crate::drivers::thread::Thread::from_res(
-      $crate::drivers::thread::ThreadRes {
+    $crate::drv::thr::Thr::from_res(
+      $crate::drv::thr::ThrRes {
         nvic: drv_nvic!($reg),
         scb_ccr: $reg.scb_ccr,
       }
@@ -29,29 +29,29 @@ macro_rules! drv_thd {
   }
 }
 
-impl Driver for Thread {
-  type Resource = ThreadRes;
+impl Driver for Thr {
+  type Resource = ThrRes;
 
   #[inline(always)]
-  fn from_res(res: ThreadRes) -> Self {
-    Thread(res)
+  fn from_res(res: ThrRes) -> Self {
+    Thr(res)
   }
 
   #[inline(always)]
-  fn into_res(self) -> ThreadRes {
+  fn into_res(self) -> ThrRes {
     self.0
   }
 }
 
-impl Resource for ThreadRes {
+impl Resource for ThrRes {
   // FIXME https://github.com/rust-lang/rust/issues/47385
-  type Input = Self;
+  type Source = Self;
 }
 
-impl Thread {
+impl Thr {
   /// Initialized the Drone threading system, and returns an instance of `T`.
   #[inline(always)]
-  pub fn init<T: ThdTokens>(
+  pub fn init<T: ThrTokens>(
     self,
     scb_ccr_init: impl for<'a, 'b> FnOnce(&'b mut scb::ccr::Hold<'a, Srt>)
       -> &'b mut scb::ccr::Hold<'a, Srt>,

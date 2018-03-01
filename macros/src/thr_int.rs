@@ -4,14 +4,14 @@ use proc_macro2::Span;
 use syn::{Attribute, Ident, LitInt, Visibility};
 use syn::synom::Synom;
 
-struct Interrupt {
+struct Int {
   attrs: Vec<Attribute>,
   vis: Visibility,
   ident: Ident,
   number: LitInt,
 }
 
-impl Synom for Interrupt {
+impl Synom for Int {
   named!(parse -> Self, do_parse!(
     attrs: many0!(Attribute::parse_outer) >>
     vis: syn!(Visibility) >>
@@ -20,24 +20,24 @@ impl Synom for Interrupt {
     punct!(:) >>
     number: syn!(LitInt) >>
     punct!(;) >>
-    (Interrupt { attrs, vis, ident, number })
+    (Int { attrs, vis, ident, number })
   ));
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
   let call_site = Span::call_site();
-  let Interrupt {
+  let Int {
     attrs,
     vis,
     ident,
     number,
   } = try_parse!(call_site, input);
-  let irq_name = format!("IRQ_{}", ident);
-  let name_ident = Ident::new(&irq_name.to_pascal_case(), call_site);
-  let number_ident = Ident::new(&format!("Irq{}", number.value()), call_site);
+  let int_name = format!("INT_{}", ident);
+  let name_ident = Ident::new(&int_name.to_pascal_case(), call_site);
+  let number_ident = Ident::new(&format!("Int{}", number.value()), call_site);
   let expanded = quote_spanned! { call_site =>
     #(#attrs)*
-    #vis trait #number_ident<T: ThdTag>: IrqToken<T> {}
+    #vis trait #number_ident<T: ThrTag>: IntToken<T> {}
 
     #[allow(unused_imports)]
     #vis use self::#number_ident as #name_ident;

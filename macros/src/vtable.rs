@@ -10,43 +10,43 @@ struct Vtable {
   vtable: NewStruct,
   tokens: NewStruct,
   array: NewStatic,
-  thread: ExternStruct,
-  exceptions: Vec<Exception>,
-  interrupts: Vec<Interrupt>,
+  thr: ExternStruct,
+  excs: Vec<Exc>,
+  ints: Vec<Int>,
 }
 
-struct Exception {
+struct Exc {
   attrs: Vec<Attribute>,
   vis: Visibility,
   ident: Ident,
 }
 
-struct Interrupt {
-  number: LitInt,
-  exception: Exception,
+struct Int {
+  num: LitInt,
+  exc: Exc,
 }
 
-impl Synom for Exception {
+impl Synom for Exc {
   named!(parse -> Self, do_parse!(
     attrs: many0!(Attribute::parse_outer) >>
     vis: syn!(Visibility) >>
     ident: syn!(Ident) >>
     punct!(;) >>
-    (Exception { attrs, vis, ident })
+    (Exc { attrs, vis, ident })
   ));
 }
 
-impl Synom for Interrupt {
+impl Synom for Int {
   named!(parse -> Self, do_parse!(
     attrs: many0!(Attribute::parse_outer) >>
     vis: syn!(Visibility) >>
-    number: syn!(LitInt) >>
+    num: syn!(LitInt) >>
     punct!(:) >>
     ident: syn!(Ident) >>
     punct!(;) >>
-    (Interrupt {
-      number,
-      exception: Exception { attrs, vis, ident },
+    (Int {
+      num,
+      exc: Exc { attrs, vis, ident },
     })
   ));
 }
@@ -56,17 +56,10 @@ impl Synom for Vtable {
     vtable: syn!(NewStruct) >>
     tokens: syn!(NewStruct) >>
     array: syn!(NewStatic) >>
-    thread: syn!(ExternStruct) >>
-    exceptions: many0!(syn!(Exception)) >>
-    interrupts: many0!(syn!(Interrupt)) >>
-    (Vtable {
-      vtable,
-      tokens,
-      array,
-      thread,
-      exceptions,
-      interrupts,
-    })
+    thr: syn!(ExternStruct) >>
+    excs: many0!(syn!(Exc)) >>
+    ints: many0!(syn!(Int)) >>
+    (Vtable { vtable, tokens, array, thr, excs, ints })
   ));
 }
 
@@ -91,22 +84,20 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         vis: array_vis,
         ident: array_ident,
       },
-    thread: ExternStruct {
-      ident: thread_ident,
-    },
-    exceptions,
-    interrupts,
+    thr: ExternStruct { ident: thr_ident },
+    excs,
+    ints,
   } = try_parse!(call_site, input);
-  let array_len = exceptions.len() + interrupts.len() + 1;
+  let array_len = excs.len() + ints.len() + 1;
   let rt = Ident::from("__vtable_rt");
   let new_ident = Ident::new("new", call_site);
-  let irq_extent = interrupts
+  let int_extent = ints
     .iter()
-    .map(|irq| irq.number.value() + 1)
+    .map(|int| int.num.value() + 1)
     .max()
     .unwrap_or(0);
-  let mut irq_idents = (0..irq_extent)
-    .map(|n| Ident::from(format!("_irq{}", n)))
+  let mut int_idents = (0..int_extent)
+    .map(|n| Ident::from(format!("_int{}", n)))
     .collect::<Vec<_>>();
   let mut vtable_tokens = Vec::new();
   let mut vtable_ctor_tokens = Vec::new();
@@ -114,58 +105,58 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
   let mut tokens_tokens = Vec::new();
   let mut tokens_ctor_tokens = Vec::new();
   let mut array_tokens = Vec::new();
-  let mut thread_tokens = Vec::new();
-  let mut thread_counter = 0;
-  for exception in exceptions {
-    thread_counter += 1;
-    let (struct_ident, _) = gen_exception(
-      thread_counter,
-      exception,
-      &thread_ident,
+  let mut thr_tokens = Vec::new();
+  let mut thr_counter = 0;
+  for exc in excs {
+    thr_counter += 1;
+    let (struct_ident, _) = gen_exc(
+      thr_counter,
+      exc,
+      &thr_ident,
       &rt,
       &mut vtable_ctor_tokens,
       &mut tokens_tokens,
       &mut tokens_ctor_tokens,
       &mut array_tokens,
-      &mut thread_tokens,
+      &mut thr_tokens,
     );
-    let irq_trait = Ident::from(format!("Irq{}", struct_ident));
-    thread_tokens.push(quote! {
-      impl<T: #rt::ThdTag> #rt::#irq_trait<T> for #struct_ident<T> {}
+    let int_trait = Ident::from(format!("Int{}", struct_ident));
+    thr_tokens.push(quote! {
+      impl<T: #rt::ThrTag> #rt::#int_trait<T> for #struct_ident<T> {}
     });
   }
-  for Interrupt { number, exception } in interrupts {
-    thread_counter += 1;
-    let (struct_ident, field_ident) = gen_exception(
-      thread_counter,
-      exception,
-      &thread_ident,
+  for Int { num, exc } in ints {
+    thr_counter += 1;
+    let (struct_ident, field_ident) = gen_exc(
+      thr_counter,
+      exc,
+      &thr_ident,
       &rt,
       &mut vtable_ctor_tokens,
       &mut tokens_tokens,
       &mut tokens_ctor_tokens,
       &mut array_tokens,
-      &mut thread_tokens,
+      &mut thr_tokens,
     );
-    let irq_trait = Ident::from(format!("Irq{}", number.value()));
-    let bundle = Ident::from(format!("IrqBundle{}", number.value() / 32));
-    thread_tokens.push(quote! {
-      impl<T: #rt::ThdTag> #rt::IrqToken<T> for #struct_ident<T> {
+    let int_trait = Ident::from(format!("Int{}", num.value()));
+    let bundle = Ident::from(format!("IntBundle{}", num.value() / 32));
+    thr_tokens.push(quote! {
+      impl<T: #rt::ThrTag> #rt::IntToken<T> for #struct_ident<T> {
         type Bundle = #rt::#bundle;
 
-        const IRQ_NUM: usize = #number;
+        const INT_NUM: usize = #num;
       }
 
-      impl<T: #rt::ThdTag> #rt::#irq_trait<T> for #struct_ident<T> {}
+      impl<T: #rt::ThrTag> #rt::#int_trait<T> for #struct_ident<T> {}
     });
-    irq_idents[number.value() as usize] = field_ident;
+    int_idents[num.value() as usize] = field_ident;
   }
-  for irq_ident in irq_idents {
+  for int_ident in int_idents {
     vtable_tokens.push(quote! {
-      #irq_ident: Option<#rt::Handler>
+      #int_ident: Option<#rt::Handler>
     });
     vtable_ctor_default_tokens.push(quote! {
-      #irq_ident: None
+      #int_ident: None
     });
   }
 
@@ -173,14 +164,13 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     mod #rt {
       extern crate core;
       extern crate drone_core;
-      extern crate drone_stm32 as drone_plfm;
+      extern crate drone_stm32 as drone_plat;
 
       pub use self::core::marker::PhantomData;
-      pub use self::drone_core::thread::ThdTokens;
-      pub use self::drone_plfm::thread::irq::*;
-      pub use self::drone_plfm::thread::prelude::*;
-      pub use self::drone_plfm::thread::vtable::{Handler, Reserved,
-                                                 ResetHandler};
+      pub use self::drone_core::thr::ThrTokens;
+      pub use self::drone_plat::thr::int::*;
+      pub use self::drone_plat::thr::prelude::*;
+      pub use self::drone_plat::thr::vtable::{Handler, Reserved, ResetHandler};
     }
 
     #(#vtable_attrs)*
@@ -231,7 +221,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       #(#tokens_tokens),*
     }
 
-    impl #rt::ThdTokens for #tokens_ident {
+    impl #rt::ThrTokens for #tokens_ident {
       #[inline(always)]
       unsafe fn new() -> Self {
         Self {
@@ -241,39 +231,39 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     }
 
     #(#array_attrs)*
-    #array_vis static mut #array_ident: [#thread_ident; #array_len] = [
-      #thread_ident::new(0),
+    #array_vis static mut #array_ident: [#thr_ident; #array_len] = [
+      #thr_ident::new(0),
       #(#array_tokens),*
     ];
 
-    #(#thread_tokens)*
+    #(#thr_tokens)*
   };
   expanded.into()
 }
 
-fn gen_exception(
+fn gen_exc(
   index: usize,
-  exception: Exception,
-  thread_ident: &Ident,
+  exc: Exc,
+  thr_ident: &Ident,
   rt: &Ident,
   vtable_ctor_tokens: &mut Vec<Tokens>,
   tokens_tokens: &mut Vec<Tokens>,
   tokens_ctor_tokens: &mut Vec<Tokens>,
   array_tokens: &mut Vec<Tokens>,
-  thread_tokens: &mut Vec<Tokens>,
+  thr_tokens: &mut Vec<Tokens>,
 ) -> (Ident, Ident) {
   let call_site = Span::call_site();
-  let Exception {
+  let Exc {
     ref attrs,
     ref vis,
     ref ident,
-  } = exception;
+  } = exc;
   let vtable_field_ident = Ident::from(ident.as_ref().to_snake_case());
   let struct_ident = Ident::new(&ident.as_ref().to_pascal_case(), call_site);
   let field_ident = Ident::new(vtable_field_ident.as_ref(), call_site);
   vtable_ctor_tokens.push(quote! {
     #vtable_field_ident: Some(
-      <#struct_ident<#rt::Ltt> as #rt::ThdToken<#rt::Ltt>>::handler,
+      <#struct_ident<#rt::Ltt> as #rt::ThrToken<#rt::Ltt>>::handler,
     )
   });
   tokens_tokens.push(quote! {
@@ -284,30 +274,30 @@ fn gen_exception(
     #field_ident: #struct_ident::new()
   });
   array_tokens.push(quote! {
-    #thread_ident::new(#index)
+    #thr_ident::new(#index)
   });
-  thread_tokens.push(quote! {
+  thr_tokens.push(quote! {
     #(#attrs)*
     #[derive(Clone, Copy)]
-    #vis struct #struct_ident<T: #rt::ThdTag>(#rt::PhantomData<T>);
+    #vis struct #struct_ident<T: #rt::ThrTag>(#rt::PhantomData<T>);
 
-    impl<T: #rt::ThdTag> #struct_ident<T> {
+    impl<T: #rt::ThrTag> #struct_ident<T> {
       #[inline(always)]
       unsafe fn new() -> Self {
         #struct_ident(#rt::PhantomData)
       }
     }
 
-    impl<T: #rt::ThdTag> #rt::ThdToken<T> for #struct_ident<T> {
-      type Thd = #thread_ident;
+    impl<T: #rt::ThrTag> #rt::ThrToken<T> for #struct_ident<T> {
+      type Thr = #thr_ident;
 
-      const THD_NUM: usize = #index;
+      const THR_NUM: usize = #index;
     }
 
-    impl<T: #rt::ThdTag> AsRef<#thread_ident> for #struct_ident<T> {
+    impl<T: #rt::ThrTag> AsRef<#thr_ident> for #struct_ident<T> {
       #[inline(always)]
-      fn as_ref(&self) -> &#thread_ident {
-        #rt::ThdToken::as_thd(self)
+      fn as_ref(&self) -> &#thr_ident {
+        #rt::ThrToken::as_thr(self)
       }
     }
 

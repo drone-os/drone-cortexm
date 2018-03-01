@@ -19,14 +19,14 @@ extern crate quote;
 #[macro_use]
 extern crate syn;
 
-mod interrupt;
+mod thr_int;
 mod vtable;
 
 use proc_macro::TokenStream;
 
 #[proc_macro]
-pub fn interrupt(input: TokenStream) -> TokenStream {
-  interrupt::proc_macro(input)
+pub fn thr_int(input: TokenStream) -> TokenStream {
+  thr_int::proc_macro(input)
 }
 
 #[proc_macro]

@@ -1,8 +1,8 @@
 //! Direct memory access controller.
 
-use drivers::prelude::*;
 use drone_core::bitfield::Bitfield;
-use fiber;
+use drv::prelude::*;
+use fib;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
@@ -13,34 +13,30 @@ use reg::marker::*;
 use reg::prelude::*;
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x6"))]
-use thread::irq::{IrqDma1Ch1, IrqDma1Ch2, IrqDma1Ch3, IrqDma1Ch4, IrqDma1Ch5,
-                  IrqDma1Ch6, IrqDma1Ch7, IrqDma2Ch1, IrqDma2Ch2, IrqDma2Ch3,
-                  IrqDma2Ch4, IrqDma2Ch5, IrqDma2Ch6, IrqDma2Ch7};
+use thr::int::{IntDma1Ch1, IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5,
+               IntDma1Ch6, IntDma1Ch7, IntDma2Ch1, IntDma2Ch2, IntDma2Ch3,
+               IntDma2Ch4, IntDma2Ch5, IntDma2Ch6, IntDma2Ch7};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x3",
           feature = "stm32l4x5"))]
-use thread::irq::{IrqDma1Channel1 as IrqDma1Ch1,
-                  IrqDma1Channel2 as IrqDma1Ch2,
-                  IrqDma1Channel3 as IrqDma1Ch3,
-                  IrqDma1Channel4 as IrqDma1Ch4,
-                  IrqDma1Channel5 as IrqDma1Ch5,
-                  IrqDma1Channel6 as IrqDma1Ch6,
-                  IrqDma1Channel7 as IrqDma1Ch7,
-                  IrqDma2Channel1 as IrqDma2Ch1,
-                  IrqDma2Channel2 as IrqDma2Ch2, IrqDma2Channel3 as IrqDma2Ch3};
+use thr::int::{IntDma1Channel1 as IntDma1Ch1, IntDma1Channel2 as IntDma1Ch2,
+               IntDma1Channel3 as IntDma1Ch3, IntDma1Channel4 as IntDma1Ch4,
+               IntDma1Channel5 as IntDma1Ch5, IntDma1Channel6 as IntDma1Ch6,
+               IntDma1Channel7 as IntDma1Ch7, IntDma2Channel1 as IntDma2Ch1,
+               IntDma2Channel2 as IntDma2Ch2, IntDma2Channel3 as IntDma2Ch3};
 #[cfg(any(feature = "stm32f107", feature = "stm32l4x3",
           feature = "stm32l4x5"))]
-use thread::irq::{IrqDma2Channel4 as IrqDma2Ch4, IrqDma2Channel5 as IrqDma2Ch5};
+use thr::int::{IntDma2Channel4 as IntDma2Ch4, IntDma2Channel5 as IntDma2Ch5};
 #[cfg(any(feature = "stm32l4x3", feature = "stm32l4x5"))]
-use thread::irq::{IrqDma2Channel6 as IrqDma2Ch6, IrqDma2Channel7 as IrqDma2Ch7};
+use thr::int::{IntDma2Channel6 as IntDma2Ch6, IntDma2Channel7 as IntDma2Ch7};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103"))]
-use thread::irq::IrqDma2Channel45 as IrqDma2Ch4;
+use thr::int::IntDma2Channel45 as IntDma2Ch4;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103"))]
-use thread::irq::IrqDma2Channel45 as IrqDma2Ch5;
-use thread::prelude::*;
+use thr::int::IntDma2Channel45 as IntDma2Ch5;
+use thr::prelude::*;
 
 /// Error returned when `DMA_ISR_TEIFx` flag in set.
 #[derive(Debug, Fail)]
@@ -53,7 +49,7 @@ pub struct Dma<T: DmaRes>(T);
 /// DMA resource.
 #[allow(missing_docs)]
 pub trait DmaRes: Resource {
-  type Irq: IrqToken<Ltt>;
+  type Int: IntToken<Ltt>;
   type CcrVal: Bitfield<Bits = u32>;
   type Ccr: SRwReg<Val = Self::CcrVal>;
   type CcrMem2Mem: SRwRwRegFieldBit<Reg = Self::Ccr>;
@@ -95,7 +91,8 @@ pub trait DmaRes: Resource {
   type IsrTcif: FRoRoRegFieldBitBand<Reg = Self::Isr>;
   type IsrTeif: FRoRoRegFieldBitBand<Reg = Self::Isr>;
 
-  fn irq(&self) -> Self::Irq;
+  fn int(&self) -> Self::Int;
+
   res_reg_decl!(Ccr, ccr, ccr_mut);
   res_reg_decl!(CcrMem2Mem, ccr_mem2mem, ccr_mem2mem_mut);
   res_reg_decl!(CcrMsize, ccr_msize, ccr_msize_mut);
@@ -132,7 +129,7 @@ impl<T: DmaRes> Driver for Dma<T> {
   type Resource = T;
 
   #[inline(always)]
-  fn from_res(res: T::Input) -> Self {
+  fn from_res(res: T::Source) -> Self {
     Dma(res.into())
   }
 
@@ -145,8 +142,8 @@ impl<T: DmaRes> Driver for Dma<T> {
 #[allow(missing_docs)]
 impl<T: DmaRes> Dma<T> {
   #[inline(always)]
-  pub fn irq(&self) -> T::Irq {
-    self.0.irq()
+  pub fn int(&self) -> T::Int {
+    self.0.int()
   }
 
   #[inline(always)]
@@ -301,9 +298,9 @@ impl<T: DmaRes> Dma<T> {
     let tcif = self.0.isr_tcif_mut().fork();
     let cgif = self.0.ifcr_cgif_mut().fork();
     let ctcif = self.0.ifcr_ctcif_mut().fork();
-    fiber::spawn_future(
-      self.0.irq(),
-      fiber::new(move || loop {
+    fib::spawn_future(
+      self.0.int(),
+      fib::new(move || loop {
         if teif.read_bit_band() {
           cgif.set_bit_band();
           break Err(DmaTransferError);
@@ -325,9 +322,9 @@ impl<T: DmaRes> Dma<T> {
     let htif = self.0.isr_htif_mut().fork();
     let cgif = self.0.ifcr_cgif_mut().fork();
     let chtif = self.0.ifcr_chtif_mut().fork();
-    fiber::spawn_future(
-      self.0.irq(),
-      fiber::new(move || loop {
+    fib::spawn_future(
+      self.0.int(),
+      fib::new(move || loop {
         if teif.read_bit_band() {
           cgif.set_bit_band();
           break Err(DmaTransferError);
@@ -350,7 +347,7 @@ macro_rules! dma_ch {
     $name_macro:ident,
     $doc_res:expr,
     $name_res:ident,
-    $irq_ty:ident,
+    $int_ty:ident,
     $ccr_ty:ident,
     $cmar_ty:ident,
     $cndtr_ty:ident,
@@ -364,7 +361,7 @@ macro_rules! dma_ch {
     $htif_ty:ident,
     $tcif_ty:ident,
     $teif_ty:ident,
-    $irq:ident,
+    $int:ident,
     $dma:ident,
     $dma_ccr:ident,
     $dma_cmar:ident,
@@ -401,8 +398,8 @@ macro_rules! dma_ch {
 
     #[doc = $doc_res]
     #[allow(missing_docs)]
-    pub struct $name_res<I: $irq_ty<Ltt>, Rt: RegTag> {
-      pub $irq: I,
+    pub struct $name_res<I: $int_ty<Ltt>, Rt: RegTag> {
+      pub $int: I,
       pub $dma_ccr: $dma::$ccr_ty<Srt>,
       pub $dma_cmar: $dma::$cmar_ty<Srt>,
       pub $dma_cndtr: $dma::$cndtr_ty<Srt>,
@@ -427,10 +424,10 @@ macro_rules! dma_ch {
     /// Creates a new `Dma`.
     #[macro_export]
     macro_rules! $name_macro {
-      ($reg:ident, $thd:ident) => {
-        $crate::drivers::dma::Dma::from_res(
-          $crate::drivers::dma::$name_res {
-            $irq: $thd.$irq.into(),
+      ($reg:ident, $thr:ident) => {
+        $crate::drv::dma::Dma::from_res(
+          $crate::drv::dma::$name_res {
+            $int: $thr.$int.into(),
             $dma_ccr: $reg.$dma_ccr,
             $dma_cmar: $reg.$dma_cmar,
             $dma_cndtr: $reg.$dma_cndtr,
@@ -455,10 +452,10 @@ macro_rules! dma_ch {
     /// Creates a new `Dma`.
     #[macro_export]
     macro_rules! $name_macro {
-      ($reg:ident, $thd:ident) => {
-        $crate::drivers::dma::Dma::from_res(
-          $crate::drivers::dma::$name_res {
-            $irq: $thd.$irq.into(),
+      ($reg:ident, $thr:ident) => {
+        $crate::drv::dma::Dma::from_res(
+          $crate::drv::dma::$name_res {
+            $int: $thr.$int.into(),
             $dma_ccr: $reg.$dma_ccr,
             $dma_cmar: $reg.$dma_cmar,
             $dma_cndtr: $reg.$dma_cndtr,
@@ -476,14 +473,14 @@ macro_rules! dma_ch {
       }
     }
 
-    impl<I: $irq_ty<Ltt>> From<$name_res<I, Srt>> for $name_res<I, Frt> {
+    impl<I: $int_ty<Ltt>> From<$name_res<I, Srt>> for $name_res<I, Frt> {
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
       fn from(res: $name_res<I, Srt>) -> Self {
         Self {
-          $irq: res.$irq,
+          $int: res.$int,
           $dma_ccr: res.$dma_ccr,
           $dma_cmar: res.$dma_cmar,
           $dma_cndtr: res.$dma_cndtr,
@@ -506,7 +503,7 @@ macro_rules! dma_ch {
       #[inline(always)]
       fn from(res: $name_res<I, Srt>) -> Self {
         Self {
-          $irq: res.$irq,
+          $int: res.$int,
           $dma_ccr: res.$dma_ccr,
           $dma_cmar: res.$dma_cmar,
           $dma_cndtr: res.$dma_cndtr,
@@ -523,12 +520,12 @@ macro_rules! dma_ch {
       }
     }
 
-    impl<I: $irq_ty<Ltt>> Resource for $name_res<I, Frt> {
-      type Input = $name_res<I, Srt>;
+    impl<I: $int_ty<Ltt>> Resource for $name_res<I, Frt> {
+      type Source = $name_res<I, Srt>;
     }
 
-    impl<I: $irq_ty<Ltt>> DmaRes for $name_res<I, Frt> {
-      type Irq = I;
+    impl<I: $int_ty<Ltt>> DmaRes for $name_res<I, Frt> {
+      type Int = I;
       type CcrVal = $dma::$ccr_path::Val;
       type Ccr = $dma::$ccr_ty<Srt>;
       type CcrMem2Mem = $dma::$ccr_path::Mem2Mem<Srt>;
@@ -571,8 +568,8 @@ macro_rules! dma_ch {
       type IsrTeif = $dma::isr::$teif_ty<Frt>;
 
       #[inline(always)]
-      fn irq(&self) -> Self::Irq {
-        self.$irq
+      fn int(&self) -> Self::Int {
+        self.$int
       }
 
       res_reg_impl!(Ccr, ccr, ccr_mut, $dma_ccr);
@@ -621,7 +618,7 @@ dma_ch! {
   drv_dma1_ch1,
   "DMA1 Channel 1 resource.",
   Dma1Ch1Res,
-  IrqDma1Ch1,
+  IntDma1Ch1,
   Ccr1,
   Cmar1,
   Cndtr1,
@@ -679,7 +676,7 @@ dma_ch! {
   drv_dma1_ch2,
   "DMA1 Channel 2 resource.",
   Dma1Ch2Res,
-  IrqDma1Ch2,
+  IntDma1Ch2,
   Ccr2,
   Cmar2,
   Cndtr2,
@@ -737,7 +734,7 @@ dma_ch! {
   drv_dma1_ch3,
   "DMA1 Channel 3 resource.",
   Dma1Ch3Res,
-  IrqDma1Ch3,
+  IntDma1Ch3,
   Ccr3,
   Cmar3,
   Cndtr3,
@@ -795,7 +792,7 @@ dma_ch! {
   drv_dma1_ch4,
   "DMA1 Channel 4 resource.",
   Dma1Ch4Res,
-  IrqDma1Ch4,
+  IntDma1Ch4,
   Ccr4,
   Cmar4,
   Cndtr4,
@@ -853,7 +850,7 @@ dma_ch! {
   drv_dma1_ch5,
   "DMA1 Channel 5 resource.",
   Dma1Ch5Res,
-  IrqDma1Ch5,
+  IntDma1Ch5,
   Ccr5,
   Cmar5,
   Cndtr5,
@@ -911,7 +908,7 @@ dma_ch! {
   drv_dma1_ch6,
   "DMA1 Channel 6 resource.",
   Dma1Ch6Res,
-  IrqDma1Ch6,
+  IntDma1Ch6,
   Ccr6,
   Cmar6,
   Cndtr6,
@@ -969,7 +966,7 @@ dma_ch! {
   drv_dma1_ch7,
   "DMA1 Channel 7 resource.",
   Dma1Ch7Res,
-  IrqDma1Ch7,
+  IntDma1Ch7,
   Ccr7,
   Cmar7,
   Cndtr7,
@@ -1027,7 +1024,7 @@ dma_ch! {
   drv_dma2_ch1,
   "DMA2 Channel 1 resource.",
   Dma2Ch1Res,
-  IrqDma2Ch1,
+  IntDma2Ch1,
   Ccr1,
   Cmar1,
   Cndtr1,
@@ -1085,7 +1082,7 @@ dma_ch! {
   drv_dma2_ch2,
   "DMA2 Channel 2 resource.",
   Dma2Ch2Res,
-  IrqDma2Ch2,
+  IntDma2Ch2,
   Ccr2,
   Cmar2,
   Cndtr2,
@@ -1143,7 +1140,7 @@ dma_ch! {
   drv_dma2_ch3,
   "DMA2 Channel 3 resource.",
   Dma2Ch3Res,
-  IrqDma2Ch3,
+  IntDma2Ch3,
   Ccr3,
   Cmar3,
   Cndtr3,
@@ -1201,7 +1198,7 @@ dma_ch! {
   drv_dma2_ch4,
   "DMA2 Channel 4 resource.",
   Dma2Ch4Res,
-  IrqDma2Ch4,
+  IntDma2Ch4,
   Ccr4,
   Cmar4,
   Cndtr4,
@@ -1259,7 +1256,7 @@ dma_ch! {
   drv_dma2_ch5,
   "DMA2 Channel 5 resource.",
   Dma2Ch5Res,
-  IrqDma2Ch5,
+  IntDma2Ch5,
   Ccr5,
   Cmar5,
   Cndtr5,
@@ -1315,7 +1312,7 @@ dma_ch! {
   drv_dma2_ch6,
   "DMA2 Channel 6 resource.",
   Dma2Ch6Res,
-  IrqDma2Ch6,
+  IntDma2Ch6,
   Ccr6,
   Cmar6,
   Cndtr6,
@@ -1371,7 +1368,7 @@ dma_ch! {
   drv_dma2_ch7,
   "DMA2 Channel 7 resource.",
   Dma2Ch7Res,
-  IrqDma2Ch7,
+  IntDma2Ch7,
   Ccr7,
   Cmar7,
   Cndtr7,

@@ -1,10 +1,10 @@
-use fiber;
+use fib;
 use futures::executor::{self, Notify};
-use thread::notify::irq::NOTIFY_IRQ;
-use thread::prelude::*;
+use thr::notify::int::NOTIFY_INT;
+use thr::prelude::*;
 
 /// Thread execution requests.
-pub trait ThdRequest<T: ThdTrigger>: IrqToken<T> {
+pub trait ThrRequest<T: ThrTrigger>: IntToken<T> {
   /// Executes the future `f` within the thread.
   fn exec<F>(&self, f: F)
   where
@@ -14,11 +14,11 @@ pub trait ThdRequest<T: ThdTrigger>: IrqToken<T> {
   /// Requests the interrupt.
   #[inline(always)]
   fn trigger(&self) {
-    NOTIFY_IRQ.notify(Self::IRQ_NUM);
+    NOTIFY_INT.notify(Self::INT_NUM);
   }
 }
 
-impl<T: ThdTrigger, U: IrqToken<T>> ThdRequest<T> for U {
+impl<T: ThrTrigger, U: IntToken<T>> ThrRequest<T> for U {
   #[cfg_attr(feature = "clippy", allow(while_let_loop))]
   fn exec<F>(&self, f: F)
   where
@@ -26,8 +26,8 @@ impl<T: ThdTrigger, U: IrqToken<T>> ThdRequest<T> for U {
     F::Future: Send + 'static,
   {
     let mut executor = executor::spawn(f.into_future());
-    fiber::spawn(self, move || loop {
-      match executor.poll_future_notify(&NOTIFY_IRQ, U::IRQ_NUM) {
+    fib::spawn(self, move || loop {
+      match executor.poll_future_notify(&NOTIFY_INT, U::INT_NUM) {
         Ok(Async::NotReady) => {}
         Ok(Async::Ready(())) => break,
       }

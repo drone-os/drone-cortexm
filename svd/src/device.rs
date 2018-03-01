@@ -94,15 +94,15 @@ impl Device {
     self,
     mappings: &mut File,
     tokens: &mut File,
-    irq: &mut File,
+    int: &mut File,
   ) -> Result<(), Error> {
-    let mut irq_names = HashSet::new();
+    let mut int_names = HashSet::new();
     for peripheral in self.peripherals.peripheral.values() {
-      let (mapping_tokens, token_tokens, irq_tokens) =
-        peripheral.to_tokens(&self.peripherals, &mut irq_names)?;
+      let (mapping_tokens, token_tokens, int_tokens) =
+        peripheral.to_tokens(&self.peripherals, &mut int_names)?;
       mappings.write_all(mapping_tokens.to_string().as_bytes())?;
       tokens.write_all(token_tokens.to_string().as_bytes())?;
-      irq.write_all(irq_tokens.to_string().as_bytes())?;
+      int.write_all(int_tokens.to_string().as_bytes())?;
     }
     Ok(())
   }
@@ -112,7 +112,7 @@ impl Peripheral {
   fn to_tokens(
     &self,
     peripherals: &Peripherals,
-    irq_names: &mut HashSet<String>,
+    int_names: &mut HashSet<String>,
   ) -> Result<(Tokens, Tokens, Tokens), Error> {
     let &Peripheral {
       ref derived_from,
@@ -140,7 +140,7 @@ impl Peripheral {
       .or_else(|| parent.and_then(|x| x.registers.as_ref()))
       .ok_or_else(|| err_msg("Peripheral registers not found"))?
       .to_tokens(base_address);
-    let interrupts = interrupt.to_tokens(irq_names);
+    let interrupts = interrupt.to_tokens(int_names);
     Ok((
       quote! {
         mappings! {
@@ -162,14 +162,14 @@ impl Peripheral {
 }
 
 trait Interrupts {
-  fn to_tokens(&self, irq_names: &mut HashSet<String>) -> Vec<Tokens>;
+  fn to_tokens(&self, int_names: &mut HashSet<String>) -> Vec<Tokens>;
 }
 
 impl Interrupts for Vec<Interrupt> {
-  fn to_tokens(&self, irq_names: &mut HashSet<String>) -> Vec<Tokens> {
+  fn to_tokens(&self, int_names: &mut HashSet<String>) -> Vec<Tokens> {
     self
       .iter()
-      .filter(|interrupt| irq_names.insert(interrupt.name.to_owned()))
+      .filter(|interrupt| int_names.insert(interrupt.name.to_owned()))
       .map(|interrupt| {
         let &Interrupt {
           ref name,
@@ -179,7 +179,7 @@ impl Interrupts for Vec<Interrupt> {
         let name = Ident::from(name.to_owned());
         let value = Lit::Int(value as u64, IntTy::Unsuffixed);
         quote! {
-          interrupt! {
+          int! {
             #[doc = #description]
             pub trait #name: #value;
           }
