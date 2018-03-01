@@ -1,4 +1,4 @@
-use drone_macros2_core::{ExternStruct, NewStatic, NewStruct};
+use drone_macros_core::{ExternStruct, NewStatic, NewStruct};
 use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::Span;

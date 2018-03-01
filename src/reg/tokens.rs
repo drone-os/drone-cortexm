@@ -1,5 +1,5 @@
 use drone_core::reg::tokens;
-use reg::prelude::*;
+use reg::map::*;
 
 tokens! {
   #[allow(missing_docs)]
@@ -13,11 +13,11 @@ tokens! {
   #[cfg_attr(feature = "stm32l4x3", doc = "Register tokens for STM32L4x3.")]
   #[cfg_attr(feature = "stm32l4x5", doc = "Register tokens for STM32L4x5.")]
   #[cfg_attr(feature = "stm32l4x6", doc = "Register tokens for STM32L4x6.")]
-  RegIdx;
+  pub struct RegIdx;
 
-  include!(concat!(env!("OUT_DIR"), "/svd_tokens.rs"));
+  include!(concat!(env!("OUT_DIR"), "/svd_reg_tokens.rs"));
 
-  reg::ITM {
+  ITM {
     /// Trace Privilege Register.
     TPR;
     /// Trace Control Register.
@@ -26,7 +26,7 @@ tokens! {
     LAR;
   }
 
-  reg::SCB {
+  SCB {
     /// Interrupt control and state register.
     ICSR;
     /// Application interrupt and reset control register.
@@ -47,7 +47,7 @@ tokens! {
     DEMCR;
   }
 
-  reg::STK {
+  STK {
     /// SysTick control and status register.
     CTRL;
     /// SysTick reload value register.
@@ -58,7 +58,7 @@ tokens! {
     CALIB;
   }
 
-  reg::TPIU {
+  TPIU {
     /// Selected Pin Protocol Register.
     SPPR;
     /// Formatter and Flush Control Register.

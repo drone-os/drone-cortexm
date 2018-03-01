@@ -10,13 +10,10 @@
 #![cfg_attr(feature = "clippy", allow(precedence))]
 
 extern crate failure_dup as failure;
-#[macro_use]
-extern crate quote;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_xml_rs;
-extern crate syn;
 
 mod device;
 
@@ -28,12 +25,12 @@ use std::io::prelude::*;
 /// Generate bindings from SVD.
 pub fn svd_generate(
   input: &mut File,
-  mappings: &mut File,
-  tokens: &mut File,
-  int: &mut File,
+  reg_map: &mut File,
+  reg_tokens: &mut File,
+  interrupts: &mut File,
 ) -> Result<(), Error> {
   let mut xml = String::new();
   input.read_to_string(&mut xml)?;
   let device: Device = serde_xml_rs::deserialize(xml.as_bytes())?;
-  device.generate(mappings, tokens, int)
+  device.generate(reg_map, reg_tokens, interrupts)
 }

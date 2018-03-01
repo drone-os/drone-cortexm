@@ -1,11 +1,9 @@
 use failure::{err_msg, Error};
-use quote::Tokens;
 use serde::de::{self, Deserialize, Deserializer};
 use std::collections::{BTreeMap, HashSet};
 use std::fs::File;
 use std::io::Write;
 use std::ops::Range;
-use syn::{Ident, IntTy, Lit};
 
 const BIT_BAND: Range<u32> = 0x4000_0000..0x4010_0000;
 
@@ -92,28 +90,33 @@ enum Access {
 impl Device {
   pub fn generate(
     self,
-    mappings: &mut File,
-    tokens: &mut File,
-    int: &mut File,
+    reg_map: &mut File,
+    reg_tokens: &mut File,
+    interrupts: &mut File,
   ) -> Result<(), Error> {
     let mut int_names = HashSet::new();
     for peripheral in self.peripherals.peripheral.values() {
-      let (mapping_tokens, token_tokens, int_tokens) =
-        peripheral.to_tokens(&self.peripherals, &mut int_names)?;
-      mappings.write_all(mapping_tokens.to_string().as_bytes())?;
-      tokens.write_all(token_tokens.to_string().as_bytes())?;
-      int.write_all(int_tokens.to_string().as_bytes())?;
+      peripheral.generate(
+        &self.peripherals,
+        &mut int_names,
+        reg_map,
+        reg_tokens,
+        interrupts,
+      )?;
     }
     Ok(())
   }
 }
 
 impl Peripheral {
-  fn to_tokens(
+  fn generate(
     &self,
     peripherals: &Peripherals,
     int_names: &mut HashSet<String>,
-  ) -> Result<(Tokens, Tokens, Tokens), Error> {
+    reg_map: &mut File,
+    reg_tokens: &mut File,
+    interrupts: &mut File,
+  ) -> Result<(), Error> {
     let &Peripheral {
       ref derived_from,
       ref name,
@@ -134,159 +137,155 @@ impl Peripheral {
       .as_ref()
       .or_else(|| parent.and_then(|x| x.description.as_ref()))
       .ok_or_else(|| err_msg("Peripheral description not found"))?;
-    let name = Ident::from(name.to_owned());
-    let (mappings, tokens) = registers
+    writeln!(reg_map, "map! {{")?;
+    for line in description.lines() {
+      writeln!(reg_map, "  /// {}", line.trim())?;
+    }
+    writeln!(reg_map, "  pub mod {};", name)?;
+    writeln!(reg_tokens, "  {} {{", name)?;
+    registers
       .as_ref()
       .or_else(|| parent.and_then(|x| x.registers.as_ref()))
       .ok_or_else(|| err_msg("Peripheral registers not found"))?
-      .to_tokens(base_address);
-    let interrupts = interrupt.to_tokens(int_names);
-    Ok((
-      quote! {
-        mappings! {
-          #[doc = #description]
-          #name;
-          #(#mappings)*
-        }
-      },
-      quote! {
-        reg::#name {
-          #(#tokens)*
-        }
-      },
-      quote! {
-        #(#interrupts)*
-      },
-    ))
+      .generate(base_address, reg_map, reg_tokens)?;
+    interrupt.generate(int_names, interrupts)?;
+    writeln!(reg_tokens, "  }}")?;
+    writeln!(reg_map, "}}")?;
+    Ok(())
   }
 }
 
 trait Interrupts {
-  fn to_tokens(&self, int_names: &mut HashSet<String>) -> Vec<Tokens>;
+  fn generate(
+    &self,
+    int_names: &mut HashSet<String>,
+    interrupts: &mut File,
+  ) -> Result<(), Error>;
 }
 
 impl Interrupts for Vec<Interrupt> {
-  fn to_tokens(&self, int_names: &mut HashSet<String>) -> Vec<Tokens> {
-    self
-      .iter()
-      .filter(|interrupt| int_names.insert(interrupt.name.to_owned()))
-      .map(|interrupt| {
+  fn generate(
+    &self,
+    int_names: &mut HashSet<String>,
+    interrupts: &mut File,
+  ) -> Result<(), Error> {
+    for interrupt in self {
+      if int_names.insert(interrupt.name.to_owned()) {
         let &Interrupt {
           ref name,
           ref description,
           value,
         } = interrupt;
-        let name = Ident::from(name.to_owned());
-        let value = Lit::Int(value as u64, IntTy::Unsuffixed);
-        quote! {
-          int! {
-            #[doc = #description]
-            pub trait #name: #value;
-          }
+        writeln!(interrupts, "int! {{")?;
+        for line in description.lines() {
+          writeln!(interrupts, "  /// {}", line.trim())?;
         }
-      })
-      .collect()
+        writeln!(interrupts, "  pub trait {}: {};", name, value)?;
+        writeln!(interrupts, "}}")?;
+      }
+    }
+    Ok(())
   }
 }
 
 impl Registers {
-  fn to_tokens(&self, base_address: u32) -> (Vec<Tokens>, Vec<Tokens>) {
-    self
-      .register
-      .iter()
-      .filter_map(|register| {
-        let &Register {
-          ref name,
-          ref description,
-          address_offset,
-          size,
-          access,
-          reset_value,
-          ref fields,
-        } = register;
-        let name = Ident::from(name.to_owned());
-        let address = base_address + address_offset;
-        let mut traits = Vec::new();
-        match access {
-          Some(Access::WriteOnly) => {
-            traits.push(Ident::from("WReg"));
-            traits.push(Ident::from("WoReg"));
-          }
-          Some(Access::ReadOnly) => {
-            traits.push(Ident::from("RReg"));
-            traits.push(Ident::from("RoReg"));
-          }
-          Some(Access::ReadWrite) | None => {
-            traits.push(Ident::from("RReg"));
-            traits.push(Ident::from("WReg"));
-          }
+  fn generate(
+    &self,
+    base_address: u32,
+    reg_map: &mut File,
+    reg_tokens: &mut File,
+  ) -> Result<(), Error> {
+    for register in &self.register {
+      let &Register {
+        ref name,
+        ref description,
+        address_offset,
+        size,
+        access,
+        reset_value,
+        ref fields,
+      } = register;
+      let address = base_address + address_offset;
+      for line in description.lines() {
+        writeln!(reg_map, "  /// {}", line.trim())?;
+      }
+      writeln!(reg_map, "  {} {{", name)?;
+      writeln!(
+        reg_map,
+        "    0x{:04X}_{:04X} {} 0x{:04X}_{:04X}",
+        address >> 16,
+        address & 0xFFFF,
+        size,
+        reset_value >> 16,
+        reset_value & 0xFFFF,
+      )?;
+      write!(reg_map, "   ")?;
+      match access {
+        Some(Access::WriteOnly) => {
+          write!(reg_map, " WReg")?;
+          write!(reg_map, " WoReg")?;
         }
-        if BIT_BAND.contains(address) {
-          traits.push(Ident::from("RegBitBand"));
+        Some(Access::ReadOnly) => {
+          write!(reg_map, " RReg")?;
+          write!(reg_map, " RoReg")?;
         }
-        let address = Lit::Int(address as u64, IntTy::Unsuffixed);
-        let size = Lit::Int(size as u64, IntTy::Unsuffixed);
-        let reset_value = Lit::Int(reset_value as u64, IntTy::Unsuffixed);
-        let fields = fields.as_ref()?.to_tokens(access);
-        Some((
-          quote! {
-            #[doc = #description]
-            #name {
-              #address #size #reset_value
-              #(#traits)*;
-              #(#fields)*
-            }
-          },
-          quote! {
-            #[doc = #description]
-            #name;
-          },
-        ))
-      })
-      .unzip()
+        Some(Access::ReadWrite) | None => {
+          write!(reg_map, " RReg")?;
+          write!(reg_map, " WReg")?;
+        }
+      }
+      if BIT_BAND.contains(address) {
+        write!(reg_map, " RegBitBand")?;
+      }
+      writeln!(reg_map, ";")?;
+      if let &Some(ref fields) = fields {
+        fields.generate(access, reg_map)?;
+      }
+      writeln!(reg_map, "  }}")?;
+      for line in description.lines() {
+        writeln!(reg_tokens, "    /// {}", line.trim())?;
+      }
+      writeln!(reg_tokens, "    {};", name)?;
+    }
+    Ok(())
   }
 }
 
 impl Fields {
-  fn to_tokens(&self, base_access: Option<Access>) -> Vec<Tokens> {
-    self
-      .field
-      .iter()
-      .map(|field| {
-        let &Field {
-          ref name,
-          ref description,
-          bit_offset,
-          bit_width,
-          access,
-        } = field;
-        let name = Ident::from(name.to_owned());
-        let mut traits = Vec::new();
-        match access.as_ref().or(base_access.as_ref()) {
-          Some(&Access::WriteOnly) => {
-            traits.push(Ident::from("WWRegField"));
-            traits.push(Ident::from("WoWRegField"));
-          }
-          Some(&Access::ReadOnly) => {
-            traits.push(Ident::from("RRRegField"));
-            traits.push(Ident::from("RoRRegField"));
-          }
-          Some(&Access::ReadWrite) | None => {
-            traits.push(Ident::from("RRRegField"));
-            traits.push(Ident::from("WWRegField"));
-          }
+  fn generate(
+    &self,
+    base_access: Option<Access>,
+    reg_map: &mut File,
+  ) -> Result<(), Error> {
+    for field in &self.field {
+      let &Field {
+        ref name,
+        ref description,
+        bit_offset,
+        bit_width,
+        access,
+      } = field;
+      for line in description.lines() {
+        writeln!(reg_map, "    /// {}", line.trim())?;
+      }
+      write!(reg_map, "    {} {{ {} {}", name, bit_offset, bit_width)?;
+      match access.as_ref().or(base_access.as_ref()) {
+        Some(&Access::WriteOnly) => {
+          write!(reg_map, " WWRegField")?;
+          write!(reg_map, " WoWRegField")?;
         }
-        let bit_offset = Lit::Int(bit_offset as u64, IntTy::Unsuffixed);
-        let bit_width = Lit::Int(bit_width as u64, IntTy::Unsuffixed);
-        quote! {
-          #[doc = #description]
-          #name {
-            #bit_offset #bit_width
-            #(#traits)*
-          }
+        Some(&Access::ReadOnly) => {
+          write!(reg_map, " RRRegField")?;
+          write!(reg_map, " RoRRegField")?;
         }
-      })
-      .collect()
+        Some(&Access::ReadWrite) | None => {
+          write!(reg_map, " RRRegField")?;
+          write!(reg_map, " WWRegField")?;
+        }
+      }
+      writeln!(reg_map, " }}")?;
+    }
+    Ok(())
   }
 }
 

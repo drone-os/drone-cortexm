@@ -18,12 +18,12 @@ fn main() {
 fn run() -> Result<(), Error> {
   let out_dir = env::var("OUT_DIR")?;
   let out_dir = Path::new(&out_dir);
-  let mut mappings = File::create(out_dir.join("svd_mappings.rs"))?;
-  let mut tokens = File::create(out_dir.join("svd_tokens.rs"))?;
-  let mut int = File::create(out_dir.join("svd_int.rs"))?;
+  let mut reg_map = File::create(out_dir.join("svd_reg_map.rs"))?;
+  let mut reg_tokens = File::create(out_dir.join("svd_reg_tokens.rs"))?;
+  let mut interrupts = File::create(out_dir.join("svd_interrupts.rs"))?;
   if let Some(svd_file) = svd_from_feature() {
     let mut input = File::open(svd_file)?;
-    svd_generate(&mut input, &mut mappings, &mut tokens, &mut int)?;
+    svd_generate(&mut input, &mut reg_map, &mut reg_tokens, &mut interrupts)?;
   }
   Ok(())
 }

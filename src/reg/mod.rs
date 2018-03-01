@@ -5,10 +5,10 @@ pub mod prelude;
 
 mod atomic;
 mod bit_band;
-mod mappings;
+mod map;
 mod tokens;
 
 pub use self::atomic::*;
 pub use self::bit_band::*;
-pub use self::mappings::*;
+pub use self::map::*;
 pub use self::tokens::*;

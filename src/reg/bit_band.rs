@@ -96,10 +96,10 @@ where
 mod tests {
   use self::test_block::*;
   use super::*;
-  use drone_core::reg::mappings;
+  use drone_core::reg::map;
 
-  mappings! {
-    TEST_BLOCK;
+  map! {
+    pub mod TEST_BLOCK;
 
     #[allow(dead_code)]
     LOW_REG {

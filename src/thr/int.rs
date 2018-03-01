@@ -5,7 +5,7 @@ use thr::int;
 #[allow(unused_imports)]
 use thr::prelude::*;
 
-include!(concat!(env!("OUT_DIR"), "/svd_int.rs"));
+include!(concat!(env!("OUT_DIR"), "/svd_interrupts.rs"));
 
 /// NVIC register bundle.
 pub trait IntBundle {

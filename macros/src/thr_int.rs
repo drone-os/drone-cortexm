@@ -4,14 +4,14 @@ use proc_macro2::Span;
 use syn::{Attribute, Ident, LitInt, Visibility};
 use syn::synom::Synom;
 
-struct Int {
+struct ThrInt {
   attrs: Vec<Attribute>,
   vis: Visibility,
   ident: Ident,
   number: LitInt,
 }
 
-impl Synom for Int {
+impl Synom for ThrInt {
   named!(parse -> Self, do_parse!(
     attrs: many0!(Attribute::parse_outer) >>
     vis: syn!(Visibility) >>
@@ -20,13 +20,13 @@ impl Synom for Int {
     punct!(:) >>
     number: syn!(LitInt) >>
     punct!(;) >>
-    (Int { attrs, vis, ident, number })
+    (ThrInt { attrs, vis, ident, number })
   ));
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
   let call_site = Span::call_site();
-  let Int {
+  let ThrInt {
     attrs,
     vis,
     ident,

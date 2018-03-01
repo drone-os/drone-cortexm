@@ -1,11 +1,11 @@
-use drone_core::reg::mappings;
+use drone_core::reg::map;
 use reg::prelude::*;
 
-include!(concat!(env!("OUT_DIR"), "/svd_mappings.rs"));
+include!(concat!(env!("OUT_DIR"), "/svd_reg_map.rs"));
 
-mappings! {
+map! {
   /// Instrumentation trace macrocell.
-  ITM;
+  pub mod ITM;
 
   /// Trace Privilege Register.
   TPR {
@@ -49,9 +49,9 @@ mappings! {
   }
 }
 
-mappings! {
+map! {
   /// System control block.
-  SCB;
+  pub mod SCB;
 
   /// Interrupt control and state register.
   ICSR {
@@ -234,9 +234,9 @@ mappings! {
   }
 }
 
-mappings! {
+map! {
   /// SysTick timer.
-  STK;
+  pub mod STK;
 
   /// SysTick control and status register.
   CTRL {
@@ -281,9 +281,9 @@ mappings! {
   }
 }
 
-mappings! {
+map! {
   /// Trace port interface unit.
-  TPIU;
+  pub mod TPIU;
 
   /// Selected Pin Protocol Register.
   SPPR {
