@@ -1,6 +1,6 @@
 //! Fibers.
 
-// mod continuation;
+// mod cont;
 
-// pub use self::continuation::{new_cont, spawn_cont, FiberCont, Yielder};
+// pub use self::cont::{new_cont, spawn_cont, FiberCont, Yielder};
 pub use drone_core::fib::*;

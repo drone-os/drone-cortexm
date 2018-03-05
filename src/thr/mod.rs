@@ -8,6 +8,7 @@
 //! vtable! {
 //!   /// The vector table.
 //!   pub struct Vtable;
+//!   pub struct Handlers;
 //!   static THREADS;
 //!   extern struct Thr;
 //!
@@ -51,3 +52,14 @@ pub use self::future::FuturePlat;
 pub use self::request::ThrRequest;
 pub use self::stream::{StreamPlat, StreamTrunkWait};
 pub use drone_stm32_macros::thr_int as int;
+
+use drone_core::thr::{thread_resume, ThrTag, ThrToken};
+
+/// A thread handler function, which should be passed to hardware.
+///
+/// # Safety
+///
+/// Must be called only by hardware.
+pub unsafe extern "C" fn thr_handler<T: ThrToken<U>, U: ThrTag>() {
+  thread_resume::<T, U>();
+}

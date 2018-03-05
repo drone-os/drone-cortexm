@@ -84,9 +84,10 @@ pub mod fib;
 pub mod panicking;
 pub mod prelude;
 pub mod reg;
+pub mod sv;
 pub mod thr;
 
-pub use drone_stm32_macros::vtable;
+pub use drone_stm32_macros::{sv, vtable};
 
 #[prelude_import]
 #[allow(unused_imports)]

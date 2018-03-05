@@ -3,12 +3,14 @@ use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::Tokens;
+use std::collections::HashSet;
 use syn::{Attribute, Ident, LitInt, Visibility};
 use syn::synom::Synom;
 
 struct Vtable {
   vtable: NewStruct,
-  tokens: NewStruct,
+  handlers: NewStruct,
+  index: NewStruct,
   array: NewStatic,
   thr: ExternStruct,
   excs: Vec<Exc>,
@@ -17,7 +19,7 @@ struct Vtable {
 
 struct Exc {
   attrs: Vec<Attribute>,
-  vis: Visibility,
+  mode: Mode,
   ident: Ident,
 }
 
@@ -26,40 +28,58 @@ struct Int {
   exc: Exc,
 }
 
+enum Mode {
+  Thread(Visibility),
+  Extern(Visibility),
+  Fn,
+}
+
+impl Synom for Vtable {
+  named!(parse -> Self, do_parse!(
+    vtable: syn!(NewStruct) >>
+    handlers: syn!(NewStruct) >>
+    index: syn!(NewStruct) >>
+    array: syn!(NewStatic) >>
+    thr: syn!(ExternStruct) >>
+    excs: many0!(syn!(Exc)) >>
+    ints: many0!(syn!(Int)) >>
+    (Vtable { vtable, handlers, index, array, thr, excs, ints })
+  ));
+}
+
 impl Synom for Exc {
   named!(parse -> Self, do_parse!(
     attrs: many0!(Attribute::parse_outer) >>
-    vis: syn!(Visibility) >>
+    mode: syn!(Mode) >>
     ident: syn!(Ident) >>
     punct!(;) >>
-    (Exc { attrs, vis, ident })
+    (Exc { attrs, mode, ident })
   ));
 }
 
 impl Synom for Int {
   named!(parse -> Self, do_parse!(
     attrs: many0!(Attribute::parse_outer) >>
-    vis: syn!(Visibility) >>
+    mode: syn!(Mode) >>
     num: syn!(LitInt) >>
     punct!(:) >>
     ident: syn!(Ident) >>
     punct!(;) >>
     (Int {
       num,
-      exc: Exc { attrs, vis, ident },
+      exc: Exc { attrs, mode, ident },
     })
   ));
 }
 
-impl Synom for Vtable {
-  named!(parse -> Self, do_parse!(
-    vtable: syn!(NewStruct) >>
-    tokens: syn!(NewStruct) >>
-    array: syn!(NewStatic) >>
-    thr: syn!(ExternStruct) >>
-    excs: many0!(syn!(Exc)) >>
-    ints: many0!(syn!(Int)) >>
-    (Vtable { vtable, tokens, array, thr, excs, ints })
+impl Synom for Mode {
+  named!(parse -> Self, alt!(
+    keyword!(fn) => {|_| Mode::Fn } |
+    do_parse!(
+      vis: syn!(Visibility) >>
+      ext: option!(keyword!(extern)) >>
+      (if ext.is_none() { Mode::Thread(vis) } else { Mode::Extern(vis) })
+    )
   ));
 }
 
@@ -72,11 +92,17 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         vis: vtable_vis,
         ident: vtable_ident,
       },
-    tokens:
+    handlers:
       NewStruct {
-        attrs: tokens_attrs,
-        vis: tokens_vis,
-        ident: tokens_ident,
+        attrs: handlers_attrs,
+        vis: handlers_vis,
+        ident: handlers_ident,
+      },
+    index:
+      NewStruct {
+        attrs: index_attrs,
+        vis: index_vis,
+        ident: index_ident,
       },
     array:
       NewStatic {
@@ -88,77 +114,108 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     excs,
     ints,
   } = try_parse!(call_site, input);
-  let array_len = excs.len() + ints.len() + 1;
-  let rt = Ident::from("__vtable_rt");
-  let new_ident = Ident::new("new", call_site);
-  let int_extent = ints
+  let int_len = ints
     .iter()
-    .map(|int| int.num.value() + 1)
+    .map(|int| int.num.value() as usize + 1)
     .max()
     .unwrap_or(0);
-  let mut int_idents = (0..int_extent)
-    .map(|n| Ident::from(format!("_int{}", n)))
-    .collect::<Vec<_>>();
-  let mut vtable_tokens = Vec::new();
+  let rt = Ident::from("__vtable_rt");
+  let def_new = Ident::new("new", call_site);
+  let mut exc_holes = exc_set();
+  let mut def_exc = exc_holes.clone();
+  let def_reset = Ident::new("reset", call_site);
+  let def_reset_ty = Ident::new("Reset", call_site);
+  let def_sv_call = Ident::new("sv_call", call_site);
+  let def_nmi = def_exc.def_ident("nmi");
+  let def_hard_fault = def_exc.def_ident("hard_fault");
+  let def_mem_manage = def_exc.def_ident("mem_manage");
+  let def_bus_fault = def_exc.def_ident("bus_fault");
+  let def_usage_fault = def_exc.def_ident("usage_fault");
+  let def_debug = def_exc.def_ident("debug");
+  let def_pend_sv = def_exc.def_ident("pend_sv");
+  let def_sys_tick = def_exc.def_ident("sys_tick");
+  assert!(def_exc.is_empty());
+  let mut vtable_tokens = vec![None; int_len];
   let mut vtable_ctor_tokens = Vec::new();
-  let mut vtable_ctor_default_tokens = Vec::new();
-  let mut tokens_tokens = Vec::new();
-  let mut tokens_ctor_tokens = Vec::new();
+  let mut handlers_tokens = Vec::new();
+  let mut index_tokens = Vec::new();
+  let mut index_ctor_tokens = Vec::new();
   let mut array_tokens = Vec::new();
   let mut thr_tokens = Vec::new();
-  let mut thr_counter = 0;
+  let mut thr_counter = 1;
   for exc in excs {
-    thr_counter += 1;
-    let (struct_ident, _) = gen_exc(
-      thr_counter,
-      exc,
+    let (field_ident, struct_ident) = gen_exc(
+      &exc,
       &thr_ident,
       &rt,
+      &mut thr_counter,
       &mut vtable_ctor_tokens,
-      &mut tokens_tokens,
-      &mut tokens_ctor_tokens,
+      &mut handlers_tokens,
+      &mut index_tokens,
+      &mut index_ctor_tokens,
       &mut array_tokens,
       &mut thr_tokens,
     );
-    let int_trait = Ident::from(format!("Int{}", struct_ident));
-    thr_tokens.push(quote! {
-      impl<T: #rt::ThrTag> #rt::#int_trait<T> for #struct_ident<T> {}
-    });
+    if let Some(struct_ident) = struct_ident {
+      let int_trait = Ident::from(format!("Int{}", struct_ident));
+      thr_tokens.push(quote! {
+        impl<T: #rt::ThrTag> #rt::#int_trait<T> for #struct_ident<T> {}
+      });
+    }
+    assert!(
+      exc_holes.remove(field_ident.as_ref()),
+      "Unknown exception name: {}",
+      exc.ident.as_ref(),
+    );
   }
   for Int { num, exc } in ints {
-    thr_counter += 1;
-    let (struct_ident, field_ident) = gen_exc(
-      thr_counter,
-      exc,
+    let (field_ident, struct_ident) = gen_exc(
+      &exc,
       &thr_ident,
       &rt,
+      &mut thr_counter,
       &mut vtable_ctor_tokens,
-      &mut tokens_tokens,
-      &mut tokens_ctor_tokens,
+      &mut handlers_tokens,
+      &mut index_tokens,
+      &mut index_ctor_tokens,
       &mut array_tokens,
       &mut thr_tokens,
     );
-    let int_trait = Ident::from(format!("Int{}", num.value()));
-    let bundle = Ident::from(format!("IntBundle{}", num.value() / 32));
-    thr_tokens.push(quote! {
-      impl<T: #rt::ThrTag> #rt::IntToken<T> for #struct_ident<T> {
-        type Bundle = #rt::#bundle;
+    if let Some(struct_ident) = struct_ident {
+      let int_trait = Ident::from(format!("Int{}", num.value()));
+      let bundle = Ident::from(format!("IntBundle{}", num.value() / 32));
+      thr_tokens.push(quote! {
+        impl<T: #rt::ThrTag> #rt::IntToken<T> for #struct_ident<T> {
+          type Bundle = #rt::#bundle;
 
-        const INT_NUM: usize = #num;
-      }
+          const INT_NUM: usize = #num;
+        }
 
-      impl<T: #rt::ThrTag> #rt::#int_trait<T> for #struct_ident<T> {}
-    });
-    int_idents[num.value() as usize] = field_ident;
-  }
-  for int_ident in int_idents {
-    vtable_tokens.push(quote! {
-      #int_ident: Option<#rt::Handler>
-    });
-    vtable_ctor_default_tokens.push(quote! {
-      #int_ident: None
+        impl<T: #rt::ThrTag> #rt::#int_trait<T> for #struct_ident<T> {}
+      });
+    }
+    vtable_tokens[num.value() as usize] = Some(quote! {
+      #field_ident: Option<#rt::Handler>
     });
   }
+  for exc_ident in exc_holes {
+    let exc_ident = Ident::new(exc_ident, call_site);
+    vtable_ctor_tokens.push(quote!(#exc_ident: None));
+  }
+  let vtable_tokens = vtable_tokens
+    .into_iter()
+    .enumerate()
+    .map(|(i, tokens)| {
+      tokens.unwrap_or_else(|| {
+        let int_ident = Ident::from(format!("_int{}", i));
+        vtable_ctor_tokens.push(quote!(#int_ident: None));
+        quote!(#int_ident: Option<#rt::Handler>)
+      })
+    })
+    .collect::<Vec<_>>();
+  vtable_ctor_tokens.push(quote! {
+    #def_sv_call: #rt::sv_handler::<<#thr_ident as #rt::Thread>::Sv>
+  });
 
   let expanded = quote! {
     mod #rt {
@@ -168,73 +225,76 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
 
       pub use self::core::marker::PhantomData;
       pub use self::drone_core::thr::ThrTokens;
+      pub use self::drone_plat::sv::sv_handler;
+      pub use self::drone_plat::thr::thr_handler;
       pub use self::drone_plat::thr::int::*;
       pub use self::drone_plat::thr::prelude::*;
-      pub use self::drone_plat::thr::vtable::{Handler, Reserved, ResetHandler};
+      pub use self::drone_plat::thr::vtable::{Handler, Reserved, Reset,
+                                              ResetHandler};
     }
 
     #(#vtable_attrs)*
     #[allow(dead_code)]
     #vtable_vis struct #vtable_ident {
-      reset: #rt::ResetHandler,
-      nmi: Option<#rt::Handler>,
-      hard_fault: Option<#rt::Handler>,
-      mem_manage: Option<#rt::Handler>,
-      bus_fault: Option<#rt::Handler>,
-      usage_fault: Option<#rt::Handler>,
+      #def_reset: #rt::ResetHandler,
+      #def_nmi: Option<#rt::Handler>,
+      #def_hard_fault: Option<#rt::Handler>,
+      #def_mem_manage: Option<#rt::Handler>,
+      #def_bus_fault: Option<#rt::Handler>,
+      #def_usage_fault: Option<#rt::Handler>,
       _reserved0: [#rt::Reserved; 4],
-      sv_call: Option<#rt::Handler>,
-      debug: Option<#rt::Handler>,
+      #def_sv_call: #rt::Handler,
+      #def_debug: Option<#rt::Handler>,
       _reserved1: [#rt::Reserved; 1],
-      pend_sv: Option<#rt::Handler>,
-      sys_tick: Option<#rt::Handler>,
-      #(#vtable_tokens,)*
+      #def_pend_sv: Option<#rt::Handler>,
+      #def_sys_tick: Option<#rt::Handler>,
+      #(#vtable_tokens),*
     }
 
-    impl #vtable_ident {
-      /// Creates a new vector table.
-      #[inline(always)]
-      pub const fn #new_ident(reset: #rt::ResetHandler) -> Self {
-        Self {
-          #(#vtable_ctor_tokens,)*
-          ..Self {
-            reset,
-            nmi: None,
-            hard_fault: None,
-            mem_manage: None,
-            bus_fault: None,
-            usage_fault: None,
-            _reserved0: [#rt::Reserved::Vector; 4],
-            sv_call: None,
-            debug: None,
-            _reserved1: [#rt::Reserved::Vector; 1],
-            pend_sv: None,
-            sys_tick: None,
-            #(#vtable_ctor_default_tokens,)*
-          }
-        }
-      }
+    #(#handlers_attrs)*
+    #handlers_vis struct #handlers_ident {
+      /// Reset exception handler.
+      pub #def_reset: #rt::ResetHandler,
+      #(#handlers_tokens),*
     }
 
-    #(#tokens_attrs)*
-    #tokens_vis struct #tokens_ident {
-      #(#tokens_tokens),*
-    }
-
-    impl #rt::ThrTokens for #tokens_ident {
-      #[inline(always)]
-      unsafe fn new() -> Self {
-        Self {
-          #(#tokens_ctor_tokens),*
-        }
-      }
+    #(#index_attrs)*
+    #index_vis struct #index_ident {
+      /// Reset thread token.
+      pub #def_reset: #def_reset_ty<#rt::Ctt>,
+      #(#index_tokens),*
     }
 
     #(#array_attrs)*
-    #array_vis static mut #array_ident: [#thr_ident; #array_len] = [
+    #array_vis static mut #array_ident: [#thr_ident; #thr_counter] = [
       #thr_ident::new(0),
       #(#array_tokens),*
     ];
+
+    impl #vtable_ident {
+      /// Creates a new vector table.
+      pub const fn #def_new(handlers: #handlers_ident) -> Self {
+        Self {
+          #def_reset: handlers.#def_reset,
+          _reserved0: [#rt::Reserved::Vector; 4],
+          _reserved1: [#rt::Reserved::Vector; 1],
+          #(#vtable_ctor_tokens),*
+        }
+      }
+    }
+
+    impl #rt::ThrTokens for #index_ident {
+      #[inline(always)]
+      unsafe fn new() -> Self {
+        Self {
+          #def_reset: #def_reset_ty::new(),
+          #(#index_ctor_tokens),*
+        }
+      }
+    }
+
+    /// Reset thread token.
+    pub type #def_reset_ty<T> = #rt::Reset<T, &'static #thr_ident>;
 
     #(#thr_tokens)*
   };
@@ -242,85 +302,126 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
 }
 
 fn gen_exc(
-  index: usize,
-  exc: Exc,
+  exc: &Exc,
   thr_ident: &Ident,
   rt: &Ident,
+  thr_counter: &mut usize,
   vtable_ctor_tokens: &mut Vec<Tokens>,
-  tokens_tokens: &mut Vec<Tokens>,
-  tokens_ctor_tokens: &mut Vec<Tokens>,
+  handlers_tokens: &mut Vec<Tokens>,
+  index_tokens: &mut Vec<Tokens>,
+  index_ctor_tokens: &mut Vec<Tokens>,
   array_tokens: &mut Vec<Tokens>,
   thr_tokens: &mut Vec<Tokens>,
-) -> (Ident, Ident) {
+) -> (Ident, Option<Ident>) {
   let call_site = Span::call_site();
-  let Exc {
+  let &Exc {
     ref attrs,
-    ref vis,
+    ref mode,
     ref ident,
   } = exc;
-  let vtable_field_ident = Ident::from(ident.as_ref().to_snake_case());
   let struct_ident = Ident::new(&ident.as_ref().to_pascal_case(), call_site);
-  let field_ident = Ident::new(vtable_field_ident.as_ref(), call_site);
-  vtable_ctor_tokens.push(quote! {
-    #vtable_field_ident: Some(
-      <#struct_ident<#rt::Ltt> as #rt::ThrToken<#rt::Ltt>>::handler,
-    )
-  });
-  tokens_tokens.push(quote! {
-    #(#attrs)*
-    #vis #field_ident: #struct_ident<#rt::Ctt>
-  });
-  tokens_ctor_tokens.push(quote! {
-    #field_ident: #struct_ident::new()
-  });
-  array_tokens.push(quote! {
-    #thr_ident::new(#index)
-  });
-  thr_tokens.push(quote! {
-    #(#attrs)*
-    #[derive(Clone, Copy)]
-    #vis struct #struct_ident<T: #rt::ThrTag>(#rt::PhantomData<T>);
-
-    impl<T: #rt::ThrTag> #struct_ident<T> {
-      #[inline(always)]
-      unsafe fn new() -> Self {
-        #struct_ident(#rt::PhantomData)
-      }
+  let field_ident = Ident::new(&ident.as_ref().to_snake_case(), call_site);
+  match *mode {
+    Mode::Thread(_) => {
+      vtable_ctor_tokens.push(quote! {
+        #field_ident: Some(#rt::thr_handler::<#struct_ident<#rt::Ltt>, #rt::Ltt>)
+      });
     }
-
-    impl<T: #rt::ThrTag> #rt::ThrToken<T> for #struct_ident<T> {
-      type Thr = #thr_ident;
-
-      const THR_NUM: usize = #index;
+    Mode::Extern(_) | Mode::Fn => {
+      vtable_ctor_tokens.push(quote! {
+        #field_ident: Some(handlers.#field_ident)
+      });
+      handlers_tokens.push(quote! {
+        #(#attrs)*
+        pub #field_ident: #rt::Handler
+      });
     }
+  }
+  match *mode {
+    Mode::Thread(ref vis) | Mode::Extern(ref vis) => {
+      let index = *thr_counter;
+      *thr_counter += 1;
+      index_tokens.push(quote! {
+        #(#attrs)*
+        #vis #field_ident: #struct_ident<#rt::Ctt>
+      });
+      index_ctor_tokens.push(quote! {
+        #field_ident: #struct_ident::new()
+      });
+      array_tokens.push(quote! {
+        #thr_ident::new(#index)
+      });
+      thr_tokens.push(quote! {
+        #(#attrs)*
+        #[derive(Clone, Copy)]
+        #vis struct #struct_ident<T: #rt::ThrTag>(#rt::PhantomData<T>);
 
-    impl<T: #rt::ThrTag> AsRef<#thr_ident> for #struct_ident<T> {
-      #[inline(always)]
-      fn as_ref(&self) -> &#thr_ident {
-        #rt::ThrToken::as_thr(self)
-      }
-    }
+        impl<T: #rt::ThrTag> #struct_ident<T> {
+          #[inline(always)]
+          unsafe fn new() -> Self {
+            #struct_ident(#rt::PhantomData)
+          }
+        }
 
-    impl From<#struct_ident<#rt::Ctt>> for #struct_ident<#rt::Ttt> {
-      #[inline(always)]
-      fn from(_token: #struct_ident<#rt::Ctt>) -> Self {
-        unsafe { Self::new() }
-      }
-    }
+        impl<T: #rt::ThrTag> #rt::ThrToken<T> for #struct_ident<T> {
+          type Thr = #thr_ident;
 
-    impl From<#struct_ident<#rt::Ctt>> for #struct_ident<#rt::Ltt> {
-      #[inline(always)]
-      fn from(_token: #struct_ident<#rt::Ctt>) -> Self {
-        unsafe { Self::new() }
-      }
-    }
+          const THR_NUM: usize = #index;
+        }
 
-    impl From<#struct_ident<#rt::Ttt>> for #struct_ident<#rt::Ltt> {
-      #[inline(always)]
-      fn from(_token: #struct_ident<#rt::Ttt>) -> Self {
-        unsafe { Self::new() }
-      }
+        impl<T: #rt::ThrTag> AsRef<#thr_ident> for #struct_ident<T> {
+          #[inline(always)]
+          fn as_ref(&self) -> &#thr_ident {
+            <Self as #rt::ThrToken<T>>::get_thr()
+          }
+        }
+
+        impl From<#struct_ident<#rt::Ctt>> for #struct_ident<#rt::Ttt> {
+          #[inline(always)]
+          fn from(_token: #struct_ident<#rt::Ctt>) -> Self {
+            unsafe { Self::new() }
+          }
+        }
+
+        impl From<#struct_ident<#rt::Ctt>> for #struct_ident<#rt::Ltt> {
+          #[inline(always)]
+          fn from(_token: #struct_ident<#rt::Ctt>) -> Self {
+            unsafe { Self::new() }
+          }
+        }
+
+        impl From<#struct_ident<#rt::Ttt>> for #struct_ident<#rt::Ltt> {
+          #[inline(always)]
+          fn from(_token: #struct_ident<#rt::Ttt>) -> Self {
+            unsafe { Self::new() }
+          }
+        }
+      });
+      (field_ident, Some(struct_ident))
     }
-  });
-  (struct_ident, vtable_field_ident)
+    Mode::Fn => (field_ident, None),
+  }
+}
+
+fn exc_set() -> HashSet<&'static str> {
+  let mut set = HashSet::new();
+  set.insert("nmi");
+  set.insert("hard_fault");
+  set.insert("mem_manage");
+  set.insert("bus_fault");
+  set.insert("usage_fault");
+  set.insert("debug");
+  set.insert("pend_sv");
+  set.insert("sys_tick");
+  set
+}
+
+trait ExcDefIdent {
+  fn def_ident(&mut self, ident: &str) -> Ident;
+}
+
+impl ExcDefIdent for HashSet<&'static str> {
+  fn def_ident(&mut self, ident: &str) -> Ident {
+    Ident::new(self.take(ident).unwrap(), Span::call_site())
+  }
 }
