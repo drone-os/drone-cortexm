@@ -1,27 +1,29 @@
 //! Supervisor.
 
+mod switch;
+
+pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
+
 use core::mem::{size_of, unreachable};
 use drone_core::sv::{Supervisor, SvService};
 
 /// Calls `SVC num` instruction.
 #[inline(always)]
-pub fn sv_call<T: SvService>(service: &mut T, num: u8) {
-  unsafe {
-    if size_of::<T>() == 0 {
-      asm!("
-        svc $0
-      " :
-        : "i"(num)
-        :
-        : "volatile");
-    } else {
-      asm!("
-        svc $0
-      " :
-        : "i"(num), "{r12}"(service)
-        :
-        : "volatile");
-    }
+pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
+  if size_of::<T>() == 0 {
+    asm!("
+      svc $0
+    " :
+      : "i"(num)
+      :
+      : "volatile");
+  } else {
+    asm!("
+      svc $0
+    " :
+      : "i"(num), "{r12}"(service)
+      :
+      : "volatile");
   }
 }
 

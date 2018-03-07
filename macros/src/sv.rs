@@ -62,7 +62,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     service_tokens.push(quote! {
       impl #rt::SvCall<#ident> for #sv_ident {
         #[inline(always)]
-        fn call(service: &mut #ident) {
+        unsafe fn call(service: &mut #ident) {
           #rt::sv_call(service, #index);
         }
       }

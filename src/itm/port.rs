@@ -74,13 +74,13 @@ impl Transmit for u8 {
   fn transmit(self, address: usize) {
     unsafe {
       asm!("
-        0:
-          ldrexb r0, [$1]
-          cmp r0, #0
-          itt ne
-          strexbne r0, $0, [$1]
-          cmpne r0, #1
-          beq 0b
+      0:
+        ldrexb r0, [$1]
+        cmp r0, #0
+        itt ne
+        strexbne r0, $0, [$1]
+        cmpne r0, #1
+        beq 0b
       " :
         : "r"(self), "r"(address as *mut u8)
         : "r0", "cc"
@@ -93,13 +93,13 @@ impl Transmit for u16 {
   fn transmit(self, address: usize) {
     unsafe {
       asm!("
-        0:
-          ldrexh r0, [$1]
-          cmp r0, #0
-          itt ne
-          strexhne r0, $0, [$1]
-          cmpne r0, #1
-          beq 0b
+      0:
+        ldrexh r0, [$1]
+        cmp r0, #0
+        itt ne
+        strexhne r0, $0, [$1]
+        cmpne r0, #1
+        beq 0b
       " :
         : "r"(self), "r"(address as *mut u16)
         : "r0", "cc"
@@ -112,13 +112,13 @@ impl Transmit for u32 {
   fn transmit(self, address: usize) {
     unsafe {
       asm!("
-        0:
-          ldrex r0, [$1]
-          cmp r0, #0
-          itt ne
-          strexne r0, $0, [$1]
-          cmpne r0, #1
-          beq 0b
+      0:
+        ldrex r0, [$1]
+        cmp r0, #0
+        itt ne
+        strexne r0, $0, [$1]
+        cmpne r0, #1
+        beq 0b
       " :
         : "r"(self), "r"(address as *mut u32)
         : "r0", "cc"
