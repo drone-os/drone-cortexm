@@ -8,6 +8,11 @@ use core::mem::{size_of, unreachable};
 use drone_core::sv::{Supervisor, SvService};
 
 /// Calls `SVC num` instruction.
+///
+/// # Safety
+///
+/// Directly calling supervisor services is unsafe in general. User code should
+/// use wrappers instead.
 #[inline(always)]
 pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
   if size_of::<T>() == 0 {
@@ -27,7 +32,11 @@ pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
   }
 }
 
-/// Calls [`T::handler`](SvService::handler).
+/// Dispatches [`SvService::handler`](SvService::handler).
+///
+/// # Safety
+///
+/// Must be called only by [`sv_handler`](sv_handler).
 pub unsafe extern "C" fn service_handler<T>(mut frame: *mut *mut u8)
 where
   T: SvService,

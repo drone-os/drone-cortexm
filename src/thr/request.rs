@@ -26,7 +26,7 @@ impl<T: ThrTrigger, U: IntToken<T>> ThrRequest<T> for U {
     F::Future: Send + 'static,
   {
     let mut executor = executor::spawn(f.into_future());
-    fib::spawn(self, move || loop {
+    fib::add(self, move || loop {
       match executor.poll_future_notify(&NOTIFY_INT, U::INT_NUM) {
         Ok(Async::NotReady) => {}
         Ok(Async::Ready(())) => break,

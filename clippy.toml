@@ -1,11 +1,3 @@
 doc-valid-idents = [
-  "BusFault",
-  "DebugMonitor",
-  "HardFault",
-  "MemManage",
-  "OpenOCD",
-  "PendSV",
-  "SVCall",
   "SysTick",
-  "UsageFault",
 ]

@@ -49,6 +49,11 @@ mod a {
   use super::{BarService, FooService};
   use drone_core::thr;
   use drone_plat::{sv, vtable};
+  use drone_plat::thr::int::*;
+  use drone_plat::thr::prelude::*;
+
+  trait Int10<T: ThrTag>: IntToken<T> {}
+  trait Int5<T: ThrTag>: IntToken<T> {}
 
   vtable! {
     pub struct Vtable;

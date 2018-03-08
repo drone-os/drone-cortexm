@@ -1,7 +1,7 @@
 //! Direct memory access controller.
 
 use drone_core::bitfield::Bitfield;
-use drv::prelude::*;
+use drone_core::drv::Resource;
 use fib;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
@@ -44,6 +44,7 @@ use thr::prelude::*;
 pub struct DmaTransferError;
 
 /// DMA driver.
+#[derive(Driver)]
 pub struct Dma<T: DmaRes>(T);
 
 /// DMA resource.
@@ -123,20 +124,6 @@ pub trait DmaRes: Resource {
   res_reg_decl!(IsrHtif, isr_htif, isr_htif_mut);
   res_reg_decl!(IsrTcif, isr_tcif, isr_tcif_mut);
   res_reg_decl!(IsrTeif, isr_teif, isr_teif_mut);
-}
-
-impl<T: DmaRes> Driver for Dma<T> {
-  type Resource = T;
-
-  #[inline(always)]
-  fn from_res(res: T::Source) -> Self {
-    Dma(res.into())
-  }
-
-  #[inline(always)]
-  fn into_res(self) -> T {
-    self.0
-  }
 }
 
 #[allow(missing_docs)]
@@ -298,7 +285,7 @@ impl<T: DmaRes> Dma<T> {
     let tcif = self.0.isr_tcif_mut().fork();
     let cgif = self.0.ifcr_cgif_mut().fork();
     let ctcif = self.0.ifcr_ctcif_mut().fork();
-    fib::spawn_future(
+    fib::add_future(
       self.0.int(),
       fib::new(move || loop {
         if teif.read_bit_band() {
@@ -322,7 +309,7 @@ impl<T: DmaRes> Dma<T> {
     let htif = self.0.isr_htif_mut().fork();
     let cgif = self.0.ifcr_cgif_mut().fork();
     let chtif = self.0.ifcr_chtif_mut().fork();
-    fib::spawn_future(
+    fib::add_future(
       self.0.int(),
       fib::new(move || loop {
         if teif.read_bit_band() {
@@ -425,7 +412,7 @@ macro_rules! dma_ch {
     #[macro_export]
     macro_rules! $name_macro {
       ($reg:ident, $thr:ident) => {
-        $crate::drv::dma::Dma::from_res(
+        $crate::drv::dma::Dma::new(
           $crate::drv::dma::$name_res {
             $int: $thr.$int.into(),
             $dma_ccr: $reg.$dma_ccr,
@@ -453,7 +440,7 @@ macro_rules! dma_ch {
     #[macro_export]
     macro_rules! $name_macro {
       ($reg:ident, $thr:ident) => {
-        $crate::drv::dma::Dma::from_res(
+        $crate::drv::dma::Dma::new(
           $crate::drv::dma::$name_res {
             $int: $thr.$int.into(),
             $dma_ccr: $reg.$dma_ccr,
@@ -473,27 +460,29 @@ macro_rules! dma_ch {
       }
     }
 
-    impl<I: $int_ty<Ltt>> From<$name_res<I, Srt>> for $name_res<I, Frt> {
+    impl<I: $int_ty<Ltt>> Resource for $name_res<I, Frt> {
+      type Source = $name_res<I, Srt>;
+
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       #[inline(always)]
-      fn from(res: $name_res<I, Srt>) -> Self {
+      fn from_source(source: Self::Source) -> Self {
         Self {
-          $int: res.$int,
-          $dma_ccr: res.$dma_ccr,
-          $dma_cmar: res.$dma_cmar,
-          $dma_cndtr: res.$dma_cndtr,
-          $dma_cpar: res.$dma_cpar,
-          $dma_cselr_cs: res.$dma_cselr_cs,
-          $dma_ifcr_cgif: res.$dma_ifcr_cgif.into(),
-          $dma_ifcr_chtif: res.$dma_ifcr_chtif.into(),
-          $dma_ifcr_ctcif: res.$dma_ifcr_ctcif.into(),
-          $dma_ifcr_cteif: res.$dma_ifcr_cteif.into(),
-          $dma_isr_gif: res.$dma_isr_gif.into(),
-          $dma_isr_htif: res.$dma_isr_htif.into(),
-          $dma_isr_tcif: res.$dma_isr_tcif.into(),
-          $dma_isr_teif: res.$dma_isr_teif.into(),
+          $int: source.$int,
+          $dma_ccr: source.$dma_ccr,
+          $dma_cmar: source.$dma_cmar,
+          $dma_cndtr: source.$dma_cndtr,
+          $dma_cpar: source.$dma_cpar,
+          $dma_cselr_cs: source.$dma_cselr_cs,
+          $dma_ifcr_cgif: source.$dma_ifcr_cgif.into(),
+          $dma_ifcr_chtif: source.$dma_ifcr_chtif.into(),
+          $dma_ifcr_ctcif: source.$dma_ifcr_ctcif.into(),
+          $dma_ifcr_cteif: source.$dma_ifcr_cteif.into(),
+          $dma_isr_gif: source.$dma_isr_gif.into(),
+          $dma_isr_htif: source.$dma_isr_htif.into(),
+          $dma_isr_tcif: source.$dma_isr_tcif.into(),
+          $dma_isr_teif: source.$dma_isr_teif.into(),
         }
       }
 
@@ -501,27 +490,23 @@ macro_rules! dma_ch {
                     feature = "stm32l4x3", feature = "stm32l4x5",
                     feature = "stm32l4x6")))]
       #[inline(always)]
-      fn from(res: $name_res<I, Srt>) -> Self {
+      fn from_source(source: Self::Source) -> Self {
         Self {
-          $int: res.$int,
-          $dma_ccr: res.$dma_ccr,
-          $dma_cmar: res.$dma_cmar,
-          $dma_cndtr: res.$dma_cndtr,
-          $dma_cpar: res.$dma_cpar,
-          $dma_ifcr_cgif: res.$dma_ifcr_cgif.into(),
-          $dma_ifcr_chtif: res.$dma_ifcr_chtif.into(),
-          $dma_ifcr_ctcif: res.$dma_ifcr_ctcif.into(),
-          $dma_ifcr_cteif: res.$dma_ifcr_cteif.into(),
-          $dma_isr_gif: res.$dma_isr_gif.into(),
-          $dma_isr_htif: res.$dma_isr_htif.into(),
-          $dma_isr_tcif: res.$dma_isr_tcif.into(),
-          $dma_isr_teif: res.$dma_isr_teif.into(),
+          $int: source.$int,
+          $dma_ccr: source.$dma_ccr,
+          $dma_cmar: source.$dma_cmar,
+          $dma_cndtr: source.$dma_cndtr,
+          $dma_cpar: source.$dma_cpar,
+          $dma_ifcr_cgif: source.$dma_ifcr_cgif.into(),
+          $dma_ifcr_chtif: source.$dma_ifcr_chtif.into(),
+          $dma_ifcr_ctcif: source.$dma_ifcr_ctcif.into(),
+          $dma_ifcr_cteif: source.$dma_ifcr_cteif.into(),
+          $dma_isr_gif: source.$dma_isr_gif.into(),
+          $dma_isr_htif: source.$dma_isr_htif.into(),
+          $dma_isr_tcif: source.$dma_isr_tcif.into(),
+          $dma_isr_teif: source.$dma_isr_teif.into(),
         }
       }
-    }
-
-    impl<I: $int_ty<Ltt>> Resource for $name_res<I, Frt> {
-      type Source = $name_res<I, Srt>;
     }
 
     impl<I: $int_ty<Ltt>> DmaRes for $name_res<I, Frt> {

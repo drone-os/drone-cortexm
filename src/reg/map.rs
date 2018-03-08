@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "clippy", allow(doc_markdown))]
+
 use drone_core::reg::map;
 use reg::prelude::*;
 

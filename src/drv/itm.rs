@@ -1,6 +1,5 @@
 //! Instrumentation Trace Macrocell.
 
-use drv::prelude::*;
 use reg::{itm, scb, tpiu};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
@@ -13,10 +12,12 @@ use reg::dbgmcu;
 use reg::prelude::*;
 
 /// ITM driver.
+#[derive(Driver)]
 pub struct Itm(ItmRes);
 
 /// ITM resource.
 #[allow(missing_docs)]
+#[derive(Resource)]
 pub struct ItmRes {
   #[cfg(any(feature = "stm32f100", feature = "stm32f101",
             feature = "stm32f102", feature = "stm32f103",
@@ -41,7 +42,7 @@ pub struct ItmRes {
 #[macro_export]
 macro_rules! drv_itm {
   ($reg:ident) => {
-    $crate::drv::itm::Itm::from_res(
+    $crate::drv::itm::Itm::new(
       $crate::drv::itm::ItmRes {
         dbgmcu_cr: $reg.dbgmcu_cr,
         itm_lar: $reg.itm_lar,
@@ -53,25 +54,6 @@ macro_rules! drv_itm {
       }
     )
   }
-}
-
-impl Driver for Itm {
-  type Resource = ItmRes;
-
-  #[inline(always)]
-  fn from_res(res: ItmRes) -> Self {
-    Itm(res)
-  }
-
-  #[inline(always)]
-  fn into_res(self) -> ItmRes {
-    self.0
-  }
-}
-
-impl Resource for ItmRes {
-  // FIXME https://github.com/rust-lang/rust/issues/47385
-  type Source = Self;
 }
 
 #[allow(missing_docs)]

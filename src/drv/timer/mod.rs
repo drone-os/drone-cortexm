@@ -5,7 +5,7 @@ mod sys_tick;
 pub use self::sys_tick::{SysTick, SysTickRes};
 
 use drone_core::bitfield::Bitfield;
-use drv::prelude::*;
+use drone_core::drv::Resource;
 
 /// Error returned from [`Timer::interval`](Timer::interval) on overflow.
 #[derive(Debug, Fail)]
@@ -13,6 +13,7 @@ use drv::prelude::*;
 pub struct TimerOverflow;
 
 /// Timer driver.
+#[derive(Driver)]
 pub struct Timer<T: TimerRes>(T);
 
 /// Timer resource.
@@ -43,20 +44,6 @@ pub trait TimerRes: Resource {
   ) -> Self::IntervalSkipStream;
 
   fn stop(&mut self, ctrl_val: Self::CtrlVal);
-}
-
-impl<T: TimerRes> Driver for Timer<T> {
-  type Resource = T;
-
-  #[inline(always)]
-  fn from_res(res: T::Source) -> Self {
-    Timer(res.into())
-  }
-
-  #[inline(always)]
-  fn into_res(self) -> T {
-    self.0
-  }
 }
 
 impl<T: TimerRes> Timer<T> {

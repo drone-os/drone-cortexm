@@ -1,5 +1,7 @@
 //! Interrupt mappings.
 
+#![cfg_attr(feature = "clippy", allow(doc_markdown))]
+
 #[allow(unused_imports)]
 use thr::int;
 #[allow(unused_imports)]

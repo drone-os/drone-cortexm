@@ -3,6 +3,7 @@
 #[allow(unused_imports)]
 use core::ptr::{read_volatile, write_volatile};
 use drone_core::bitfield::Bitfield;
+use drone_core::drv::Resource;
 use drv::dma::{Dma, DmaRes};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
@@ -15,7 +16,6 @@ use drv::dma::{Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma2Ch1Res,
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 use drv::dma::{Dma2Ch3Res, Dma2Ch4Res};
-use drv::prelude::*;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
@@ -60,6 +60,7 @@ pub enum SpiError {
 }
 
 /// SPI driver.
+#[derive(Driver)]
 pub struct Spi<T: SpiRes>(T);
 
 /// DMA-driven SPI driver.
@@ -211,20 +212,6 @@ pub trait SpiDmaTxRes<T: DmaRes>: SpiRes {
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 type CselrVal<T> = <<T as DmaRes>::Cselr as Reg<Srt>>::Val;
-
-impl<T: SpiRes> Driver for Spi<T> {
-  type Resource = T;
-
-  #[inline(always)]
-  fn from_res(res: T::Source) -> Self {
-    Spi(res)
-  }
-
-  #[inline(always)]
-  fn into_res(self) -> T {
-    self.0
-  }
-}
 
 #[allow(missing_docs)]
 impl<T: SpiRes> Spi<T> {
@@ -730,7 +717,7 @@ macro_rules! spi {
     #[macro_export]
     macro_rules! $name_macro {
       ($reg:ident) => {
-        $crate::drv::spi::Spi::from_res(
+        $crate::drv::spi::Spi::new(
           $crate::drv::spi::$name_res {
             $spi_cr1: $reg.$spi_cr1,
             $spi_cr2: $reg.$spi_cr2,
@@ -748,7 +735,7 @@ macro_rules! spi {
     #[macro_export]
     macro_rules! $name_int_macro {
       ($reg:ident, $thr:ident) => {
-        $crate::drv::spi::Spi::from_res(
+        $crate::drv::spi::Spi::new(
           $crate::drv::spi::$name_int_res {
             $spi: $thr.$spi.into(),
             $spi_cr1: $reg.$spi_cr1,
@@ -764,8 +751,12 @@ macro_rules! spi {
     }
 
     impl Resource for $name_res {
-      // FIXME https://github.com/rust-lang/rust/issues/47385
       type Source = Self;
+
+      #[inline(always)]
+      fn from_source(source: Self) -> Self {
+        source
+      }
     }
 
     spi_shared! {
@@ -784,8 +775,12 @@ macro_rules! spi {
     }
 
     impl<I: $int_ty<Ltt>> Resource for $name_int_res<I> {
-      // FIXME https://github.com/rust-lang/rust/issues/47385
       type Source = Self;
+
+      #[inline(always)]
+      fn from_source(source: Self) -> Self {
+        source
+      }
     }
 
     spi_shared! {

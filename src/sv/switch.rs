@@ -22,6 +22,11 @@ where
   Self: SvCall<SwitchBackService>,
 {
   /// Switches to the given process stack.
+  ///
+  /// # Safety
+  ///
+  /// * `data` must be word-aligned.
+  /// * `*stack_ptr` must be word-aligned.
   unsafe fn switch_context(data: *mut T, stack_ptr: *mut *const u8);
 
   /// Switches to the previous stack.
@@ -30,6 +35,7 @@ where
   ///
   /// * Must be called only from Process Stack.
   /// * `T` must match with paired [`switch_context`](Switch::switch_context).
+  /// * `*data` must be word-aligned.
   unsafe fn switch_back(data: *mut *mut T);
 }
 
@@ -37,6 +43,9 @@ unsafe impl Send for SwitchContextService {}
 unsafe impl Send for SwitchBackService {}
 
 impl SvService for SwitchContextService {
+  // Store R4-R11 on the callee stack. Update callee stack pointer if it is PSP.
+  // Store `stack_ptr`, `data_ptr`, and `LR` on MSP for future use by
+  // `switch_back`. Return to the new stack.
   unsafe extern "C" fn handler(&mut self) {
     let Self {
       stack_ptr,
@@ -61,12 +70,14 @@ impl SvService for SwitchContextService {
       orr    lr, #0x1C
     " :
       : "{r0}"(stack_ptr), "{r1}"(data_ptr)
-      : "sp", "cc", "memory"
+      : "cc", "memory"
       : "volatile");
   }
 }
 
 impl SvService for SwitchBackService {
+  // Store R4-R11 on the stored `stack_ptr`. Copy bytes from the provided
+  // `*data_ptr` to the stored `data_ptr`. Return to the old stack.
   unsafe extern "C" fn handler(&mut self) {
     let Self {
       data_ptr,
@@ -113,7 +124,7 @@ impl SvService for SwitchBackService {
       msr    psp, r0
     " :
       : "{r0}"(data_ptr), "{r1}"(data_size)
-      : "sp", "cc", "memory"
+      : "cc", "memory"
       : "volatile");
   }
 }

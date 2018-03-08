@@ -157,9 +157,9 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       &mut thr_tokens,
     );
     if let Some(struct_ident) = struct_ident {
-      let int_trait = Ident::from(format!("Int{}", struct_ident));
+      let int_trait = Ident::new(&format!("Int{}", struct_ident), call_site);
       thr_tokens.push(quote! {
-        impl<T: #rt::ThrTag> #rt::#int_trait<T> for #struct_ident<T> {}
+        impl<T: #rt::ThrTag> #int_trait<T> for #struct_ident<T> {}
       });
     }
     assert!(
@@ -182,7 +182,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       &mut thr_tokens,
     );
     if let Some(struct_ident) = struct_ident {
-      let int_trait = Ident::from(format!("Int{}", num.value()));
+      let int_trait = Ident::new(&format!("Int{}", num.value()), call_site);
       let bundle = Ident::from(format!("IntBundle{}", num.value() / 32));
       thr_tokens.push(quote! {
         impl<T: #rt::ThrTag> #rt::IntToken<T> for #struct_ident<T> {
@@ -191,7 +191,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
           const INT_NUM: usize = #num;
         }
 
-        impl<T: #rt::ThrTag> #rt::#int_trait<T> for #struct_ident<T> {}
+        impl<T: #rt::ThrTag> #int_trait<T> for #struct_ident<T> {}
       });
     }
     vtable_tokens[num.value() as usize] = Some(quote! {

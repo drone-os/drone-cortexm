@@ -1,5 +1,5 @@
 use super::{Timer, TimerOverflow, TimerRes};
-use drv::prelude::*;
+use drone_core::drv::Resource;
 use fib::{self, FiberFuture, FiberStreamUnit};
 use reg::{scb, stk};
 use reg::prelude::*;
@@ -24,7 +24,7 @@ pub struct SysTickRes<I: IntSysTick<Ltt>, Rt: RegTag> {
 #[macro_export]
 macro_rules! drv_sys_tick {
   ($reg:ident, $thr:ident) => {
-    $crate::drv::timer::Timer::from_res(
+    $crate::drv::timer::Timer::new(
       $crate::drv::timer::SysTickRes {
         sys_tick: $thr.sys_tick.into(),
         scb_icsr_pendstclr: $reg.scb_icsr.pendstclr,
@@ -37,22 +37,20 @@ macro_rules! drv_sys_tick {
   }
 }
 
-impl<I: IntSysTick<Ltt>> From<SysTickRes<I, Srt>> for SysTickRes<I, Frt> {
-  #[inline(always)]
-  fn from(res: SysTickRes<I, Srt>) -> Self {
-    Self {
-      sys_tick: res.sys_tick,
-      scb_icsr_pendstclr: res.scb_icsr_pendstclr.into(),
-      scb_icsr_pendstset: res.scb_icsr_pendstset,
-      stk_ctrl: res.stk_ctrl.into(),
-      stk_load: res.stk_load,
-      stk_val: res.stk_val,
-    }
-  }
-}
-
 impl<I: IntSysTick<Ltt>> Resource for SysTickRes<I, Frt> {
   type Source = SysTickRes<I, Srt>;
+
+  #[inline(always)]
+  fn from_source(source: Self::Source) -> Self {
+    Self {
+      sys_tick: source.sys_tick,
+      scb_icsr_pendstclr: source.scb_icsr_pendstclr.into(),
+      scb_icsr_pendstset: source.scb_icsr_pendstset,
+      stk_ctrl: source.stk_ctrl.into(),
+      stk_load: source.stk_load,
+      stk_val: source.stk_val,
+    }
+  }
 }
 
 impl<I: IntSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
@@ -73,7 +71,7 @@ impl<I: IntSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
     schedule(&self.stk_load, &self.stk_val, dur);
     let ctrl = self.stk_ctrl.fork();
     let pendstclr = self.scb_icsr_pendstclr.fork();
-    let fut = fib::spawn_future(
+    let fut = fib::add_future(
       self.sys_tick,
       fib::new_fn(move || {
         ctrl.store_val(ctrl_val);
@@ -93,7 +91,7 @@ impl<I: IntSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
     ctrl_val: Self::CtrlVal,
   ) -> Self::IntervalStream {
     self.interval_stream(dur, ctrl_val, |int| {
-      fib::spawn_stream(
+      fib::add_stream(
         int,
         || Err(TimerOverflow),
         fib::new(|| loop {
@@ -110,7 +108,7 @@ impl<I: IntSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
     ctrl_val: Self::CtrlVal,
   ) -> Self::IntervalSkipStream {
     self.interval_stream(dur, ctrl_val, |int| {
-      fib::spawn_stream_skip(
+      fib::add_stream_skip(
         int,
         fib::new(|| loop {
           yield Some(());
