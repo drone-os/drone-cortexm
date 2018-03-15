@@ -31,6 +31,7 @@
 #![feature(allocator_api)]
 #![feature(asm)]
 #![feature(associated_type_defaults)]
+#![feature(cfg_target_feature)]
 #![feature(conservative_impl_trait)]
 #![feature(const_fn)]
 #![feature(fused)]

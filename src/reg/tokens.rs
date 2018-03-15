@@ -45,6 +45,26 @@ tokens! {
     SHPR3;
     /// System handler control and state register.
     SHCSR;
+    /// MemManage Status Register.
+    MMFSR;
+    /// BusFault Status Register.
+    BFSR;
+    /// UsageFault Status Register.
+    UFSR;
+    /// HardFault Status Register.
+    HFSR;
+    /// Debug Fault Status Register.
+    DFSR;
+    /// MemManage Fault Address Register.
+    MMFAR;
+    /// BusFault Address Register.
+    BFAR;
+    /// Floating Point Context Control Register.
+    FPCCR;
+    /// Floating Point Context Address Register.
+    FPCAR;
+    /// Floating Point Default Status Control Register.
+    FPDSCR;
     /// Debug Exception and Monitor Control Register.
     DEMCR;
   }

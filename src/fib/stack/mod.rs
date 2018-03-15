@@ -18,8 +18,13 @@ pub union Data<I, O> {
 type StackData<I, Y, R> = Data<I, FiberState<Y, R>>;
 
 /// Creates a new stackful fiber.
+///
+/// # Panics
+///
+/// If `stack_size` is insufficient to store an initial frame.
 pub fn new_stack<Sv, I, Y, R, F>(
   stack_size: usize,
+  unprivileged: bool,
   f: F,
 ) -> FiberStack<Sv, I, Y, R, F>
 where
@@ -30,20 +35,29 @@ where
   Y: Send + 'static,
   R: Send + 'static,
 {
-  FiberStack::new(stack_size, f)
+  FiberStack::new(stack_size, unprivileged, f)
 }
 
 /// Adds a new stackful fiber on the given `thr`.
-pub fn add_stack<T, U, F>(thr: T, stack_size: usize, mut f: F)
-where
+///
+/// # Panics
+///
+/// If `stack_size` is insufficient to store an initial frame.
+pub fn add_stack<T, U, F>(
+  thr: T,
+  stack_size: usize,
+  unprivileged: bool,
+  mut f: F,
+) where
   T: ThrToken<U>,
   U: ThrTag,
   F: FnMut(Yielder<<T::Thr as Thread>::Sv, (), (), ()>),
   F: Send + 'static,
   <T::Thr as Thread>::Sv: Switch<StackData<(), (), ()>>,
 {
-  thr
-    .as_ref()
-    .fib_chain()
-    .add(new_stack(stack_size, move |(), yielder| f(yielder)))
+  thr.as_ref().fib_chain().add(new_stack(
+    stack_size,
+    unprivileged,
+    move |(), yielder| f(yielder),
+  ))
 }

@@ -35,10 +35,10 @@ where
   Y: Send + 'static,
   R: Send + 'static,
 {
-  pub(super) fn new(stack_size: usize, f: F) -> Self {
+  pub(super) fn new(stack_size: usize, unprivileged: bool, f: F) -> Self {
     unsafe {
       let stack_top = alloc(stack_size);
-      let stack_ptr = Self::stack_init(stack_top.add(stack_size), f);
+      let stack_ptr = Self::stack_init(stack_top, stack_size, unprivileged, f);
       Self {
         stack_top,
         stack_ptr,
@@ -52,7 +52,20 @@ where
     }
   }
 
-  unsafe fn stack_init(stack_ptr: *mut u8, f: F) -> *const u8 {
+  unsafe fn stack_init(
+    stack_top: *mut u8,
+    stack_size: usize,
+    unprivileged: bool,
+    f: F,
+  ) -> *const u8 {
+    assert!(
+      stack_size
+        >= size_of::<StackData<I, Y, R>>()
+          + (align_of::<StackData<I, Y, R>>() - 1) + size_of::<F>()
+          + (align_of::<F>() - 1) + 4 + 16 + 2,
+      "insufficient stack size",
+    );
+    let stack_ptr = stack_top.add(stack_size);
     let data_ptr = Self::stack_reserve::<StackData<I, Y, R>>(stack_ptr);
     let fn_ptr = Self::stack_reserve::<F>(data_ptr) as *mut F;
     fn_ptr.write(f);
@@ -76,9 +89,15 @@ where
     // R0
     stack_ptr = stack_ptr.sub(1);
     stack_ptr.write(fn_ptr as u32);
+    // LR
+    stack_ptr = stack_ptr.sub(1);
+    stack_ptr.write(0xFFFF_FFFD);
     // R11, R10, R9, R8, R7, R6, R5, R4
     stack_ptr = stack_ptr.sub(8);
     stack_ptr.write_bytes(0, 8);
+    // CONTROL
+    stack_ptr = stack_ptr.sub(1);
+    stack_ptr.write(if unprivileged { 0b11 } else { 0b10 });
     stack_ptr as *const u8
   }
 
