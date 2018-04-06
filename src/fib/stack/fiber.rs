@@ -3,8 +3,13 @@ use alloc::heap::{Alloc, Heap, Layout};
 use core::cmp::max;
 use core::marker::PhantomData;
 use core::mem::{align_of, size_of};
+use drone_core::bitfield::Bitfield;
 use fib::{Fiber, FiberRoot, FiberState};
+use reg::mpu;
+use reg::prelude::*;
 use sv::Switch;
+
+const GUARD_SIZE: u32 = 5;
 
 /// A stackful fiber.
 pub struct FiberStack<Sv, I, Y, R, F>
@@ -16,7 +21,7 @@ where
   Y: Send + 'static,
   R: Send + 'static,
 {
-  stack_top: *mut u8,
+  stack_bottom: *mut u8,
   stack_ptr: *const u8,
   stack_size: usize,
   _f: PhantomData<*const F>,
@@ -35,37 +40,54 @@ where
   Y: Send + 'static,
   R: Send + 'static,
 {
-  pub(super) fn new(stack_size: usize, unprivileged: bool, f: F) -> Self {
-    unsafe {
-      let stack_top = alloc(stack_size);
-      let stack_ptr = Self::stack_init(stack_top, stack_size, unprivileged, f);
-      Self {
-        stack_top,
-        stack_ptr,
-        stack_size,
-        _f: PhantomData,
-        _sv: PhantomData,
-        _input: PhantomData,
-        _yield: PhantomData,
-        _return: PhantomData,
-      }
+  pub(super) unsafe fn new(
+    stack_size: usize,
+    unprivileged: bool,
+    unchecked: bool,
+    f: F,
+  ) -> Self {
+    if !unchecked && mpu::Type::<Srt>::new().load().dregion() == 0 {
+      panic!("MPU not present");
+    }
+    let stack_bottom = alloc(stack_size);
+    let stack_ptr = Self::stack_init(
+      stack_bottom,
+      stack_size,
+      unprivileged,
+      unchecked,
+      f,
+    );
+    Self {
+      stack_bottom,
+      stack_ptr,
+      stack_size,
+      _f: PhantomData,
+      _sv: PhantomData,
+      _input: PhantomData,
+      _yield: PhantomData,
+      _return: PhantomData,
     }
   }
 
   unsafe fn stack_init(
-    stack_top: *mut u8,
+    stack_bottom: *mut u8,
     stack_size: usize,
     unprivileged: bool,
+    unchecked: bool,
     f: F,
   ) -> *const u8 {
     assert!(
       stack_size
         >= size_of::<StackData<I, Y, R>>()
           + (align_of::<StackData<I, Y, R>>() - 1) + size_of::<F>()
-          + (align_of::<F>() - 1) + 4 + 16 + 2,
+          + (align_of::<F>() - 1) + 4 + 16 + 2 + if unchecked {
+          1
+        } else {
+          1 + (1 << GUARD_SIZE + 1) + (1 << GUARD_SIZE + 1) - 1
+        },
       "insufficient stack size",
     );
-    let stack_ptr = stack_top.add(stack_size);
+    let stack_ptr = stack_bottom.add(stack_size);
     let data_ptr = Self::stack_reserve::<StackData<I, Y, R>>(stack_ptr);
     let fn_ptr = Self::stack_reserve::<F>(data_ptr) as *mut F;
     fn_ptr.write(f);
@@ -98,7 +120,54 @@ where
     // CONTROL
     stack_ptr = stack_ptr.sub(1);
     stack_ptr.write(if unprivileged { 0b11 } else { 0b10 });
+    // MPU CONFIG
+    stack_ptr = stack_ptr.sub(1);
+    stack_ptr.write(if unchecked {
+      0
+    } else {
+      Self::mpu_config(stack_bottom)
+    });
     stack_ptr as *const u8
+  }
+
+  unsafe fn mpu_config(mut guard_ptr: *mut u8) -> u32 {
+    let rbar = mpu::Rbar::<Srt>::new();
+    let rasr = mpu::Rasr::<Srt>::new();
+    let rbar_bits = |region, addr| {
+      rbar
+        .default()
+        .write_addr(addr >> 5)
+        .set_valid()
+        .write_region(region)
+        .val()
+        .bits()
+    };
+    if (guard_ptr as usize).trailing_zeros() <= GUARD_SIZE {
+      guard_ptr = guard_ptr.add(
+        (1 << GUARD_SIZE + 1)
+          - ((guard_ptr as usize) & (1 << GUARD_SIZE + 1) - 1),
+      );
+    }
+    let mut table_ptr = guard_ptr as *mut u32;
+    table_ptr.write(rbar_bits(0, guard_ptr as u32));
+    table_ptr = table_ptr.add(1);
+    table_ptr.write(
+      rasr
+        .default()
+        .write_ap(0b000)
+        .write_size(GUARD_SIZE)
+        .set_enable()
+        .val()
+        .bits(),
+    );
+    table_ptr = table_ptr.add(1);
+    for i in 1..8 {
+      table_ptr.write(rbar_bits(i, 0));
+      table_ptr = table_ptr.add(1);
+      table_ptr.write(0);
+      table_ptr = table_ptr.add(1);
+    }
+    table_ptr.sub(16) as u32
   }
 
   unsafe fn stack_reserve<T>(mut stack_ptr: *mut u8) -> *mut u8 {
@@ -123,7 +192,9 @@ where
 
   unsafe fn data_ptr(&self) -> *mut StackData<I, Y, R> {
     let data_size = size_of::<StackData<I, Y, R>>();
-    self.stack_top.add(self.stack_size - data_size) as _
+    self
+      .stack_bottom
+      .add(self.stack_size - data_size) as _
   }
 }
 
@@ -137,7 +208,7 @@ where
   R: Send + 'static,
 {
   fn drop(&mut self) {
-    unsafe { dealloc(self.stack_top, self.stack_size) };
+    unsafe { dealloc(self.stack_bottom, self.stack_size) };
   }
 }
 
@@ -195,8 +266,8 @@ unsafe fn alloc(stack_size: usize) -> *mut u8 {
     .unwrap_or_else(|err| Heap.oom(err))
 }
 
-unsafe fn dealloc(stack_top: *mut u8, stack_size: usize) {
-  Heap.dealloc(stack_top, layout(stack_size));
+unsafe fn dealloc(stack_bottom: *mut u8, stack_size: usize) {
+  Heap.dealloc(stack_bottom, layout(stack_size));
 }
 
 unsafe fn layout(stack_size: usize) -> Layout {

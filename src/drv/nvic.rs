@@ -239,7 +239,7 @@ macro_rules! drv_nvic {
       ipr12: $reg.nvic_ipr12,
       ipr13: $reg.nvic_ipr13,
     }
-  }
+  };
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f102",
@@ -275,7 +275,7 @@ macro_rules! drv_nvic {
       ipr13: $reg.nvic_ipr13,
       ipr14: $reg.nvic_ipr14,
     }
-  }
+  };
 }
 
 #[cfg(any(feature = "stm32f107"))]
@@ -317,7 +317,7 @@ macro_rules! drv_nvic {
       ipr15: $reg.nvic_ipr15,
       ipr16: $reg.nvic_ipr16,
     }
-  }
+  };
 }
 
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -365,5 +365,5 @@ macro_rules! drv_nvic {
       ipr19: $reg.nvic_ipr19,
       ipr20: $reg.nvic_ipr20,
     }
-  }
+  };
 }

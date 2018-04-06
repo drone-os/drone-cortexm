@@ -1,6 +1,5 @@
 //! Instrumentation Trace Macrocell.
 
-use reg::{itm, scb, tpiu};
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107"))]
@@ -10,6 +9,7 @@ use reg::dbg as dbgmcu;
           feature = "stm32l4x6"))]
 use reg::dbgmcu;
 use reg::prelude::*;
+use reg::{itm, scb, tpiu};
 
 /// ITM driver.
 #[derive(Driver)]
@@ -42,18 +42,16 @@ pub struct ItmRes {
 #[macro_export]
 macro_rules! drv_itm {
   ($reg:ident) => {
-    $crate::drv::itm::Itm::new(
-      $crate::drv::itm::ItmRes {
-        dbgmcu_cr: $reg.dbgmcu_cr,
-        itm_lar: $reg.itm_lar,
-        itm_tcr: $reg.itm_tcr,
-        itm_tpr: $reg.itm_tpr,
-        scb_demcr_trcena: $reg.scb_demcr.trcena,
-        tpiu_ffcr: $reg.tpiu_ffcr,
-        tpiu_sppr: $reg.tpiu_sppr,
-      }
-    )
-  }
+    $crate::drv::itm::Itm::new($crate::drv::itm::ItmRes {
+      dbgmcu_cr: $reg.dbgmcu_cr,
+      itm_lar: $reg.itm_lar,
+      itm_tcr: $reg.itm_tcr,
+      itm_tpr: $reg.itm_tpr,
+      scb_demcr_trcena: $reg.scb_demcr.trcena,
+      tpiu_ffcr: $reg.tpiu_ffcr,
+      tpiu_sppr: $reg.tpiu_sppr,
+    })
+  };
 }
 
 #[allow(missing_docs)]
@@ -120,12 +118,18 @@ impl Itm {
       .0
       .itm_tcr
       .modify(|r| r.write_trace_bus_id(1).set_itmena());
-    self.0.itm_tpr.store(|r| r.write_privmask(0x0000_0001));
+    self
+      .0
+      .itm_tpr
+      .store(|r| r.write_privmask(0x0000_0001));
   }
 
   /// Unlock Write Access to ITM registers.
   #[inline(always)]
   pub fn itm_unlock(&self) {
-    self.0.itm_lar.store(|r| r.write_unlock(0xC5AC_CE55))
+    self
+      .0
+      .itm_lar
+      .store(|r| r.write_unlock(0xC5AC_CE55))
   }
 }

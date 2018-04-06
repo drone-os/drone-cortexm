@@ -23,7 +23,12 @@ fn run() -> Result<(), Error> {
   let mut interrupts = File::create(out_dir.join("svd_interrupts.rs"))?;
   if let Some(svd_file) = svd_from_feature() {
     let mut input = File::open(svd_file)?;
-    svd_generate(&mut input, &mut reg_map, &mut reg_tokens, &mut interrupts)?;
+    svd_generate(
+      &mut input,
+      &mut reg_map,
+      &mut reg_tokens,
+      &mut interrupts,
+    )?;
   }
   Ok(())
 }

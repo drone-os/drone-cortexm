@@ -110,7 +110,12 @@ where
 
   #[inline(always)]
   fn store_excl(&self, val: RegExcl<U::Val>) -> bool {
-    unsafe { val.into_inner().bits().store_excl(Self::ADDRESS) }
+    unsafe {
+      val
+        .into_inner()
+        .bits()
+        .store_excl(Self::ADDRESS)
+    }
   }
 }
 
@@ -156,7 +161,12 @@ where
 
   #[inline(always)]
   fn store_excl(&self, val: RegExcl<<U::Reg as Reg<T>>::Val>) -> bool {
-    unsafe { val.into_inner().bits().store_excl(Self::Reg::ADDRESS) }
+    unsafe {
+      val
+        .into_inner()
+        .bits()
+        .store_excl(Self::Reg::ADDRESS)
+    }
   }
 
   #[inline(always)]
@@ -255,13 +265,11 @@ where
   }
 }
 
-macro_rules! atomic_bits
-{
+macro_rules! atomic_bits {
   ($type:ty, $ldrex:expr, $strex:expr) => {
     impl AtomicBits for $type {
       #[inline(always)]
-      unsafe fn load_excl(address: usize) -> Self
-      {
+      unsafe fn load_excl(address: usize) -> Self {
         let raw: $type;
         asm!($ldrex
              : "=r"(raw)
@@ -272,8 +280,7 @@ macro_rules! atomic_bits
       }
 
       #[inline(always)]
-      unsafe fn store_excl(self, address: usize) -> bool
-      {
+      unsafe fn store_excl(self, address: usize) -> bool {
         let status: $type;
         asm!($strex
              : "=r"(status)
@@ -283,7 +290,7 @@ macro_rules! atomic_bits
         status == 0
       }
     }
-  }
+  };
 }
 
 atomic_bits!(u32, "ldrex $0, [$1]", "strex $0, $1, [$2]");

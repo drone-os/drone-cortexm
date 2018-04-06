@@ -1,7 +1,7 @@
 //! Panicking support.
 
-use {cpu, itm};
 use core::fmt;
+use {cpu, itm};
 
 /// Panic handler.
 ///

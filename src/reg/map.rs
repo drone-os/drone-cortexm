@@ -461,6 +461,86 @@ map! {
 }
 
 map! {
+  /// Memory protection unit.
+  pub mod MPU;
+
+  /// Indicates how many regions the MPU support.
+  TYPE {
+    0xE000_ED90 0x20 0x0000_0000
+    RReg RoReg;
+    /// Instruction region.
+    IREGION { 16 8 RRRegField RoRRegField }
+    /// Number of regions supported by the MPU.
+    DREGION { 8 8 RRRegField RoRRegField }
+    /// Indicates support for separate instruction and data address maps.
+    SEPARATE { 0 1 RRRegField RoRRegField }
+  }
+
+  /// Enables the MPU, and when the MPU is enabled, controls whether the
+  /// default memory map is enabled as a background region for privileged
+  /// accesses, and whether the MPU is enabled for HardFaults, NMIs, and
+  /// exception handlers when FAULTMASK is set to 1.
+  CTRL {
+    0xE000_ED94 0x20 0x0000_0000
+    RReg WReg;
+    /// Enable priviliged software access to default memory map.
+    PRIVDEFENA { 2 1 RRRegField WWRegField }
+    /// Enables the operation of MPU during hard fault, NMI, and FAULTMASK
+    /// handlers.
+    HFNMIENA { 1 1 RRRegField WWRegField }
+    /// Enables the MPU.
+    ENABLE { 0 1 RRRegField WWRegField }
+  }
+
+  /// Selects the region currently accessed by MPU_RBAR and MPU_RASR.
+  RNR {
+    0xE000_ED98 0x20 0x0000_0000
+    RReg WReg;
+    /// Indicates the memory region accessed by MPU_RBAR and MPU_RASR.
+    REGION { 0 8 RRRegField WWRegField }
+  }
+
+  /// Holds the base address of the region identified by MPU_RNR. On a write,
+  /// can also be used to update the base address of a specified region, in
+  /// the range 0 to 15, updating MPU_RNR with the new region number.
+  RBAR {
+    0xE000_ED9C 0x20 0x0000_0000
+    RReg WReg;
+    /// Region base address field.
+    ADDR { 5 27 RRRegField WWRegField }
+    /// MPU region number valid.
+    VALID { 4 1 RRRegField WWRegField }
+    /// MPU region field.
+    REGION { 0 4 RRRegField WWRegField }
+  }
+
+  /// Defines the size and access behavior of the region identified by
+  /// MPU_RNR, and enables that region.
+  RASR {
+    0xE000_EDA0 0x20 0x0000_0000
+    RReg WReg;
+    /// Instruction access disable bit.
+    XN { 28 1 RRRegField WWRegField }
+    /// Access permission.
+    AP { 24 3 RRRegField WWRegField }
+    /// Memory attribute.
+    TEX { 19 3 RRRegField WWRegField }
+    /// Shareable memory attribute.
+    S { 18 1 RRRegField WWRegField }
+    /// Memory attribute.
+    C { 17 1 RRRegField WWRegField }
+    /// Memory attribute.
+    B { 16 1 RRRegField WWRegField }
+    /// Subregion disable bits.
+    SRD { 8 8 RRRegField WWRegField }
+    /// Size of the MPU protection region.
+    SIZE { 1 5 RRRegField WWRegField }
+    /// Region enable bit.
+    ENABLE { 0 1 RRRegField WWRegField }
+  }
+}
+
+map! {
   /// Trace port interface unit.
   pub mod TPIU;
 

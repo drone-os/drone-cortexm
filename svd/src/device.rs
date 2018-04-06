@@ -268,7 +268,11 @@ impl Fields {
       for line in description.lines() {
         writeln!(reg_map, "    /// {}", line.trim())?;
       }
-      write!(reg_map, "    {} {{ {} {}", name, bit_offset, bit_width)?;
+      write!(
+        reg_map,
+        "    {} {{ {} {}",
+        name, bit_offset, bit_width
+      )?;
       match access.as_ref().or(base_access.as_ref()) {
         Some(&Access::WriteOnly) => {
           write!(reg_map, " WWRegField")?;
@@ -307,7 +311,8 @@ where
   D: Deserializer<'de>,
 {
   let s = String::deserialize(deserializer)?;
-  let s = s.trim_left_matches("0x").trim_left_matches("0X");
+  let s = s.trim_left_matches("0x")
+    .trim_left_matches("0X");
   u32::from_str_radix(s, 16).map_err(de::Error::custom)
 }
 

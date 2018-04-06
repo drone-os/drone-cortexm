@@ -1,8 +1,8 @@
 use drone_macros_core::{NewStatic, NewStruct};
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-use syn::{Ident, IntSuffix, LitInt};
 use syn::synom::Synom;
+use syn::{Ident, IntSuffix, LitInt};
 
 struct Sv {
   sv: NewStruct,
@@ -54,7 +54,11 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
   let mut array_tokens = Vec::new();
   let mut service_tokens = Vec::new();
   for Service { ident } in services {
-    let index = LitInt::new(service_counter as u64, IntSuffix::None, def_site);
+    let index = LitInt::new(
+      service_counter as u64,
+      IntSuffix::None,
+      def_site,
+    );
     service_counter += 1;
     array_tokens.push(quote! {
       #sv_ident(#rt::service_handler::<#ident>)

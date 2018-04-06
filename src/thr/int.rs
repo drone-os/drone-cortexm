@@ -25,10 +25,10 @@ pub trait IntToken<T: ThrTag>: ThrToken<T> {
 }
 
 macro_rules! exception {
-  ($name:ident, $doc:expr) => {
+  ($doc:expr, $name:ident,) => {
     #[doc = $doc]
     pub trait $name<T: ThrTag>: ThrToken<T> {}
-  }
+  };
 }
 
 macro_rules! int_bundle {
@@ -39,18 +39,53 @@ macro_rules! int_bundle {
     impl IntBundle for $name {
       const BUNDLE_NUM: usize = $number;
     }
-  }
+  };
 }
 
-exception!(IntNmi, "Non maskable interrupt.");
-exception!(IntHardFault, "All classes of fault.");
-exception!(IntMemManage, "Memory management.");
-exception!(IntBusFault, "Pre-fetch fault, memory access fault.");
-exception!(IntUsageFault, "Undefined instruction or illegal state.");
-exception!(IntSvCall, "System service call via SWI instruction.");
-exception!(IntDebug, "Monitor.");
-exception!(IntPendSv, "Pendable request for system service.");
-exception!(IntSysTick, "System tick timer.");
+exception! {
+  "Non maskable interrupt.",
+  IntNmi,
+}
+
+exception! {
+  "All classes of fault.",
+  IntHardFault,
+}
+
+exception! {
+  "Memory management.",
+  IntMemManage,
+}
+
+exception! {
+  "Pre-fetch fault, memory access fault.",
+  IntBusFault,
+}
+
+exception! {
+  "Undefined instruction or illegal state.",
+  IntUsageFault,
+}
+
+exception! {
+  "System service call via SWI instruction.",
+  IntSvCall,
+}
+
+exception! {
+  "Monitor.",
+  IntDebug,
+}
+
+exception! {
+  "Pendable request for system service.",
+  IntPendSv,
+}
+
+exception! {
+  "System tick timer.",
+  IntSysTick,
+}
 
 int_bundle!(IntBundle0, 0, "NVIC register bundle 0.");
 int_bundle!(IntBundle1, 1, "NVIC register bundle 1.");

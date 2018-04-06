@@ -168,7 +168,10 @@ pub trait ThrControl: IntToken<Ctt> {
   #[inline(always)]
   fn set_priority(&self, priority: u8) {
     unsafe {
-      write_volatile((NVIC_IPR as *mut u8).add(Self::INT_NUM), priority);
+      write_volatile(
+        (NVIC_IPR as *mut u8).add(Self::INT_NUM),
+        priority,
+      );
     }
   }
 }
@@ -223,7 +226,7 @@ const fn bundle_offset<T: IntToken<Ctt>>() -> usize {
 }
 
 macro_rules! bundle {
-  ($name:ident, $base:expr, $doc:expr) => {
+  ($doc:expr, $name:ident, $base:expr,) => {
     #[doc = $doc]
     pub struct $name<T: IntBundle> {
       _bundle: PhantomData<T>,
@@ -251,11 +254,35 @@ macro_rules! bundle {
         &mut self.inner
       }
     }
-  }
+  };
 }
 
-bundle!(NvicIser, NVIC_ISER, "Interrupt Set-Enable Register.");
-bundle!(NvicIcer, NVIC_ICER, "Interrupt Clear-Enable Register.");
-bundle!(NvicIspr, NVIC_ISPR, "Interrupt Set-Pending Register.");
-bundle!(NvicIcpr, NVIC_ICPR, "Interrupt Clear-Pending Register.");
-bundle!(NvicIabr, NVIC_IABR, "Interrupt Active-Bit Register.");
+bundle! {
+  "Interrupt Set-Enable Register.",
+  NvicIser,
+  NVIC_ISER,
+}
+
+bundle! {
+  "Interrupt Clear-Enable Register.",
+  NvicIcer,
+  NVIC_ICER,
+}
+
+bundle! {
+  "Interrupt Set-Pending Register.",
+  NvicIspr,
+  NVIC_ISPR,
+}
+
+bundle! {
+  "Interrupt Clear-Pending Register.",
+  NvicIcpr,
+  NVIC_ICPR,
+}
+
+bundle! {
+  "Interrupt Active-Bit Register.",
+  NvicIabr,
+  NVIC_IABR,
+}

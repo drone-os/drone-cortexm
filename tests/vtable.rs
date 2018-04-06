@@ -48,9 +48,9 @@ impl SvService for BarService {
 mod a {
   use super::{BarService, FooService};
   use drone_core::thr;
-  use drone_plat::{sv, vtable};
   use drone_plat::thr::int::*;
   use drone_plat::thr::prelude::*;
+  use drone_plat::{sv, vtable};
 
   trait Int10<T: ThrTag>: IntToken<T> {}
   trait Int5<T: ThrTag>: IntToken<T> {}
@@ -126,7 +126,11 @@ fn new() {
   }
   unsafe extern "C" fn nmi() {}
   unsafe extern "C" fn rcc() {}
-  a::Vtable::new(a::Handlers { reset, nmi, rcc });
+  a::Vtable::new(a::Handlers {
+    reset,
+    nmi,
+    rcc,
+  });
   b::Vtable::new(b::Handlers { reset });
 }
 
@@ -134,7 +138,10 @@ fn new() {
 fn size() {
   assert_eq!(unsafe { a::THREADS.len() }, 4);
   assert_eq!(unsafe { b::THREADS.len() }, 1);
-  assert_eq!((size_of::<a::Vtable>() - size_of::<b::Vtable>()) / 4, 11);
+  assert_eq!(
+    (size_of::<a::Vtable>() - size_of::<b::Vtable>()) / 4,
+    11
+  );
   assert_eq!(a::SERVICES.len(), 2);
   assert_eq!(b::SERVICES.len(), 0);
 }

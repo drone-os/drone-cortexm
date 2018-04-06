@@ -80,6 +80,25 @@ tokens! {
     CALIB;
   }
 
+  MPU {
+    /// Indicates how many regions the MPU support.
+    TYPE;
+    /// Enables the MPU, and when the MPU is enabled, controls whether the
+    /// default memory map is enabled as a background region for privileged
+    /// accesses, and whether the MPU is enabled for HardFaults, NMIs, and
+    /// exception handlers when FAULTMASK is set to 1.
+    CTRL;
+    /// Selects the region currently accessed by MPU_RBAR and MPU_RASR.
+    RNR;
+    /// Holds the base address of the region identified by MPU_RNR. On a write,
+    /// can also be used to update the base address of a specified region, in
+    /// the range 0 to 15, updating MPU_RNR with the new region number.
+    RBAR;
+    /// Defines the size and access behavior of the region identified by
+    /// MPU_RNR, and enables that region.
+    RASR;
+  }
+
   TPIU {
     /// Selected Pin Protocol Register.
     SPPR;

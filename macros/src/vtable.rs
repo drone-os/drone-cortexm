@@ -4,8 +4,8 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::Tokens;
 use std::collections::HashSet;
-use syn::{Attribute, Ident, LitInt, Visibility};
 use syn::synom::Synom;
+use syn::{Attribute, Ident, LitInt, Visibility};
 
 struct Vtable {
   vtable: NewStruct,
@@ -110,7 +110,9 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         vis: array_vis,
         ident: array_ident,
       },
-    thr: ExternStruct { ident: thr_ident },
+    thr: ExternStruct {
+      ident: thr_ident,
+    },
     excs,
     ints,
   } = try_parse!(call_site, input);
@@ -324,7 +326,9 @@ fn gen_exc(
   match *mode {
     Mode::Thread(_) => {
       vtable_ctor_tokens.push(quote! {
-        #field_ident: Some(#rt::thr_handler::<#struct_ident<#rt::Ltt>, #rt::Ltt>)
+        #field_ident: Some(
+          #rt::thr_handler::<#struct_ident<#rt::Ltt>, #rt::Ltt>,
+        )
       });
     }
     Mode::Extern(_) | Mode::Fn => {

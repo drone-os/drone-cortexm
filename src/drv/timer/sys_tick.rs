@@ -1,8 +1,8 @@
 use super::{Timer, TimerOverflow, TimerRes};
 use drone_core::drv::Resource;
 use fib::{self, FiberFuture, FiberStreamUnit};
-use reg::{scb, stk};
 use reg::prelude::*;
+use reg::{scb, stk};
 use thr::int::IntSysTick;
 use thr::prelude::*;
 
@@ -24,17 +24,15 @@ pub struct SysTickRes<I: IntSysTick<Ltt>, Rt: RegTag> {
 #[macro_export]
 macro_rules! drv_sys_tick {
   ($reg:ident, $thr:ident) => {
-    $crate::drv::timer::Timer::new(
-      $crate::drv::timer::SysTickRes {
-        sys_tick: $thr.sys_tick.into(),
-        scb_icsr_pendstclr: $reg.scb_icsr.pendstclr,
-        scb_icsr_pendstset: $reg.scb_icsr.pendstset,
-        stk_ctrl: $reg.stk_ctrl,
-        stk_load: $reg.stk_load,
-        stk_val: $reg.stk_val,
-      }
-    )
-  }
+    $crate::drv::timer::Timer::new($crate::drv::timer::SysTickRes {
+      sys_tick: $thr.sys_tick.into(),
+      scb_icsr_pendstclr: $reg.scb_icsr.pendstclr,
+      scb_icsr_pendstset: $reg.scb_icsr.pendstset,
+      stk_ctrl: $reg.stk_ctrl,
+      stk_load: $reg.stk_load,
+      stk_val: $reg.stk_val,
+    })
+  };
 }
 
 impl<I: IntSysTick<Ltt>> Resource for SysTickRes<I, Frt> {

@@ -1,8 +1,8 @@
 use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-use syn::{Attribute, Ident, LitInt, Visibility};
 use syn::synom::Synom;
+use syn::{Attribute, Ident, LitInt, Visibility};
 
 struct ThrInt {
   attrs: Vec<Attribute>,

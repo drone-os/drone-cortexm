@@ -16,14 +16,14 @@ use drv::dma::{Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma2Ch1Res,
           feature = "stm32l4x3", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 use drv::dma::{Dma2Ch3Res, Dma2Ch4Res};
+use reg::marker::*;
+use reg::prelude::*;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 use reg::{spi1, spi2, spi3};
-use reg::marker::*;
-use reg::prelude::*;
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x6"))]
 use thr::int::{IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5, IntDma2Ch1,

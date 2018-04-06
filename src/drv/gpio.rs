@@ -1,5 +1,12 @@
 //! General-purpose I/O.
 
+#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
+          feature = "stm32l4x3", feature = "stm32l4x5",
+          feature = "stm32l4x6"))]
+use reg::gpioh;
+#[cfg(any(feature = "stm32l4x6"))]
+use reg::gpioi;
+use reg::prelude::*;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
@@ -11,13 +18,6 @@ use reg::{gpioa, gpiob, gpioc, gpiod, gpioe};
           feature = "stm32f107", feature = "stm32l4x5",
           feature = "stm32l4x6"))]
 use reg::{gpiof, gpiog};
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
-use reg::gpioh;
-#[cfg(any(feature = "stm32l4x6"))]
-use reg::gpioi;
-use reg::prelude::*;
 
 /// GPIO pin.
 #[allow(missing_docs)]

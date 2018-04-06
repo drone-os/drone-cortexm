@@ -138,7 +138,11 @@ impl<T: ExtiLnExtRes + ExtiLnConfRes> ExtiLn<T> {
   pub fn add_stream(
     &mut self,
   ) -> impl Stream<Item = (), Error = ExtiLnOverflow> {
-    fib::add_stream(self.0.int(), || Err(ExtiLnOverflow), self.stream_fib())
+    fib::add_stream(
+      self.0.int(),
+      || Err(ExtiLnOverflow),
+      self.stream_fib(),
+    )
   }
 
   /// Returns a stream, which resolves to `Ok(())` each time the event is

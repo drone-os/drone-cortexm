@@ -3,14 +3,20 @@
 use drone_core::bitfield::Bitfield;
 use drone_core::drv::Resource;
 use fib;
+use reg::marker::*;
+use reg::prelude::*;
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
           feature = "stm32f102", feature = "stm32f103",
           feature = "stm32f107", feature = "stm32l4x1",
           feature = "stm32l4x2", feature = "stm32l4x3",
           feature = "stm32l4x5", feature = "stm32l4x6"))]
 use reg::{dma1, dma2};
-use reg::marker::*;
-use reg::prelude::*;
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103"))]
+use thr::int::IntDma2Channel45 as IntDma2Ch4;
+#[cfg(any(feature = "stm32f100", feature = "stm32f101",
+          feature = "stm32f102", feature = "stm32f103"))]
+use thr::int::IntDma2Channel45 as IntDma2Ch5;
 #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
           feature = "stm32l4x6"))]
 use thr::int::{IntDma1Ch1, IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5,
@@ -30,12 +36,6 @@ use thr::int::{IntDma1Channel1 as IntDma1Ch1, IntDma1Channel2 as IntDma1Ch2,
 use thr::int::{IntDma2Channel4 as IntDma2Ch4, IntDma2Channel5 as IntDma2Ch5};
 #[cfg(any(feature = "stm32l4x3", feature = "stm32l4x5"))]
 use thr::int::{IntDma2Channel6 as IntDma2Ch6, IntDma2Channel7 as IntDma2Ch7};
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103"))]
-use thr::int::IntDma2Channel45 as IntDma2Ch4;
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103"))]
-use thr::int::IntDma2Channel45 as IntDma2Ch5;
 use thr::prelude::*;
 
 /// Error returned when `DMA_ISR_TEIFx` flag in set.
@@ -411,26 +411,24 @@ macro_rules! dma_ch {
     /// Creates a new `Dma`.
     #[macro_export]
     macro_rules! $name_macro {
-      ($reg:ident, $thr:ident) => {
-        $crate::drv::dma::Dma::new(
-          $crate::drv::dma::$name_res {
-            $int: $thr.$int.into(),
-            $dma_ccr: $reg.$dma_ccr,
-            $dma_cmar: $reg.$dma_cmar,
-            $dma_cndtr: $reg.$dma_cndtr,
-            $dma_cpar: $reg.$dma_cpar,
-            $dma_cselr_cs: $reg.$dma_cselr.$cs,
-            $dma_ifcr_cgif: $reg.$dma_ifcr.$cgif,
-            $dma_ifcr_chtif: $reg.$dma_ifcr.$chtif,
-            $dma_ifcr_ctcif: $reg.$dma_ifcr.$ctcif,
-            $dma_ifcr_cteif: $reg.$dma_ifcr.$cteif,
-            $dma_isr_gif: $reg.$dma_isr.$gif,
-            $dma_isr_htif: $reg.$dma_isr.$htif,
-            $dma_isr_tcif: $reg.$dma_isr.$tcif,
-            $dma_isr_teif: $reg.$dma_isr.$teif,
-          }
-        )
-      }
+      ($reg: ident,$thr: ident) => {
+        $crate::drv::dma::Dma::new($crate::drv::dma::$name_res {
+          $int: $thr.$int.into(),
+          $dma_ccr: $reg.$dma_ccr,
+          $dma_cmar: $reg.$dma_cmar,
+          $dma_cndtr: $reg.$dma_cndtr,
+          $dma_cpar: $reg.$dma_cpar,
+          $dma_cselr_cs: $reg.$dma_cselr.$cs,
+          $dma_ifcr_cgif: $reg.$dma_ifcr.$cgif,
+          $dma_ifcr_chtif: $reg.$dma_ifcr.$chtif,
+          $dma_ifcr_ctcif: $reg.$dma_ifcr.$ctcif,
+          $dma_ifcr_cteif: $reg.$dma_ifcr.$cteif,
+          $dma_isr_gif: $reg.$dma_isr.$gif,
+          $dma_isr_htif: $reg.$dma_isr.$htif,
+          $dma_isr_tcif: $reg.$dma_isr.$tcif,
+          $dma_isr_teif: $reg.$dma_isr.$teif,
+        })
+      };
     }
 
     #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -439,25 +437,23 @@ macro_rules! dma_ch {
     /// Creates a new `Dma`.
     #[macro_export]
     macro_rules! $name_macro {
-      ($reg:ident, $thr:ident) => {
-        $crate::drv::dma::Dma::new(
-          $crate::drv::dma::$name_res {
-            $int: $thr.$int.into(),
-            $dma_ccr: $reg.$dma_ccr,
-            $dma_cmar: $reg.$dma_cmar,
-            $dma_cndtr: $reg.$dma_cndtr,
-            $dma_cpar: $reg.$dma_cpar,
-            $dma_ifcr_cgif: $reg.$dma_ifcr.$cgif,
-            $dma_ifcr_chtif: $reg.$dma_ifcr.$chtif,
-            $dma_ifcr_ctcif: $reg.$dma_ifcr.$ctcif,
-            $dma_ifcr_cteif: $reg.$dma_ifcr.$cteif,
-            $dma_isr_gif: $reg.$dma_isr.$gif,
-            $dma_isr_htif: $reg.$dma_isr.$htif,
-            $dma_isr_tcif: $reg.$dma_isr.$tcif,
-            $dma_isr_teif: $reg.$dma_isr.$teif,
-          }
-        )
-      }
+      ($reg: ident,$thr: ident) => {
+        $crate::drv::dma::Dma::new($crate::drv::dma::$name_res {
+          $int: $thr.$int.into(),
+          $dma_ccr: $reg.$dma_ccr,
+          $dma_cmar: $reg.$dma_cmar,
+          $dma_cndtr: $reg.$dma_cndtr,
+          $dma_cpar: $reg.$dma_cpar,
+          $dma_ifcr_cgif: $reg.$dma_ifcr.$cgif,
+          $dma_ifcr_chtif: $reg.$dma_ifcr.$chtif,
+          $dma_ifcr_ctcif: $reg.$dma_ifcr.$ctcif,
+          $dma_ifcr_cteif: $reg.$dma_ifcr.$cteif,
+          $dma_isr_gif: $reg.$dma_isr.$gif,
+          $dma_isr_htif: $reg.$dma_isr.$htif,
+          $dma_isr_tcif: $reg.$dma_isr.$tcif,
+          $dma_isr_teif: $reg.$dma_isr.$teif,
+        })
+      };
     }
 
     impl<I: $int_ty<Ltt>> Resource for $name_res<I, Frt> {
@@ -558,10 +554,27 @@ macro_rules! dma_ch {
       }
 
       res_reg_impl!(Ccr, ccr, ccr_mut, $dma_ccr);
-      res_reg_field_impl!(CcrMem2Mem, ccr_mem2mem, ccr_mem2mem_mut, $dma_ccr,
-                          mem2mem);
-      res_reg_field_impl!(CcrMsize, ccr_msize, ccr_msize_mut, $dma_ccr, msize);
-      res_reg_field_impl!(CcrPsize, ccr_psize, ccr_psize_mut, $dma_ccr, psize);
+      res_reg_field_impl!(
+        CcrMem2Mem,
+        ccr_mem2mem,
+        ccr_mem2mem_mut,
+        $dma_ccr,
+        mem2mem
+      );
+      res_reg_field_impl!(
+        CcrMsize,
+        ccr_msize,
+        ccr_msize_mut,
+        $dma_ccr,
+        msize
+      );
+      res_reg_field_impl!(
+        CcrPsize,
+        ccr_psize,
+        ccr_psize_mut,
+        $dma_ccr,
+        psize
+      );
       res_reg_field_impl!(CcrMinc, ccr_minc, ccr_minc_mut, $dma_ccr, minc);
       res_reg_field_impl!(CcrPinc, ccr_pinc, ccr_pinc_mut, $dma_ccr, pinc);
       res_reg_field_impl!(CcrCirc, ccr_circ, ccr_circ_mut, $dma_ccr, circ);
@@ -573,23 +586,49 @@ macro_rules! dma_ch {
       res_reg_impl!(Cmar, cmar, cmar_mut, $dma_cmar);
       res_reg_field_impl!(CmarMa, cmar_ma, cmar_ma_mut, $dma_cmar, ma);
       res_reg_impl!(Cndtr, cndtr, cndtr_mut, $dma_cndtr);
-      res_reg_field_impl!(CndtrNdt, cndtr_ndt, cndtr_ndt_mut, $dma_cndtr, ndt);
+      res_reg_field_impl!(
+        CndtrNdt,
+        cndtr_ndt,
+        cndtr_ndt_mut,
+        $dma_cndtr,
+        ndt
+      );
       res_reg_impl!(Cpar, cpar, cpar_mut, $dma_cpar);
       res_reg_field_impl!(CparPa, cpar_pa, cpar_pa_mut, $dma_cpar, pa);
       #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
                 feature = "stm32l4x3", feature = "stm32l4x5",
                 feature = "stm32l4x6"))]
       res_reg_impl!(CselrCs, cselr_cs, cselr_cs_mut, $dma_cselr_cs);
-      res_reg_impl!(IfcrCgif, ifcr_cgif, ifcr_cgif_mut, $dma_ifcr_cgif);
-      res_reg_impl!(IfcrChtif, ifcr_chtif, ifcr_chtif_mut, $dma_ifcr_chtif);
-      res_reg_impl!(IfcrCtcif, ifcr_ctcif, ifcr_ctcif_mut, $dma_ifcr_ctcif);
-      res_reg_impl!(IfcrCteif, ifcr_cteif, ifcr_cteif_mut, $dma_ifcr_cteif);
+      res_reg_impl!(
+        IfcrCgif,
+        ifcr_cgif,
+        ifcr_cgif_mut,
+        $dma_ifcr_cgif
+      );
+      res_reg_impl!(
+        IfcrChtif,
+        ifcr_chtif,
+        ifcr_chtif_mut,
+        $dma_ifcr_chtif
+      );
+      res_reg_impl!(
+        IfcrCtcif,
+        ifcr_ctcif,
+        ifcr_ctcif_mut,
+        $dma_ifcr_ctcif
+      );
+      res_reg_impl!(
+        IfcrCteif,
+        ifcr_cteif,
+        ifcr_cteif_mut,
+        $dma_ifcr_cteif
+      );
       res_reg_impl!(IsrGif, isr_gif, isr_gif_mut, $dma_isr_gif);
       res_reg_impl!(IsrHtif, isr_htif, isr_htif_mut, $dma_isr_htif);
       res_reg_impl!(IsrTcif, isr_tcif, isr_tcif_mut, $dma_isr_tcif);
       res_reg_impl!(IsrTeif, isr_teif, isr_teif_mut, $dma_isr_teif);
     }
-  }
+  };
 }
 
 #[cfg(any(feature = "stm32f100", feature = "stm32f101",
