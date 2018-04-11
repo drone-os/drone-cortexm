@@ -43,9 +43,9 @@ pub mod vtable;
 
 mod control;
 mod future;
-mod notify;
 mod request;
 mod stream;
+mod wake;
 
 pub use self::control::ThrControl;
 pub use self::future::FuturePlat;

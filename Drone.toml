@@ -1,2 +1,3 @@
 target = "thumbv7m-none-eabi"
 test_target = "thumbv7m-linux-eabi"
+test_cross_compile = "arm-none-eabi"

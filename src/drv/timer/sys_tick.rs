@@ -1,6 +1,7 @@
 use super::{Timer, TimerOverflow, TimerRes};
 use drone_core::drv::Resource;
 use fib::{self, FiberFuture, FiberStreamUnit};
+use futures::prelude::*;
 use reg::prelude::*;
 use reg::{scb, stk};
 use thr::int::IntSysTick;

@@ -2,27 +2,58 @@
 
 use drone_core::drv::Resource;
 use fib::{self, Fiber};
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+use futures::prelude::*;
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 use reg::afio;
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 use reg::exti;
 use reg::marker::*;
 use reg::prelude::*;
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 use reg::syscfg;
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 use thr::int::{IntExti0, IntExti1, IntExti1510, IntExti2, IntExti3, IntExti4,
                IntExti95};
 use thr::prelude::*;
@@ -352,9 +383,15 @@ macro_rules! exti_line {
   }
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 0 driver.",
   ExtiLn0,
@@ -405,9 +442,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 1 driver.",
   ExtiLn1,
@@ -458,9 +501,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 2 driver.",
   ExtiLn2,
@@ -511,9 +560,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 3 driver.",
   ExtiLn3,
@@ -564,9 +619,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 4 driver.",
   ExtiLn4,
@@ -617,9 +678,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 5 driver.",
   ExtiLn5,
@@ -670,9 +737,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 6 driver.",
   ExtiLn6,
@@ -723,9 +796,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 7 driver.",
   ExtiLn7,
@@ -776,9 +855,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 8 driver.",
   ExtiLn8,
@@ -829,9 +914,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 9 driver.",
   ExtiLn9,
@@ -882,9 +973,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 10 driver.",
   ExtiLn10,
@@ -935,9 +1032,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 11 driver.",
   ExtiLn11,
@@ -988,9 +1091,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 12 driver.",
   ExtiLn12,
@@ -1041,9 +1150,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 13 driver.",
   ExtiLn13,
@@ -1094,9 +1209,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 14 driver.",
   ExtiLn14,
@@ -1147,9 +1268,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 15 driver.",
   ExtiLn15,
@@ -1200,9 +1327,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 16 driver.",
   ExtiLn16,
@@ -1244,9 +1377,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 17 driver.",
   ExtiLn17,
@@ -1288,8 +1427,14 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32f101", feature = "stm32f102",
-          feature = "stm32f103", feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 exti_line! {
   "EXTI Line 18 driver.",
   ExtiLn18,
@@ -1373,9 +1518,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 0 driver.",
   ExtiLn0,
@@ -1426,9 +1577,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 1 driver.",
   ExtiLn1,
@@ -1479,9 +1636,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 2 driver.",
   ExtiLn2,
@@ -1532,9 +1695,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 3 driver.",
   ExtiLn3,
@@ -1585,9 +1754,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 4 driver.",
   ExtiLn4,
@@ -1638,9 +1813,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 5 driver.",
   ExtiLn5,
@@ -1691,9 +1872,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 6 driver.",
   ExtiLn6,
@@ -1744,9 +1931,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 7 driver.",
   ExtiLn7,
@@ -1797,9 +1990,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 8 driver.",
   ExtiLn8,
@@ -1850,9 +2049,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 9 driver.",
   ExtiLn9,
@@ -1903,9 +2108,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 10 driver.",
   ExtiLn10,
@@ -1956,9 +2167,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 11 driver.",
   ExtiLn11,
@@ -2009,9 +2226,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 12 driver.",
   ExtiLn12,
@@ -2062,9 +2285,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 13 driver.",
   ExtiLn13,
@@ -2115,9 +2344,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 14 driver.",
   ExtiLn14,
@@ -2168,9 +2403,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 15 driver.",
   ExtiLn15,
@@ -2221,9 +2462,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 16 driver.",
   ExtiLn16,
@@ -2265,9 +2512,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 17 driver.",
   ExtiLn17,
@@ -2286,9 +2539,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 18 driver.",
   ExtiLn18,
@@ -2330,9 +2589,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 19 driver.",
   ExtiLn19,
@@ -2374,9 +2639,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 20 driver.",
   ExtiLn20,
@@ -2418,9 +2689,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 21 driver.",
   ExtiLn21,
@@ -2462,9 +2739,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 22 driver.",
   ExtiLn22,
@@ -2506,9 +2789,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 23 driver.",
   ExtiLn23,
@@ -2527,9 +2816,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 24 driver.",
   ExtiLn24,
@@ -2548,9 +2843,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 25 driver.",
   ExtiLn25,
@@ -2569,9 +2870,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 26 driver.",
   ExtiLn26,
@@ -2590,9 +2897,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 27 driver.",
   ExtiLn27,
@@ -2611,9 +2924,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 28 driver.",
   ExtiLn28,
@@ -2632,9 +2951,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 29 driver.",
   ExtiLn29,
@@ -2653,9 +2978,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 30 driver.",
   ExtiLn30,
@@ -2674,9 +3005,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 31 driver.",
   ExtiLn31,
@@ -2695,9 +3032,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 32 driver.",
   ExtiLn32,
@@ -2716,9 +3059,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 33 driver.",
   ExtiLn33,
@@ -2737,9 +3086,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 34 driver.",
   ExtiLn34,
@@ -2758,9 +3113,15 @@ exti_line! {
   (),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 35 driver.",
   ExtiLn35,
@@ -2802,9 +3163,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 36 driver.",
   ExtiLn36,
@@ -2846,9 +3213,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 37 driver.",
   ExtiLn37,
@@ -2890,9 +3263,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 38 driver.",
   ExtiLn38,
@@ -2934,9 +3313,15 @@ exti_line! {
   )),
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 exti_line! {
   "EXTI Line 39 driver.",
   ExtiLn39,

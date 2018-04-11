@@ -84,7 +84,7 @@ impl Synom for Mode {
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-  let call_site = Span::call_site();
+  let (def_site, call_site) = (Span::def_site(), Span::call_site());
   let Vtable {
     vtable:
       NewStruct {
@@ -121,13 +121,13 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     .map(|int| int.num.value() as usize + 1)
     .max()
     .unwrap_or(0);
-  let rt = Ident::from("__vtable_rt");
-  let def_new = Ident::new("new", call_site);
+  let rt = Ident::new("__vtable_rt", def_site);
+  let def_new = Ident::from("new");
   let mut exc_holes = exc_set();
   let mut def_exc = exc_holes.clone();
-  let def_reset = Ident::new("reset", call_site);
-  let def_reset_ty = Ident::new("Reset", call_site);
-  let def_sv_call = Ident::new("sv_call", call_site);
+  let def_reset = Ident::from("reset");
+  let def_reset_ty = Ident::from("Reset");
+  let def_sv_call = Ident::from("sv_call");
   let def_nmi = def_exc.def_ident("nmi");
   let def_hard_fault = def_exc.def_ident("hard_fault");
   let def_mem_manage = def_exc.def_ident("mem_manage");
@@ -159,8 +159,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       &mut thr_tokens,
     );
     if let Some(struct_ident) = struct_ident {
-      let int_trait = Ident::new(&format!("Int{}", struct_ident), call_site);
-      thr_tokens.push(quote! {
+      let int_trait = Ident::from(format!("Int{}", struct_ident));
+      thr_tokens.push(quote_spanned! { def_site =>
         impl<T: #rt::ThrTag> #int_trait<T> for #struct_ident<T> {}
       });
     }
@@ -184,9 +184,12 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       &mut thr_tokens,
     );
     if let Some(struct_ident) = struct_ident {
-      let int_trait = Ident::new(&format!("Int{}", num.value()), call_site);
-      let bundle = Ident::from(format!("IntBundle{}", num.value() / 32));
-      thr_tokens.push(quote! {
+      let int_trait = Ident::from(format!("Int{}", num.value()));
+      let bundle = Ident::new(
+        &format!("IntBundle{}", num.value() / 32),
+        def_site,
+      );
+      thr_tokens.push(quote_spanned! { def_site =>
         impl<T: #rt::ThrTag> #rt::IntToken<T> for #struct_ident<T> {
           type Bundle = #rt::#bundle;
 
@@ -196,30 +199,30 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         impl<T: #rt::ThrTag> #int_trait<T> for #struct_ident<T> {}
       });
     }
-    vtable_tokens[num.value() as usize] = Some(quote! {
+    vtable_tokens[num.value() as usize] = Some(quote_spanned! { def_site =>
       #field_ident: Option<#rt::Handler>
     });
   }
   for exc_ident in exc_holes {
-    let exc_ident = Ident::new(exc_ident, call_site);
-    vtable_ctor_tokens.push(quote!(#exc_ident: None));
+    let exc_ident = Ident::from(exc_ident);
+    vtable_ctor_tokens.push(quote_spanned!(def_site => #exc_ident: None));
   }
   let vtable_tokens = vtable_tokens
     .into_iter()
     .enumerate()
     .map(|(i, tokens)| {
       tokens.unwrap_or_else(|| {
-        let int_ident = Ident::from(format!("_int{}", i));
-        vtable_ctor_tokens.push(quote!(#int_ident: None));
-        quote!(#int_ident: Option<#rt::Handler>)
+        let int_ident = Ident::new(&format!("_int{}", i), def_site);
+        vtable_ctor_tokens.push(quote_spanned!(def_site => #int_ident: None));
+        quote_spanned!(def_site => #int_ident: Option<#rt::Handler>)
       })
     })
     .collect::<Vec<_>>();
-  vtable_ctor_tokens.push(quote! {
+  vtable_ctor_tokens.push(quote_spanned! { def_site =>
     #def_sv_call: #rt::sv_handler::<<#thr_ident as #rt::Thread>::Sv>
   });
 
-  let expanded = quote! {
+  let expanded = quote_spanned! { def_site =>
     mod #rt {
       extern crate core;
       extern crate drone_core;
@@ -315,27 +318,27 @@ fn gen_exc(
   array_tokens: &mut Vec<Tokens>,
   thr_tokens: &mut Vec<Tokens>,
 ) -> (Ident, Option<Ident>) {
-  let call_site = Span::call_site();
+  let def_site = Span::def_site();
   let &Exc {
     ref attrs,
     ref mode,
     ref ident,
   } = exc;
-  let struct_ident = Ident::new(&ident.as_ref().to_pascal_case(), call_site);
-  let field_ident = Ident::new(&ident.as_ref().to_snake_case(), call_site);
+  let struct_ident = Ident::from(ident.as_ref().to_pascal_case());
+  let field_ident = Ident::from(ident.as_ref().to_snake_case());
   match *mode {
     Mode::Thread(_) => {
-      vtable_ctor_tokens.push(quote! {
+      vtable_ctor_tokens.push(quote_spanned! { def_site =>
         #field_ident: Some(
           #rt::thr_handler::<#struct_ident<#rt::Ltt>, #rt::Ltt>,
         )
       });
     }
     Mode::Extern(_) | Mode::Fn => {
-      vtable_ctor_tokens.push(quote! {
+      vtable_ctor_tokens.push(quote_spanned! { def_site =>
         #field_ident: Some(handlers.#field_ident)
       });
-      handlers_tokens.push(quote! {
+      handlers_tokens.push(quote_spanned! { def_site =>
         #(#attrs)*
         pub #field_ident: #rt::Handler
       });
@@ -345,17 +348,17 @@ fn gen_exc(
     Mode::Thread(ref vis) | Mode::Extern(ref vis) => {
       let index = *thr_counter;
       *thr_counter += 1;
-      index_tokens.push(quote! {
+      index_tokens.push(quote_spanned! { def_site =>
         #(#attrs)*
         #vis #field_ident: #struct_ident<#rt::Ctt>
       });
-      index_ctor_tokens.push(quote! {
+      index_ctor_tokens.push(quote_spanned! { def_site =>
         #field_ident: #struct_ident::new()
       });
-      array_tokens.push(quote! {
+      array_tokens.push(quote_spanned! { def_site =>
         #thr_ident::new(#index)
       });
-      thr_tokens.push(quote! {
+      thr_tokens.push(quote_spanned! { def_site =>
         #(#attrs)*
         #[derive(Clone, Copy)]
         #vis struct #struct_ident<T: #rt::ThrTag>(#rt::PhantomData<T>);
@@ -426,6 +429,6 @@ trait ExcDefIdent {
 
 impl ExcDefIdent for HashSet<&'static str> {
   fn def_ident(&mut self, ident: &str) -> Ident {
-    Ident::new(self.take(ident).unwrap(), Span::call_site())
+    Ident::from(self.take(ident).unwrap())
   }
 }

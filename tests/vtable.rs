@@ -79,6 +79,7 @@ mod a {
 
   thr! {
     pub struct Thr;
+    #[allow(dead_code)]
     pub struct ThrLocal;
     extern struct Sv;
     extern static THREADS;
@@ -108,6 +109,7 @@ mod b {
 
   thr! {
     pub struct Thr;
+    #[allow(dead_code)]
     pub struct ThrLocal;
     extern struct Sv;
     extern static THREADS;

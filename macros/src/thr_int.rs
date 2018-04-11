@@ -33,9 +33,9 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     number,
   } = try_parse!(call_site, input);
   let int_name = format!("INT_{}", ident);
-  let name_ident = Ident::new(&int_name.to_pascal_case(), call_site);
-  let number_ident = Ident::new(&format!("Int{}", number.value()), call_site);
-  let expanded = quote_spanned! { call_site =>
+  let name_ident = Ident::from(int_name.to_pascal_case());
+  let number_ident = Ident::from(format!("Int{}", number.value()));
+  let expanded = quote! {
     #(#attrs)*
     #vis trait #number_ident<T: ThrTag>: IntToken<T> {}
 

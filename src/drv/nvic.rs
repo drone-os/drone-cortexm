@@ -1,10 +1,19 @@
 //! Nested vectored interrupt controller.
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 use reg::nvic;
 #[allow(unused_imports)]
 use reg::prelude::*;
@@ -12,199 +21,496 @@ use reg::prelude::*;
 /// Nested vectored interrupt controller.
 #[allow(missing_docs)]
 pub struct Nvic {
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub iser0: nvic::Iser0<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub iser1: nvic::Iser1<Srt>,
-  #[cfg(any(feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub iser2: nvic::Iser2<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub icer0: nvic::Icer0<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub icer1: nvic::Icer1<Srt>,
-  #[cfg(any(feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub icer2: nvic::Icer2<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ispr0: nvic::Ispr0<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ispr1: nvic::Ispr1<Srt>,
-  #[cfg(any(feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ispr2: nvic::Ispr2<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub icpr0: nvic::Icpr0<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub icpr1: nvic::Icpr1<Srt>,
-  #[cfg(any(feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub icpr2: nvic::Icpr2<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub iabr0: nvic::Iabr0<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub iabr1: nvic::Iabr1<Srt>,
-  #[cfg(any(feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub iabr2: nvic::Iabr2<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr0: nvic::Ipr0<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr1: nvic::Ipr1<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr2: nvic::Ipr2<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr3: nvic::Ipr3<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr4: nvic::Ipr4<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr5: nvic::Ipr5<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr6: nvic::Ipr6<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr7: nvic::Ipr7<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr8: nvic::Ipr8<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr9: nvic::Ipr9<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr10: nvic::Ipr10<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr11: nvic::Ipr11<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr12: nvic::Ipr12<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr13: nvic::Ipr13<Srt>,
-  #[cfg(any(feature = "stm32f100", feature = "stm32f102",
-            feature = "stm32f103", feature = "stm32f107",
-            feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr14: nvic::Ipr14<Srt>,
-  #[cfg(any(feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr15: nvic::Ipr15<Srt>,
-  #[cfg(any(feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr16: nvic::Ipr16<Srt>,
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr17: nvic::Ipr17<Srt>,
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr18: nvic::Ipr18<Srt>,
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr19: nvic::Ipr19<Srt>,
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub ipr20: nvic::Ipr20<Srt>,
 }
 
@@ -242,8 +548,7 @@ macro_rules! drv_nvic {
   };
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f102",
-          feature = "stm32f103"))]
+#[cfg(any(feature = "stm32f100", feature = "stm32f102", feature = "stm32f103"))]
 /// Creates a new `Nvic`.
 #[macro_export]
 macro_rules! drv_nvic {
@@ -320,9 +625,15 @@ macro_rules! drv_nvic {
   };
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 /// Creates a new `Nvic`.
 #[macro_export]
 macro_rules! drv_nvic {

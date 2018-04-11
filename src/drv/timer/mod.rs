@@ -6,6 +6,7 @@ pub use self::sys_tick::{SysTick, SysTickRes};
 
 use drone_core::bitfield::Bitfield;
 use drone_core::drv::Resource;
+use futures::prelude::*;
 
 /// Error returned from [`Timer::interval`](Timer::interval) on overflow.
 #[derive(Debug, Fail)]

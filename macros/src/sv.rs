@@ -32,8 +32,7 @@ impl Synom for Service {
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-  let call_site = Span::call_site();
-  let def_site = Span::def_site();
+  let (def_site, call_site) = (Span::def_site(), Span::call_site());
   let Sv {
     sv:
       NewStruct {
@@ -49,7 +48,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       },
     services,
   } = try_parse!(call_site, input);
-  let rt = Ident::from("__sv_rt");
+  let rt = Ident::new("__sv_rt", def_site);
   let mut service_counter = 0usize;
   let mut array_tokens = Vec::new();
   let mut service_tokens = Vec::new();
@@ -60,10 +59,10 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       def_site,
     );
     service_counter += 1;
-    array_tokens.push(quote! {
+    array_tokens.push(quote_spanned! { def_site =>
       #sv_ident(#rt::service_handler::<#ident>)
     });
-    service_tokens.push(quote! {
+    service_tokens.push(quote_spanned! { def_site =>
       impl #rt::SvCall<#ident> for #sv_ident {
         #[inline(always)]
         unsafe fn call(service: &mut #ident) {
@@ -73,7 +72,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     });
   }
 
-  let expanded = quote! {
+  let expanded = quote_spanned! { def_site =>
     mod #rt {
       extern crate drone_core;
       extern crate drone_stm32 as drone_plat;

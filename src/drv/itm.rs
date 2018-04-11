@@ -1,12 +1,24 @@
 //! Instrumentation Trace Macrocell.
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  )
+)]
 use reg::dbg as dbgmcu;
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 use reg::dbgmcu;
 use reg::prelude::*;
 use reg::{itm, scb, tpiu};
@@ -19,11 +31,20 @@ pub struct Itm(ItmRes);
 #[allow(missing_docs)]
 #[derive(Resource)]
 pub struct ItmRes {
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub dbgmcu_cr: dbgmcu::Cr<Srt>,
   pub itm_lar: itm::Lar<Srt>,
   pub itm_tcr: itm::Tcr<Srt>,
@@ -34,11 +55,20 @@ pub struct ItmRes {
 }
 
 /// Creates a new `Itm`.
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 #[macro_export]
 macro_rules! drv_itm {
   ($reg:ident) => {
@@ -56,11 +86,20 @@ macro_rules! drv_itm {
 
 #[allow(missing_docs)]
 impl Itm {
-  #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-            feature = "stm32f102", feature = "stm32f103",
-            feature = "stm32f107", feature = "stm32l4x1",
-            feature = "stm32l4x2", feature = "stm32l4x3",
-            feature = "stm32l4x5", feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32f100",
+      feature = "stm32f101",
+      feature = "stm32f102",
+      feature = "stm32f103",
+      feature = "stm32f107",
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   pub fn dbgmcu_cr(&self) -> &dbgmcu::Cr<Srt> {
     &self.0.dbgmcu_cr
   }
@@ -98,11 +137,20 @@ impl Itm {
   /// Initializes ITM.
   pub fn init(&self) {
     // FIXME better to set this via debugger.
-    #[cfg(any(feature = "stm32f100", feature = "stm32f101",
-              feature = "stm32f102", feature = "stm32f103",
-              feature = "stm32f107", feature = "stm32l4x1",
-              feature = "stm32l4x2", feature = "stm32l4x3",
-              feature = "stm32l4x5", feature = "stm32l4x6"))]
+    #[cfg(
+      any(
+        feature = "stm32f100",
+        feature = "stm32f101",
+        feature = "stm32f102",
+        feature = "stm32f103",
+        feature = "stm32f107",
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      )
+    )]
     self.0.dbgmcu_cr.store(|r| {
       r.write_trace_mode(0b00)
         .set_trace_ioen()

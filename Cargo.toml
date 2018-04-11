@@ -32,7 +32,7 @@ version = "0.8"
 path = "../drone-core"
 
 [dependencies.futures]
-version = "0.1"
+version = "0.2"
 default-features = false
 
 [dependencies.failure]

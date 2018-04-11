@@ -1,3 +1,6 @@
+[build]
+rustc = ".cargo/rustc.sh"
+
 [target.thumbv7m-none-eabi]
 rustflags = [
   "-C", "link-arg=-Wl,--build-id=none",

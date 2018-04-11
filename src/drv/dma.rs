@@ -3,36 +3,67 @@
 use drone_core::bitfield::Bitfield;
 use drone_core::drv::Resource;
 use fib;
+use futures::prelude::*;
 use reg::marker::*;
 use reg::prelude::*;
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 use reg::{dma1, dma2};
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103"
+  )
+)]
 use thr::int::IntDma2Channel45 as IntDma2Ch4;
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103"
+  )
+)]
 use thr::int::IntDma2Channel45 as IntDma2Ch5;
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(feature = "stm32l4x1", feature = "stm32l4x2", feature = "stm32l4x6")
+)]
 use thr::int::{IntDma1Ch1, IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5,
                IntDma1Ch6, IntDma1Ch7, IntDma2Ch1, IntDma2Ch2, IntDma2Ch3,
                IntDma2Ch4, IntDma2Ch5, IntDma2Ch6, IntDma2Ch7};
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x3",
-          feature = "stm32l4x5"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5"
+  )
+)]
 use thr::int::{IntDma1Channel1 as IntDma1Ch1, IntDma1Channel2 as IntDma1Ch2,
                IntDma1Channel3 as IntDma1Ch3, IntDma1Channel4 as IntDma1Ch4,
                IntDma1Channel5 as IntDma1Ch5, IntDma1Channel6 as IntDma1Ch6,
                IntDma1Channel7 as IntDma1Ch7, IntDma2Channel1 as IntDma2Ch1,
                IntDma2Channel2 as IntDma2Ch2, IntDma2Channel3 as IntDma2Ch3};
-#[cfg(any(feature = "stm32f107", feature = "stm32l4x3",
-          feature = "stm32l4x5"))]
+#[cfg(
+  any(feature = "stm32f107", feature = "stm32l4x3", feature = "stm32l4x5")
+)]
 use thr::int::{IntDma2Channel4 as IntDma2Ch4, IntDma2Channel5 as IntDma2Ch5};
 #[cfg(any(feature = "stm32l4x3", feature = "stm32l4x5"))]
 use thr::int::{IntDma2Channel6 as IntDma2Ch6, IntDma2Channel7 as IntDma2Ch7};
@@ -73,13 +104,25 @@ pub trait DmaRes: Resource {
   type CparVal: Bitfield<Bits = u32>;
   type Cpar: SRwReg<Val = Self::CparVal>;
   type CparPa: SRwRwRegFieldBits<Reg = Self::Cpar>;
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   type Cselr: SRwReg;
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   type CselrCs: SRwRwRegFieldBits<Reg = Self::Cselr>;
   type Ifcr: FWoRegBitBand;
   type IfcrCgif: FWoWoRegFieldBitBand<Reg = Self::Ifcr>;
@@ -112,9 +155,15 @@ pub trait DmaRes: Resource {
   res_reg_decl!(CndtrNdt, cndtr_ndt, cndtr_ndt_mut);
   res_reg_decl!(Cpar, cpar, cpar_mut);
   res_reg_decl!(CparPa, cpar_pa, cpar_pa_mut);
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   res_reg_decl!(CselrCs, cselr_cs, cselr_cs_mut);
   res_reg_decl!(IfcrCgif, ifcr_cgif, ifcr_cgif_mut);
   res_reg_decl!(IfcrChtif, ifcr_chtif, ifcr_chtif_mut);
@@ -193,9 +242,15 @@ impl<T: DmaRes> Dma<T> {
     self.0.ccr_en()
   }
 
-  #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-            feature = "stm32l4x3", feature = "stm32l4x5",
-            feature = "stm32l4x6"))]
+  #[cfg(
+    any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    )
+  )]
   #[inline(always)]
   pub fn cselr_cs(&self) -> &T::CselrCs {
     self.0.cselr_cs()
@@ -391,9 +446,15 @@ macro_rules! dma_ch {
       pub $dma_cmar: $dma::$cmar_ty<Srt>,
       pub $dma_cndtr: $dma::$cndtr_ty<Srt>,
       pub $dma_cpar: $dma::$cpar_ty<Srt>,
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
+      #[cfg(
+        any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        )
+      )]
       pub $dma_cselr_cs: $dma::cselr::$cs_ty<Srt>,
       pub $dma_ifcr_cgif: $dma::ifcr::$cgif_ty<Rt>,
       pub $dma_ifcr_chtif: $dma::ifcr::$chtif_ty<Rt>,
@@ -405,9 +466,15 @@ macro_rules! dma_ch {
       pub $dma_isr_teif: $dma::isr::$teif_ty<Rt>,
     }
 
-    #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-              feature = "stm32l4x3", feature = "stm32l4x5",
-              feature = "stm32l4x6"))]
+    #[cfg(
+      any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      )
+    )]
     /// Creates a new `Dma`.
     #[macro_export]
     macro_rules! $name_macro {
@@ -431,9 +498,17 @@ macro_rules! dma_ch {
       };
     }
 
-    #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                  feature = "stm32l4x3", feature = "stm32l4x5",
-                  feature = "stm32l4x6")))]
+    #[cfg(
+      not(
+        any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        )
+      )
+    )]
     /// Creates a new `Dma`.
     #[macro_export]
     macro_rules! $name_macro {
@@ -459,9 +534,15 @@ macro_rules! dma_ch {
     impl<I: $int_ty<Ltt>> Resource for $name_res<I, Frt> {
       type Source = $name_res<I, Srt>;
 
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
+      #[cfg(
+        any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        )
+      )]
       #[inline(always)]
       fn from_source(source: Self::Source) -> Self {
         Self {
@@ -482,9 +563,17 @@ macro_rules! dma_ch {
         }
       }
 
-      #[cfg(not(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                    feature = "stm32l4x3", feature = "stm32l4x5",
-                    feature = "stm32l4x6")))]
+      #[cfg(
+        not(
+          any(
+            feature = "stm32l4x1",
+            feature = "stm32l4x2",
+            feature = "stm32l4x3",
+            feature = "stm32l4x5",
+            feature = "stm32l4x6"
+          )
+        )
+      )]
       #[inline(always)]
       fn from_source(source: Self::Source) -> Self {
         Self {
@@ -529,13 +618,25 @@ macro_rules! dma_ch {
       type CparVal = $dma::$cpar_path::Val;
       type Cpar = $dma::$cpar_ty<Srt>;
       type CparPa = $dma::$cpar_path::Pa<Srt>;
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
+      #[cfg(
+        any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        )
+      )]
       type Cselr = $dma::cselr::Reg<Srt>;
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
+      #[cfg(
+        any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        )
+      )]
       type CselrCs = $dma::cselr::$cs_ty<Srt>;
       type Ifcr = $dma::Ifcr<Frt>;
       type IfcrCgif = $dma::ifcr::$cgif_ty<Frt>;
@@ -595,9 +696,15 @@ macro_rules! dma_ch {
       );
       res_reg_impl!(Cpar, cpar, cpar_mut, $dma_cpar);
       res_reg_field_impl!(CparPa, cpar_pa, cpar_pa_mut, $dma_cpar, pa);
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
+      #[cfg(
+        any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        )
+      )]
       res_reg_impl!(CselrCs, cselr_cs, cselr_cs_mut, $dma_cselr_cs);
       res_reg_impl!(
         IfcrCgif,
@@ -631,11 +738,20 @@ macro_rules! dma_ch {
   };
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA1 Channel 1 driver.",
   Dma1Ch1,
@@ -689,11 +805,20 @@ dma_ch! {
   teif1,
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA1 Channel 2 driver.",
   Dma1Ch2,
@@ -747,11 +872,20 @@ dma_ch! {
   teif2,
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA1 Channel 3 driver.",
   Dma1Ch3,
@@ -805,11 +939,20 @@ dma_ch! {
   teif3,
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA1 Channel 4 driver.",
   Dma1Ch4,
@@ -863,11 +1006,20 @@ dma_ch! {
   teif4,
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA1 Channel 5 driver.",
   Dma1Ch5,
@@ -921,11 +1073,20 @@ dma_ch! {
   teif5,
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA1 Channel 6 driver.",
   Dma1Ch6,
@@ -979,11 +1140,20 @@ dma_ch! {
   teif6,
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA1 Channel 7 driver.",
   Dma1Ch7,
@@ -1037,11 +1207,20 @@ dma_ch! {
   teif7,
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA2 Channel 1 driver.",
   Dma2Ch1,
@@ -1095,11 +1274,20 @@ dma_ch! {
   teif1,
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA2 Channel 2 driver.",
   Dma2Ch2,
@@ -1153,11 +1341,20 @@ dma_ch! {
   teif2,
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA2 Channel 3 driver.",
   Dma2Ch3,
@@ -1211,11 +1408,20 @@ dma_ch! {
   teif3,
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA2 Channel 4 driver.",
   Dma2Ch4,
@@ -1269,11 +1475,20 @@ dma_ch! {
   teif4,
 }
 
-#[cfg(any(feature = "stm32f100", feature = "stm32f101",
-          feature = "stm32f102", feature = "stm32f103",
-          feature = "stm32f107", feature = "stm32l4x1",
-          feature = "stm32l4x2", feature = "stm32l4x3",
-          feature = "stm32l4x5", feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107",
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA2 Channel 5 driver.",
   Dma2Ch5,
@@ -1327,9 +1542,15 @@ dma_ch! {
   teif5,
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA2 Channel 6 driver.",
   Dma2Ch6,
@@ -1383,9 +1604,15 @@ dma_ch! {
   teif6,
 }
 
-#[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-          feature = "stm32l4x3", feature = "stm32l4x5",
-          feature = "stm32l4x6"))]
+#[cfg(
+  any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  )
+)]
 dma_ch! {
   "DMA2 Channel 7 driver.",
   Dma2Ch7,
