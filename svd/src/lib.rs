@@ -9,7 +9,7 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![cfg_attr(feature = "clippy", allow(precedence))]
 
-extern crate failure_dup as failure;
+extern crate drone_mirror_failure as failure;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;

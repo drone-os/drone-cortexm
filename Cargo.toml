@@ -52,9 +52,8 @@ version = "0.2"
 features = []
 path = "../drone-test"
 
-[build-dependencies.failure-dup]
-git = "https://github.com/drone-os/failure-dup"
-branch = "version-0.1"
+[build-dependencies.drone-mirror-failure]
+version = "0.1"
 default-features = false
 features = ["std"]
 
