@@ -234,7 +234,7 @@ impl Registers {
           write!(reg_map, " WReg")?;
         }
       }
-      if BIT_BAND.contains(address) {
+      if BIT_BAND.contains(&address) {
         write!(reg_map, " RegBitBand")?;
       }
       writeln!(reg_map, ";")?;

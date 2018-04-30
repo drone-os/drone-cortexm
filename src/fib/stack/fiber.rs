@@ -1,5 +1,6 @@
 use super::{Data, StackData, Yielder};
-use alloc::heap::{Alloc, Heap, Layout};
+use alloc::alloc::Global;
+use core::alloc::{GlobalAlloc, Layout, Opaque};
 use core::cmp::max;
 use core::marker::PhantomData;
 use core::mem::{align_of, size_of};
@@ -130,6 +131,7 @@ where
     stack_ptr as *const u8
   }
 
+  #[cfg_attr(feature = "clippy", allow(cast_ptr_alignment))]
   unsafe fn mpu_config(mut guard_ptr: *mut u8) -> u32 {
     let rbar = mpu::Rbar::<Srt>::new();
     let rasr = mpu::Rasr::<Srt>::new();
@@ -261,13 +263,11 @@ where
 }
 
 unsafe fn alloc(stack_size: usize) -> *mut u8 {
-  Heap
-    .alloc(layout(stack_size))
-    .unwrap_or_else(|err| Heap.oom(err))
+  Global.alloc(layout(stack_size)) as *mut u8
 }
 
 unsafe fn dealloc(stack_bottom: *mut u8, stack_size: usize) {
-  Heap.dealloc(stack_bottom, layout(stack_size));
+  Global.dealloc(stack_bottom as *mut Opaque, layout(stack_size));
 }
 
 unsafe fn layout(stack_size: usize) -> Layout {

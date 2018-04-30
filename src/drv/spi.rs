@@ -171,7 +171,7 @@ where
 
 /// SPI resource.
 #[allow(missing_docs)]
-pub trait SpiRes: Resource<Source = Self> {
+pub trait SpiRes: Resource {
   type Cr1Val: Bitfield<Bits = u32>;
   type Cr1: SRwRegBitBand<Val = Self::Cr1Val>;
   type Cr1Bidimode: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
@@ -190,7 +190,7 @@ pub trait SpiRes: Resource<Source = Self> {
   type Cr2Txdmaen: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
   type Cr2Rxdmaen: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
   type Crcpr: SRwRegBitBand;
-  type Dr: SRwRegBitBand;
+  type Dr: FRwRegBitBand;
   type Rxcrcr: SRoRegBitBand;
   type SrVal: Bitfield<Bits = u32>;
   type Sr: SRwRegBitBand<Val = Self::SrVal>;
@@ -434,29 +434,39 @@ impl<T: SpiRes> Spi<T> {
     self.0.set_frame_8(_cr2);
   }
 
-  /// Writes `u8` value to the data register.
+  /// Writes a byte to the data register.
   #[inline(always)]
   pub fn send_byte(&self, value: u8) {
-    unsafe {
-      write_volatile(self.0.dr().to_mut_ptr() as *mut _, value);
-    }
+    Self::dr_send_byte(self.0.dr(), value);
   }
 
-  /// Writes `u16` value to the data register.
+  /// Returns a closure, which writes a byte to the data register.
+  #[inline(always)]
+  pub fn send_byte_fn(&mut self) -> impl Fn(u8) {
+    let dr = self.0.dr_mut().fork();
+    move |value| Self::dr_send_byte(&dr, value)
+  }
+
+  /// Writes a half word to the data register.
   #[inline(always)]
   pub fn send_hword(&self, value: u16) {
-    unsafe {
-      write_volatile(self.0.dr().to_mut_ptr() as *mut _, value);
-    }
+    Self::dr_send_hword(self.0.dr(), value);
   }
 
-  /// Reads `u8` value from the data register.
+  /// Returns a closure, which writes a half word to the data register.
+  #[inline(always)]
+  pub fn send_hword_fn(&mut self) -> impl Fn(u16) {
+    let dr = self.0.dr_mut().fork();
+    move |value| Self::dr_send_hword(&dr, value)
+  }
+
+  /// Reads a byte from the data register.
   #[inline(always)]
   pub fn recv_byte(&self) -> u8 {
     unsafe { read_volatile(self.0.dr().to_ptr() as *const _) }
   }
 
-  /// Reads `u16` value from the data register.
+  /// Reads a half word from the data register.
   #[inline(always)]
   pub fn recv_hword(&self) -> u16 {
     unsafe { read_volatile(self.0.dr().to_ptr() as *const _) }
@@ -480,6 +490,16 @@ impl<T: SpiRes> Spi<T> {
     } else {
       Ok(())
     }
+  }
+
+  #[inline(always)]
+  fn dr_send_byte(dr: &T::Dr, value: u8) {
+    unsafe { write_volatile(dr.to_mut_ptr() as *mut _, value) };
+  }
+
+  #[inline(always)]
+  fn dr_send_hword(dr: &T::Dr, value: u16) {
+    unsafe { write_volatile(dr.to_mut_ptr() as *mut _, value) };
   }
 }
 
@@ -639,7 +659,7 @@ macro_rules! spi_shared {
       ($($dma_tx_tp:ident: $dma_tx_bound:path),*)
     ),)*),
   ) => {
-    impl<$($tp: $bound,)*> SpiRes for $name_res<$($tp),*> {
+    impl<$($tp: $bound,)*> SpiRes for $name_res<$($tp,)* Frt> {
       type Cr1Val = $spi::cr1::Val;
       type Cr1 = $spi::Cr1<Srt>;
       type Cr1Bidimode = $spi::cr1::Bidimode<Srt>;
@@ -658,7 +678,7 @@ macro_rules! spi_shared {
       type Cr2Txdmaen = $spi::cr2::Txdmaen<Srt>;
       type Cr2Rxdmaen = $spi::cr2::Rxdmaen<Srt>;
       type Crcpr = $spi::Crcpr<Srt>;
-      type Dr = $spi::Dr<Srt>;
+      type Dr = $spi::Dr<Frt>;
       type Rxcrcr = $spi::Rxcrcr<Srt>;
       type SrVal = $spi::sr::Val;
       type Sr = $spi::Sr<Srt>;
@@ -715,7 +735,7 @@ macro_rules! spi_shared {
     $(
       $(#[$dma_rx_attr])*
       impl<$($dma_rx_tp,)* Rx> SpiDmaRxRes<$dma_rx_res<Rx, Frt>>
-        for $name_res<$($dma_rx_tp),*>
+        for $name_res<$($dma_rx_tp,)* Frt>
       where
         Rx: $int_dma_rx<Ltt>,
         $($dma_rx_tp: $dma_rx_bound,)*
@@ -737,7 +757,7 @@ macro_rules! spi_shared {
     $(
       $(#[$dma_tx_attr])*
       impl<$($dma_tx_tp,)* Tx> SpiDmaTxRes<$dma_tx_res<Tx, Frt>>
-        for $name_res<$($dma_tx_tp),*>
+        for $name_res<$($dma_tx_tp,)* Frt>
       where
         Tx: $int_dma_tx<Ltt>,
         $($dma_tx_tp: $dma_tx_bound,)*
@@ -794,18 +814,18 @@ macro_rules! spi {
     )),*),
   ) => {
     #[doc = $doc]
-    pub type $name = Spi<$name_res>;
+    pub type $name = Spi<$name_res<Frt>>;
 
     #[doc = $doc_int]
-    pub type $name_int<I> = Spi<$name_int_res<I>>;
+    pub type $name_int<I> = Spi<$name_int_res<I, Frt>>;
 
     #[doc = $doc_res]
     #[allow(missing_docs)]
-    pub struct $name_res {
+    pub struct $name_res<Rt: RegTag> {
       pub $spi_cr1: $spi::Cr1<Srt>,
       pub $spi_cr2: $spi::Cr2<Srt>,
       pub $spi_crcpr: $spi::Crcpr<Srt>,
-      pub $spi_dr: $spi::Dr<Srt>,
+      pub $spi_dr: $spi::Dr<Rt>,
       pub $spi_rxcrcr: $spi::Rxcrcr<Srt>,
       pub $spi_sr: $spi::Sr<Srt>,
       pub $spi_txcrcr: $spi::Txcrcr<Srt>,
@@ -813,12 +833,12 @@ macro_rules! spi {
 
     #[doc = $doc_int_res]
     #[allow(missing_docs)]
-    pub struct $name_int_res<I: $int_ty<Ltt>> {
+    pub struct $name_int_res<I: $int_ty<Ltt>, Rt: RegTag> {
       pub $spi: I,
       pub $spi_cr1: $spi::Cr1<Srt>,
       pub $spi_cr2: $spi::Cr2<Srt>,
       pub $spi_crcpr: $spi::Crcpr<Srt>,
-      pub $spi_dr: $spi::Dr<Srt>,
+      pub $spi_dr: $spi::Dr<Rt>,
       pub $spi_rxcrcr: $spi::Rxcrcr<Srt>,
       pub $spi_sr: $spi::Sr<Srt>,
       pub $spi_txcrcr: $spi::Txcrcr<Srt>,
@@ -861,12 +881,20 @@ macro_rules! spi {
       }
     }
 
-    impl Resource for $name_res {
-      type Source = Self;
+    impl Resource for $name_res<Frt> {
+      type Source = $name_res<Srt>;
 
       #[inline(always)]
-      fn from_source(source: Self) -> Self {
-        source
+      fn from_source(source: Self::Source) -> Self {
+        Self {
+          $spi_cr1: source.$spi_cr1,
+          $spi_cr2: source.$spi_cr2,
+          $spi_crcpr: source.$spi_crcpr,
+          $spi_dr: source.$spi_dr.into(),
+          $spi_rxcrcr: source.$spi_rxcrcr,
+          $spi_sr: source.$spi_sr,
+          $spi_txcrcr: source.$spi_txcrcr,
+        }
       }
     }
 
@@ -885,12 +913,21 @@ macro_rules! spi {
       ($(([$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs, ()),)*),
     }
 
-    impl<I: $int_ty<Ltt>> Resource for $name_int_res<I> {
-      type Source = Self;
+    impl<I: $int_ty<Ltt>> Resource for $name_int_res<I, Frt> {
+      type Source = $name_int_res<I, Srt>;
 
       #[inline(always)]
-      fn from_source(source: Self) -> Self {
-        source
+      fn from_source(source: Self::Source) -> Self {
+        Self {
+          $spi: source.$spi,
+          $spi_cr1: source.$spi_cr1,
+          $spi_cr2: source.$spi_cr2,
+          $spi_crcpr: source.$spi_crcpr,
+          $spi_dr: source.$spi_dr.into(),
+          $spi_rxcrcr: source.$spi_rxcrcr,
+          $spi_sr: source.$spi_sr,
+          $spi_txcrcr: source.$spi_txcrcr,
+        }
       }
     }
 
@@ -915,8 +952,8 @@ macro_rules! spi {
       ),)*),
     }
 
-    impl<I: $int_ty<Ltt>> SpiIntRes for $name_int_res<I> {
-      type WithoutInt = $name_res;
+    impl<I: $int_ty<Ltt>> SpiIntRes for $name_int_res<I, Frt> {
+      type WithoutInt = $name_res<Frt>;
       type Int = I;
 
       #[inline(always)]

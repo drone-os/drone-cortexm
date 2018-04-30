@@ -1,4 +1,5 @@
-use core::mem::{size_of, unreachable};
+use core::intrinsics::unreachable;
+use core::mem::size_of;
 use drone_core::sv::{SvCall, SvService};
 
 /// Service to switch to a process stack. See

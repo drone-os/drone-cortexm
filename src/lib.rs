@@ -31,8 +31,8 @@
 #![feature(allocator_api)]
 #![feature(asm)]
 #![feature(associated_type_defaults)]
-#![feature(cfg_target_feature)]
 #![feature(const_fn)]
+#![feature(core_intrinsics)]
 #![feature(exhaustive_patterns)]
 #![feature(fused)]
 #![feature(generators)]
@@ -40,17 +40,17 @@
 #![feature(lang_items)]
 #![feature(linkage)]
 #![feature(naked_functions)]
+#![feature(never_type)]
 #![feature(pointer_methods)]
 #![feature(prelude_import)]
 #![feature(proc_macro)]
+#![feature(proc_macro_path_invoc)]
 #![feature(range_contains)]
-#![feature(unreachable)]
 #![feature(untagged_unions)]
 #![no_std]
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/drone-stm32/0.8.0")]
 #![cfg_attr(test, feature(allocator_internals))]
-#![cfg_attr(test, feature(compiler_builtins_lib))]
 #![cfg_attr(test, feature(global_allocator))]
 #![cfg_attr(test, feature(slice_get_slice))]
 #![cfg_attr(test, default_lib_allocator)]
@@ -59,8 +59,6 @@
 #![cfg_attr(feature = "clippy", allow(precedence, inline_always))]
 
 extern crate alloc;
-#[cfg(test)]
-extern crate compiler_builtins;
 #[cfg_attr(feature = "clippy", allow(useless_attribute))]
 #[allow(unused_imports)]
 #[macro_use]
@@ -80,11 +78,12 @@ pub mod itm;
 pub mod cpu;
 pub mod drv;
 pub mod fib;
-pub mod panicking;
 pub mod prelude;
 pub mod reg;
 pub mod sv;
 pub mod thr;
+
+mod lang_items;
 
 pub use drone_stm32_macros::{sv, vtable};
 
@@ -95,8 +94,6 @@ use prelude::*;
 #[cfg(test)]
 drone_core::heap! {
   struct Heap;
-  #[global_allocator]
-  static ALLOC;
   size = 0x40000;
   pools = [
     [0x4; 0x4000],
@@ -105,3 +102,7 @@ drone_core::heap! {
     [0x800; 0x20],
   ];
 }
+
+#[cfg(test)]
+#[global_allocator]
+static mut GLOBAL: Heap = Heap::new();

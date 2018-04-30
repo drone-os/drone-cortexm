@@ -4,7 +4,8 @@ mod switch;
 
 pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
 
-use core::mem::{size_of, unreachable};
+use core::intrinsics::unreachable;
+use core::mem::size_of;
 use drone_core::sv::{Supervisor, SvService};
 
 /// Calls `SVC num` instruction.

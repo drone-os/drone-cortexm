@@ -1,7 +1,5 @@
-#![feature(alloc)]
 #![feature(allocator_api)]
 #![feature(allocator_internals)]
-#![feature(compiler_builtins_lib)]
 #![feature(const_cell_new)]
 #![feature(const_fn)]
 #![feature(const_ptr_null_mut)]
@@ -11,8 +9,6 @@
 #![feature(slice_get_slice)]
 #![no_std]
 
-extern crate alloc;
-extern crate compiler_builtins;
 extern crate drone_core;
 extern crate drone_stm32 as drone_plat;
 extern crate test;
@@ -27,11 +23,12 @@ use drone_core::sv::SvService;
 
 heap! {
   struct Heap;
-  #[global_allocator]
-  static ALLOC;
   size = 0;
   pools = [];
 }
+
+#[global_allocator]
+static mut ALLOC: Heap = Heap::new();
 
 struct FooService;
 

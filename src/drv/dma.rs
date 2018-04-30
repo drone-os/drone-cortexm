@@ -315,6 +315,11 @@ impl<T: DmaRes> Dma<T> {
   }
 
   /// Sets the peripheral address.
+  ///
+  /// # Safety
+  ///
+  /// `addr` must be a valid address, and must remain valid while DMA is
+  /// enabled.
   #[inline(always)]
   pub unsafe fn set_paddr(&self, addr: usize) {
     self.0.cpar_pa().write_bits(addr as u32);
@@ -327,6 +332,11 @@ impl<T: DmaRes> Dma<T> {
   }
 
   /// Sets the memory address.
+  ///
+  /// # Safety
+  ///
+  /// `addr` must be a valid address, and must remain valid while DMA is
+  /// enabled.
   #[inline(always)]
   pub unsafe fn set_maddr(&self, addr: usize) {
     self.0.cmar_ma().write_bits(addr as u32);
