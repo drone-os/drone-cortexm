@@ -49,7 +49,7 @@
 #![feature(untagged_unions)]
 #![no_std]
 #![warn(missing_docs)]
-#![doc(html_root_url = "https://docs.rs/drone-stm32/0.8.0")]
+#![doc(html_root_url = "https://docs.rs/drone-stm32/0.8.1")]
 #![cfg_attr(test, feature(allocator_internals))]
 #![cfg_attr(test, feature(global_allocator))]
 #![cfg_attr(test, feature(slice_get_slice))]
@@ -80,6 +80,7 @@ pub mod drv;
 pub mod fib;
 pub mod prelude;
 pub mod reg;
+pub mod stack_adapter;
 pub mod sv;
 pub mod thr;
 

@@ -19,8 +19,9 @@ use drv::dma::{Dma, DmaRes};
     feature = "stm32l4x6"
   )
 )]
-use drv::dma::{Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma2Ch1Res,
-               Dma2Ch2Res};
+use drv::dma::{
+  Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma2Ch1Res, Dma2Ch2Res,
+};
 #[cfg(
   any(
     feature = "stm32l4x1",
@@ -51,8 +52,10 @@ use reg::{spi1, spi2, spi3};
 #[cfg(
   any(feature = "stm32l4x1", feature = "stm32l4x2", feature = "stm32l4x6")
 )]
-use thr::int::{IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5, IntDma2Ch1,
-               IntDma2Ch2, IntDma2Ch3, IntDma2Ch4};
+use thr::int::{
+  IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5, IntDma2Ch1, IntDma2Ch2,
+  IntDma2Ch3, IntDma2Ch4,
+};
 #[cfg(
   any(
     feature = "stm32f100",
@@ -64,9 +67,11 @@ use thr::int::{IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5, IntDma2Ch1,
     feature = "stm32l4x5"
   )
 )]
-use thr::int::{IntDma1Channel2 as IntDma1Ch2, IntDma1Channel3 as IntDma1Ch3,
-               IntDma1Channel4 as IntDma1Ch4, IntDma1Channel5 as IntDma1Ch5,
-               IntDma2Channel1 as IntDma2Ch1, IntDma2Channel2 as IntDma2Ch2};
+use thr::int::{
+  IntDma1Channel2 as IntDma1Ch2, IntDma1Channel3 as IntDma1Ch3,
+  IntDma1Channel4 as IntDma1Ch4, IntDma1Channel5 as IntDma1Ch5,
+  IntDma2Channel1 as IntDma2Ch1, IntDma2Channel2 as IntDma2Ch2,
+};
 #[cfg(any(feature = "stm32l4x3", feature = "stm32l4x5"))]
 use thr::int::{IntDma2Channel3 as IntDma2Ch3, IntDma2Channel4 as IntDma2Ch4};
 #[cfg(

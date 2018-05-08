@@ -54,8 +54,9 @@ use reg::syscfg;
     feature = "stm32l4x6"
   )
 )]
-use thr::int::{IntExti0, IntExti1, IntExti1510, IntExti2, IntExti3, IntExti4,
-               IntExti95};
+use thr::int::{
+  IntExti0, IntExti1, IntExti1510, IntExti2, IntExti3, IntExti4, IntExti95,
+};
 use thr::prelude::*;
 
 /// Error returned from [`ExtiLn::stream`](ExtiLn::stream) on overflow.
@@ -169,11 +170,7 @@ impl<T: ExtiLnExtRes + ExtiLnConfRes> ExtiLn<T> {
   pub fn add_stream(
     &mut self,
   ) -> impl Stream<Item = (), Error = ExtiLnOverflow> {
-    fib::add_stream(
-      self.0.int(),
-      || Err(ExtiLnOverflow),
-      self.stream_fib(),
-    )
+    fib::add_stream(self.0.int(), || Err(ExtiLnOverflow), self.stream_fib())
   }
 
   /// Returns a stream, which resolves to `Ok(())` each time the event is

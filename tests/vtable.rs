@@ -125,11 +125,7 @@ fn new() {
   }
   unsafe extern "C" fn nmi() {}
   unsafe extern "C" fn rcc() {}
-  a::Vtable::new(a::Handlers {
-    reset,
-    nmi,
-    rcc,
-  });
+  a::Vtable::new(a::Handlers { reset, nmi, rcc });
   b::Vtable::new(b::Handlers { reset });
 }
 
@@ -137,10 +133,7 @@ fn new() {
 fn size() {
   assert_eq!(unsafe { a::THREADS.len() }, 4);
   assert_eq!(unsafe { b::THREADS.len() }, 1);
-  assert_eq!(
-    (size_of::<a::Vtable>() - size_of::<b::Vtable>()) / 4,
-    11
-  );
+  assert_eq!((size_of::<a::Vtable>() - size_of::<b::Vtable>()) / 4, 11);
   assert_eq!(a::SERVICES.len(), 2);
   assert_eq!(b::SERVICES.len(), 0);
 }

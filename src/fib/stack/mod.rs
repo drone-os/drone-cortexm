@@ -124,9 +124,7 @@ where
   thr
     .as_ref()
     .fib_chain()
-    .add(new_stack(stack_size, move |(), yielder| {
-      f(yielder)
-    }))
+    .add(new_stack(stack_size, move |(), yielder| f(yielder)))
 }
 
 /// Adds a new stackful fiber on the given `thr`.
@@ -149,10 +147,9 @@ where
   thr
     .as_ref()
     .fib_chain()
-    .add(new_stack_unchecked(
-      stack_size,
-      move |(), yielder| f(yielder),
-    ))
+    .add(new_stack_unchecked(stack_size, move |(), yielder| {
+      f(yielder)
+    }))
 }
 
 /// Adds a new stackful fiber on the given `thr`.
@@ -172,10 +169,9 @@ where
   thr
     .as_ref()
     .fib_chain()
-    .add(new_stack_unprivileged(
-      stack_size,
-      move |(), yielder| f(yielder),
-    ))
+    .add(new_stack_unprivileged(stack_size, move |(), yielder| {
+      f(yielder)
+    }))
 }
 
 /// Adds a new stackful fiber on the given `thr`.

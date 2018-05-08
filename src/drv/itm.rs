@@ -166,18 +166,12 @@ impl Itm {
       .0
       .itm_tcr
       .modify(|r| r.write_trace_bus_id(1).set_itmena());
-    self
-      .0
-      .itm_tpr
-      .store(|r| r.write_privmask(0x0000_0001));
+    self.0.itm_tpr.store(|r| r.write_privmask(0x0000_0001));
   }
 
   /// Unlock Write Access to ITM registers.
   #[inline(always)]
   pub fn itm_unlock(&self) {
-    self
-      .0
-      .itm_lar
-      .store(|r| r.write_unlock(0xC5AC_CE55))
+    self.0.itm_lar.store(|r| r.write_unlock(0xC5AC_CE55))
   }
 }

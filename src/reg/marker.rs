@@ -1,17 +1,14 @@
 //! Marker traits for memory-mapped registers.
 
-pub use drone_core::reg::marker::{self, FRoReg, FRoRoRegFieldBit,
-                                  FRoRoRegFieldBits, FRoRwRegFieldBit,
-                                  FRoRwRegFieldBits, FWoReg, FWoWoRegFieldBit,
-                                  FWoWoRegFieldBits, SRoReg, SRoRoRegFieldBit,
-                                  SRoRoRegFieldBits, SRoRwRegFieldBit,
-                                  SRoRwRegFieldBits, SWoReg, SWoWoRegFieldBit,
-                                  SWoWoRegFieldBits, URoReg, URoRoRegFieldBit,
-                                  URoRoRegFieldBits, URoRwRegFieldBit,
-                                  URoRwRegFieldBits, URwReg, URwRwRegFieldBit,
-                                  URwRwRegFieldBits, UWoReg, UWoRwRegFieldBit,
-                                  UWoRwRegFieldBits, UWoWoRegFieldBit,
-                                  UWoWoRegFieldBits};
+pub use drone_core::reg::marker::{
+  self, FRoReg, FRoRoRegFieldBit, FRoRoRegFieldBits, FRoRwRegFieldBit,
+  FRoRwRegFieldBits, FWoReg, FWoWoRegFieldBit, FWoWoRegFieldBits, SRoReg,
+  SRoRoRegFieldBit, SRoRoRegFieldBits, SRoRwRegFieldBit, SRoRwRegFieldBits,
+  SWoReg, SWoWoRegFieldBit, SWoWoRegFieldBits, URoReg, URoRoRegFieldBit,
+  URoRoRegFieldBits, URoRwRegFieldBit, URoRwRegFieldBits, URwReg,
+  URwRwRegFieldBit, URwRwRegFieldBits, UWoReg, UWoRwRegFieldBit,
+  UWoRwRegFieldBits, UWoWoRegFieldBit, UWoWoRegFieldBits,
+};
 
 use reg::prelude::*;
 

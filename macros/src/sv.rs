@@ -53,11 +53,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
   let mut array_tokens = Vec::new();
   let mut service_tokens = Vec::new();
   for Service { ident } in services {
-    let index = LitInt::new(
-      service_counter as u64,
-      IntSuffix::None,
-      def_site,
-    );
+    let index = LitInt::new(service_counter as u64, IntSuffix::None, def_site);
     service_counter += 1;
     array_tokens.push(quote_spanned! { def_site =>
       #sv_ident(#rt::service_handler::<#ident>)

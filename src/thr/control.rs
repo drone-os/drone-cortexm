@@ -168,10 +168,7 @@ pub trait ThrControl: IntToken<Ctt> {
   #[inline(always)]
   fn set_priority(&self, priority: u8) {
     unsafe {
-      write_volatile(
-        (NVIC_IPR as *mut u8).add(Self::INT_NUM),
-        priority,
-      );
+      write_volatile((NVIC_IPR as *mut u8).add(Self::INT_NUM), priority);
     }
   }
 }

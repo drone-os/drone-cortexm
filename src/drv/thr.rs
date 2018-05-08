@@ -65,11 +65,10 @@ impl Thr {
     scb_ccr_init: impl for<'a, 'b> FnOnce(&'b mut scb::ccr::Hold<'a, Srt>)
       -> &'b mut scb::ccr::Hold<'a, Srt>,
   ) -> T {
-    self.0.scb_ccr.store(|r| {
-      scb_ccr_init(r)
-        .set_stkalign()
-        .set_nonbasethrdena()
-    });
+    self
+      .0
+      .scb_ccr
+      .store(|r| scb_ccr_init(r).set_stkalign().set_nonbasethrdena());
     unsafe {
       self.mpu_reset();
       T::new()

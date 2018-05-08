@@ -110,9 +110,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         vis: array_vis,
         ident: array_ident,
       },
-    thr: ExternStruct {
-      ident: thr_ident,
-    },
+    thr: ExternStruct { ident: thr_ident },
     excs,
     ints,
   } = try_parse!(call_site, input);
@@ -185,10 +183,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     );
     if let Some(struct_ident) = struct_ident {
       let int_trait = Ident::from(format!("Int{}", num.value()));
-      let bundle = Ident::new(
-        &format!("IntBundle{}", num.value() / 32),
-        def_site,
-      );
+      let bundle =
+        Ident::new(&format!("IntBundle{}", num.value() / 32), def_site);
       thr_tokens.push(quote_spanned! { def_site =>
         impl<T: #rt::ThrTag> #rt::IntToken<T> for #struct_ident<T> {
           type Bundle = #rt::#bundle;

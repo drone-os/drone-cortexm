@@ -5,7 +5,6 @@ use fib::FiberState;
 use sv::Switch;
 
 /// A communication channel for [`FiberStack`](FiberStack).
-#[derive(Clone, Copy)]
 pub struct Yielder<Sv, I, Y, R>
 where
   Sv: Switch<StackData<I, Y, R>>,
@@ -54,4 +53,25 @@ where
       data_ptr.read().input
     }
   }
+}
+
+impl<Sv, I, Y, R> Clone for Yielder<Sv, I, Y, R>
+where
+  Sv: Switch<StackData<I, Y, R>>,
+  I: Send + 'static,
+  Y: Send + 'static,
+  R: Send + 'static,
+{
+  fn clone(&self) -> Self {
+    unsafe { Self::new() }
+  }
+}
+
+impl<Sv, I, Y, R> Copy for Yielder<Sv, I, Y, R>
+where
+  Sv: Switch<StackData<I, Y, R>>,
+  I: Send + 'static,
+  Y: Send + 'static,
+  R: Send + 'static,
+{
 }

@@ -42,9 +42,11 @@ use thr::int::IntDma2Channel45 as IntDma2Ch5;
 #[cfg(
   any(feature = "stm32l4x1", feature = "stm32l4x2", feature = "stm32l4x6")
 )]
-use thr::int::{IntDma1Ch1, IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5,
-               IntDma1Ch6, IntDma1Ch7, IntDma2Ch1, IntDma2Ch2, IntDma2Ch3,
-               IntDma2Ch4, IntDma2Ch5, IntDma2Ch6, IntDma2Ch7};
+use thr::int::{
+  IntDma1Ch1, IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5, IntDma1Ch6,
+  IntDma1Ch7, IntDma2Ch1, IntDma2Ch2, IntDma2Ch3, IntDma2Ch4, IntDma2Ch5,
+  IntDma2Ch6, IntDma2Ch7,
+};
 #[cfg(
   any(
     feature = "stm32f100",
@@ -56,11 +58,13 @@ use thr::int::{IntDma1Ch1, IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5,
     feature = "stm32l4x5"
   )
 )]
-use thr::int::{IntDma1Channel1 as IntDma1Ch1, IntDma1Channel2 as IntDma1Ch2,
-               IntDma1Channel3 as IntDma1Ch3, IntDma1Channel4 as IntDma1Ch4,
-               IntDma1Channel5 as IntDma1Ch5, IntDma1Channel6 as IntDma1Ch6,
-               IntDma1Channel7 as IntDma1Ch7, IntDma2Channel1 as IntDma2Ch1,
-               IntDma2Channel2 as IntDma2Ch2, IntDma2Channel3 as IntDma2Ch3};
+use thr::int::{
+  IntDma1Channel1 as IntDma1Ch1, IntDma1Channel2 as IntDma1Ch2,
+  IntDma1Channel3 as IntDma1Ch3, IntDma1Channel4 as IntDma1Ch4,
+  IntDma1Channel5 as IntDma1Ch5, IntDma1Channel6 as IntDma1Ch6,
+  IntDma1Channel7 as IntDma1Ch7, IntDma2Channel1 as IntDma2Ch1,
+  IntDma2Channel2 as IntDma2Ch2, IntDma2Channel3 as IntDma2Ch3,
+};
 #[cfg(
   any(feature = "stm32f107", feature = "stm32l4x3", feature = "stm32l4x5")
 )]
@@ -672,20 +676,8 @@ macro_rules! dma_ch {
         $dma_ccr,
         mem2mem
       );
-      res_reg_field_impl!(
-        CcrMsize,
-        ccr_msize,
-        ccr_msize_mut,
-        $dma_ccr,
-        msize
-      );
-      res_reg_field_impl!(
-        CcrPsize,
-        ccr_psize,
-        ccr_psize_mut,
-        $dma_ccr,
-        psize
-      );
+      res_reg_field_impl!(CcrMsize, ccr_msize, ccr_msize_mut, $dma_ccr, msize);
+      res_reg_field_impl!(CcrPsize, ccr_psize, ccr_psize_mut, $dma_ccr, psize);
       res_reg_field_impl!(CcrMinc, ccr_minc, ccr_minc_mut, $dma_ccr, minc);
       res_reg_field_impl!(CcrPinc, ccr_pinc, ccr_pinc_mut, $dma_ccr, pinc);
       res_reg_field_impl!(CcrCirc, ccr_circ, ccr_circ_mut, $dma_ccr, circ);
@@ -697,13 +689,7 @@ macro_rules! dma_ch {
       res_reg_impl!(Cmar, cmar, cmar_mut, $dma_cmar);
       res_reg_field_impl!(CmarMa, cmar_ma, cmar_ma_mut, $dma_cmar, ma);
       res_reg_impl!(Cndtr, cndtr, cndtr_mut, $dma_cndtr);
-      res_reg_field_impl!(
-        CndtrNdt,
-        cndtr_ndt,
-        cndtr_ndt_mut,
-        $dma_cndtr,
-        ndt
-      );
+      res_reg_field_impl!(CndtrNdt, cndtr_ndt, cndtr_ndt_mut, $dma_cndtr, ndt);
       res_reg_impl!(Cpar, cpar, cpar_mut, $dma_cpar);
       res_reg_field_impl!(CparPa, cpar_pa, cpar_pa_mut, $dma_cpar, pa);
       #[cfg(
@@ -716,30 +702,10 @@ macro_rules! dma_ch {
         )
       )]
       res_reg_impl!(CselrCs, cselr_cs, cselr_cs_mut, $dma_cselr_cs);
-      res_reg_impl!(
-        IfcrCgif,
-        ifcr_cgif,
-        ifcr_cgif_mut,
-        $dma_ifcr_cgif
-      );
-      res_reg_impl!(
-        IfcrChtif,
-        ifcr_chtif,
-        ifcr_chtif_mut,
-        $dma_ifcr_chtif
-      );
-      res_reg_impl!(
-        IfcrCtcif,
-        ifcr_ctcif,
-        ifcr_ctcif_mut,
-        $dma_ifcr_ctcif
-      );
-      res_reg_impl!(
-        IfcrCteif,
-        ifcr_cteif,
-        ifcr_cteif_mut,
-        $dma_ifcr_cteif
-      );
+      res_reg_impl!(IfcrCgif, ifcr_cgif, ifcr_cgif_mut, $dma_ifcr_cgif);
+      res_reg_impl!(IfcrChtif, ifcr_chtif, ifcr_chtif_mut, $dma_ifcr_chtif);
+      res_reg_impl!(IfcrCtcif, ifcr_ctcif, ifcr_ctcif_mut, $dma_ifcr_ctcif);
+      res_reg_impl!(IfcrCteif, ifcr_cteif, ifcr_cteif_mut, $dma_ifcr_cteif);
       res_reg_impl!(IsrGif, isr_gif, isr_gif_mut, $dma_isr_gif);
       res_reg_impl!(IsrHtif, isr_htif, isr_htif_mut, $dma_isr_htif);
       res_reg_impl!(IsrTcif, isr_tcif, isr_tcif_mut, $dma_isr_tcif);

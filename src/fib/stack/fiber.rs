@@ -51,13 +51,8 @@ where
       panic!("MPU not present");
     }
     let stack_bottom = alloc(stack_size);
-    let stack_ptr = Self::stack_init(
-      stack_bottom,
-      stack_size,
-      unprivileged,
-      unchecked,
-      f,
-    );
+    let stack_ptr =
+      Self::stack_init(stack_bottom, stack_size, unprivileged, unchecked, f);
     Self {
       stack_bottom,
       stack_ptr,
@@ -194,9 +189,7 @@ where
 
   unsafe fn data_ptr(&self) -> *mut StackData<I, Y, R> {
     let data_size = size_of::<StackData<I, Y, R>>();
-    self
-      .stack_bottom
-      .add(self.stack_size - data_size) as _
+    self.stack_bottom.add(self.stack_size - data_size) as _
   }
 }
 

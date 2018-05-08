@@ -110,12 +110,7 @@ where
 
   #[inline(always)]
   fn store_excl(&self, val: RegExcl<U::Val>) -> bool {
-    unsafe {
-      val
-        .into_inner()
-        .bits()
-        .store_excl(Self::ADDRESS)
-    }
+    unsafe { val.into_inner().bits().store_excl(Self::ADDRESS) }
   }
 }
 
@@ -161,12 +156,7 @@ where
 
   #[inline(always)]
   fn store_excl(&self, val: RegExcl<<U::Reg as Reg<T>>::Val>) -> bool {
-    unsafe {
-      val
-        .into_inner()
-        .bits()
-        .store_excl(Self::Reg::ADDRESS)
-    }
+    unsafe { val.into_inner().bits().store_excl(Self::Reg::ADDRESS) }
   }
 
   #[inline(always)]
