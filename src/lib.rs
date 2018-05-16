@@ -54,12 +54,10 @@
 #![cfg_attr(test, feature(global_allocator))]
 #![cfg_attr(test, feature(slice_get_slice))]
 #![cfg_attr(test, default_lib_allocator)]
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
-#![cfg_attr(feature = "clippy", allow(precedence, inline_always))]
+#![cfg_attr(feature = "cargo-clippy", allow(precedence, inline_always))]
 
 extern crate alloc;
-#[cfg_attr(feature = "clippy", allow(useless_attribute))]
+#[cfg_attr(feature = "cargo-clippy", allow(useless_attribute))]
 #[allow(unused_imports)]
 #[macro_use]
 extern crate drone_core;

@@ -19,7 +19,3 @@ syn = "0.13"
 [dependencies.drone-macros-core]
 version = "0.8.1"
 path = "../../drone-core/macros-core"
-
-[dependencies.clippy]
-version = "0.0"
-optional = true

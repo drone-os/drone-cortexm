@@ -41,7 +41,7 @@ type CmdLoopFn<Sv, A> =
   fn(In<<A as Adapter>::Cmd, <A as Adapter>::ReqRes>, AdapterYielder<Sv, A>)
     -> !;
 
-#[cfg_attr(feature = "clippy", allow(new_without_default))]
+#[cfg_attr(feature = "cargo-clippy", allow(new_without_default))]
 impl<Sv, A> FiberStack<Sv, A>
 where
   Sv: SvCall<SwitchBackService>,

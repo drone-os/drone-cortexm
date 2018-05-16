@@ -10,7 +10,7 @@ pub fn wait_for_int() {
 }
 
 /// Makes a system reset request.
-#[cfg_attr(feature = "clippy", allow(empty_loop))]
+#[cfg_attr(feature = "cargo-clippy", allow(empty_loop))]
 #[inline(always)]
 pub fn self_reset() -> ! {
   unsafe {

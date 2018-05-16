@@ -5,9 +5,7 @@
 #![feature(proc_macro)]
 #![doc(html_root_url = "https://docs.rs/drone-stm32-macros/0.8.1")]
 #![recursion_limit = "256"]
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
-#![cfg_attr(feature = "clippy", allow(precedence))]
+#![cfg_attr(feature = "cargo-clippy", allow(precedence))]
 
 #[macro_use]
 extern crate drone_macros_core;

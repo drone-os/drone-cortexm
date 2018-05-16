@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "cargo-clippy", allow(const_static_lifetime))]
+
 use failure::{err_msg, Error};
 use serde::de::{self, Deserialize, Deserializer};
 use std::collections::{BTreeMap, HashSet};
@@ -125,7 +127,7 @@ impl Peripheral {
       ref interrupt,
       ref registers,
     } = self;
-    let parent = if let &Some(ref derived_from) = derived_from {
+    let parent = if let Some(derived_from) = derived_from {
       Some(peripherals
         .peripheral
         .get(derived_from)
@@ -238,7 +240,7 @@ impl Registers {
         write!(reg_map, " RegBitBand")?;
       }
       writeln!(reg_map, ";")?;
-      if let &Some(ref fields) = fields {
+      if let Some(fields) = fields {
         fields.generate(access, reg_map)?;
       }
       writeln!(reg_map, "  }}")?;
@@ -269,7 +271,7 @@ impl Fields {
         writeln!(reg_map, "    /// {}", line.trim())?;
       }
       write!(reg_map, "    {} {{ {} {}", name, bit_offset, bit_width)?;
-      match access.as_ref().or(base_access.as_ref()) {
+      match access.as_ref().or_else(|| base_access.as_ref()) {
         Some(&Access::WriteOnly) => {
           write!(reg_map, " WWRegField")?;
           write!(reg_map, " WoWRegField")?;

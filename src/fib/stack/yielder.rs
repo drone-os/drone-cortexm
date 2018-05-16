@@ -18,7 +18,7 @@ where
   _return: PhantomData<*const R>,
 }
 
-#[cfg_attr(feature = "clippy", allow(new_without_default_derive))]
+#[cfg_attr(feature = "cargo-clippy", allow(new_without_default_derive))]
 impl<Sv, I, Y, R> Yielder<Sv, I, Y, R>
 where
   Sv: Switch<StackData<I, Y, R>>,

@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "clippy", allow(doc_markdown))]
+#![cfg_attr(feature = "cargo-clippy", allow(doc_markdown))]
 
 use drone_core::reg::tokens;
 use reg::map::*;

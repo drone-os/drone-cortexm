@@ -83,6 +83,7 @@ impl Synom for Mode {
   ));
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
 pub fn proc_macro(input: TokenStream) -> TokenStream {
   let (def_site, call_site) = (Span::def_site(), Span::call_site());
   let Vtable {
@@ -302,6 +303,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
   expanded.into()
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
 fn gen_exc(
   exc: &Exc,
   thr_ident: &Ident,

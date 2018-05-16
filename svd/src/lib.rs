@@ -5,9 +5,7 @@
 #![feature(range_contains)]
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/drone-stm32-svd/0.8.1")]
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
-#![cfg_attr(feature = "clippy", allow(precedence))]
+#![cfg_attr(feature = "cargo-clippy", allow(precedence))]
 
 extern crate drone_mirror_failure as failure;
 extern crate serde;
