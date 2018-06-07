@@ -75,8 +75,12 @@ where
     assert!(
       stack_size
         >= size_of::<StackData<I, Y, R>>()
-          + (align_of::<StackData<I, Y, R>>() - 1) + size_of::<F>()
-          + (align_of::<F>() - 1) + 4 + 16 + 2 + if unchecked {
+          + (align_of::<StackData<I, Y, R>>() - 1)
+          + size_of::<F>()
+          + (align_of::<F>() - 1)
+          + 4
+          + 16
+          + 2 + if unchecked {
           1
         } else {
           1 + (1 << GUARD_SIZE + 1) + (1 << GUARD_SIZE + 1) - 1

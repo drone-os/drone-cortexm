@@ -1,6 +1,5 @@
 use drone_macros_core::{NewStatic, NewStruct};
-use proc_macro::TokenStream;
-use proc_macro2::Span;
+use proc_macro2::{Span, TokenStream};
 use syn::synom::Synom;
 use syn::{Ident, IntSuffix, LitInt};
 
@@ -47,7 +46,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         ident: array_ident,
       },
     services,
-  } = try_parse!(call_site, input);
+  } = try_parse2!(call_site, input);
   let rt = Ident::new("__sv_rt", def_site);
   let mut service_counter = 0usize;
   let mut array_tokens = Vec::new();

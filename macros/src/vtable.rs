@@ -1,8 +1,6 @@
 use drone_macros_core::{ExternStruct, NewStatic, NewStruct};
 use inflector::Inflector;
-use proc_macro::TokenStream;
-use proc_macro2::Span;
-use quote::Tokens;
+use proc_macro2::{Span, TokenStream};
 use std::collections::HashSet;
 use syn::synom::Synom;
 use syn::{Attribute, Ident, LitInt, Visibility};
@@ -114,19 +112,19 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     thr: ExternStruct { ident: thr_ident },
     excs,
     ints,
-  } = try_parse!(call_site, input);
+  } = try_parse2!(call_site, input);
   let int_len = ints
     .iter()
     .map(|int| int.num.value() as usize + 1)
     .max()
     .unwrap_or(0);
   let rt = Ident::new("__vtable_rt", def_site);
-  let def_new = Ident::from("new");
+  let def_new = Ident::new("new", call_site);
   let mut exc_holes = exc_set();
   let mut def_exc = exc_holes.clone();
-  let def_reset = Ident::from("reset");
-  let def_reset_ty = Ident::from("Reset");
-  let def_sv_call = Ident::from("sv_call");
+  let def_reset = Ident::new("reset", call_site);
+  let def_reset_ty = Ident::new("Reset", call_site);
+  let def_sv_call = Ident::new("sv_call", call_site);
   let def_nmi = def_exc.def_ident("nmi");
   let def_hard_fault = def_exc.def_ident("hard_fault");
   let def_mem_manage = def_exc.def_ident("mem_manage");
@@ -158,15 +156,15 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       &mut thr_tokens,
     );
     if let Some(struct_ident) = struct_ident {
-      let int_trait = Ident::from(format!("Int{}", struct_ident));
+      let int_trait = Ident::new(&format!("Int{}", struct_ident), call_site);
       thr_tokens.push(quote_spanned! { def_site =>
         impl<T: #rt::ThrTag> #int_trait<T> for #struct_ident<T> {}
       });
     }
     assert!(
-      exc_holes.remove(field_ident.as_ref()),
+      exc_holes.remove(field_ident.to_string().as_str()),
       "Unknown exception name: {}",
-      exc.ident.as_ref(),
+      exc.ident.to_string(),
     );
   }
   for Int { num, exc } in ints {
@@ -183,7 +181,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       &mut thr_tokens,
     );
     if let Some(struct_ident) = struct_ident {
-      let int_trait = Ident::from(format!("Int{}", num.value()));
+      let int_trait = Ident::new(&format!("Int{}", num.value()), call_site);
       let bundle =
         Ident::new(&format!("IntBundle{}", num.value() / 32), def_site);
       thr_tokens.push(quote_spanned! { def_site =>
@@ -201,7 +199,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     });
   }
   for exc_ident in exc_holes {
-    let exc_ident = Ident::from(exc_ident);
+    let exc_ident = Ident::new(exc_ident, call_site);
     vtable_ctor_tokens.push(quote_spanned!(def_site => #exc_ident: None));
   }
   let vtable_tokens = vtable_tokens
@@ -309,21 +307,21 @@ fn gen_exc(
   thr_ident: &Ident,
   rt: &Ident,
   thr_counter: &mut usize,
-  vtable_ctor_tokens: &mut Vec<Tokens>,
-  handlers_tokens: &mut Vec<Tokens>,
-  index_tokens: &mut Vec<Tokens>,
-  index_ctor_tokens: &mut Vec<Tokens>,
-  array_tokens: &mut Vec<Tokens>,
-  thr_tokens: &mut Vec<Tokens>,
+  vtable_ctor_tokens: &mut Vec<TokenStream>,
+  handlers_tokens: &mut Vec<TokenStream>,
+  index_tokens: &mut Vec<TokenStream>,
+  index_ctor_tokens: &mut Vec<TokenStream>,
+  array_tokens: &mut Vec<TokenStream>,
+  thr_tokens: &mut Vec<TokenStream>,
 ) -> (Ident, Option<Ident>) {
-  let def_site = Span::def_site();
+  let (def_site, call_site) = (Span::def_site(), Span::call_site());
   let &Exc {
     ref attrs,
     ref mode,
     ref ident,
   } = exc;
-  let struct_ident = Ident::from(ident.as_ref().to_pascal_case());
-  let field_ident = Ident::from(ident.as_ref().to_snake_case());
+  let struct_ident = Ident::new(&ident.to_string().to_pascal_case(), call_site);
+  let field_ident = Ident::new(&ident.to_string().to_snake_case(), call_site);
   match *mode {
     Mode::Thread(_) => {
       vtable_ctor_tokens.push(quote_spanned! { def_site =>
@@ -427,6 +425,6 @@ trait ExcDefIdent {
 
 impl ExcDefIdent for HashSet<&'static str> {
   fn def_ident(&mut self, ident: &str) -> Ident {
-    Ident::from(self.take(ident).unwrap())
+    Ident::new(self.take(ident).unwrap(), Span::call_site())
   }
 }

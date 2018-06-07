@@ -1,6 +1,5 @@
 use inflector::Inflector;
-use proc_macro::TokenStream;
-use proc_macro2::Span;
+use proc_macro2::{Span, TokenStream};
 use syn::synom::Synom;
 use syn::{Attribute, Ident, LitInt, Visibility};
 
@@ -31,10 +30,10 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     vis,
     ident,
     number,
-  } = try_parse!(call_site, input);
+  } = try_parse2!(call_site, input);
   let int_name = format!("INT_{}", ident);
-  let name_ident = Ident::from(int_name.to_pascal_case());
-  let number_ident = Ident::from(format!("Int{}", number.value()));
+  let name_ident = Ident::new(&int_name.to_pascal_case(), call_site);
+  let number_ident = Ident::new(&format!("Int{}", number.value()), call_site);
   let expanded = quote! {
     #(#attrs)*
     #vis trait #number_ident<T: ThrTag>: IntToken<T> {}

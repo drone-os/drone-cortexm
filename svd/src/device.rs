@@ -128,10 +128,12 @@ impl Peripheral {
       ref registers,
     } = self;
     let parent = if let Some(derived_from) = derived_from {
-      Some(peripherals
-        .peripheral
-        .get(derived_from)
-        .ok_or_else(|| err_msg("Peripheral `derivedFrom` not found"))?)
+      Some(
+        peripherals
+          .peripheral
+          .get(derived_from)
+          .ok_or_else(|| err_msg("Peripheral `derivedFrom` not found"))?,
+      )
     } else {
       None
     };

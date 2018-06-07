@@ -6,6 +6,7 @@
 #![feature(global_allocator)]
 #![feature(prelude_import)]
 #![feature(proc_macro)]
+#![feature(proc_macro_gen)]
 #![feature(slice_get_slice)]
 #![no_std]
 
