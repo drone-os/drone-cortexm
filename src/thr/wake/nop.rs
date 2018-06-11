@@ -1,28 +1,27 @@
-use core::marker::PhantomData;
+use core::ptr;
 use futures::task::{UnsafeWake, Waker};
 
 #[derive(Clone)]
-pub(in thr) struct WakeNop(PhantomData<()>);
+pub(in thr) struct WakeNop(());
 
 impl WakeNop {
+  #[inline(always)]
   pub(in thr) fn new() -> Self {
-    WakeNop(PhantomData)
+    WakeNop(())
   }
 
-  pub(in thr) fn waker(self) -> Waker {
-    unsafe { Waker::new(&self) }
+  #[inline(always)]
+  pub(in thr) fn into_waker(self) -> Waker {
+    unsafe { Waker::new(ptr::null::<WakeNop>() as *const UnsafeWake) }
   }
 }
 
 unsafe impl UnsafeWake for WakeNop {
-  #[inline(always)]
   unsafe fn clone_raw(&self) -> Waker {
-    (*self).clone().waker()
+    WakeNop::new().into_waker()
   }
 
-  #[inline(always)]
   unsafe fn drop_raw(&self) {}
 
-  #[inline(always)]
   unsafe fn wake(&self) {}
 }

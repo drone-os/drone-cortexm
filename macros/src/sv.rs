@@ -67,7 +67,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     });
   }
 
-  let expanded = quote_spanned! { def_site =>
+  quote_spanned! { def_site =>
     mod #rt {
       extern crate drone_core;
       extern crate drone_stm32 as drone_plat;
@@ -92,6 +92,5 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     ];
 
     #(#service_tokens)*
-  };
-  expanded.into()
+  }
 }

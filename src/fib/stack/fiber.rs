@@ -101,7 +101,7 @@ where
     stack_ptr.write(0x0100_0000);
     // PC
     stack_ptr = stack_ptr.sub(1);
-    stack_ptr.write(Self::handler as u32);
+    stack_ptr.write(Self::handler as usize as u32);
     // LR, R12, R3, R2
     stack_ptr = stack_ptr.sub(4);
     stack_ptr.write_bytes(0, 4);
@@ -256,8 +256,7 @@ where
   I: Send + 'static,
   Y: Send + 'static,
   R: Send + 'static,
-{
-}
+{}
 
 unsafe fn alloc(stack_size: usize) -> *mut u8 {
   Global.alloc(layout(stack_size)) as *mut u8

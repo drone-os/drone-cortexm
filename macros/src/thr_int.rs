@@ -34,12 +34,12 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
   let int_name = format!("INT_{}", ident);
   let name_ident = Ident::new(&int_name.to_pascal_case(), call_site);
   let number_ident = Ident::new(&format!("Int{}", number.value()), call_site);
-  let expanded = quote! {
+
+  quote! {
     #(#attrs)*
     #vis trait #number_ident<T: ThrTag>: IntToken<T> {}
 
     #[allow(unused_imports)]
     #vis use self::#number_ident as #name_ident;
-  };
-  expanded.into()
+  }
 }

@@ -217,7 +217,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     #def_sv_call: #rt::sv_handler::<<#thr_ident as #rt::Thread>::Sv>
   });
 
-  let expanded = quote_spanned! { def_site =>
+  quote_spanned! { def_site =>
     mod #rt {
       extern crate core;
       extern crate drone_core;
@@ -297,8 +297,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     pub type #def_reset_ty<T> = #rt::Reset<T, &'static #thr_ident>;
 
     #(#thr_tokens)*
-  };
-  expanded.into()
+  }
 }
 
 #[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]

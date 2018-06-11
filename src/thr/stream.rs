@@ -66,7 +66,7 @@ impl<T: Stream> Iterator for StreamTrunkWait<T> {
 impl<T: Stream> FusedIterator for StreamTrunkWait<T> {}
 
 fn poll_stream<T: Stream>(stream: &mut T) -> Poll<Option<T::Item>, T::Error> {
-  let waker = WakeNop::new().waker();
+  let waker = WakeNop::new().into_waker();
   let mut map = task::LocalMap::new();
   let mut cx = task::Context::without_spawn(&mut map, &waker);
   stream.poll_next(&mut cx)

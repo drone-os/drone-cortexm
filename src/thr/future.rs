@@ -21,7 +21,7 @@ impl<T: Future> FuturePlat for T {
 }
 
 fn poll_future<F: Future>(fut: &mut F) -> Poll<F::Item, F::Error> {
-  let waker = WakeNop::new().waker();
+  let waker = WakeNop::new().into_waker();
   let mut map = task::LocalMap::new();
   let mut cx = task::Context::without_spawn(&mut map, &waker);
   fut.poll(&mut cx)

@@ -1,6 +1,5 @@
 use fib;
 use futures::prelude::*;
-use futures::task::UnsafeWake;
 use thr::prelude::*;
 use thr::wake::WakeInt;
 
@@ -15,7 +14,7 @@ pub trait ThrRequest<T: ThrTrigger>: IntToken<T> {
   /// Requests the interrupt.
   #[inline(always)]
   fn trigger(&self) {
-    unsafe { WakeInt::new(Self::INT_NUM).wake() };
+    WakeInt::new(Self::INT_NUM).wake();
   }
 }
 
@@ -42,7 +41,7 @@ fn poll_future<F>(fut: &mut F, int_num: usize) -> Poll<(), !>
 where
   F: Future<Item = (), Error = !>,
 {
-  let waker = WakeInt::new(int_num).waker();
+  let waker = WakeInt::new(int_num).into_waker();
   let mut map = task::LocalMap::new();
   let mut cx = task::Context::without_spawn(&mut map, &waker);
   fut.poll(&mut cx)

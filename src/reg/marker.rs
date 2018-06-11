@@ -25,8 +25,7 @@ impl<R> SRwReg for R
 where
   R: marker::SRwReg,
   R: for<'a> RwRegAtomicRef<'a, Srt>,
-{
-}
+{}
 
 // }}}
 // {{{ FRwReg
@@ -42,8 +41,7 @@ impl<R> FRwReg for R
 where
   R: marker::FRwReg,
   R: for<'a> RwRegAtomicRef<'a, Frt>,
-{
-}
+{}
 
 // }}}
 // {{{ URwRegBitBand
@@ -214,8 +212,7 @@ where
   R: marker::SRwRwRegFieldBit,
   R: WRwRegFieldBitAtomic<Srt>,
   R::Reg: SRwReg,
-{
-}
+{}
 
 // }}}
 // {{{ SRwRwRegFieldBits
@@ -233,8 +230,7 @@ where
   R: marker::SRwRwRegFieldBits,
   R: WRwRegFieldBitsAtomic<Srt>,
   R::Reg: SRwReg,
-{
-}
+{}
 
 // }}}
 // {{{ SWoRwRegFieldBit
@@ -252,8 +248,7 @@ where
   R: marker::SWoRwRegFieldBit,
   R: WRwRegFieldBitAtomic<Srt>,
   R::Reg: SRwReg,
-{
-}
+{}
 
 // }}}
 // {{{ SWoRwRegFieldBits
@@ -271,8 +266,7 @@ where
   R: marker::SWoRwRegFieldBits,
   R: WRwRegFieldBitsAtomic<Srt>,
   R::Reg: SRwReg,
-{
-}
+{}
 
 // }}}
 // {{{ FRwRwRegFieldBit
@@ -290,8 +284,7 @@ where
   R: marker::FRwRwRegFieldBit,
   R: WRwRegFieldBitAtomic<Frt>,
   R::Reg: FRwReg,
-{
-}
+{}
 
 // }}}
 // {{{ FRwRwRegFieldBits
@@ -309,8 +302,7 @@ where
   R: marker::FRwRwRegFieldBits,
   R: WRwRegFieldBitsAtomic<Frt>,
   R::Reg: FRwReg,
-{
-}
+{}
 
 // }}}
 // {{{ FWoRwRegFieldBit
@@ -328,8 +320,7 @@ where
   R: marker::FWoRwRegFieldBit,
   R: WRwRegFieldBitAtomic<Frt>,
   R::Reg: FRwReg,
-{
-}
+{}
 
 // }}}
 // {{{ FWoRwRegFieldBits
@@ -347,8 +338,7 @@ where
   R: marker::FWoRwRegFieldBits,
   R: WRwRegFieldBitsAtomic<Frt>,
   R::Reg: FRwReg,
-{
-}
+{}
 
 // }}}
 // {{{ URwRwRegFieldBitBand
@@ -368,8 +358,7 @@ where
   R: RRRegFieldBitBand<Urt>,
   R: WWRegFieldBitBand<Urt>,
   R::Reg: URwRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ UWoRwRegFieldBitBand
@@ -387,8 +376,7 @@ where
   R: UWoRwRegFieldBit,
   R: WWRegFieldBitBand<Urt>,
   R::Reg: URwRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ UWoWoRegFieldBitBand
@@ -406,8 +394,7 @@ where
   R: UWoWoRegFieldBit,
   R: WWRegFieldBitBand<Urt>,
   R::Reg: UWoRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ URoRwRegFieldBitBand
@@ -425,8 +412,7 @@ where
   R: URoRwRegFieldBit,
   R: RRRegFieldBitBand<Urt>,
   R::Reg: URwRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ URoRoRegFieldBitBand
@@ -444,8 +430,7 @@ where
   R: URoRoRegFieldBit,
   R: RRRegFieldBitBand<Urt>,
   R::Reg: URoRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ SRwRwRegFieldBitBand
@@ -465,8 +450,7 @@ where
   R: RRRegFieldBitBand<Srt>,
   R: WWRegFieldBitBand<Srt>,
   R::Reg: SRwRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ SWoRwRegFieldBitBand
@@ -484,8 +468,7 @@ where
   R: SWoRwRegFieldBit,
   R: WWRegFieldBitBand<Srt>,
   R::Reg: SRwRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ SWoWoRegFieldBitBand
@@ -503,8 +486,7 @@ where
   R: SWoWoRegFieldBit,
   R: WWRegFieldBitBand<Srt>,
   R::Reg: SWoRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ SRoRwRegFieldBitBand
@@ -522,8 +504,7 @@ where
   R: SRoRwRegFieldBit,
   R: RRRegFieldBitBand<Srt>,
   R::Reg: SRwRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ SRoRoRegFieldBitBand
@@ -541,8 +522,7 @@ where
   R: SRoRoRegFieldBit,
   R: RRRegFieldBitBand<Srt>,
   R::Reg: SRoRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ FRwRwRegFieldBitBand
@@ -562,8 +542,7 @@ where
   R: RRRegFieldBitBand<Frt>,
   R: WWRegFieldBitBand<Frt>,
   R::Reg: FRwRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ FWoRwRegFieldBitBand
@@ -581,8 +560,7 @@ where
   R: FWoRwRegFieldBit,
   R: WWRegFieldBitBand<Frt>,
   R::Reg: FRwRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ FWoWoRegFieldBitBand
@@ -600,8 +578,7 @@ where
   R: FWoWoRegFieldBit,
   R: WWRegFieldBitBand<Frt>,
   R::Reg: FWoRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ FRoRwRegFieldBitBand
@@ -619,8 +596,7 @@ where
   R: FRoRwRegFieldBit,
   R: RRRegFieldBitBand<Frt>,
   R::Reg: FRwRegBitBand,
-{
-}
+{}
 
 // }}}
 // {{{ FRoRoRegFieldBitBand
@@ -638,8 +614,7 @@ where
   R: FRoRoRegFieldBit,
   R: RRRegFieldBitBand<Frt>,
   R::Reg: FRoRegBitBand,
-{
-}
+{}
 
 // }}}
 // vim: set fdm=marker fmr={{{,}}} :
