@@ -3,7 +3,6 @@
 #![feature(const_cell_new)]
 #![feature(const_fn)]
 #![feature(const_ptr_null_mut)]
-#![feature(global_allocator)]
 #![feature(prelude_import)]
 #![feature(proc_macro)]
 #![feature(proc_macro_gen)]

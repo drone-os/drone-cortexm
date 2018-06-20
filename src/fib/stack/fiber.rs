@@ -1,6 +1,6 @@
 use super::{Data, StackData, Yielder};
-use alloc::alloc::Global;
-use core::alloc::{GlobalAlloc, Layout, Opaque};
+use alloc::alloc;
+use core::alloc::Layout;
 use core::cmp::max;
 use core::marker::PhantomData;
 use core::mem::{align_of, size_of};
@@ -50,7 +50,7 @@ where
     if !unchecked && mpu::Type::<Srt>::new().load().dregion() == 0 {
       panic!("MPU not present");
     }
-    let stack_bottom = alloc(stack_size);
+    let stack_bottom = alloc::alloc(layout(stack_size));
     let stack_ptr =
       Self::stack_init(stack_bottom, stack_size, unprivileged, unchecked, f);
     Self {
@@ -207,7 +207,7 @@ where
   R: Send + 'static,
 {
   fn drop(&mut self) {
-    unsafe { dealloc(self.stack_bottom, self.stack_size) };
+    unsafe { alloc::dealloc(self.stack_bottom, layout(self.stack_size)) };
   }
 }
 
@@ -257,14 +257,6 @@ where
   Y: Send + 'static,
   R: Send + 'static,
 {}
-
-unsafe fn alloc(stack_size: usize) -> *mut u8 {
-  Global.alloc(layout(stack_size)) as *mut u8
-}
-
-unsafe fn dealloc(stack_bottom: *mut u8, stack_size: usize) {
-  Global.dealloc(stack_bottom as *mut Opaque, layout(stack_size));
-}
 
 unsafe fn layout(stack_size: usize) -> Layout {
   Layout::from_size_align_unchecked(stack_size, 1)
