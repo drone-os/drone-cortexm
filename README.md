@@ -27,6 +27,29 @@ $ sudo udevadm trigger
 because repository package is outdated and doesn't contain configuration for
 newer chips and boards.
 
+## Development
+
+Check:
+
+```sh
+$ RUSTC_WRAPPER=./clippy-wrapper.sh cargo check --all --exclude drone-stm32
+$ RUSTC_WRAPPER=./clippy-wrapper.sh xargo check \
+  --target "thumbv7m-none-eabi" -p drone-stm32
+```
+
+Test:
+
+```sh
+$ RUSTC_WRAPPER=./rustc-wrapper.sh cargo test --all --exclude drone-stm32
+$ RUSTC_WRAPPER=./rustc-wrapper.sh cargo drone test -p drone-stm32
+```
+
+Readme update:
+
+```sh
+$ cargo readme -o README.md
+```
+
 [Drone]: https://github.com/drone-os/drone
 [OpenOCD]: http://openocd.org/
 [rules.d]: https://github.com/texane/stlink/tree/master/etc/udev/rules.d

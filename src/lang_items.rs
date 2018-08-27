@@ -1,8 +1,9 @@
+use core::alloc::Layout;
 use core::panic::PanicInfo;
 use {cpu, itm};
 
 #[linkage = "weak"]
-#[panic_implementation]
+#[panic_handler]
 fn begin_panic(pi: &PanicInfo) -> ! {
   println!("{}", pi);
   itm::flush();
@@ -11,6 +12,6 @@ fn begin_panic(pi: &PanicInfo) -> ! {
 
 #[linkage = "weak"]
 #[lang = "oom"]
-fn oom() -> ! {
+fn oom(_layout: Layout) -> ! {
   cpu::self_reset()
 }

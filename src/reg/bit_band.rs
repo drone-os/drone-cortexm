@@ -19,7 +19,8 @@ pub trait RegBitBand<T: RegTag>: Reg<T> {
   unsafe fn bit_band_addr(offset: usize) -> usize {
     BIT_BAND_BASE
       + (((Self::ADDRESS + (offset >> 3))
-        & ((0b1 << (BIT_BAND_WIDTH << 2)) - 1)) << BIT_BAND_WIDTH)
+        & ((0b1 << (BIT_BAND_WIDTH << 2)) - 1))
+        << BIT_BAND_WIDTH)
       + ((offset & (8 - 1)) << 2)
   }
 }

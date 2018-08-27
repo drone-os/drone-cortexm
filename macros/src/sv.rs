@@ -52,12 +52,12 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
   let mut array_tokens = Vec::new();
   let mut service_tokens = Vec::new();
   for Service { ident } in services {
-    let index = LitInt::new(service_counter as u64, IntSuffix::None, def_site);
+    let index = LitInt::new(service_counter as u64, IntSuffix::None, call_site);
     service_counter += 1;
-    array_tokens.push(quote_spanned! { def_site =>
+    array_tokens.push(quote! {
       #sv_ident(#rt::service_handler::<#ident>)
     });
-    service_tokens.push(quote_spanned! { def_site =>
+    service_tokens.push(quote! {
       impl #rt::SvCall<#ident> for #sv_ident {
         #[inline(always)]
         unsafe fn call(service: &mut #ident) {
@@ -67,7 +67,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     });
   }
 
-  quote_spanned! { def_site =>
+  quote! {
     mod #rt {
       extern crate drone_core;
       extern crate drone_stm32 as drone_plat;

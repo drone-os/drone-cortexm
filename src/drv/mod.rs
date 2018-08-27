@@ -3,6 +3,7 @@
 pub mod dma;
 pub mod exti;
 pub mod gpio;
+pub mod i2c;
 pub mod itm;
 pub mod nvic;
 pub mod spi;

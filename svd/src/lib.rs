@@ -4,7 +4,7 @@
 
 #![feature(range_contains)]
 #![warn(missing_docs)]
-#![doc(html_root_url = "https://docs.rs/drone-stm32-svd/0.8.2")]
+#![doc(html_root_url = "https://docs.rs/drone-stm32-svd/0.8.3")]
 #![cfg_attr(feature = "cargo-clippy", allow(precedence))]
 
 extern crate drone_mirror_failure as failure;

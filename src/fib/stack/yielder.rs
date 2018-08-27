@@ -43,6 +43,7 @@ where
   }
 
   /// Yields from the enclosing stackful fiber.
+  #[cfg_attr(feature = "cargo-clippy", allow(trivially_copy_pass_by_ref))]
   pub fn stack_yield(&self, output: Y) -> I {
     unsafe {
       let output = FiberState::Yielded(output);

@@ -2,8 +2,7 @@
 //!
 //! See `drone-stm32` documentation for details.
 
-#![feature(proc_macro)]
-#![doc(html_root_url = "https://docs.rs/drone-stm32-macros/0.8.2")]
+#![doc(html_root_url = "https://docs.rs/drone-stm32-macros/0.8.3")]
 #![recursion_limit = "256"]
 #![cfg_attr(feature = "cargo-clippy", allow(precedence))]
 

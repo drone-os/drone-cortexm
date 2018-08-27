@@ -119,21 +119,9 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     .max()
     .unwrap_or(0);
   let rt = Ident::new("__vtable_rt", def_site);
-  let def_new = Ident::new("new", call_site);
+  let def_reserved0 = Ident::new("_reserved0", def_site);
+  let def_reserved1 = Ident::new("_reserved1", def_site);
   let mut exc_holes = exc_set();
-  let mut def_exc = exc_holes.clone();
-  let def_reset = Ident::new("reset", call_site);
-  let def_reset_ty = Ident::new("Reset", call_site);
-  let def_sv_call = Ident::new("sv_call", call_site);
-  let def_nmi = def_exc.def_ident("nmi");
-  let def_hard_fault = def_exc.def_ident("hard_fault");
-  let def_mem_manage = def_exc.def_ident("mem_manage");
-  let def_bus_fault = def_exc.def_ident("bus_fault");
-  let def_usage_fault = def_exc.def_ident("usage_fault");
-  let def_debug = def_exc.def_ident("debug");
-  let def_pend_sv = def_exc.def_ident("pend_sv");
-  let def_sys_tick = def_exc.def_ident("sys_tick");
-  assert!(def_exc.is_empty());
   let mut vtable_tokens = vec![None; int_len];
   let mut vtable_ctor_tokens = Vec::new();
   let mut handlers_tokens = Vec::new();
@@ -157,7 +145,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     );
     if let Some(struct_ident) = struct_ident {
       let int_trait = Ident::new(&format!("Int{}", struct_ident), call_site);
-      thr_tokens.push(quote_spanned! { def_site =>
+      thr_tokens.push(quote! {
         impl<T: #rt::ThrTag> #int_trait<T> for #struct_ident<T> {}
       });
     }
@@ -183,8 +171,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     if let Some(struct_ident) = struct_ident {
       let int_trait = Ident::new(&format!("Int{}", num.value()), call_site);
       let bundle =
-        Ident::new(&format!("IntBundle{}", num.value() / 32), def_site);
-      thr_tokens.push(quote_spanned! { def_site =>
+        Ident::new(&format!("IntBundle{}", num.value() / 32), call_site);
+      thr_tokens.push(quote! {
         impl<T: #rt::ThrTag> #rt::IntToken<T> for #struct_ident<T> {
           type Bundle = #rt::#bundle;
 
@@ -194,13 +182,13 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         impl<T: #rt::ThrTag> #int_trait<T> for #struct_ident<T> {}
       });
     }
-    vtable_tokens[num.value() as usize] = Some(quote_spanned! { def_site =>
+    vtable_tokens[num.value() as usize] = Some(quote! {
       #field_ident: Option<#rt::Handler>
     });
   }
   for exc_ident in exc_holes {
     let exc_ident = Ident::new(exc_ident, call_site);
-    vtable_ctor_tokens.push(quote_spanned!(def_site => #exc_ident: None));
+    vtable_ctor_tokens.push(quote!(#exc_ident: None));
   }
   let vtable_tokens = vtable_tokens
     .into_iter()
@@ -208,16 +196,15 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     .map(|(i, tokens)| {
       tokens.unwrap_or_else(|| {
         let int_ident = Ident::new(&format!("_int{}", i), def_site);
-        vtable_ctor_tokens.push(quote_spanned!(def_site => #int_ident: None));
-        quote_spanned!(def_site => #int_ident: Option<#rt::Handler>)
+        vtable_ctor_tokens.push(quote!(#int_ident: None));
+        quote!(#int_ident: Option<#rt::Handler>)
       })
-    })
-    .collect::<Vec<_>>();
-  vtable_ctor_tokens.push(quote_spanned! { def_site =>
-    #def_sv_call: #rt::sv_handler::<<#thr_ident as #rt::Thread>::Sv>
+    }).collect::<Vec<_>>();
+  vtable_ctor_tokens.push(quote! {
+    sv_call: #rt::sv_handler::<<#thr_ident as #rt::Thread>::Sv>
   });
 
-  quote_spanned! { def_site =>
+  quote! {
     mod #rt {
       extern crate core;
       extern crate drone_core;
@@ -236,32 +223,32 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     #(#vtable_attrs)*
     #[allow(dead_code)]
     #vtable_vis struct #vtable_ident {
-      #def_reset: #rt::ResetHandler,
-      #def_nmi: Option<#rt::Handler>,
-      #def_hard_fault: Option<#rt::Handler>,
-      #def_mem_manage: Option<#rt::Handler>,
-      #def_bus_fault: Option<#rt::Handler>,
-      #def_usage_fault: Option<#rt::Handler>,
-      _reserved0: [#rt::Reserved; 4],
-      #def_sv_call: #rt::Handler,
-      #def_debug: Option<#rt::Handler>,
-      _reserved1: [#rt::Reserved; 1],
-      #def_pend_sv: Option<#rt::Handler>,
-      #def_sys_tick: Option<#rt::Handler>,
+      reset: #rt::ResetHandler,
+      nmi: Option<#rt::Handler>,
+      hard_fault: Option<#rt::Handler>,
+      mem_manage: Option<#rt::Handler>,
+      bus_fault: Option<#rt::Handler>,
+      usage_fault: Option<#rt::Handler>,
+      #def_reserved0: [#rt::Reserved; 4],
+      sv_call: #rt::Handler,
+      debug: Option<#rt::Handler>,
+      #def_reserved1: [#rt::Reserved; 1],
+      pend_sv: Option<#rt::Handler>,
+      sys_tick: Option<#rt::Handler>,
       #(#vtable_tokens),*
     }
 
     #(#handlers_attrs)*
     #handlers_vis struct #handlers_ident {
       /// Reset exception handler.
-      pub #def_reset: #rt::ResetHandler,
+      pub reset: #rt::ResetHandler,
       #(#handlers_tokens),*
     }
 
     #(#index_attrs)*
     #index_vis struct #index_ident {
       /// Reset thread token.
-      pub #def_reset: #def_reset_ty<#rt::Ctt>,
+      pub reset: Reset<#rt::Ctt>,
       #(#index_tokens),*
     }
 
@@ -273,11 +260,11 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
 
     impl #vtable_ident {
       /// Creates a new vector table.
-      pub const fn #def_new(handlers: #handlers_ident) -> Self {
+      pub const fn new(handlers: #handlers_ident) -> Self {
         Self {
-          #def_reset: handlers.#def_reset,
-          _reserved0: [#rt::Reserved::Vector; 4],
-          _reserved1: [#rt::Reserved::Vector; 1],
+          reset: handlers.reset,
+          #def_reserved0: [#rt::Reserved::Vector; 4],
+          #def_reserved1: [#rt::Reserved::Vector; 1],
           #(#vtable_ctor_tokens),*
         }
       }
@@ -287,14 +274,14 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       #[inline(always)]
       unsafe fn new() -> Self {
         Self {
-          #def_reset: #def_reset_ty::new(),
+          reset: Reset::new(),
           #(#index_ctor_tokens),*
         }
       }
     }
 
     /// Reset thread token.
-    pub type #def_reset_ty<T> = #rt::Reset<T, &'static #thr_ident>;
+    pub type Reset<T> = #rt::Reset<T, &'static #thr_ident>;
 
     #(#thr_tokens)*
   }
@@ -313,7 +300,7 @@ fn gen_exc(
   array_tokens: &mut Vec<TokenStream>,
   thr_tokens: &mut Vec<TokenStream>,
 ) -> (Ident, Option<Ident>) {
-  let (def_site, call_site) = (Span::def_site(), Span::call_site());
+  let call_site = Span::call_site();
   let &Exc {
     ref attrs,
     ref mode,
@@ -323,17 +310,17 @@ fn gen_exc(
   let field_ident = Ident::new(&ident.to_string().to_snake_case(), call_site);
   match *mode {
     Mode::Thread(_) => {
-      vtable_ctor_tokens.push(quote_spanned! { def_site =>
+      vtable_ctor_tokens.push(quote! {
         #field_ident: Some(
           #rt::thr_handler::<#struct_ident<#rt::Ltt>, #rt::Ltt>,
         )
       });
     }
     Mode::Extern(_) | Mode::Fn => {
-      vtable_ctor_tokens.push(quote_spanned! { def_site =>
+      vtable_ctor_tokens.push(quote! {
         #field_ident: Some(handlers.#field_ident)
       });
-      handlers_tokens.push(quote_spanned! { def_site =>
+      handlers_tokens.push(quote! {
         #(#attrs)*
         pub #field_ident: #rt::Handler
       });
@@ -343,17 +330,17 @@ fn gen_exc(
     Mode::Thread(ref vis) | Mode::Extern(ref vis) => {
       let index = *thr_counter;
       *thr_counter += 1;
-      index_tokens.push(quote_spanned! { def_site =>
+      index_tokens.push(quote! {
         #(#attrs)*
         #vis #field_ident: #struct_ident<#rt::Ctt>
       });
-      index_ctor_tokens.push(quote_spanned! { def_site =>
+      index_ctor_tokens.push(quote! {
         #field_ident: #struct_ident::new()
       });
-      array_tokens.push(quote_spanned! { def_site =>
+      array_tokens.push(quote! {
         #thr_ident::new(#index)
       });
-      thr_tokens.push(quote_spanned! { def_site =>
+      thr_tokens.push(quote! {
         #(#attrs)*
         #[derive(Clone, Copy)]
         #vis struct #struct_ident<T: #rt::ThrTag>(#rt::PhantomData<T>);
@@ -416,14 +403,4 @@ fn exc_set() -> HashSet<&'static str> {
   set.insert("pend_sv");
   set.insert("sys_tick");
   set
-}
-
-trait ExcDefIdent {
-  fn def_ident(&mut self, ident: &str) -> Ident;
-}
-
-impl ExcDefIdent for HashSet<&'static str> {
-  fn def_ident(&mut self, ident: &str) -> Ident {
-    Ident::new(self.take(ident).unwrap(), Span::call_site())
-  }
 }

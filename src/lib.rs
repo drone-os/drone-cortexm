@@ -23,6 +23,29 @@
 //! because repository package is outdated and doesn't contain configuration for
 //! newer chips and boards.
 //!
+//! # Development
+//!
+//! Check:
+//!
+//! ```sh
+//! $ RUSTC_WRAPPER=./clippy-wrapper.sh cargo check --all --exclude drone-stm32
+//! $ RUSTC_WRAPPER=./clippy-wrapper.sh xargo check \
+//!   --target "thumbv7m-none-eabi" -p drone-stm32
+//! ```
+//!
+//! Test:
+//!
+//! ```sh
+//! $ RUSTC_WRAPPER=./rustc-wrapper.sh cargo test --all --exclude drone-stm32
+//! $ RUSTC_WRAPPER=./rustc-wrapper.sh cargo drone test -p drone-stm32
+//! ```
+//!
+//! Readme update:
+//!
+//! ```sh
+//! $ cargo readme -o README.md
+//! ```
+//!
 //! [Drone]: https://github.com/drone-os/drone
 //! [OpenOCD]: http://openocd.org/
 //! [rules.d]: https://github.com/texane/stlink/tree/master/etc/udev/rules.d
@@ -34,26 +57,21 @@
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
 #![feature(exhaustive_patterns)]
-#![feature(fused)]
 #![feature(generators)]
 #![feature(generator_trait)]
 #![feature(lang_items)]
 #![feature(linkage)]
 #![feature(naked_functions)]
 #![feature(never_type)]
-#![feature(panic_implementation)]
-#![feature(pointer_methods)]
+#![feature(panic_handler)]
 #![feature(prelude_import)]
-#![feature(proc_macro)]
 #![feature(proc_macro_gen)]
-#![feature(proc_macro_path_invoc)]
 #![feature(range_contains)]
 #![feature(untagged_unions)]
 #![no_std]
 #![warn(missing_docs)]
-#![doc(html_root_url = "https://docs.rs/drone-stm32/0.8.2")]
+#![doc(html_root_url = "https://docs.rs/drone-stm32/0.8.3")]
 #![cfg_attr(test, feature(allocator_internals))]
-#![cfg_attr(test, feature(slice_get_slice))]
 #![cfg_attr(test, default_lib_allocator)]
 #![cfg_attr(feature = "cargo-clippy", allow(precedence, inline_always))]
 

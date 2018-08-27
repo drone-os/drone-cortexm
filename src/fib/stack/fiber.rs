@@ -80,11 +80,12 @@ where
           + (align_of::<F>() - 1)
           + 4
           + 16
-          + 2 + if unchecked {
-          1
-        } else {
-          1 + (1 << GUARD_SIZE + 1) + (1 << GUARD_SIZE + 1) - 1
-        },
+          + 2
+          + if unchecked {
+            1
+          } else {
+            1 + (1 << GUARD_SIZE + 1) + (1 << GUARD_SIZE + 1) - 1
+          },
       "insufficient stack size",
     );
     let stack_ptr = stack_bottom.add(stack_size);

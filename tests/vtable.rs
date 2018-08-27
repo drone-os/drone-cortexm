@@ -1,12 +1,8 @@
 #![feature(allocator_api)]
 #![feature(allocator_internals)]
-#![feature(const_cell_new)]
 #![feature(const_fn)]
-#![feature(const_ptr_null_mut)]
 #![feature(prelude_import)]
-#![feature(proc_macro)]
 #![feature(proc_macro_gen)]
-#![feature(slice_get_slice)]
 #![no_std]
 
 extern crate drone_core;
