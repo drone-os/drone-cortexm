@@ -1,6 +1,7 @@
 use drone_macros_core::{NewStatic, NewStruct};
-use proc_macro2::{Span, TokenStream};
-use syn::synom::Synom;
+use proc_macro::TokenStream;
+use proc_macro2::Span;
+use syn::parse::{Parse, ParseStream, Result};
 use syn::{Ident, IntSuffix, LitInt};
 
 struct Sv {
@@ -13,21 +14,28 @@ struct Service {
   ident: Ident,
 }
 
-impl Synom for Sv {
-  named!(parse -> Self, do_parse!(
-    sv: syn!(NewStruct) >>
-    array: syn!(NewStatic) >>
-    services: many0!(syn!(Service)) >>
-    (Sv { sv, array, services })
-  ));
+impl Parse for Sv {
+  fn parse(input: ParseStream) -> Result<Self> {
+    let sv = input.parse()?;
+    let array = input.parse()?;
+    let mut services = Vec::new();
+    while !input.is_empty() {
+      services.push(input.parse()?);
+    }
+    Ok(Self {
+      sv,
+      array,
+      services,
+    })
+  }
 }
 
-impl Synom for Service {
-  named!(parse -> Self, do_parse!(
-    ident: syn!(Ident) >>
-    punct!(;) >>
-    (Service { ident })
-  ));
+impl Parse for Service {
+  fn parse(input: ParseStream) -> Result<Self> {
+    let ident = input.parse()?;
+    input.parse::<Token![;]>()?;
+    Ok(Self { ident })
+  }
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
@@ -46,7 +54,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         ident: array_ident,
       },
     services,
-  } = try_parse2!(call_site, input);
+  } = parse_macro_input!(input as Sv);
   let rt = Ident::new("__sv_rt", def_site);
   let mut service_counter = 0usize;
   let mut array_tokens = Vec::new();
@@ -67,7 +75,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     });
   }
 
-  quote! {
+  let expanded = quote! {
     mod #rt {
       extern crate drone_core;
       extern crate drone_stm32 as drone_plat;
@@ -92,5 +100,6 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     ];
 
     #(#service_tokens)*
-  }
+  };
+  expanded.into()
 }

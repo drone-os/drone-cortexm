@@ -1,6 +1,7 @@
 use inflector::Inflector;
-use proc_macro2::{Span, TokenStream};
-use syn::synom::Synom;
+use proc_macro::TokenStream;
+use proc_macro2::Span;
+use syn::parse::{Parse, ParseStream, Result};
 use syn::{Attribute, Ident, LitInt, Visibility};
 
 struct ThrInt {
@@ -10,17 +11,22 @@ struct ThrInt {
   number: LitInt,
 }
 
-impl Synom for ThrInt {
-  named!(parse -> Self, do_parse!(
-    attrs: many0!(Attribute::parse_outer) >>
-    vis: syn!(Visibility) >>
-    keyword!(trait) >>
-    ident: syn!(Ident) >>
-    punct!(:) >>
-    number: syn!(LitInt) >>
-    punct!(;) >>
-    (ThrInt { attrs, vis, ident, number })
-  ));
+impl Parse for ThrInt {
+  fn parse(input: ParseStream) -> Result<Self> {
+    let attrs = input.call(Attribute::parse_outer)?;
+    let vis = input.parse()?;
+    input.parse::<Token![trait]>()?;
+    let ident = input.parse()?;
+    input.parse::<Token![:]>()?;
+    let number = input.parse()?;
+    input.parse::<Token![;]>()?;
+    Ok(Self {
+      attrs,
+      vis,
+      ident,
+      number,
+    })
+  }
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
@@ -30,16 +36,17 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     vis,
     ident,
     number,
-  } = try_parse2!(call_site, input);
+  } = parse_macro_input!(input as ThrInt);
   let int_name = format!("INT_{}", ident);
   let name_ident = Ident::new(&int_name.to_pascal_case(), call_site);
   let number_ident = Ident::new(&format!("Int{}", number.value()), call_site);
 
-  quote! {
+  let expanded = quote! {
     #(#attrs)*
     #vis trait #number_ident<T: ThrTag>: IntToken<T> {}
 
     #[allow(unused_imports)]
     #vis use self::#number_ident as #name_ident;
-  }
+  };
+  expanded.into()
 }

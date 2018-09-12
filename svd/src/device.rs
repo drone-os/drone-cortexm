@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "cargo-clippy", allow(const_static_lifetime))]
+#![allow(clippy::const_static_lifetime)]
 
 use failure::{err_msg, Error};
 use serde::de::{self, Deserialize, Deserializer};

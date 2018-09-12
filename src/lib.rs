@@ -63,20 +63,20 @@
 #![feature(linkage)]
 #![feature(naked_functions)]
 #![feature(never_type)]
-#![feature(panic_handler)]
 #![feature(prelude_import)]
 #![feature(proc_macro_gen)]
 #![feature(range_contains)]
+#![feature(tool_lints)]
 #![feature(untagged_unions)]
 #![no_std]
 #![warn(missing_docs)]
-#![doc(html_root_url = "https://docs.rs/drone-stm32/0.8.3")]
+#![allow(clippy::precedence, clippy::inline_always)]
+#![doc(html_root_url = "https://docs.rs/drone-stm32/0.8.4")]
 #![cfg_attr(test, feature(allocator_internals))]
 #![cfg_attr(test, default_lib_allocator)]
-#![cfg_attr(feature = "cargo-clippy", allow(precedence, inline_always))]
 
 extern crate alloc;
-#[cfg_attr(feature = "cargo-clippy", allow(useless_attribute))]
+#[allow(clippy::useless_attribute)]
 #[allow(unused_imports)]
 #[macro_use]
 extern crate drone_core;
@@ -105,12 +105,15 @@ mod lang_items;
 
 pub use drone_stm32_macros::{sv, vtable};
 
+#[cfg(test)]
+use drone_core::heap;
+
 #[prelude_import]
 #[allow(unused_imports)]
 use prelude::*;
 
 #[cfg(test)]
-drone_core::heap! {
+heap! {
   struct Heap;
   size = 0x40000;
   pools = [

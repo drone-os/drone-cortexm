@@ -81,7 +81,7 @@ pub struct Dma<T: DmaRes>(T);
 /// DMA resource.
 #[allow(missing_docs)]
 pub trait DmaRes: Resource {
-  type Int: IntToken<Ltt>;
+  type Int: IntToken<Ttt>;
   type CcrVal: Bitfield<Bits = u32>;
   type Ccr: SRwReg<Val = Self::CcrVal>;
   type CcrMem2Mem: SRwRwRegFieldBit<Reg = Self::Ccr>;
@@ -442,7 +442,7 @@ macro_rules! dma_ch {
 
     #[doc = $doc_res]
     #[allow(missing_docs)]
-    pub struct $name_res<I: $int_ty<Ltt>, Rt: RegTag> {
+    pub struct $name_res<I: $int_ty<Ttt>, Rt: RegTag> {
       pub $int: I,
       pub $dma_ccr: $dma::$ccr_ty<Srt>,
       pub $dma_cmar: $dma::$cmar_ty<Srt>,
@@ -525,7 +525,7 @@ macro_rules! dma_ch {
       };
     }
 
-    impl<I: $int_ty<Ltt>> Resource for $name_res<I, Frt> {
+    impl<I: $int_ty<Ttt>> Resource for $name_res<I, Frt> {
       type Source = $name_res<I, Srt>;
 
       #[cfg(any(
@@ -582,7 +582,7 @@ macro_rules! dma_ch {
       }
     }
 
-    impl<I: $int_ty<Ltt>> DmaRes for $name_res<I, Frt> {
+    impl<I: $int_ty<Ttt>> DmaRes for $name_res<I, Frt> {
       type Int = I;
       type CcrVal = $dma::$ccr_path::Val;
       type Ccr = $dma::$ccr_ty<Srt>;

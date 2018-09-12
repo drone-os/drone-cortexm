@@ -18,7 +18,7 @@ where
   _return: PhantomData<*const R>,
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(new_without_default_derive))]
+#[allow(clippy::new_without_default_derive)]
 impl<Sv, I, Y, R> Yielder<Sv, I, Y, R>
 where
   Sv: Switch<StackData<I, Y, R>>,
@@ -43,7 +43,7 @@ where
   }
 
   /// Yields from the enclosing stackful fiber.
-  #[cfg_attr(feature = "cargo-clippy", allow(trivially_copy_pass_by_ref))]
+  #[allow(clippy::trivially_copy_pass_by_ref)]
   pub fn stack_yield(&self, output: Y) -> I {
     unsafe {
       let output = FiberState::Yielded(output);

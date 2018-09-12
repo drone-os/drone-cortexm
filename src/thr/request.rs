@@ -19,7 +19,7 @@ pub trait ThrRequest<T: ThrTrigger>: IntToken<T> {
 }
 
 impl<T: ThrTrigger, U: IntToken<T>> ThrRequest<T> for U {
-  #[cfg_attr(feature = "cargo-clippy", allow(while_let_loop))]
+  #[allow(clippy::while_let_loop)]
   fn exec<F>(&self, f: F)
   where
     F: IntoFuture<Item = (), Error = !>,

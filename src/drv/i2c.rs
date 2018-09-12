@@ -1,5 +1,6 @@
 //! Inter-Integrated Circuit.
 
+use drone_core::bitfield::Bitfield;
 use drone_core::drv::Resource;
 use drv::dma::{Dma, DmaRes};
 #[cfg(any(
@@ -110,9 +111,32 @@ use thr::int::{IntI2C1Er, IntI2C1Ev, IntI2C2Er, IntI2C2Ev};
 use thr::int::{IntI2C3Er, IntI2C3Ev};
 use thr::prelude::*;
 
-/// Incomplete I2C transfer error.
+/// I2C error.
 #[derive(Debug, Fail)]
-pub enum I2CTransferFailure {
+pub enum I2CError {
+  /// Bus error.
+  #[fail(display = "I2C bus error.")]
+  Berr,
+  /// Overrun/Underrun.
+  #[fail(display = "I2C overrun.")]
+  Ovr,
+  /// Arbitration lost.
+  #[fail(display = "I2C arbitration lost.")]
+  Arlo,
+  /// Timeout or t_low detection flag.
+  #[fail(display = "I2C timeout.")]
+  Timeout,
+  /// SMBus alert.
+  #[fail(display = "I2C SMBus alert.")]
+  Alert,
+  /// PEC error in reception.
+  #[fail(display = "I2C PEC error.")]
+  Pecerr,
+}
+
+/// I2C transfer failure event.
+#[derive(Debug, Fail)]
+pub enum I2CBreak {
   /// NACK reception.
   #[fail(display = "I2C NACK received.")]
   Nack,
@@ -187,8 +211,258 @@ where
 /// I2C resource.
 #[allow(missing_docs)]
 pub trait I2CRes: Resource {
-  type Cr1: SRwRegBitBand;
-  type Cr2: SRwRegBitBand;
+  type Cr1Val: Bitfield<Bits = u32>;
+  type Cr1: SRwRegBitBand<Val = Self::Cr1Val>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Pe: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Txie: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Rxie: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Addrie: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Nackie: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Stopie: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Tcie: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Errie: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Dnf: SRwRwRegFieldBits<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Anfoff: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Txdmaen: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Rxdmaen: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Sbc: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Nostretch: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Wupen: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Gcen: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Smbhen: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Smbden: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Alerten: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr1Pecen: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
+  type Cr2Val: Bitfield<Bits = u32>;
+  type Cr2: SRwRegBitBand<Val = Self::Cr2Val>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr2Pecbyte: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr2Autoend: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr2Reload: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr2Nbytes: SRwRwRegFieldBits<Reg = Self::Cr2>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr2Nack: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr2Stop: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr2Start: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr2Head10R: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr2Add10: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr2RdWrn: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type Cr2Sadd: SRwRwRegFieldBits<Reg = Self::Cr2>;
   type Oar1: SRwRegBitBand;
   type Oar2: SRwRegBitBand;
   type Timingr: SRwRegBitBand;
@@ -198,15 +472,417 @@ pub trait I2CRes: Resource {
   type IsrStopf: FRoRwRegFieldBitBand<Reg = Self::Isr>;
   type IsrTc: FRoRwRegFieldBitBand<Reg = Self::Isr>;
   type IsrTcr: FRoRwRegFieldBitBand<Reg = Self::Isr>;
+  type IsrBerr: FRoRwRegFieldBitBand<Reg = Self::Isr>;
+  type IsrArlo: FRoRwRegFieldBitBand<Reg = Self::Isr>;
+  type IsrOvr: FRoRwRegFieldBitBand<Reg = Self::Isr>;
+  type IsrPecerr: FRoRwRegFieldBitBand<Reg = Self::Isr>;
+  type IsrTimeout: FRoRwRegFieldBitBand<Reg = Self::Isr>;
+  type IsrAlert: FRoRwRegFieldBitBand<Reg = Self::Isr>;
   type Icr: FWoRegBitBand;
   type IcrNackcf: FWoWoRegFieldBitBand<Reg = Self::Icr>;
   type IcrStopcf: FWoWoRegFieldBitBand<Reg = Self::Icr>;
+  type IcrBerrcf: FWoWoRegFieldBitBand<Reg = Self::Icr>;
+  type IcrArlocf: FWoWoRegFieldBitBand<Reg = Self::Icr>;
+  type IcrOvrcf: FWoWoRegFieldBitBand<Reg = Self::Icr>;
+  type IcrPeccf: FWoWoRegFieldBitBand<Reg = Self::Icr>;
+  type IcrTimoutcf: FWoWoRegFieldBitBand<Reg = Self::Icr>;
+  type IcrAlertcf: FWoWoRegFieldBitBand<Reg = Self::Icr>;
   type Pecr: SRoRegBitBand;
-  type Rxdr: SRoRegBitBand;
-  type Txdr: SRwRegBitBand;
+  type RxdrVal: Bitfield<Bits = u32>;
+  type Rxdr: SRoRegBitBand<Val = Self::RxdrVal>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type RxdrRxdata: SRoRoRegFieldBits<Reg = Self::Rxdr>;
+  type TxdrVal: Bitfield<Bits = u32>;
+  type Txdr: SRwRegBitBand<Val = Self::TxdrVal>;
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  type TxdrTxdata: SRwRwRegFieldBits<Reg = Self::Txdr>;
 
   res_reg_decl!(Cr1, cr1, cr1_mut);
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Pe,
+    cr1_pe,
+    cr1_pe_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Txie,
+    cr1_txie,
+    cr1_txie_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Rxie,
+    cr1_rxie,
+    cr1_rxie_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Addrie,
+    cr1_addrie,
+    cr1_addrie_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Nackie,
+    cr1_nackie,
+    cr1_nackie_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Stopie,
+    cr1_stopie,
+    cr1_stopie_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Tcie,
+    cr1_tcie,
+    cr1_tcie_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Errie,
+    cr1_errie,
+    cr1_errie_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Dnf,
+    cr1_dnf,
+    cr1_dnf_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Anfoff,
+    cr1_anfoff,
+    cr1_anfoff_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Txdmaen,
+    cr1_txdmaen,
+    cr1_txdmaen_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Rxdmaen,
+    cr1_rxdmaen,
+    cr1_rxdmaen_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Sbc,
+    cr1_sbc,
+    cr1_sbc_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Nostretch,
+    cr1_nostretch,
+    cr1_nostretch_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Wupen,
+    cr1_wupen,
+    cr1_wupen_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Gcen,
+    cr1_gcen,
+    cr1_gcen_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Smbhen,
+    cr1_smbhen,
+    cr1_smbhen_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Smbden,
+    cr1_smbden,
+    cr1_smbden_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Alerten,
+    cr1_alerten,
+    cr1_alerten_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr1Pecen,
+    cr1_pecen,
+    cr1_pecen_mut
+  );
   res_reg_decl!(Cr2, cr2, cr2_mut);
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr2Pecbyte,
+    cr2_pecbyte,
+    cr2_pecbyte_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr2Autoend,
+    cr2_autoend,
+    cr2_autoend_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr2Reload,
+    cr2_reload,
+    cr2_reload_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr2Nbytes,
+    cr2_nbytes,
+    cr2_nbytes_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr2Nack,
+    cr2_nack,
+    cr2_nack_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr2Stop,
+    cr2_stop,
+    cr2_stop_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr2Start,
+    cr2_start,
+    cr2_start_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr2Head10R,
+    cr2_head10r,
+    cr2_head10r_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr2Add10,
+    cr2_add10,
+    cr2_add10_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr2RdWrn,
+    cr2_rd_wrn,
+    cr2_rd_wrn_mut
+  );
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    Cr2Sadd,
+    cr2_sadd,
+    cr2_sadd_mut
+  );
   res_reg_decl!(Oar1, oar1, oar1_mut);
   res_reg_decl!(Oar2, oar2, oar2_mut);
   res_reg_decl!(Timingr, timingr, timingr_mut);
@@ -216,20 +892,56 @@ pub trait I2CRes: Resource {
   res_reg_decl!(IsrStopf, isr_stopf, isr_stopf_mut);
   res_reg_decl!(IsrTc, isr_tc, isr_tc_mut);
   res_reg_decl!(IsrTcr, isr_tcr, isr_tcr_mut);
+  res_reg_decl!(IsrBerr, isr_berr, isr_berr_mut);
+  res_reg_decl!(IsrArlo, isr_arlo, isr_arlo_mut);
+  res_reg_decl!(IsrOvr, isr_ovr, isr_ovr_mut);
+  res_reg_decl!(IsrPecerr, isr_pecerr, isr_pecerr_mut);
+  res_reg_decl!(IsrTimeout, isr_timeout, isr_timeout_mut);
+  res_reg_decl!(IsrAlert, isr_alert, isr_alert_mut);
   res_reg_decl!(Icr, icr, icr_mut);
   res_reg_decl!(IcrNackcf, icr_nackcf, icr_nackcf_mut);
   res_reg_decl!(IcrStopcf, icr_stopcf, icr_stopcf_mut);
+  res_reg_decl!(IcrBerrcf, icr_berrcf, icr_berrcf_mut);
+  res_reg_decl!(IcrArlocf, icr_arlocf, icr_arlocf_mut);
+  res_reg_decl!(IcrOvrcf, icr_ovrcf, icr_ovrcf_mut);
+  res_reg_decl!(IcrPeccf, icr_peccf, icr_peccf_mut);
+  res_reg_decl!(IcrTimoutcf, icr_timoutcf, icr_timoutcf_mut);
+  res_reg_decl!(IcrAlertcf, icr_alertcf, icr_alertcf_mut);
   res_reg_decl!(Pecr, pecr, pecr_mut);
   res_reg_decl!(Rxdr, rxdr, rxdr_mut);
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    RxdrRxdata,
+    rxdr_rxdata,
+    rxdr_rxdata_mut
+  );
   res_reg_decl!(Txdr, txdr, txdr_mut);
+  res_reg_decl!(
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    TxdrTxdata,
+    txdr_txdata,
+    txdr_txdata_mut
+  );
 }
 
 /// Interrupt-driven I2C resource.
 #[allow(missing_docs)]
 pub trait I2CIntRes: I2CRes {
   type WithoutInt: I2CRes;
-  type IntEv: IntToken<Ltt>;
-  type IntEr: IntToken<Ltt>;
+  type IntEv: IntToken<Ttt>;
+  type IntEr: IntToken<Ttt>;
 
   fn join_int(
     res: Self::WithoutInt,
@@ -286,9 +998,381 @@ impl<T: I2CRes> I2C<T> {
     self.0.cr1()
   }
 
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_pe(&self) -> &T::Cr1Pe {
+    self.0.cr1_pe()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_txie(&self) -> &T::Cr1Txie {
+    self.0.cr1_txie()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_rxie(&self) -> &T::Cr1Rxie {
+    self.0.cr1_rxie()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_addrie(&self) -> &T::Cr1Addrie {
+    self.0.cr1_addrie()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_nackie(&self) -> &T::Cr1Nackie {
+    self.0.cr1_nackie()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_stopie(&self) -> &T::Cr1Stopie {
+    self.0.cr1_stopie()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_tcie(&self) -> &T::Cr1Tcie {
+    self.0.cr1_tcie()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_errie(&self) -> &T::Cr1Errie {
+    self.0.cr1_errie()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_dnf(&self) -> &T::Cr1Dnf {
+    self.0.cr1_dnf()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_anfoff(&self) -> &T::Cr1Anfoff {
+    self.0.cr1_anfoff()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_txdmaen(&self) -> &T::Cr1Txdmaen {
+    self.0.cr1_txdmaen()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_rxdmaen(&self) -> &T::Cr1Rxdmaen {
+    self.0.cr1_rxdmaen()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_sbc(&self) -> &T::Cr1Sbc {
+    self.0.cr1_sbc()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_nostretch(&self) -> &T::Cr1Nostretch {
+    self.0.cr1_nostretch()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_wupen(&self) -> &T::Cr1Wupen {
+    self.0.cr1_wupen()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_gcen(&self) -> &T::Cr1Gcen {
+    self.0.cr1_gcen()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_smbhen(&self) -> &T::Cr1Smbhen {
+    self.0.cr1_smbhen()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_smbden(&self) -> &T::Cr1Smbden {
+    self.0.cr1_smbden()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_alerten(&self) -> &T::Cr1Alerten {
+    self.0.cr1_alerten()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr1_pecen(&self) -> &T::Cr1Pecen {
+    self.0.cr1_pecen()
+  }
+
   #[inline(always)]
   pub fn cr2(&self) -> &T::Cr2 {
     self.0.cr2()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr2_pecbyte(&self) -> &T::Cr2Pecbyte {
+    self.0.cr2_pecbyte()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr2_autoend(&self) -> &T::Cr2Autoend {
+    self.0.cr2_autoend()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr2_reload(&self) -> &T::Cr2Reload {
+    self.0.cr2_reload()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr2_nbytes(&self) -> &T::Cr2Nbytes {
+    self.0.cr2_nbytes()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr2_nack(&self) -> &T::Cr2Nack {
+    self.0.cr2_nack()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr2_stop(&self) -> &T::Cr2Stop {
+    self.0.cr2_stop()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr2_start(&self) -> &T::Cr2Start {
+    self.0.cr2_start()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr2_head10r(&self) -> &T::Cr2Head10R {
+    self.0.cr2_head10r()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr2_add10(&self) -> &T::Cr2Add10 {
+    self.0.cr2_add10()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr2_rd_wrn(&self) -> &T::Cr2RdWrn {
+    self.0.cr2_rd_wrn()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn cr2_sadd(&self) -> &T::Cr2Sadd {
+    self.0.cr2_sadd()
   }
 
   #[inline(always)]
@@ -331,9 +1415,33 @@ impl<T: I2CRes> I2C<T> {
     self.0.rxdr()
   }
 
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn rxdr_rxdata(&self) -> &T::RxdrRxdata {
+    self.0.rxdr_rxdata()
+  }
+
   #[inline(always)]
   pub fn txdr(&self) -> &T::Txdr {
     self.0.txdr()
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
+  #[inline(always)]
+  pub fn txdr_txdata(&self) -> &T::TxdrTxdata {
+    self.0.txdr_txdata()
   }
 }
 
@@ -364,39 +1472,54 @@ impl<T: I2CIntRes> I2C<T> {
     self.0.int_er()
   }
 
-  /// Returns a future, which resolves on I2C transfer complete event.
-  pub fn transfer_complete(
-    &mut self,
-  ) -> impl Future<Item = (), Error = I2CTransferFailure> {
-    let tc = self.0.isr_tc_mut().fork();
-    let nackf = self.0.isr_nackf_mut().fork();
-    let stopf = self.0.isr_stopf_mut().fork();
-    let nackcf = self.0.icr_nackcf_mut().fork();
-    let stopcf = self.0.icr_stopcf_mut().fork();
+  /// Returns a future, which resolves on I2C error event.
+  pub fn transfer_error(&mut self) -> impl Future<Item = !, Error = I2CError> {
+    let berr = self.0.isr_berr_mut().fork();
+    let ovr = self.0.isr_ovr_mut().fork();
+    let arlo = self.0.isr_arlo_mut().fork();
+    let timeout = self.0.isr_timeout_mut().fork();
+    let alert = self.0.isr_alert_mut().fork();
+    let pecerr = self.0.isr_pecerr_mut().fork();
+    let berrcf = self.0.icr_berrcf_mut().fork();
+    let ovrcf = self.0.icr_ovrcf_mut().fork();
+    let arlocf = self.0.icr_arlocf_mut().fork();
+    let timoutcf = self.0.icr_timoutcf_mut().fork();
+    let alertcf = self.0.icr_alertcf_mut().fork();
+    let peccf = self.0.icr_peccf_mut().fork();
     fib::add_future(
-      self.0.int_ev(),
+      self.0.int_er(),
       fib::new(move || loop {
-        if nackf.read_bit_band() {
-          nackcf.set_bit_band();
-          break Err(I2CTransferFailure::Nack);
+        if berr.read_bit_band() {
+          berrcf.set_bit_band();
+          break Err(I2CError::Berr);
         }
-        if stopf.read_bit_band() {
-          stopcf.set_bit_band();
-          break Err(I2CTransferFailure::Stop);
+        if ovr.read_bit_band() {
+          ovrcf.set_bit_band();
+          break Err(I2CError::Ovr);
         }
-        if tc.read_bit_band() {
-          break Ok(());
+        if arlo.read_bit_band() {
+          arlocf.set_bit_band();
+          break Err(I2CError::Arlo);
+        }
+        if timeout.read_bit_band() {
+          timoutcf.set_bit_band();
+          break Err(I2CError::Timeout);
+        }
+        if alert.read_bit_band() {
+          alertcf.set_bit_band();
+          break Err(I2CError::Alert);
+        }
+        if pecerr.read_bit_band() {
+          peccf.set_bit_band();
+          break Err(I2CError::Pecerr);
         }
         yield;
       }),
     )
   }
 
-  /// Returns a future, which resolves on I2C transfer complete reload event.
-  pub fn transfer_reload(
-    &mut self,
-  ) -> impl Future<Item = (), Error = I2CTransferFailure> {
-    let tcr = self.0.isr_tcr_mut().fork();
+  /// Returns a future, which resolves on I2C transfer failure event.
+  pub fn transfer_break(&mut self) -> impl Future<Item = !, Error = I2CBreak> {
     let nackf = self.0.isr_nackf_mut().fork();
     let stopf = self.0.isr_stopf_mut().fork();
     let nackcf = self.0.icr_nackcf_mut().fork();
@@ -406,14 +1529,11 @@ impl<T: I2CIntRes> I2C<T> {
       fib::new(move || loop {
         if nackf.read_bit_band() {
           nackcf.set_bit_band();
-          break Err(I2CTransferFailure::Nack);
+          break Err(I2CBreak::Nack);
         }
         if stopf.read_bit_band() {
           stopcf.set_bit_band();
-          break Err(I2CTransferFailure::Stop);
-        }
-        if tcr.read_bit_band() {
-          break Ok(());
+          break Err(I2CBreak::Stop);
         }
         yield;
       }),
@@ -553,8 +1673,258 @@ macro_rules! i2c_shared {
     ),)*),
   ) => {
     impl<$($tp: $bound),*> I2CRes for $name_res<$($tp,)* Frt> {
+      type Cr1Val = $i2c::cr1::Val;
       type Cr1 = $i2c::Cr1<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Pe = $i2c::cr1::Pe<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Txie = $i2c::cr1::Txie<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Rxie = $i2c::cr1::Rxie<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Addrie = $i2c::cr1::Addrie<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Nackie = $i2c::cr1::Nackie<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Stopie = $i2c::cr1::Stopie<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Tcie = $i2c::cr1::Tcie<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Errie = $i2c::cr1::Errie<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Dnf = $i2c::cr1::Dnf<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Anfoff = $i2c::cr1::Anfoff<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Txdmaen = $i2c::cr1::Txdmaen<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Rxdmaen = $i2c::cr1::Rxdmaen<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Sbc = $i2c::cr1::Sbc<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Nostretch = $i2c::cr1::Nostretch<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Wupen = $i2c::cr1::Wupen<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Gcen = $i2c::cr1::Gcen<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Smbhen = $i2c::cr1::Smbhen<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Smbden = $i2c::cr1::Smbden<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Alerten = $i2c::cr1::Alerten<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr1Pecen = $i2c::cr1::Pecen<Srt>;
+      type Cr2Val = $i2c::cr2::Val;
       type Cr2 = $i2c::Cr2<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr2Pecbyte = $i2c::cr2::Pecbyte<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr2Autoend = $i2c::cr2::Autoend<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr2Reload = $i2c::cr2::Reload<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr2Nbytes = $i2c::cr2::Nbytes<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr2Nack = $i2c::cr2::Nack<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr2Stop = $i2c::cr2::Stop<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr2Start = $i2c::cr2::Start<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr2Head10R = $i2c::cr2::Head10R<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr2Add10 = $i2c::cr2::Add10<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr2RdWrn = $i2c::cr2::RdWrn<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type Cr2Sadd = $i2c::cr2::Sadd<Srt>;
       type Oar1 = $i2c::Oar1<Srt>;
       type Oar2 = $i2c::Oar2<Srt>;
       type Timingr = $i2c::Timingr<Srt>;
@@ -564,15 +1934,324 @@ macro_rules! i2c_shared {
       type IsrStopf = $i2c::isr::Stopf<Frt>;
       type IsrTc = $i2c::isr::Tc<Frt>;
       type IsrTcr = $i2c::isr::Tcr<Frt>;
+      type IsrBerr = $i2c::isr::Berr<Frt>;
+      type IsrArlo = $i2c::isr::Arlo<Frt>;
+      type IsrOvr = $i2c::isr::Ovr<Frt>;
+      type IsrPecerr = $i2c::isr::Pecerr<Frt>;
+      type IsrTimeout = $i2c::isr::Timeout<Frt>;
+      type IsrAlert = $i2c::isr::Alert<Frt>;
       type Icr = $i2c::Icr<Frt>;
       type IcrNackcf = $i2c::icr::Nackcf<Frt>;
       type IcrStopcf = $i2c::icr::Stopcf<Frt>;
+      type IcrBerrcf = $i2c::icr::Berrcf<Frt>;
+      type IcrArlocf = $i2c::icr::Arlocf<Frt>;
+      type IcrOvrcf = $i2c::icr::Ovrcf<Frt>;
+      type IcrPeccf = $i2c::icr::Peccf<Frt>;
+      type IcrTimoutcf = $i2c::icr::Timoutcf<Frt>;
+      type IcrAlertcf = $i2c::icr::Alertcf<Frt>;
       type Pecr = $i2c::Pecr<Srt>;
+      type RxdrVal = $i2c::rxdr::Val;
       type Rxdr = $i2c::Rxdr<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type RxdrRxdata = $i2c::rxdr::Rxdata<Srt>;
+      type TxdrVal = $i2c::txdr::Val;
       type Txdr = $i2c::Txdr<Srt>;
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
+      type TxdrTxdata = $i2c::txdr::Txdata<Srt>;
 
       res_reg_impl!(Cr1, cr1, cr1_mut, $i2c_cr1);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Pe, cr1_pe, cr1_pe_mut, $i2c_cr1, pe);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Txie, cr1_txie, cr1_txie_mut, $i2c_cr1, txie);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Rxie, cr1_rxie, cr1_rxie_mut, $i2c_cr1, rxie);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Addrie, cr1_addrie, cr1_addrie_mut, $i2c_cr1, addrie);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Nackie, cr1_nackie, cr1_nackie_mut, $i2c_cr1, nackie);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Stopie, cr1_stopie, cr1_stopie_mut, $i2c_cr1, stopie);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Tcie, cr1_tcie, cr1_tcie_mut, $i2c_cr1, tcie);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Errie, cr1_errie, cr1_errie_mut, $i2c_cr1, errie);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Dnf, cr1_dnf, cr1_dnf_mut, $i2c_cr1, dnf);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Anfoff, cr1_anfoff, cr1_anfoff_mut, $i2c_cr1, anfoff);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Txdmaen, cr1_txdmaen, cr1_txdmaen_mut, $i2c_cr1, txdmaen);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Rxdmaen, cr1_rxdmaen, cr1_rxdmaen_mut, $i2c_cr1, rxdmaen);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Sbc, cr1_sbc, cr1_sbc_mut, $i2c_cr1, sbc);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Nostretch, cr1_nostretch, cr1_nostretch_mut, $i2c_cr1, nostretch);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Wupen, cr1_wupen, cr1_wupen_mut, $i2c_cr1, wupen);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Gcen, cr1_gcen, cr1_gcen_mut, $i2c_cr1, gcen);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Smbhen, cr1_smbhen, cr1_smbhen_mut, $i2c_cr1, smbhen);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Smbden, cr1_smbden, cr1_smbden_mut, $i2c_cr1, smbden);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Alerten, cr1_alerten, cr1_alerten_mut, $i2c_cr1, alerten);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr1Pecen, cr1_pecen, cr1_pecen_mut, $i2c_cr1, pecen);
       res_reg_impl!(Cr2, cr2, cr2_mut, $i2c_cr2);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr2Pecbyte, cr2_pecbyte, cr2_pecbyte_mut, $i2c_cr2, pecbyte);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr2Autoend, cr2_autoend, cr2_autoend_mut, $i2c_cr2, autoend);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr2Reload, cr2_reload, cr2_reload_mut, $i2c_cr2, reload);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr2Nbytes, cr2_nbytes, cr2_nbytes_mut, $i2c_cr2, nbytes);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr2Nack, cr2_nack, cr2_nack_mut, $i2c_cr2, nack);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr2Stop, cr2_stop, cr2_stop_mut, $i2c_cr2, stop);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr2Start, cr2_start, cr2_start_mut, $i2c_cr2, start);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr2Head10R, cr2_head10r, cr2_head10r_mut, $i2c_cr2, head10r);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr2Add10, cr2_add10, cr2_add10_mut, $i2c_cr2, add10);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr2RdWrn, cr2_rd_wrn, cr2_rd_wrn_mut, $i2c_cr2, rd_wrn);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        Cr2Sadd, cr2_sadd, cr2_sadd_mut, $i2c_cr2, sadd);
       res_reg_impl!(Oar1, oar1, oar1_mut, $i2c_oar1);
       res_reg_impl!(Oar2, oar2, oar2_mut, $i2c_oar2);
       res_reg_impl!(Timingr, timingr, timingr_mut, $i2c_timingr);
@@ -582,14 +2261,52 @@ macro_rules! i2c_shared {
       res_reg_field_impl!(IsrStopf, isr_stopf, isr_stopf_mut, $i2c_isr, stopf);
       res_reg_field_impl!(IsrTc, isr_tc, isr_tc_mut, $i2c_isr, tc);
       res_reg_field_impl!(IsrTcr, isr_tcr, isr_tcr_mut, $i2c_isr, tcr);
+      res_reg_field_impl!(IsrBerr, isr_berr, isr_berr_mut, $i2c_isr, berr);
+      res_reg_field_impl!(IsrArlo, isr_arlo, isr_arlo_mut, $i2c_isr, arlo);
+      res_reg_field_impl!(IsrOvr, isr_ovr, isr_ovr_mut, $i2c_isr, ovr);
+      res_reg_field_impl!(IsrPecerr, isr_pecerr, isr_pecerr_mut, $i2c_isr,
+                          pecerr);
+      res_reg_field_impl!(IsrTimeout, isr_timeout, isr_timeout_mut, $i2c_isr,
+                          timeout);
+      res_reg_field_impl!(IsrAlert, isr_alert, isr_alert_mut, $i2c_isr, alert);
       res_reg_impl!(Icr, icr, icr_mut, $i2c_icr);
       res_reg_field_impl!(IcrNackcf, icr_nackcf, icr_nackcf_mut, $i2c_icr,
                           nackcf);
       res_reg_field_impl!(IcrStopcf, icr_stopcf, icr_stopcf_mut, $i2c_icr,
                           stopcf);
+      res_reg_field_impl!(IcrBerrcf, icr_berrcf, icr_berrcf_mut, $i2c_icr,
+                          berrcf);
+      res_reg_field_impl!(IcrArlocf, icr_arlocf, icr_arlocf_mut, $i2c_icr,
+                          arlocf);
+      res_reg_field_impl!(IcrOvrcf, icr_ovrcf, icr_ovrcf_mut, $i2c_icr,
+                          ovrcf);
+      res_reg_field_impl!(IcrPeccf, icr_peccf, icr_peccf_mut, $i2c_icr,
+                          peccf);
+      res_reg_field_impl!(IcrTimoutcf, icr_timoutcf, icr_timoutcf_mut,
+                          $i2c_icr, timoutcf);
+      res_reg_field_impl!(IcrAlertcf, icr_alertcf, icr_alertcf_mut, $i2c_icr,
+                          alertcf);
       res_reg_impl!(Pecr, pecr, pecr_mut, $i2c_pecr);
       res_reg_impl!(Rxdr, rxdr, rxdr_mut, $i2c_rxdr);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        RxdrRxdata, rxdr_rxdata, rxdr_rxdata_mut, $i2c_rxdr, rxdata);
       res_reg_impl!(Txdr, txdr, txdr_mut, $i2c_txdr);
+      res_reg_field_impl!(
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6"
+        ))]
+        TxdrTxdata, txdr_txdata, txdr_txdata_mut, $i2c_txdr, txdata);
     }
 
     $(
@@ -597,7 +2314,7 @@ macro_rules! i2c_shared {
       impl<$($dma_rx_tp,)* Rx> I2CDmaRxRes<$dma_rx_res<Rx, Frt>>
         for $name_res<$($dma_rx_tp,)* Frt>
       where
-        Rx: $int_dma_rx<Ltt>,
+        Rx: $int_dma_rx<Ttt>,
         $($dma_rx_tp: $dma_rx_bound,)*
       {
         #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -619,7 +2336,7 @@ macro_rules! i2c_shared {
       impl<$($dma_tx_tp,)* Tx> I2CDmaTxRes<$dma_tx_res<Tx, Frt>>
         for $name_res<$($dma_tx_tp,)* Frt>
       where
-        Tx: $int_dma_tx<Ltt>,
+        Tx: $int_dma_tx<Ttt>,
         $($dma_tx_tp: $dma_tx_bound,)*
       {
         #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -706,8 +2423,8 @@ macro_rules! i2c {
     #[allow(missing_docs)]
     pub struct $name_int_res<Ev, Er, Rt>
     where
-      Ev: $int_ev_ty<Ltt>,
-      Er: $int_er_ty<Ltt>,
+      Ev: $int_ev_ty<Ttt>,
+      Er: $int_er_ty<Ttt>,
       Rt: RegTag,
     {
       pub $i2c_ev: Ev,
@@ -809,8 +2526,8 @@ macro_rules! i2c {
 
     impl<Ev, Er> Resource for $name_int_res<Ev, Er, Frt>
     where
-      Ev: $int_ev_ty<Ltt>,
-      Er: $int_er_ty<Ltt>,
+      Ev: $int_ev_ty<Ttt>,
+      Er: $int_er_ty<Ttt>,
     {
       type Source = $name_int_res<Ev, Er, Srt>;
 
@@ -848,21 +2565,21 @@ macro_rules! i2c {
       $i2c_rxdr,
       $i2c_txdr,
       $name_int_res,
-      (Ev: $int_ev_ty<Ltt>, Er: $int_er_ty<Ltt>),
+      (Ev: $int_ev_ty<Ttt>, Er: $int_er_ty<Ttt>),
       ($((
         [$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs,
-        (Ev: $int_ev_ty<Ltt>, Er: $int_er_ty<Ltt>)
+        (Ev: $int_ev_ty<Ttt>, Er: $int_er_ty<Ttt>)
       ),)*),
       ($((
         [$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs,
-        (Ev: $int_ev_ty<Ltt>, Er: $int_er_ty<Ltt>)
+        (Ev: $int_ev_ty<Ttt>, Er: $int_er_ty<Ttt>)
       ),)*),
     }
 
     impl<Ev, Er> I2CIntRes for $name_int_res<Ev, Er, Frt>
     where
-      Ev: $int_ev_ty<Ltt>,
-      Er: $int_er_ty<Ltt>,
+      Ev: $int_ev_ty<Ttt>,
+      Er: $int_er_ty<Ttt>,
     {
       type WithoutInt = $name_res<Frt>;
       type IntEv = Ev;

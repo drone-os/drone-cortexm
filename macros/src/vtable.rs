@@ -1,8 +1,9 @@
 use drone_macros_core::{ExternStruct, NewStatic, NewStruct};
 use inflector::Inflector;
-use proc_macro2::{Span, TokenStream};
+use proc_macro::TokenStream;
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use std::collections::HashSet;
-use syn::synom::Synom;
+use syn::parse::{Parse, ParseStream, Result};
 use syn::{Attribute, Ident, LitInt, Visibility};
 
 struct Vtable {
@@ -32,56 +33,75 @@ enum Mode {
   Fn,
 }
 
-impl Synom for Vtable {
-  named!(parse -> Self, do_parse!(
-    vtable: syn!(NewStruct) >>
-    handlers: syn!(NewStruct) >>
-    index: syn!(NewStruct) >>
-    array: syn!(NewStatic) >>
-    thr: syn!(ExternStruct) >>
-    excs: many0!(syn!(Exc)) >>
-    ints: many0!(syn!(Int)) >>
-    (Vtable { vtable, handlers, index, array, thr, excs, ints })
-  ));
+impl Parse for Vtable {
+  fn parse(input: ParseStream) -> Result<Self> {
+    let vtable = input.parse()?;
+    let handlers = input.parse()?;
+    let index = input.parse()?;
+    let array = input.parse()?;
+    let thr = input.parse()?;
+    let mut excs = Vec::new();
+    while input.fork().parse::<Exc>().is_ok() {
+      excs.push(input.parse()?);
+    }
+    let mut ints = Vec::new();
+    while !input.is_empty() {
+      ints.push(input.parse()?);
+    }
+    Ok(Self {
+      vtable,
+      handlers,
+      index,
+      array,
+      thr,
+      excs,
+      ints,
+    })
+  }
 }
 
-impl Synom for Exc {
-  named!(parse -> Self, do_parse!(
-    attrs: many0!(Attribute::parse_outer) >>
-    mode: syn!(Mode) >>
-    ident: syn!(Ident) >>
-    punct!(;) >>
-    (Exc { attrs, mode, ident })
-  ));
+impl Parse for Exc {
+  fn parse(input: ParseStream) -> Result<Self> {
+    let attrs = input.call(Attribute::parse_outer)?;
+    let mode = input.parse()?;
+    let ident = input.parse()?;
+    input.parse::<Token![;]>()?;
+    Ok(Self { attrs, mode, ident })
+  }
 }
 
-impl Synom for Int {
-  named!(parse -> Self, do_parse!(
-    attrs: many0!(Attribute::parse_outer) >>
-    mode: syn!(Mode) >>
-    num: syn!(LitInt) >>
-    punct!(:) >>
-    ident: syn!(Ident) >>
-    punct!(;) >>
-    (Int {
+impl Parse for Int {
+  fn parse(input: ParseStream) -> Result<Self> {
+    let attrs = input.call(Attribute::parse_outer)?;
+    let mode = input.parse()?;
+    let num = input.parse()?;
+    input.parse::<Token![:]>()?;
+    let ident = input.parse()?;
+    input.parse::<Token![;]>()?;
+    Ok(Self {
       num,
       exc: Exc { attrs, mode, ident },
     })
-  ));
+  }
 }
 
-impl Synom for Mode {
-  named!(parse -> Self, alt!(
-    keyword!(fn) => {|_| Mode::Fn } |
-    do_parse!(
-      vis: syn!(Visibility) >>
-      ext: option!(keyword!(extern)) >>
-      (if ext.is_none() { Mode::Thread(vis) } else { Mode::Extern(vis) })
-    )
-  ));
+impl Parse for Mode {
+  fn parse(input: ParseStream) -> Result<Self> {
+    if input.peek(Token![fn]) {
+      input.parse::<Token![fn]>()?;
+      Ok(Mode::Fn)
+    } else {
+      let vis = input.parse::<Visibility>()?;
+      if input.parse::<Option<Token![extern]>>()?.is_none() {
+        Ok(Mode::Thread(vis))
+      } else {
+        Ok(Mode::Extern(vis))
+      }
+    }
+  }
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
+#[allow(clippy::cyclomatic_complexity)]
 pub fn proc_macro(input: TokenStream) -> TokenStream {
   let (def_site, call_site) = (Span::def_site(), Span::call_site());
   let Vtable {
@@ -112,7 +132,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     thr: ExternStruct { ident: thr_ident },
     excs,
     ints,
-  } = try_parse2!(call_site, input);
+  } = parse_macro_input!(input as Vtable);
   let int_len = ints
     .iter()
     .map(|int| int.num.value() as usize + 1)
@@ -204,7 +224,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     sv_call: #rt::sv_handler::<<#thr_ident as #rt::Thread>::Sv>
   });
 
-  quote! {
+  let expanded = quote! {
     mod #rt {
       extern crate core;
       extern crate drone_core;
@@ -284,21 +304,22 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     pub type Reset<T> = #rt::Reset<T, &'static #thr_ident>;
 
     #(#thr_tokens)*
-  }
+  };
+  expanded.into()
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+#[allow(clippy::too_many_arguments)]
 fn gen_exc(
   exc: &Exc,
   thr_ident: &Ident,
   rt: &Ident,
   thr_counter: &mut usize,
-  vtable_ctor_tokens: &mut Vec<TokenStream>,
-  handlers_tokens: &mut Vec<TokenStream>,
-  index_tokens: &mut Vec<TokenStream>,
-  index_ctor_tokens: &mut Vec<TokenStream>,
-  array_tokens: &mut Vec<TokenStream>,
-  thr_tokens: &mut Vec<TokenStream>,
+  vtable_ctor_tokens: &mut Vec<TokenStream2>,
+  handlers_tokens: &mut Vec<TokenStream2>,
+  index_tokens: &mut Vec<TokenStream2>,
+  index_ctor_tokens: &mut Vec<TokenStream2>,
+  array_tokens: &mut Vec<TokenStream2>,
+  thr_tokens: &mut Vec<TokenStream2>,
 ) -> (Ident, Option<Ident>) {
   let call_site = Span::call_site();
   let &Exc {

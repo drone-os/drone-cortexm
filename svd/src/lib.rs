@@ -3,9 +3,10 @@
 //! See `drone-stm32` documentation for details.
 
 #![feature(range_contains)]
+#![feature(tool_lints)]
 #![warn(missing_docs)]
-#![doc(html_root_url = "https://docs.rs/drone-stm32-svd/0.8.3")]
-#![cfg_attr(feature = "cargo-clippy", allow(precedence))]
+#![allow(clippy::precedence)]
+#![doc(html_root_url = "https://docs.rs/drone-stm32-svd/0.8.4")]
 
 extern crate drone_mirror_failure as failure;
 extern crate serde;

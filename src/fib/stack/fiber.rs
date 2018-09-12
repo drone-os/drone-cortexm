@@ -131,7 +131,7 @@ where
     stack_ptr as *const u8
   }
 
-  #[cfg_attr(feature = "cargo-clippy", allow(cast_ptr_alignment))]
+  #[allow(clippy::cast_ptr_alignment)]
   unsafe fn mpu_config(mut guard_ptr: *mut u8) -> u32 {
     let rbar = mpu::Rbar::<Srt>::new();
     let rasr = mpu::Rasr::<Srt>::new();

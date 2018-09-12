@@ -2,11 +2,11 @@
 //!
 //! See `drone-stm32` documentation for details.
 
-#![doc(html_root_url = "https://docs.rs/drone-stm32-macros/0.8.3")]
+#![feature(tool_lints)]
+#![allow(clippy::precedence)]
+#![doc(html_root_url = "https://docs.rs/drone-stm32-macros/0.8.4")]
 #![recursion_limit = "256"]
-#![cfg_attr(feature = "cargo-clippy", allow(precedence))]
 
-#[macro_use]
 extern crate drone_macros_core;
 extern crate inflector;
 extern crate proc_macro;
@@ -24,15 +24,15 @@ use proc_macro::TokenStream;
 
 #[proc_macro]
 pub fn sv(input: TokenStream) -> TokenStream {
-  sv::proc_macro(input.into()).into()
+  sv::proc_macro(input)
 }
 
 #[proc_macro]
 pub fn thr_int(input: TokenStream) -> TokenStream {
-  thr_int::proc_macro(input.into()).into()
+  thr_int::proc_macro(input)
 }
 
 #[proc_macro]
 pub fn vtable(input: TokenStream) -> TokenStream {
-  vtable::proc_macro(input.into()).into()
+  vtable::proc_macro(input)
 }

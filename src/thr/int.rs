@@ -1,6 +1,6 @@
 //! Interrupt mappings.
 
-#![cfg_attr(feature = "cargo-clippy", allow(doc_markdown))]
+#![allow(clippy::doc_markdown)]
 
 #[allow(unused_imports)]
 use thr::int;

@@ -232,7 +232,7 @@ pub trait SpiRes: Resource {
 #[allow(missing_docs)]
 pub trait SpiIntRes: SpiRes {
   type WithoutInt: SpiRes;
-  type Int: IntToken<Ltt>;
+  type Int: IntToken<Ttt>;
 
   fn join_int(res: Self::WithoutInt, int: Self::Int) -> Self;
   fn split_int(self) -> (Self::WithoutInt, Self::Int);
@@ -708,7 +708,7 @@ macro_rules! spi_shared {
       impl<$($dma_rx_tp,)* Rx> SpiDmaRxRes<$dma_rx_res<Rx, Frt>>
         for $name_res<$($dma_rx_tp,)* Frt>
       where
-        Rx: $int_dma_rx<Ltt>,
+        Rx: $int_dma_rx<Ttt>,
         $($dma_rx_tp: $dma_rx_bound,)*
       {
         #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -730,7 +730,7 @@ macro_rules! spi_shared {
       impl<$($dma_tx_tp,)* Tx> SpiDmaTxRes<$dma_tx_res<Tx, Frt>>
         for $name_res<$($dma_tx_tp,)* Frt>
       where
-        Tx: $int_dma_tx<Ltt>,
+        Tx: $int_dma_tx<Ttt>,
         $($dma_tx_tp: $dma_tx_bound,)*
       {
         #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
@@ -804,7 +804,7 @@ macro_rules! spi {
 
     #[doc = $doc_int_res]
     #[allow(missing_docs)]
-    pub struct $name_int_res<I: $int_ty<Ltt>, Rt: RegTag> {
+    pub struct $name_int_res<I: $int_ty<Ttt>, Rt: RegTag> {
       pub $spi: I,
       pub $spi_cr1: $spi::Cr1<Srt>,
       pub $spi_cr2: $spi::Cr2<Srt>,
@@ -884,7 +884,7 @@ macro_rules! spi {
       ($(([$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs, ()),)*),
     }
 
-    impl<I: $int_ty<Ltt>> Resource for $name_int_res<I, Frt> {
+    impl<I: $int_ty<Ttt>> Resource for $name_int_res<I, Frt> {
       type Source = $name_int_res<I, Srt>;
 
       #[inline(always)]
@@ -912,18 +912,18 @@ macro_rules! spi {
       $spi_sr,
       $spi_txcrcr,
       $name_int_res,
-      (I: $int_ty<Ltt>),
+      (I: $int_ty<Ttt>),
       ($((
         [$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs,
-        (I: $int_ty<Ltt>)
+        (I: $int_ty<Ttt>)
       ),)*),
       ($((
         [$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs,
-        (I: $int_ty<Ltt>)
+        (I: $int_ty<Ttt>)
       ),)*),
     }
 
-    impl<I: $int_ty<Ltt>> SpiIntRes for $name_int_res<I, Frt> {
+    impl<I: $int_ty<Ttt>> SpiIntRes for $name_int_res<I, Frt> {
       type WithoutInt = $name_res<Frt>;
       type Int = I;
 

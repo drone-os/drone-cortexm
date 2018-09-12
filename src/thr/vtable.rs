@@ -21,7 +21,7 @@ pub enum Reserved {
 #[derive(Clone, Copy)]
 pub struct Reset<T: ThrTag, U>(PhantomData<T>, PhantomData<U>);
 
-#[cfg_attr(feature = "cargo-clippy", allow(new_without_default_derive))]
+#[allow(clippy::new_without_default_derive)]
 impl<T: ThrTag, U: Thread> Reset<T, &'static U> {
   #[doc(hidden)]
   #[inline(always)]

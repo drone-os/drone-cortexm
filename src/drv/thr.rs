@@ -93,7 +93,7 @@ impl Thr {
   }
 }
 
-#[cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
+#[allow(clippy::cast_lossless)]
 const fn rbar_reset(region: u8) -> u32 {
   1 << 4 | region as u32 & 0b1111
 }
