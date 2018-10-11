@@ -2,7 +2,6 @@
 #![feature(allocator_internals)]
 #![feature(const_fn)]
 #![feature(prelude_import)]
-#![feature(proc_macro_gen)]
 #![no_std]
 
 extern crate drone_core;
@@ -19,12 +18,26 @@ use drone_core::sv::SvService;
 
 heap! {
   struct Heap;
+  extern fn alloc_hook;
+  extern fn dealloc_hook;
   size = 0;
   pools = [];
 }
 
 #[global_allocator]
 static mut ALLOC: Heap = Heap::new();
+
+fn alloc_hook(
+  _layout: ::core::alloc::Layout,
+  _pool: &::drone_core::heap::Pool,
+) {
+}
+
+fn dealloc_hook(
+  _layout: ::core::alloc::Layout,
+  _pool: &::drone_core::heap::Pool,
+) {
+}
 
 struct FooService;
 

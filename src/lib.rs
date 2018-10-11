@@ -61,17 +61,17 @@
 #![feature(generator_trait)]
 #![feature(lang_items)]
 #![feature(linkage)]
+#![feature(marker_trait_attr)]
 #![feature(naked_functions)]
 #![feature(never_type)]
 #![feature(prelude_import)]
-#![feature(proc_macro_gen)]
 #![feature(range_contains)]
 #![feature(tool_lints)]
 #![feature(untagged_unions)]
 #![no_std]
 #![warn(missing_docs)]
 #![allow(clippy::precedence, clippy::inline_always)]
-#![doc(html_root_url = "https://docs.rs/drone-stm32/0.8.4")]
+#![doc(html_root_url = "https://docs.rs/drone-stm32/0.9.0")]
 #![cfg_attr(test, feature(allocator_internals))]
 #![cfg_attr(test, default_lib_allocator)]
 
@@ -115,6 +115,8 @@ use prelude::*;
 #[cfg(test)]
 heap! {
   struct Heap;
+  extern fn alloc_hook;
+  extern fn dealloc_hook;
   size = 0x40000;
   pools = [
     [0x4; 0x4000],
@@ -127,3 +129,17 @@ heap! {
 #[cfg(test)]
 #[global_allocator]
 static mut GLOBAL: Heap = Heap::new();
+
+#[cfg(test)]
+fn alloc_hook(
+  _layout: ::core::alloc::Layout,
+  _pool: &::drone_core::heap::Pool,
+) {
+}
+
+#[cfg(test)]
+fn dealloc_hook(
+  _layout: ::core::alloc::Layout,
+  _pool: &::drone_core::heap::Pool,
+) {
+}

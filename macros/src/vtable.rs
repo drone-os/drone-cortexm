@@ -219,7 +219,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         vtable_ctor_tokens.push(quote!(#int_ident: None));
         quote!(#int_ident: Option<#rt::Handler>)
       })
-    }).collect::<Vec<_>>();
+    })
+    .collect::<Vec<_>>();
   vtable_ctor_tokens.push(quote! {
     sv_call: #rt::sv_handler::<<#thr_ident as #rt::Thread>::Sv>
   });

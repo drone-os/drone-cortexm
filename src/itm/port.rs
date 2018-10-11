@@ -24,7 +24,7 @@ impl Port {
   /// If `port` is greater or equals to `0x20`.
   pub fn new(port: usize) -> Port {
     assert!(port < 0x20);
-    Port(ADDRESS_BASE + port)
+    Port(ADDRESS_BASE + (port << 2))
   }
 
   /// Writes a buffer in most effective chunks, splitting it to 8- and 32-bit
@@ -58,8 +58,9 @@ impl Port {
   }
 
   /// Writes a value into a port.
-  pub fn write<T: Transmit>(&self, value: T) {
+  pub fn write<T: Transmit>(&self, value: T) -> &Self {
     value.transmit(self.0);
+    self
   }
 }
 

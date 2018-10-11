@@ -59,12 +59,6 @@ tokens! {
     MMFAR;
     /// BusFault Address Register.
     BFAR;
-    /// Floating Point Context Control Register.
-    FPCCR;
-    /// Floating Point Context Address Register.
-    FPCAR;
-    /// Floating Point Default Status Control Register.
-    FPDSCR;
     /// Debug Exception and Monitor Control Register.
     DEMCR;
   }
@@ -78,6 +72,17 @@ tokens! {
     VAL;
     /// SysTick calibration value register.
     CALIB;
+  }
+
+  FPU {
+    /// Coprocessor access control register.
+    CPACR;
+    /// Floating-point context control register.
+    FPCCR;
+    /// Floating-point context address register.
+    FPCAR;
+    /// Floating-point default status control register.
+    FPDSCR;
   }
 
   MPU {

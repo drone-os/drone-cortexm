@@ -1,34 +1,76 @@
 //! Instrumentation Trace Macrocell.
 
 pub use self::port::Port;
+
+use core::alloc::Layout;
 use core::fmt::{self, Write};
-use cpu;
+use drone_core::heap::Pool;
 use reg::itm::Tcr;
 use reg::prelude::*;
-
-const POST_FLUSH_WAIT: u32 = 0x400;
+use reg::scb::Demcr;
 
 pub mod port;
 #[macro_use]
 pub mod macros;
 
+const TEXT_PORT: usize = 0;
+const HEAP_PORT: usize = 31;
+
 /// Prints `str` to the ITM port #0.
 ///
 /// See [`print!`](print!) and [`println!`](println!) macros.
+#[inline(never)]
 pub fn write_str(string: &str) {
-  Port::new(0).write_str(string).unwrap();
+  Port::new(TEXT_PORT).write_str(string).unwrap();
 }
 
 /// Prints `core::fmt::Arguments` to the ITM port #0.
 ///
 /// See [`print!`](print!) and [`println!`](println!) macros.
+#[inline(never)]
 pub fn write_fmt(args: fmt::Arguments) {
-  Port::new(0).write_fmt(args).unwrap();
+  Port::new(TEXT_PORT).write_fmt(args).unwrap();
 }
 
 /// Waits until all pending packets will be transmitted.
 pub fn flush() {
   let tcr = unsafe { Tcr::<Urt>::new() };
   while tcr.load().busy() {}
-  cpu::spin(POST_FLUSH_WAIT); // Additional wait due to asynchronous output
+}
+
+/// Checks if a trace-probe is connected.
+#[inline(always)]
+pub fn is_enabled() -> bool {
+  let demcr = unsafe { Demcr::<Urt>::new() };
+  demcr.load().trcena()
+}
+
+/// Writes allocation statistics to the ITM port #31.
+#[inline(always)]
+pub fn instrument_alloc(layout: Layout, pool: &Pool) {
+  #[inline(never)]
+  fn instrument(layout: Layout, pool: &Pool) {
+    Port::new(HEAP_PORT)
+      .write(1u8)
+      .write(layout.size() as u32)
+      .write(pool.size() as u32);
+  }
+  if is_enabled() {
+    instrument(layout, pool);
+  }
+}
+
+/// Writes deallocation statistics to the ITM port #31.
+#[inline(always)]
+pub fn instrument_dealloc(layout: Layout, pool: &Pool) {
+  #[inline(never)]
+  fn instrument(layout: Layout, pool: &Pool) {
+    Port::new(HEAP_PORT)
+      .write(0u8)
+      .write((layout.size() as u32).to_be())
+      .write((pool.size() as u32).to_be());
+  }
+  if is_enabled() {
+    instrument(layout, pool);
+  }
 }

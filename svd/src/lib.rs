@@ -6,7 +6,7 @@
 #![feature(tool_lints)]
 #![warn(missing_docs)]
 #![allow(clippy::precedence)]
-#![doc(html_root_url = "https://docs.rs/drone-stm32-svd/0.8.4")]
+#![doc(html_root_url = "https://docs.rs/drone-stm32-svd/0.9.0")]
 
 extern crate drone_mirror_failure as failure;
 extern crate serde;

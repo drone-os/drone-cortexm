@@ -4,11 +4,15 @@
 #[macro_export]
 macro_rules! print {
   ($str:expr) => {
-    $crate::itm::write_str($str);
+    if $crate::itm::is_enabled() {
+      $crate::itm::write_str($str);
+    }
   };
 
   ($($arg:tt)*) => {
-    $crate::itm::write_fmt(format_args!($($arg)*));
+    if $crate::itm::is_enabled() {
+      $crate::itm::write_fmt(format_args!($($arg)*));
+    }
   };
 }
 
