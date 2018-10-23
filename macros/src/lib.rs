@@ -2,7 +2,6 @@
 //!
 //! See `drone-stm32` documentation for details.
 
-#![feature(tool_lints)]
 #![allow(clippy::precedence)]
 #![doc(html_root_url = "https://docs.rs/drone-stm32-macros/0.9.0")]
 #![recursion_limit = "256"]

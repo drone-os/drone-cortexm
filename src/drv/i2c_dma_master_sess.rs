@@ -1,86 +1,51 @@
 //! I2C DMA master session.
 
 use drone_core::drv::Resource;
-use drv::dma::{Dma, DmaRes, DmaTransferError};
+use drv::dma::{
+  Dma, Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma1Ch6Res, Dma1Ch7Res,
+  Dma2Ch6Res, Dma2Ch7Res, DmaRes, DmaTransferError,
+};
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
-use drv::dma::{Dma1Ch2Res, Dma1Ch3Res, Dma2Ch6Res, Dma2Ch7Res};
-#[cfg(any(
-  feature = "stm32f100",
-  feature = "stm32f101",
-  feature = "stm32f102",
-  feature = "stm32f103",
-  feature = "stm32f107",
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
-use drv::dma::{Dma1Ch4Res, Dma1Ch5Res, Dma1Ch6Res, Dma1Ch7Res};
-#[cfg(any(
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 use drv::dma::{Dma2Ch1Res, Dma2Ch2Res};
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
-use drv::i2c::I2C3IntRes;
-#[cfg(any(
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 use drv::i2c::I2C4IntRes;
-#[cfg(any(
-  feature = "stm32f100",
-  feature = "stm32f101",
-  feature = "stm32f102",
-  feature = "stm32f103",
-  feature = "stm32f107",
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
-use drv::i2c::{I2C1IntRes, I2C2IntRes};
 use drv::i2c::{
-  I2CBreak, I2CDmaDx, I2CDmaRxRes, I2CDmaTxRes, I2CError, I2CIntRes, I2CRes,
-  I2C,
+  I2C1IntRes, I2C2IntRes, I2C3IntRes, I2CBreak, I2CDmaDx, I2CDmaRxRes,
+  I2CDmaTxRes, I2CError, I2CIntRes, I2CRes, I2C,
 };
-#[cfg(any(
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
 use futures::future::Either;
 use futures::prelude::*;
-#[cfg(any(
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
 use reg::prelude::*;
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 use thr::int::{
   IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5, IntDma1Ch6, IntDma1Ch7,
@@ -89,49 +54,13 @@ use thr::int::{
 #[cfg(any(feature = "stm32l4x3", feature = "stm32l4x5"))]
 use thr::int::{
   IntDma1Channel2 as IntDma1Ch2, IntDma1Channel3 as IntDma1Ch3,
-  IntDma2Channel6 as IntDma2Ch6, IntDma2Channel7 as IntDma2Ch7,
-};
-#[cfg(any(
-  feature = "stm32f100",
-  feature = "stm32f101",
-  feature = "stm32f102",
-  feature = "stm32f103",
-  feature = "stm32f107",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5"
-))]
-use thr::int::{
   IntDma1Channel4 as IntDma1Ch4, IntDma1Channel5 as IntDma1Ch5,
   IntDma1Channel6 as IntDma1Ch6, IntDma1Channel7 as IntDma1Ch7,
+  IntDma2Channel6 as IntDma2Ch6, IntDma2Channel7 as IntDma2Ch7,
 };
-#[cfg(any(
-  feature = "stm32f100",
-  feature = "stm32f101",
-  feature = "stm32f102",
-  feature = "stm32f103",
-  feature = "stm32f107",
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
-use thr::int::{IntI2C1Er, IntI2C1Ev, IntI2C2Er, IntI2C2Ev};
-#[cfg(any(
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
-use thr::int::{IntI2C3Er, IntI2C3Ev};
-#[cfg(any(
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
+use thr::int::{
+  IntI2C1Er, IntI2C1Ev, IntI2C2Er, IntI2C2Ev, IntI2C3Er, IntI2C3Ev,
+};
 use thr::prelude::*;
 
 /// I2C DMA master session error.
@@ -159,22 +88,7 @@ pub trait I2CDmaMasterSessRes: Resource {
     + I2CDmaTxRes<Self::DmaTxRes>
     + I2CIntRes;
   type DmaRxRes: DmaRes;
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
   type DmaTxRes: DmaRes<Cselr = <Self::DmaRxRes as DmaRes>::Cselr>;
-  #[cfg(not(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  )))]
-  type DmaTxRes: DmaRes;
 
   fn i2c(&self) -> &I2C<Self::I2CRes>;
   fn i2c_mut(&mut self) -> &mut I2C<Self::I2CRes>;
@@ -267,13 +181,6 @@ impl<T: I2CDmaMasterSessRes> I2CDmaMasterSess<T> {
     self.write_impl(buf, slave_addr, i2c_cr1_val, i2c_cr2_val, true)
   }
 
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
   fn read_impl<'sess>(
     &'sess mut self,
     buf: &'sess mut [u8],
@@ -341,33 +248,6 @@ impl<T: I2CDmaMasterSessRes> I2CDmaMasterSess<T> {
     })
   }
 
-  #[cfg(not(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  )))]
-  #[allow(unreachable_code)]
-  fn read_impl<'sess>(
-    &'sess mut self,
-    _buf: &'sess mut [u8],
-    _slave_addr: u8,
-    _i2c_cr1_val: <T::I2CRes as I2CRes>::Cr1Val,
-    _i2c_cr2_val: <T::I2CRes as I2CRes>::Cr2Val,
-    _autoend: bool,
-  ) -> impl Future<Item = (), Error = I2CDmaMasterSessError> + 'sess {
-    unimplemented!();
-    ::futures::future::lazy(|_| Ok(()))
-  }
-
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
   fn write_impl<'sess>(
     &'sess mut self,
     buf: &'sess [u8],
@@ -435,33 +315,6 @@ impl<T: I2CDmaMasterSessRes> I2CDmaMasterSess<T> {
     })
   }
 
-  #[cfg(not(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  )))]
-  #[allow(unreachable_code)]
-  fn write_impl<'sess>(
-    &'sess mut self,
-    _buf: &'sess [u8],
-    _slave_addr: u8,
-    _i2c_cr1_val: <T::I2CRes as I2CRes>::Cr1Val,
-    _i2c_cr2_val: <T::I2CRes as I2CRes>::Cr2Val,
-    _autoend: bool,
-  ) -> impl Future<Item = (), Error = I2CDmaMasterSessError> + 'sess {
-    unimplemented!();
-    ::futures::future::lazy(|_| Ok(()))
-  }
-
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
   fn set_i2c_cr2(
     &self,
     val: &mut <T::I2CRes as I2CRes>::Cr2Val,
@@ -487,13 +340,6 @@ impl<T: I2CDmaMasterSessRes> I2CDmaMasterSess<T> {
     self.0.i2c().cr2_start().set(val);
   }
 
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
   fn init_dma_rx_ccr(&self) -> <T::DmaRxRes as DmaRes>::CcrVal {
     let mut val = self.0.dma_rx().ccr().default_val();
     self.0.dma_rx().ccr_mem2mem().clear(&mut val);
@@ -510,13 +356,6 @@ impl<T: I2CDmaMasterSessRes> I2CDmaMasterSess<T> {
     val
   }
 
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
   fn init_dma_tx_ccr(&self) -> <T::DmaTxRes as DmaRes>::CcrVal {
     let mut val = self.0.dma_tx().ccr().default_val();
     self.0.dma_tx().ccr_mem2mem().clear(&mut val);
@@ -652,18 +491,6 @@ macro_rules! i2c_dma_master_sess {
   };
 }
 
-#[cfg(any(
-  feature = "stm32f100",
-  feature = "stm32f101",
-  feature = "stm32f102",
-  feature = "stm32f103",
-  feature = "stm32f107",
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
 i2c_dma_master_sess! {
   "I2C1 DMA1 master session driver.",
   I2C1Dma1MasterSess,
@@ -685,13 +512,6 @@ i2c_dma_master_sess! {
   IntDma1Ch6,
 }
 
-#[cfg(any(
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
 i2c_dma_master_sess! {
   "I2C1 DMA2 master session driver.",
   I2C1Dma2MasterSess,
@@ -713,18 +533,6 @@ i2c_dma_master_sess! {
   IntDma2Ch7,
 }
 
-#[cfg(any(
-  feature = "stm32f100",
-  feature = "stm32f101",
-  feature = "stm32f102",
-  feature = "stm32f103",
-  feature = "stm32f107",
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
 i2c_dma_master_sess! {
   "I2C2 DMA1 master session driver.",
   I2C2Dma1MasterSess,
@@ -746,13 +554,6 @@ i2c_dma_master_sess! {
   IntDma1Ch4,
 }
 
-#[cfg(any(
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
 i2c_dma_master_sess! {
   "I2C3 DMA1 master session driver.",
   I2C3Dma1MasterSess,
@@ -777,7 +578,13 @@ i2c_dma_master_sess! {
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 i2c_dma_master_sess! {
   "I2C4 DMA2 master session driver.",

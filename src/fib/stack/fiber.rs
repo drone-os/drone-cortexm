@@ -47,7 +47,7 @@ where
     unchecked: bool,
     f: F,
   ) -> Self {
-    if !unchecked && mpu::Type::<Srt>::new().load().dregion() == 0 {
+    if !unchecked && mpu::MpuTyper::<Srt>::new().load().dregion() == 0 {
       panic!("MPU not present");
     }
     let stack_bottom = alloc::alloc(layout(stack_size));
@@ -133,8 +133,8 @@ where
 
   #[allow(clippy::cast_ptr_alignment)]
   unsafe fn mpu_config(mut guard_ptr: *mut u8) -> u32 {
-    let rbar = mpu::Rbar::<Srt>::new();
-    let rasr = mpu::Rasr::<Srt>::new();
+    let rbar = mpu::MpuRbar::<Srt>::new();
+    let rasr = mpu::MpuRasr::<Srt>::new();
     let rbar_bits = |region, addr| {
       rbar
         .default()
@@ -257,7 +257,8 @@ where
   I: Send + 'static,
   Y: Send + 'static,
   R: Send + 'static,
-{}
+{
+}
 
 unsafe fn layout(stack_size: usize) -> Layout {
   Layout::from_size_align_unchecked(stack_size, 1)

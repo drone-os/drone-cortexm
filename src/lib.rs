@@ -66,7 +66,6 @@
 #![feature(never_type)]
 #![feature(prelude_import)]
 #![feature(range_contains)]
-#![feature(tool_lints)]
 #![feature(untagged_unions)]
 #![no_std]
 #![warn(missing_docs)]

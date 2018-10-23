@@ -33,11 +33,11 @@ pub struct Thr(ThrRes);
 #[derive(Resource)]
 pub struct ThrRes {
   pub nvic: Nvic,
-  pub mpu_type: mpu::Type<Srt>,
-  pub mpu_ctrl: mpu::Ctrl<Srt>,
-  pub mpu_rnr: mpu::Rnr<Srt>,
-  pub mpu_rbar: mpu::Rbar<Srt>,
-  pub mpu_rasr: mpu::Rasr<Srt>,
+  pub mpu_typer: mpu::MpuTyper<Srt>,
+  pub mpu_ctrl: mpu::MpuCtrl<Srt>,
+  pub mpu_rnr: mpu::MpuRnr<Srt>,
+  pub mpu_rbar: mpu::MpuRbar<Srt>,
+  pub mpu_rasr: mpu::MpuRasr<Srt>,
   pub scb_ccr: scb::Ccr<Srt>,
 }
 
@@ -47,11 +47,11 @@ macro_rules! drv_thr {
   ($reg:ident) => {
     $crate::drv::thr::Thr::new($crate::drv::thr::ThrRes {
       nvic: drv_nvic!($reg),
-      mpu_type: $reg.mpu_type,
-      mpu_ctrl: $reg.mpu_ctrl,
-      mpu_rnr: $reg.mpu_rnr,
-      mpu_rbar: $reg.mpu_rbar,
-      mpu_rasr: $reg.mpu_rasr,
+      mpu_typer: $reg.mpu_mpu_typer,
+      mpu_ctrl: $reg.mpu_mpu_ctrl,
+      mpu_rnr: $reg.mpu_mpu_rnr,
+      mpu_rbar: $reg.mpu_mpu_rbar,
+      mpu_rasr: $reg.mpu_mpu_rasr,
       scb_ccr: $reg.scb_ccr,
     })
   };
@@ -76,7 +76,7 @@ impl Thr {
   }
 
   unsafe fn mpu_reset(&self) {
-    if self.0.mpu_type.load().dregion() == 0 {
+    if self.0.mpu_typer.load().dregion() == 0 {
       return;
     }
     self.0.mpu_ctrl.reset();
@@ -87,7 +87,7 @@ impl Thr {
       ldmia $0!, {r5-r12}
       stmia $1, {r5-r12}
     " : "+&rm"(_table_ptr)
-      : "r"(mpu::Rbar::<Srt>::ADDRESS)
+      : "r"(mpu::MpuRbar::<Srt>::ADDRESS)
       : "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12"
       : "volatile");
   }

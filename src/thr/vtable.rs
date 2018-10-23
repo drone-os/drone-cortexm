@@ -43,21 +43,21 @@ impl<T: ThrTag, U: Thread> AsRef<U> for Reset<T, &'static U> {
   }
 }
 
-impl<U: Thread> From<Reset<Ctt, &'static U>> for Reset<Ttt, &'static U> {
+impl<U: Thread> From<Reset<Utt, &'static U>> for Reset<Ttt, &'static U> {
   #[inline(always)]
-  fn from(_token: Reset<Ctt, &'static U>) -> Self {
+  fn from(_token: Reset<Utt, &'static U>) -> Self {
     unsafe { Self::new() }
   }
 }
 
-impl<U: Thread> From<Reset<Ctt, &'static U>> for Reset<Ltt, &'static U> {
+impl<U: Thread> From<Reset<Utt, &'static U>> for Reset<Att, &'static U> {
   #[inline(always)]
-  fn from(_token: Reset<Ctt, &'static U>) -> Self {
+  fn from(_token: Reset<Utt, &'static U>) -> Self {
     unsafe { Self::new() }
   }
 }
 
-impl<U: Thread> From<Reset<Ttt, &'static U>> for Reset<Ltt, &'static U> {
+impl<U: Thread> From<Reset<Ttt, &'static U>> for Reset<Att, &'static U> {
   #[inline(always)]
   fn from(_token: Reset<Ttt, &'static U>) -> Self {
     unsafe { Self::new() }

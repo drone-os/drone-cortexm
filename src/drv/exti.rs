@@ -21,7 +21,13 @@ use reg::afio;
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 use reg::exti;
 use reg::marker::*;
@@ -31,7 +37,13 @@ use reg::prelude::*;
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 use reg::syscfg;
 #[cfg(any(
@@ -44,7 +56,13 @@ use reg::syscfg;
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 use thr::int::{
   IntExti0, IntExti1, IntExti1510, IntExti2, IntExti3, IntExti4, IntExti95,
@@ -93,7 +111,7 @@ pub trait ExtiLnConfRes: ExtiLnRes {
 /// EXTI line resource with external interrupt support.
 #[allow(missing_docs)]
 pub trait ExtiLnExtRes: ExtiLnRes {
-  type Int: IntToken<Ltt>;
+  type Int: IntToken<Att>;
   type Exticr: SRwRegBitBand;
   type ExticrExti: SRwRwRegFieldBits<Reg = Self::Exticr>;
 
@@ -255,7 +273,7 @@ macro_rules! exti_line {
 
     #[doc = $doc_res]
     #[allow(missing_docs)]
-    pub struct $name_res<$($i_tp: $int_ty<Ltt>,)* $($rt_tp: RegTag,)*> {
+    pub struct $name_res<$($i_tp: $int_ty<Att>,)* $($rt_tp: RegTag,)*> {
       $(
         pub $int: $i_tp,
         pub $exticr_exti: $($exticr_path)::*::$exti_ty<Srt>,
@@ -295,7 +313,7 @@ macro_rules! exti_line {
 
     impl<$($i_tp,)*> Resource for $name_res<$($i_tp,)* $($frt,)*>
     where
-      $($i_tp: $int_ty<Ltt>,)*
+      $($i_tp: $int_ty<Att>,)*
     {
       type Source = $name_res<$($i_tp,)* $($srt,)*>;
 
@@ -320,7 +338,7 @@ macro_rules! exti_line {
 
     impl<$($i_tp,)*> ExtiLnRes for $name_res<$($i_tp,)* $($frt,)*>
     where
-      $($i_tp: $int_ty<Ltt>,)*
+      $($i_tp: $int_ty<Att>,)*
     {
       type Emr = exti::$emr_path::Reg<Srt>;
       type EmrMr = exti::$emr_path::$mr_ty<Srt>;
@@ -334,7 +352,7 @@ macro_rules! exti_line {
     $(
       impl<$($i_tp_c,)*> ExtiLnConfRes for $name_res<$($i_tp_c,)* Frt>
       where
-        $($i_tp_c: $int_ty_c<Ltt>,)*
+        $($i_tp_c: $int_ty_c<Att>,)*
       {
         type Ftsr = exti::$ftsr_path::Reg<Srt>;
         type FtsrFt = exti::$ftsr_path::$ft_ty<Srt>;
@@ -355,7 +373,7 @@ macro_rules! exti_line {
     $(
       impl<$i_tp> ExtiLnExtRes for $name_res<$i_tp, $($frt_i,)*>
       where
-        $i_tp: $int_ty<Ltt>,
+        $i_tp: $int_ty<Att>,
       {
         type Int = $i_tp;
         type Exticr = $($exticr_path)::*::Reg<Srt>;
@@ -1474,7 +1492,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 0 driver.",
@@ -1531,7 +1555,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 1 driver.",
@@ -1588,7 +1618,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 2 driver.",
@@ -1645,7 +1681,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 3 driver.",
@@ -1702,7 +1744,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 4 driver.",
@@ -1759,7 +1807,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 5 driver.",
@@ -1816,7 +1870,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 6 driver.",
@@ -1873,7 +1933,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 7 driver.",
@@ -1930,7 +1996,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 8 driver.",
@@ -1987,7 +2059,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 9 driver.",
@@ -2044,7 +2122,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 10 driver.",
@@ -2101,7 +2185,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 11 driver.",
@@ -2158,7 +2248,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 12 driver.",
@@ -2215,7 +2311,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 13 driver.",
@@ -2272,7 +2374,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 14 driver.",
@@ -2329,7 +2437,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 15 driver.",
@@ -2386,7 +2500,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 16 driver.",
@@ -2434,7 +2554,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 17 driver.",
@@ -2459,7 +2585,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 18 driver.",
@@ -2507,7 +2639,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 19 driver.",
@@ -2555,7 +2693,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 20 driver.",
@@ -2603,7 +2747,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 21 driver.",
@@ -2651,7 +2801,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 22 driver.",
@@ -2699,7 +2855,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 23 driver.",
@@ -2724,7 +2886,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 24 driver.",
@@ -2749,7 +2917,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 25 driver.",
@@ -2774,7 +2948,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 26 driver.",
@@ -2799,7 +2979,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 27 driver.",
@@ -2824,7 +3010,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 28 driver.",
@@ -2849,7 +3041,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 29 driver.",
@@ -2874,7 +3072,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 30 driver.",
@@ -2899,7 +3103,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 31 driver.",
@@ -2924,7 +3134,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 32 driver.",
@@ -2949,7 +3165,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 33 driver.",
@@ -2974,7 +3196,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 34 driver.",
@@ -2999,7 +3227,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 35 driver.",
@@ -3047,7 +3281,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 36 driver.",
@@ -3095,7 +3335,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 37 driver.",
@@ -3143,7 +3389,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 38 driver.",
@@ -3191,7 +3443,13 @@ exti_line! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 exti_line! {
   "EXTI Line 39 driver.",

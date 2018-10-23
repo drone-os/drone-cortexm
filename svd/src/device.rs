@@ -12,13 +12,14 @@ const BIT_BAND: Range<u32> = 0x4000_0000..0x4010_0000;
 #[serde(rename_all = "camelCase")]
 #[derive(Deserialize)]
 pub struct Device {
+  name: String,
   peripherals: Peripherals,
 }
 
 #[serde(rename_all = "camelCase")]
 #[derive(Deserialize)]
 struct Peripherals {
-  #[serde(deserialize_with = "deserialize_peripheral")]
+  #[serde(deserialize_with = "deserialize_peripheral", default)]
   peripheral: BTreeMap<String, Peripheral>,
 }
 
@@ -97,6 +98,9 @@ impl Device {
     interrupts: &mut File,
   ) -> Result<(), Error> {
     let mut int_names = HashSet::new();
+    writeln!(reg_tokens, "tokens! {{")?;
+    writeln!(reg_tokens, "  /// Register tokens for {}", self.name)?;
+    writeln!(reg_tokens, "  pub struct RegIdx;")?;
     for peripheral in self.peripherals.peripheral.values() {
       peripheral.generate(
         &self.peripherals,
@@ -106,6 +110,7 @@ impl Device {
         interrupts,
       )?;
     }
+    writeln!(reg_tokens, "}}")?;
     Ok(())
   }
 }

@@ -74,4 +74,5 @@ where
   I: Send + 'static,
   Y: Send + 'static,
   R: Send + 'static,
-{}
+{
+}

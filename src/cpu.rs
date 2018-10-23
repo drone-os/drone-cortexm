@@ -22,7 +22,8 @@ pub fn self_reset() -> ! {
       :
       : "volatile"
     );
-    Aircr::<Urt>::new().store(|r| r.write_vectkey(0x05FA).set_sysresetreq());
+    Aircr::<Urt>::new()
+      .store(|r| r.write_vectkeystat(0x05FA).set_sysresetreq());
     loop {}
   }
 }

@@ -269,7 +269,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     #(#index_attrs)*
     #index_vis struct #index_ident {
       /// Reset thread token.
-      pub reset: Reset<#rt::Ctt>,
+      pub reset: Reset<#rt::Utt>,
       #(#index_tokens),*
     }
 
@@ -334,7 +334,7 @@ fn gen_exc(
     Mode::Thread(_) => {
       vtable_ctor_tokens.push(quote! {
         #field_ident: Some(
-          #rt::thr_handler::<#struct_ident<#rt::Ltt>, #rt::Ltt>,
+          #rt::thr_handler::<#struct_ident<#rt::Att>, #rt::Att>,
         )
       });
     }
@@ -354,7 +354,7 @@ fn gen_exc(
       *thr_counter += 1;
       index_tokens.push(quote! {
         #(#attrs)*
-        #vis #field_ident: #struct_ident<#rt::Ctt>
+        #vis #field_ident: #struct_ident<#rt::Utt>
       });
       index_ctor_tokens.push(quote! {
         #field_ident: #struct_ident::new()
@@ -387,21 +387,21 @@ fn gen_exc(
           }
         }
 
-        impl From<#struct_ident<#rt::Ctt>> for #struct_ident<#rt::Ttt> {
+        impl From<#struct_ident<#rt::Utt>> for #struct_ident<#rt::Ttt> {
           #[inline(always)]
-          fn from(_token: #struct_ident<#rt::Ctt>) -> Self {
+          fn from(_token: #struct_ident<#rt::Utt>) -> Self {
             unsafe { Self::new() }
           }
         }
 
-        impl From<#struct_ident<#rt::Ctt>> for #struct_ident<#rt::Ltt> {
+        impl From<#struct_ident<#rt::Utt>> for #struct_ident<#rt::Att> {
           #[inline(always)]
-          fn from(_token: #struct_ident<#rt::Ctt>) -> Self {
+          fn from(_token: #struct_ident<#rt::Utt>) -> Self {
             unsafe { Self::new() }
           }
         }
 
-        impl From<#struct_ident<#rt::Ttt>> for #struct_ident<#rt::Ltt> {
+        impl From<#struct_ident<#rt::Ttt>> for #struct_ident<#rt::Att> {
           #[inline(always)]
           fn from(_token: #struct_ident<#rt::Ttt>) -> Self {
             unsafe { Self::new() }

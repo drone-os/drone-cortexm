@@ -1,0 +1,98 @@
+<register>
+  <name>DEMCR</name>
+  <displayName>DEMCR</displayName>
+  <description>Debug Exception and Monitor Control Register</description>
+  <addressOffset>0xFC</addressOffset>
+  <size>0x20</size>
+  <access>read-write</access>
+  <resetValue>0x00000000</resetValue>
+  <fields>
+    <field>
+      <name>VC_CORERESET</name>
+      <description>Enable Reset Vector Catch</description>
+      <bitOffset>0</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+    <field>
+      <name>VC_MMERR</name>
+      <description>Enable halting debug trap on a MemManage exception</description>
+      <bitOffset>4</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+    <field>
+      <name>VC_NOCPERR</name>
+      <description>Enable halting debug trap on a UsageFault caused by an
+      access to a Coprocessor</description>
+      <bitOffset>5</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+    <field>
+      <name>VC_CHKERR</name>
+      <description>Enable halting debug trap on a UsageFault exception
+      caused by a checking error, for example an alignment check
+      error</description>
+      <bitOffset>6</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+    <field>
+      <name>VC_STATERR</name>
+      <description>Enable halting debug trap on a UsageFault exception
+      caused by a state information error, for example an Undefined
+      Instruction exception</description>
+      <bitOffset>7</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+    <field>
+      <name>VC_BUSERR</name>
+      <description>Enable halting debug trap on a BusFault exception
+      </description>
+      <bitOffset>8</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+    <field>
+      <name>VC_INTERR</name>
+      <description>Enable halting debug trap on a fault occurring during
+      exception entry or exception return</description>
+      <bitOffset>9</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+    <field>
+      <name>VC_HARDERR</name>
+      <description>Enable halting debug trap on a HardFault exception
+      </description>
+      <bitOffset>10</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+    <field>
+      <name>MON_EN</name>
+      <description>Enable the DebugMonitor exception</description>
+      <bitOffset>16</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+    <field>
+      <name>MON_PEND</name>
+      <description>Sets or clears the pending state of the DebugMonitor
+      exception</description>
+      <bitOffset>17</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+    <field>
+      <name>MON_STEP</name>
+      <description>Setting this bit to 1 makes the step request pending</description>
+      <bitOffset>18</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+    <field>
+      <name>MON_REQ</name>
+      <description>DebugMonitor semaphore bit</description>
+      <bitOffset>19</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+    <field>
+      <name>TRCENA</name>
+      <description>Global enable for all DWT and ITM features</description>
+      <bitOffset>24</bitOffset>
+      <bitWidth>1</bitWidth>
+    </field>
+  </fields>
+</register>

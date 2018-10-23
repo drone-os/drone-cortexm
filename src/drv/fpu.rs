@@ -1,7 +1,7 @@
 //! Floating point unit.
 
-use reg::fpu;
 use reg::prelude::*;
+use reg::{fpu, fpu_cpacr};
 
 /// FPU driver.
 #[derive(Driver)]
@@ -11,20 +11,20 @@ pub struct Fpu(FpuRes);
 #[allow(missing_docs)]
 #[derive(Resource)]
 pub struct FpuRes {
-  pub fpu_cpacr: fpu::Cpacr<Srt>,
+  pub fpu_cpacr: fpu_cpacr::Cpacr<Srt>,
   pub fpu_fpccr: fpu::Fpccr<Srt>,
   pub fpu_fpcar: fpu::Fpcar<Srt>,
-  pub fpu_fpdscr: fpu::Fpdscr<Srt>,
+  pub fpu_fpscr: fpu::Fpscr<Srt>,
 }
 
 #[macro_export]
 macro_rules! drv_fpu {
   ($reg:ident) => {
     $crate::drv::fpu::Fpu::new($crate::drv::fpu::FpuRes {
-      fpu_cpacr: $reg.fpu_cpacr,
+      fpu_cpacr: $reg.fpu_cpacr_cpacr,
       fpu_fpccr: $reg.fpu_fpccr,
       fpu_fpcar: $reg.fpu_fpcar,
-      fpu_fpdscr: $reg.fpu_fpdscr,
+      fpu_fpscr: $reg.fpu_fpscr,
     })
   };
 }
@@ -32,7 +32,7 @@ macro_rules! drv_fpu {
 #[allow(missing_docs)]
 impl Fpu {
   #[inline(always)]
-  pub fn fpu_cpacr(&self) -> &fpu::Cpacr<Srt> {
+  pub fn fpu_cpacr(&self) -> &fpu_cpacr::Cpacr<Srt> {
     &self.0.fpu_cpacr
   }
 
@@ -47,16 +47,13 @@ impl Fpu {
   }
 
   #[inline(always)]
-  pub fn fpu_fpdscr(&self) -> &fpu::Fpdscr<Srt> {
-    &self.0.fpu_fpdscr
+  pub fn fpu_fpscr(&self) -> &fpu::Fpscr<Srt> {
+    &self.0.fpu_fpscr
   }
 
   /// Enables FPU.
   pub fn enable(&self) {
-    self
-      .0
-      .fpu_cpacr
-      .store(|r| r.write_cp10(0b11).write_cp11(0b11));
+    self.0.fpu_cpacr.store(|r| r.write_cp(0b1111));
     unsafe {
       asm!("
         dsb

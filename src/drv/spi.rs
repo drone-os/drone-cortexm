@@ -15,7 +15,13 @@ use drv::dma::{Dma, DmaRes};
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 use drv::dma::{
   Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma2Ch1Res, Dma2Ch2Res,
@@ -25,7 +31,13 @@ use drv::dma::{
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 use drv::dma::{Dma2Ch3Res, Dma2Ch4Res};
 use reg::marker::*;
@@ -40,13 +52,25 @@ use reg::prelude::*;
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 use reg::{spi1, spi2, spi3};
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 use thr::int::{
   IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5, IntDma2Ch1, IntDma2Ch2,
@@ -78,7 +102,13 @@ use thr::int::{IntDma2Channel3 as IntDma2Ch3, IntDma2Channel4 as IntDma2Ch4};
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 use thr::int::{IntSpi1, IntSpi2, IntSpi3};
 use thr::prelude::*;
@@ -139,7 +169,13 @@ where
     feature = "stm32l4x2",
     feature = "stm32l4x3",
     feature = "stm32l4x5",
-    feature = "stm32l4x6"
+    feature = "stm32l4x6",
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
   ))]
   /// Initializes DMA for the SPI as peripheral.
   fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>)
@@ -151,7 +187,13 @@ where
     feature = "stm32l4x2",
     feature = "stm32l4x3",
     feature = "stm32l4x5",
-    feature = "stm32l4x6"
+    feature = "stm32l4x6",
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
   )))]
   /// Initializes DMA for the SPI as peripheral.
   fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>);
@@ -223,7 +265,13 @@ pub trait SpiRes: Resource {
     feature = "stm32l4x2",
     feature = "stm32l4x3",
     feature = "stm32l4x5",
-    feature = "stm32l4x6"
+    feature = "stm32l4x6",
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
   ))]
   fn set_frame_8(&self, cr2: &mut Self::Cr2Val);
 }
@@ -248,7 +296,13 @@ pub trait SpiDmaRxRes<T: DmaRes>: SpiRes {
     feature = "stm32l4x2",
     feature = "stm32l4x3",
     feature = "stm32l4x5",
-    feature = "stm32l4x6"
+    feature = "stm32l4x6",
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
   ))]
   fn dma_rx_ch_init(&self, cs_val: &mut CselrVal<T>, dma: &Dma<T>);
 }
@@ -261,7 +315,13 @@ pub trait SpiDmaTxRes<T: DmaRes>: SpiRes {
     feature = "stm32l4x2",
     feature = "stm32l4x3",
     feature = "stm32l4x5",
-    feature = "stm32l4x6"
+    feature = "stm32l4x6",
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
   ))]
   fn dma_tx_ch_init(&self, cs_val: &mut CselrVal<T>, dma: &Dma<T>);
 }
@@ -271,7 +331,13 @@ pub trait SpiDmaTxRes<T: DmaRes>: SpiRes {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 type CselrVal<T> = <<T as DmaRes>::Cselr as Reg<Srt>>::Val;
 
@@ -410,7 +476,13 @@ impl<T: SpiRes> Spi<T> {
       feature = "stm32l4x2",
       feature = "stm32l4x3",
       feature = "stm32l4x5",
-      feature = "stm32l4x6"
+      feature = "stm32l4x6",
+      feature = "stm32l4r5",
+      feature = "stm32l4r7",
+      feature = "stm32l4r9",
+      feature = "stm32l4s5",
+      feature = "stm32l4s7",
+      feature = "stm32l4s9"
     ))]
     self.0.set_frame_8(_cr2);
   }
@@ -517,7 +589,13 @@ where
       feature = "stm32l4x2",
       feature = "stm32l4x3",
       feature = "stm32l4x5",
-      feature = "stm32l4x6"
+      feature = "stm32l4x6",
+      feature = "stm32l4r5",
+      feature = "stm32l4r7",
+      feature = "stm32l4r9",
+      feature = "stm32l4s5",
+      feature = "stm32l4s7",
+      feature = "stm32l4s9"
     ))]
     dma_rx.cselr_cs().modify(|r| {
       self.0.dma_rx_ch_init(r, dma_rx);
@@ -544,7 +622,13 @@ where
       feature = "stm32l4x2",
       feature = "stm32l4x3",
       feature = "stm32l4x5",
-      feature = "stm32l4x6"
+      feature = "stm32l4x6",
+      feature = "stm32l4r5",
+      feature = "stm32l4r7",
+      feature = "stm32l4r9",
+      feature = "stm32l4s5",
+      feature = "stm32l4s7",
+      feature = "stm32l4s9"
     ))]
     dma_tx.cselr_cs().modify(|r| {
       self.0.dma_tx_ch_init(r, dma_tx);
@@ -569,7 +653,13 @@ where
     feature = "stm32l4x2",
     feature = "stm32l4x3",
     feature = "stm32l4x5",
-    feature = "stm32l4x6"
+    feature = "stm32l4x6",
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
   ))]
   #[inline(always)]
   fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>)
@@ -588,7 +678,13 @@ where
     feature = "stm32l4x2",
     feature = "stm32l4x3",
     feature = "stm32l4x5",
-    feature = "stm32l4x6"
+    feature = "stm32l4x6",
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
   )))]
   #[inline(always)]
   fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>) {
@@ -693,9 +789,19 @@ macro_rules! spi_shared {
       res_reg_field_impl!(SrRxne, sr_rxne, sr_rxne_mut, $spi_sr, rxne);
       res_reg_impl!(Txcrcr, txcrcr, txcrcr_mut, $spi_txcrcr);
 
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6",
+        feature = "stm32l4r5",
+        feature = "stm32l4r7",
+        feature = "stm32l4r9",
+        feature = "stm32l4s5",
+        feature = "stm32l4s7",
+        feature = "stm32l4s9"
+      ))]
       #[inline(always)]
       fn set_frame_8(&self, cr2: &mut Self::Cr2Val) {
         self.$spi_cr2.frxth.set(cr2);
@@ -711,9 +817,19 @@ macro_rules! spi_shared {
         Rx: $int_dma_rx<Ttt>,
         $($dma_rx_tp: $dma_rx_bound,)*
       {
-        #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                  feature = "stm32l4x3", feature = "stm32l4x5",
-                  feature = "stm32l4x6"))]
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6",
+          feature = "stm32l4r5",
+          feature = "stm32l4r7",
+          feature = "stm32l4r9",
+          feature = "stm32l4s5",
+          feature = "stm32l4s7",
+          feature = "stm32l4s9"
+        ))]
         #[inline(always)]
         fn dma_rx_ch_init(
           &self,
@@ -733,9 +849,19 @@ macro_rules! spi_shared {
         Tx: $int_dma_tx<Ttt>,
         $($dma_tx_tp: $dma_tx_bound,)*
       {
-        #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                  feature = "stm32l4x3", feature = "stm32l4x5",
-                  feature = "stm32l4x6"))]
+        #[cfg(any(
+          feature = "stm32l4x1",
+          feature = "stm32l4x2",
+          feature = "stm32l4x3",
+          feature = "stm32l4x5",
+          feature = "stm32l4x6",
+          feature = "stm32l4r5",
+          feature = "stm32l4r7",
+          feature = "stm32l4r9",
+          feature = "stm32l4s5",
+          feature = "stm32l4s7",
+          feature = "stm32l4s9"
+        ))]
         #[inline(always)]
         fn dma_tx_ch_init(
           &self,
@@ -975,7 +1101,13 @@ macro_rules! spi {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 spi! {
   "SPI1 driver.",
@@ -1000,18 +1132,38 @@ spi! {
   (
     (Dma1Ch2Res, IntDma1Ch2, 1),
     (
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6",
+        feature = "stm32l4r5",
+        feature = "stm32l4r7",
+        feature = "stm32l4r9",
+        feature = "stm32l4s5",
+        feature = "stm32l4s7",
+        feature = "stm32l4s9"
+      ))]
       Dma2Ch3Res, IntDma2Ch3, 4
     )
   ),
   (
     (Dma1Ch3Res, IntDma1Ch3, 1),
     (
-      #[cfg(any(feature = "stm32l4x1", feature = "stm32l4x2",
-                feature = "stm32l4x3", feature = "stm32l4x5",
-                feature = "stm32l4x6"))]
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6",
+        feature = "stm32l4r5",
+        feature = "stm32l4r7",
+        feature = "stm32l4r9",
+        feature = "stm32l4s5",
+        feature = "stm32l4s7",
+        feature = "stm32l4s9"
+      ))]
       Dma2Ch4Res, IntDma2Ch4, 4
     )
   ),
@@ -1027,7 +1179,13 @@ spi! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 spi! {
   "SPI2 driver.",
@@ -1063,7 +1221,13 @@ spi! {
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6"
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
 ))]
 spi! {
   "SPI3 driver.",

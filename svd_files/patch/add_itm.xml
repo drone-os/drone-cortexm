@@ -1,0 +1,115 @@
+<peripheral>
+  <name>ITM</name>
+  <description>Instrumentation trace macrocell</description>
+  <groupName>ITM</groupName>
+  <baseAddress>0xE0000E40</baseAddress>
+  <registers>
+    <register>
+      <name>TPR</name>
+      <displayName>TPR</displayName>
+      <description>Trace Privilege Register</description>
+      <addressOffset>0x0</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0X00000000</resetValue>
+      <fields>
+        <field>
+          <name>PRIVMASK</name>
+          <description>Bit mask to enable unprivileged access to ITM stimulus
+          ports</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>32</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>TCR</name>
+      <displayName>TCR</displayName>
+      <description>Trace Control Register</description>
+      <addressOffset>0x40</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0X00000000</resetValue>
+      <fields>
+        <field>
+          <name>ITMENA</name>
+          <description>Enables the ITM</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>TSENA</name>
+          <description>Enables Local timestamp generation</description>
+          <bitOffset>1</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SYNCENA</name>
+          <description>Enables Synchronization packet transmission for a
+          synchronous TPIU.</description>
+          <bitOffset>2</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>TXENA</name>
+          <description>Enables forwarding of hardware event packet from the DWT
+          unit to the ITM for output to the TPIU</description>
+          <bitOffset>3</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SWOENA</name>
+          <description>Enables asynchronous clocking of the timestamp counter
+          </description>
+          <bitOffset>4</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>TSPrescale</name>
+          <description>Local timestamp prescaler, used with the trace packet
+          reference clock</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>GTSFREQ</name>
+          <description>Global timestamp frequency</description>
+          <bitOffset>10</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>TraceBusID</name>
+          <description>Identifier for multi-source trace stream formatting
+          </description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+        <field>
+          <name>BUSY</name>
+          <description>Indicates whether the ITM is currently processing events
+          </description>
+          <bitOffset>23</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>LAR</name>
+      <displayName>LAR</displayName>
+      <description>ITM lock access register</description>
+      <addressOffset>0x170</addressOffset>
+      <size>0x20</size>
+      <access>write-only</access>
+      <resetValue>0X00000000</resetValue>
+      <fields>
+        <field>
+          <name>UNLOCK</name>
+          <description>Write `0xC5ACCE55` to unlock Write Access to the other
+          ITM registers</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>32</bitWidth>
+        </field>
+      </fields>
+    </register>
+  </registers>
+</peripheral>

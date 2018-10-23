@@ -1,4 +1,6 @@
 use super::{Timer, TimerOverflow, TimerRes};
+use core::ptr::write_volatile;
+use drone_core::bitfield::Bitfield;
 use drone_core::drv::Resource;
 use fib::{self, FiberFuture, FiberStreamUnit};
 use futures::prelude::*;
@@ -12,7 +14,7 @@ pub type SysTick<I> = Timer<SysTickRes<I, Frt>>;
 
 /// SysTick resource.
 #[allow(missing_docs)]
-pub struct SysTickRes<I: IntSysTick<Ltt>, Rt: RegTag> {
+pub struct SysTickRes<I: IntSysTick<Att>, Rt: RegTag> {
   pub sys_tick: I,
   pub scb_icsr_pendstclr: scb::icsr::Pendstclr<Rt>,
   pub scb_icsr_pendstset: scb::icsr::Pendstset<Srt>,
@@ -36,7 +38,7 @@ macro_rules! drv_sys_tick {
   };
 }
 
-impl<I: IntSysTick<Ltt>> Resource for SysTickRes<I, Frt> {
+impl<I: IntSysTick<Att>> Resource for SysTickRes<I, Frt> {
   type Source = SysTickRes<I, Srt>;
 
   #[inline(always)]
@@ -52,7 +54,7 @@ impl<I: IntSysTick<Ltt>> Resource for SysTickRes<I, Frt> {
   }
 }
 
-impl<I: IntSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
+impl<I: IntSysTick<Att>> TimerRes for SysTickRes<I, Frt> {
   type Duration = u32;
   type CtrlVal = stk::ctrl::Val;
   type SleepFuture = FiberFuture<(), !>;
@@ -74,7 +76,7 @@ impl<I: IntSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
       self.sys_tick,
       fib::new_fn(move || {
         ctrl.store_val(ctrl_val);
-        pendstclr.store_set();
+        unsafe { set_bit(&pendstclr) };
         Ok(())
       }),
     );
@@ -123,7 +125,7 @@ impl<I: IntSysTick<Ltt>> TimerRes for SysTickRes<I, Frt> {
   }
 }
 
-impl<I: IntSysTick<Ltt>> SysTickRes<I, Frt> {
+impl<I: IntSysTick<Att>> SysTickRes<I, Frt> {
   fn interval_stream<F, S>(
     &mut self,
     dur: u32,
@@ -145,7 +147,7 @@ impl<I: IntSysTick<Ltt>> SysTickRes<I, Frt> {
 }
 
 #[allow(missing_docs)]
-impl<I: IntSysTick<Ltt>> Timer<SysTickRes<I, Frt>> {
+impl<I: IntSysTick<Att>> Timer<SysTickRes<I, Frt>> {
   #[inline(always)]
   pub fn int(&self) -> I {
     self.0.sys_tick
@@ -169,7 +171,7 @@ impl<I: IntSysTick<Ltt>> Timer<SysTickRes<I, Frt>> {
   /// Change SysTick exception state to pending.
   #[inline(always)]
   pub fn set_pending(&self) {
-    self.0.scb_icsr_pendstset.store_set();
+    unsafe { set_bit(&self.0.scb_icsr_pendstset) };
   }
 
   /// Returns `true` if SysTick exception is pending.
@@ -181,7 +183,7 @@ impl<I: IntSysTick<Ltt>> Timer<SysTickRes<I, Frt>> {
   /// Removes the pending state from the SysTick exception.
   #[inline(always)]
   pub fn clear_pending(&self) {
-    self.0.scb_icsr_pendstclr.store_set();
+    unsafe { set_bit(&self.0.scb_icsr_pendstclr) };
   }
 }
 
@@ -203,4 +205,19 @@ fn disable<'a, 'b>(
   ctrl: &'a mut stk::ctrl::Hold<'b, Frt>,
 ) -> &'a mut stk::ctrl::Hold<'b, Frt> {
   ctrl.clear_enable().clear_tickint()
+}
+
+#[inline(always)]
+unsafe fn set_bit<F, T>(field: &F)
+where
+  F: WWRegFieldBit<T>,
+  F::Reg: WReg<T>,
+  T: RegTag,
+{
+  let mut val = <F::Reg as Reg<T>>::Val::default();
+  field.set(&mut val);
+  write_volatile(
+    F::Reg::ADDRESS as *mut <<F::Reg as Reg<T>>::Val as Bitfield>::Bits,
+    val.bits(),
+  );
 }
