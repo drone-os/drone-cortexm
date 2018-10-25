@@ -1,6 +1,5 @@
-use cpu::wait_for_int;
 use futures::prelude::*;
-use thr::wake::WakeNop;
+use thr::wake::WakeTrunk;
 
 /// Platform future extensions.
 pub trait FuturePlat: Future {
@@ -12,7 +11,7 @@ impl<T: Future> FuturePlat for T {
   fn trunk_wait(mut self) -> Result<Self::Item, Self::Error> {
     loop {
       match poll_future(&mut self) {
-        Ok(Async::Pending) => wait_for_int(),
+        Ok(Async::Pending) => WakeTrunk::wait(),
         Ok(Async::Ready(value)) => break Ok(value),
         Err(err) => break Err(err),
       }
@@ -21,7 +20,7 @@ impl<T: Future> FuturePlat for T {
 }
 
 fn poll_future<F: Future>(fut: &mut F) -> Poll<F::Item, F::Error> {
-  let waker = WakeNop::new().into_waker();
+  let waker = WakeTrunk::new().into_waker();
   let mut map = task::LocalMap::new();
   let mut cx = task::Context::without_spawn(&mut map, &waker);
   fut.poll(&mut cx)

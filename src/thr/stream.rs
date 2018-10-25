@@ -1,7 +1,6 @@
 use core::iter::FusedIterator;
-use cpu::wait_for_int;
 use futures::prelude::*;
-use thr::wake::WakeNop;
+use thr::wake::WakeTrunk;
 
 /// A stream combinator which converts an asynchronous stream to a **blocking
 /// iterator**.
@@ -48,7 +47,7 @@ impl<T: Stream> Iterator for StreamTrunkWait<T> {
     }
     loop {
       match poll_stream(&mut self.stream) {
-        Ok(Async::Pending) => wait_for_int(),
+        Ok(Async::Pending) => WakeTrunk::wait(),
         Ok(Async::Ready(Some(value))) => break Some(Ok(value)),
         Ok(Async::Ready(None)) => {
           self.exhausted = true;
@@ -66,7 +65,7 @@ impl<T: Stream> Iterator for StreamTrunkWait<T> {
 impl<T: Stream> FusedIterator for StreamTrunkWait<T> {}
 
 fn poll_stream<T: Stream>(stream: &mut T) -> Poll<Option<T::Item>, T::Error> {
-  let waker = WakeNop::new().into_waker();
+  let waker = WakeTrunk::new().into_waker();
   let mut map = task::LocalMap::new();
   let mut cx = task::Context::without_spawn(&mut map, &waker);
   stream.poll_next(&mut cx)

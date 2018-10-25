@@ -9,6 +9,18 @@ pub fn wait_for_int() {
   unsafe { asm!("wfi" :::: "volatile") };
 }
 
+/// Wait for event.
+#[inline(always)]
+pub fn wait_for_event() {
+  unsafe { asm!("wfe" :::: "volatile") };
+}
+
+/// Send event.
+#[inline(always)]
+pub fn send_event() {
+  unsafe { asm!("sev" :::: "volatile") };
+}
+
 /// Makes a system reset request.
 #[allow(clippy::empty_loop)]
 #[inline(always)]
