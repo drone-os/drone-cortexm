@@ -131,7 +131,8 @@ fn patch_stm32l4plus(
       if name.local_name == "peripherals" && check_path(path, &["device"]) =>
     {
       patch_pass(o, e)?;
-      patch_add(o, "svd_files/patch/add_itm.xml")
+      patch_add(o, "svd_files/patch/add_itm.xml")?;
+      patch_add(o, "svd_files/patch/add_dmamux.xml")
     }
     ReaderEvent::StartElement { name, .. }
       if name.local_name == "registers"

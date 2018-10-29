@@ -2,14 +2,25 @@
 
 use drone_core::bitfield::Bitfield;
 use drone_core::drv::Resource;
+use drv::dma::{Dma, DmaRes};
+#[cfg(any(
+  feature = "stm32l4x1",
+  feature = "stm32l4x2",
+  feature = "stm32l4x3",
+  feature = "stm32l4x5",
+  feature = "stm32l4x6"
+))]
 use drv::dma::{
-  Dma, Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma1Ch6Res, Dma1Ch7Res,
-  Dma2Ch6Res, Dma2Ch7Res, DmaRes,
+  Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma1Ch6Res, Dma1Ch7Res,
+  Dma2Ch6Res, Dma2Ch7Res,
 };
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
   feature = "stm32l4x6",
+))]
+use drv::dma::{Dma2Ch1Res, Dma2Ch2Res};
+#[cfg(any(
   feature = "stm32l4r5",
   feature = "stm32l4r7",
   feature = "stm32l4r9",
@@ -17,7 +28,7 @@ use drv::dma::{
   feature = "stm32l4s7",
   feature = "stm32l4s9"
 ))]
-use drv::dma::{Dma2Ch1Res, Dma2Ch2Res};
+use drv::dmamux::{DmamuxCh, DmamuxChRes};
 use fib;
 use futures::prelude::*;
 use reg::i2c3;
@@ -39,17 +50,11 @@ use reg::{i2c1, i2c2};
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
-  feature = "stm32l4x6",
-  feature = "stm32l4r5",
-  feature = "stm32l4r7",
-  feature = "stm32l4r9",
-  feature = "stm32l4s5",
-  feature = "stm32l4s7",
-  feature = "stm32l4s9"
+  feature = "stm32l4x6"
 ))]
 use thr::int::{
   IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5, IntDma1Ch6, IntDma1Ch7,
-  IntDma2Ch1, IntDma2Ch2, IntDma2Ch6, IntDma2Ch7, IntI2C4Er, IntI2C4Ev,
+  IntDma2Ch1, IntDma2Ch2, IntDma2Ch6, IntDma2Ch7,
 };
 #[cfg(any(feature = "stm32l4x3", feature = "stm32l4x5"))]
 use thr::int::{
@@ -61,6 +66,18 @@ use thr::int::{
 use thr::int::{
   IntI2C1Er, IntI2C1Ev, IntI2C2Er, IntI2C2Ev, IntI2C3Er, IntI2C3Ev,
 };
+#[cfg(any(
+  feature = "stm32l4x1",
+  feature = "stm32l4x2",
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
+))]
+use thr::int::{IntI2C4Er, IntI2C4Ev};
 use thr::prelude::*;
 
 /// I2C error.
@@ -107,6 +124,28 @@ where
   T: I2CDmaRxRes<Rx>,
   Rx: DmaRes,
 {
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  /// Initializes DMA for the I2C as peripheral.
+  fn dma_rx_init(
+    &self,
+    dma_rx: &Dma<Rx>,
+    dmamux_rx: &DmamuxCh<Rx::DmamuxChRes>,
+  );
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
   /// Initializes DMA for the I2C as peripheral.
   fn dma_rx_init(&self, dma_rx: &Dma<Rx>);
 
@@ -120,6 +159,28 @@ where
   T: I2CDmaTxRes<Tx>,
   Tx: DmaRes,
 {
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  /// Initializes DMA for the I2C as peripheral.
+  fn dma_tx_init(
+    &self,
+    dma_tx: &Dma<Tx>,
+    dmamux_tx: &DmamuxCh<Tx::DmamuxChRes>,
+  );
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
   /// Initializes DMA for the I2C as peripheral.
   fn dma_tx_init(&self, dma_tx: &Dma<Tx>);
 
@@ -134,6 +195,30 @@ where
   Rx: DmaRes,
   Tx: DmaRes,
 {
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  /// Initializes DMA for the I2C as peripheral.
+  fn dma_dx_init(
+    &self,
+    dma_rx: &Dma<Rx>,
+    dmamux_rx: &DmamuxCh<Rx::DmamuxChRes>,
+    dma_tx: &Dma<Tx>,
+    dmamux_tx: &DmamuxCh<Tx::DmamuxChRes>,
+  );
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
   /// Initializes DMA for the I2C as peripheral.
   fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>)
   where
@@ -300,15 +385,74 @@ pub trait I2CIntRes: I2CRes {
 /// DMA-driven I2C resource.
 #[allow(missing_docs)]
 pub trait I2CDmaRxRes<T: DmaRes>: I2CRes {
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  fn dmamux_rx_init(
+    &self,
+    cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
+    dmamux: &DmamuxCh<T::DmamuxChRes>,
+  );
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
   fn dma_rx_ch_init(&self, cs_val: &mut CselrVal<T>, dma: &Dma<T>);
 }
 
 /// DMA-driven I2C resource.
 #[allow(missing_docs)]
 pub trait I2CDmaTxRes<T: DmaRes>: I2CRes {
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  fn dmamux_tx_init(
+    &self,
+    cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
+    dmamux: &DmamuxCh<T::DmamuxChRes>,
+  );
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
   fn dma_tx_ch_init(&self, cs_val: &mut CselrVal<T>, dma: &Dma<T>);
 }
 
+#[cfg(any(
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
+))]
+type DmamuxCrVal<T> = <<T as DmamuxChRes>::Cr as Reg<Srt>>::Val;
+
+#[cfg(any(
+  feature = "stm32l4x1",
+  feature = "stm32l4x2",
+  feature = "stm32l4x3",
+  feature = "stm32l4x5",
+  feature = "stm32l4x6"
+))]
 type CselrVal<T> = <<T as DmaRes>::Cselr as Reg<Srt>>::Val;
 
 #[allow(missing_docs)]
@@ -636,6 +780,33 @@ where
   T: I2CDmaRxRes<Rx>,
   Rx: DmaRes,
 {
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  #[inline(always)]
+  fn dma_rx_init(
+    &self,
+    dma_rx: &Dma<Rx>,
+    dmamux_rx: &DmamuxCh<Rx::DmamuxChRes>,
+  ) {
+    self.dma_rx_paddr_init(dma_rx);
+    dmamux_rx.cr_dmareq_id().modify(|r| {
+      self.0.dmamux_rx_init(r, dmamux_rx);
+    });
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
   #[inline(always)]
   fn dma_rx_init(&self, dma_rx: &Dma<Rx>) {
     self.dma_rx_paddr_init(dma_rx);
@@ -656,6 +827,33 @@ where
   T: I2CDmaTxRes<Tx>,
   Tx: DmaRes,
 {
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  #[inline(always)]
+  fn dma_tx_init(
+    &self,
+    dma_tx: &Dma<Tx>,
+    dmamux_tx: &DmamuxCh<Tx::DmamuxChRes>,
+  ) {
+    self.dma_tx_paddr_init(dma_tx);
+    dmamux_tx.cr_dmareq_id().modify(|r| {
+      self.0.dmamux_tx_init(r, dmamux_tx);
+    });
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
   #[inline(always)]
   fn dma_tx_init(&self, dma_tx: &Dma<Tx>) {
     self.dma_tx_paddr_init(dma_tx);
@@ -677,6 +875,37 @@ where
   Rx: DmaRes,
   Tx: DmaRes,
 {
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  fn dma_dx_init(
+    &self,
+    dma_rx: &Dma<Rx>,
+    dmamux_rx: &DmamuxCh<Rx::DmamuxChRes>,
+    dma_tx: &Dma<Tx>,
+    dmamux_tx: &DmamuxCh<Tx::DmamuxChRes>,
+  ) {
+    self.dma_dx_paddr_init(dma_rx, dma_tx);
+    dmamux_rx.cr_dmareq_id().modify(|r| {
+      self.0.dmamux_rx_init(r, dmamux_rx);
+    });
+    dmamux_tx.cr_dmareq_id().modify(|r| {
+      self.0.dmamux_tx_init(r, dmamux_tx);
+    });
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
   #[inline(always)]
   fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>)
   where
@@ -713,20 +942,26 @@ macro_rules! i2c_shared {
     $i2c_txdr:ident,
     $name_res:ident,
     ($($tp:ident: $bound:path),*),
-    ($((
-      [$($dma_rx_attr:meta,)*],
-      $dma_rx_res:ident,
-      $int_dma_rx:ident,
-      $dma_rx_cs:expr,
-      ($($dma_rx_tp:ident: $dma_rx_bound:path),*)
-    ),)*),
-    ($((
-      [$($dma_tx_attr:meta,)*],
-      $dma_tx_res:ident,
-      $int_dma_tx:ident,
-      $dma_tx_cs:expr,
-      ($($dma_tx_tp:ident: $dma_tx_bound:path),*)
-    ),)*),
+    (
+      $dma_rx_req_id:expr,
+      $((
+        [$($dma_rx_attr:meta,)*],
+        $dma_rx_res:ident,
+        $int_dma_rx:ident,
+        $dma_rx_cs:expr,
+        ($($dma_rx_tp:ident: $dma_rx_bound:path),*)
+      ),)*
+    ),
+    (
+      $dma_tx_req_id:expr,
+      $((
+        [$($dma_tx_attr:meta,)*],
+        $dma_tx_res:ident,
+        $int_dma_tx:ident,
+        $dma_tx_cs:expr,
+        ($($dma_tx_tp:ident: $dma_tx_bound:path),*)
+      ),)*
+    ),
   ) => {
     impl<$($tp: $bound),*> I2CRes for $name_res<$($tp,)* Frt> {
       type Cr1Val = $i2c::cr1::Val;
@@ -888,7 +1123,37 @@ macro_rules! i2c_shared {
                           txdata);
     }
 
+    #[cfg(any(
+      feature = "stm32l4r5",
+      feature = "stm32l4r7",
+      feature = "stm32l4r9",
+      feature = "stm32l4s5",
+      feature = "stm32l4s7",
+      feature = "stm32l4s9"
+    ))]
+    impl<$($tp,)* T> I2CDmaRxRes<T> for $name_res<$($tp,)* Frt>
+    where
+      T: DmaRes,
+      $($tp: $bound,)*
+    {
+      #[inline(always)]
+      fn dmamux_rx_init(
+        &self,
+        cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
+        dmamux: &DmamuxCh<T::DmamuxChRes>,
+      ) {
+        dmamux.cr_dmareq_id().write(cr_val, $dma_rx_req_id);
+      }
+    }
+
     $(
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
       $(#[$dma_rx_attr])*
       impl<$($dma_rx_tp,)* Rx> I2CDmaRxRes<$dma_rx_res<Rx, Frt>>
         for $name_res<$($dma_rx_tp,)* Frt>
@@ -907,7 +1172,37 @@ macro_rules! i2c_shared {
       }
     )*
 
+    #[cfg(any(
+      feature = "stm32l4r5",
+      feature = "stm32l4r7",
+      feature = "stm32l4r9",
+      feature = "stm32l4s5",
+      feature = "stm32l4s7",
+      feature = "stm32l4s9"
+    ))]
+    impl<$($tp,)* T> I2CDmaTxRes<T> for $name_res<$($tp,)* Frt>
+    where
+      T: DmaRes,
+      $($tp: $bound,)*
+    {
+      #[inline(always)]
+      fn dmamux_tx_init(
+        &self,
+        cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
+        dmamux: &DmamuxCh<T::DmamuxChRes>,
+      ) {
+        dmamux.cr_dmareq_id().write(cr_val, $dma_rx_req_id);
+      }
+    }
+
     $(
+      #[cfg(any(
+        feature = "stm32l4x1",
+        feature = "stm32l4x2",
+        feature = "stm32l4x3",
+        feature = "stm32l4x5",
+        feature = "stm32l4x6"
+      ))]
       $(#[$dma_tx_attr])*
       impl<$($dma_tx_tp,)* Tx> I2CDmaTxRes<$dma_tx_res<Tx, Frt>>
         for $name_res<$($dma_tx_tp,)* Frt>
@@ -957,18 +1252,24 @@ macro_rules! i2c {
     $i2c_pecr:ident,
     $i2c_rxdr:ident,
     $i2c_txdr:ident,
-    ($((
-      $(#[$dma_rx_attr:meta])*
-      $dma_rx_res:ident,
-      $int_dma_rx:ident,
-      $dma_rx_cs:expr
-    )),*),
-    ($((
-      $(#[$dma_tx_attr:meta])*
-      $dma_tx_res:ident,
-      $int_dma_tx:ident,
-      $dma_tx_cs:expr
-    )),*),
+    (
+      $dma_rx_req_id:expr,
+      $((
+        $(#[$dma_rx_attr:meta])*
+        $dma_rx_res:ident,
+        $int_dma_rx:ident,
+        $dma_rx_cs:expr
+      )),*
+    ),
+    (
+      $dma_tx_req_id:expr,
+      $((
+        $(#[$dma_tx_attr:meta])*
+        $dma_tx_res:ident,
+        $int_dma_tx:ident,
+        $dma_tx_cs:expr
+      )),*
+    ),
   ) => {
     #[doc = $doc]
     pub type $name = I2C<$name_res<Frt>>;
@@ -1093,8 +1394,14 @@ macro_rules! i2c {
       $i2c_txdr,
       $name_res,
       (),
-      ($(([$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs, ()),)*),
-      ($(([$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs, ()),)*),
+      (
+        $dma_rx_req_id,
+        $(([$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs, ()),)*
+      ),
+      (
+        $dma_tx_req_id,
+        $(([$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs, ()),)*
+      ),
     }
 
     impl<Ev, Er> Resource for $name_int_res<Ev, Er, Frt>
@@ -1139,14 +1446,20 @@ macro_rules! i2c {
       $i2c_txdr,
       $name_int_res,
       (Ev: $int_ev_ty<Ttt>, Er: $int_er_ty<Ttt>),
-      ($((
-        [$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs,
-        (Ev: $int_ev_ty<Ttt>, Er: $int_er_ty<Ttt>)
-      ),)*),
-      ($((
-        [$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs,
-        (Ev: $int_ev_ty<Ttt>, Er: $int_er_ty<Ttt>)
-      ),)*),
+      (
+        $dma_rx_req_id,
+        $((
+          [$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs,
+          (Ev: $int_ev_ty<Ttt>, Er: $int_er_ty<Ttt>)
+        ),)*
+      ),
+      (
+        $dma_tx_req_id,
+        $((
+          [$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs,
+          (Ev: $int_ev_ty<Ttt>, Er: $int_er_ty<Ttt>)
+        ),)*
+      ),
     }
 
     impl<Ev, Er> I2CIntRes for $name_int_res<Ev, Er, Frt>
@@ -1243,10 +1556,12 @@ i2c! {
   i2c1_rxdr,
   i2c1_txdr,
   (
+    16,
     (Dma1Ch7Res, IntDma1Ch7, 3),
     (Dma2Ch6Res, IntDma2Ch6, 5)
   ),
   (
+    17,
     (Dma1Ch6Res, IntDma1Ch6, 3),
     (Dma2Ch7Res, IntDma2Ch7, 5)
   ),
@@ -1279,8 +1594,8 @@ i2c! {
   i2c2_pecr,
   i2c2_rxdr,
   i2c2_txdr,
-  ((Dma1Ch5Res, IntDma1Ch5, 3)),
-  ((Dma1Ch4Res, IntDma1Ch4, 3)),
+  (18, (Dma1Ch5Res, IntDma1Ch5, 3)),
+  (19, (Dma1Ch4Res, IntDma1Ch4, 3)),
 }
 
 i2c! {
@@ -1310,8 +1625,8 @@ i2c! {
   i2c3_pecr,
   i2c3_rxdr,
   i2c3_txdr,
-  ((Dma1Ch3Res, IntDma1Ch3, 3)),
-  ((Dma1Ch2Res, IntDma1Ch2, 3)),
+  (20, (Dma1Ch3Res, IntDma1Ch3, 3)),
+  (21, (Dma1Ch2Res, IntDma1Ch2, 3)),
 }
 
 #[cfg(any(
@@ -1352,6 +1667,6 @@ i2c! {
   i2c4_pecr,
   i2c4_rxdr,
   i2c4_txdr,
-  ((Dma2Ch1Res, IntDma2Ch1, 0)),
-  ((Dma2Ch2Res, IntDma2Ch2, 0)),
+  (22, (Dma2Ch1Res, IntDma2Ch1, 0)),
+  (23, (Dma2Ch2Res, IntDma2Ch2, 0)),
 }

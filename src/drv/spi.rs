@@ -15,13 +15,7 @@ use drv::dma::{Dma, DmaRes};
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6",
-  feature = "stm32l4r5",
-  feature = "stm32l4r7",
-  feature = "stm32l4r9",
-  feature = "stm32l4s5",
-  feature = "stm32l4s7",
-  feature = "stm32l4s9"
+  feature = "stm32l4x6"
 ))]
 use drv::dma::{
   Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma2Ch1Res, Dma2Ch2Res,
@@ -31,7 +25,10 @@ use drv::dma::{
   feature = "stm32l4x2",
   feature = "stm32l4x3",
   feature = "stm32l4x5",
-  feature = "stm32l4x6",
+  feature = "stm32l4x6"
+))]
+use drv::dma::{Dma2Ch3Res, Dma2Ch4Res};
+#[cfg(any(
   feature = "stm32l4r5",
   feature = "stm32l4r7",
   feature = "stm32l4r9",
@@ -39,7 +36,7 @@ use drv::dma::{
   feature = "stm32l4s7",
   feature = "stm32l4s9"
 ))]
-use drv::dma::{Dma2Ch3Res, Dma2Ch4Res};
+use drv::dmamux::{DmamuxCh, DmamuxChRes};
 use reg::marker::*;
 use reg::prelude::*;
 #[cfg(any(
@@ -64,13 +61,7 @@ use reg::{spi1, spi2, spi3};
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
-  feature = "stm32l4x6",
-  feature = "stm32l4r5",
-  feature = "stm32l4r7",
-  feature = "stm32l4r9",
-  feature = "stm32l4s5",
-  feature = "stm32l4s7",
-  feature = "stm32l4s9"
+  feature = "stm32l4x6"
 ))]
 use thr::int::{
   IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5, IntDma2Ch1, IntDma2Ch2,
@@ -137,6 +128,29 @@ where
   T: SpiDmaRxRes<Rx>,
   Rx: DmaRes,
 {
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  /// Initializes DMA for the SPI as peripheral.
+  fn dma_rx_init(
+    &self,
+    dma_rx: &Dma<Rx>,
+    dmamux_rx: &DmamuxCh<Rx::DmamuxChRes>,
+  );
+
+  #[cfg(not(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  )))]
   /// Initializes DMA for the SPI as peripheral.
   fn dma_rx_init(&self, dma_rx: &Dma<Rx>);
 
@@ -150,6 +164,29 @@ where
   T: SpiDmaTxRes<Tx>,
   Tx: DmaRes,
 {
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  /// Initializes DMA for the SPI as peripheral.
+  fn dma_tx_init(
+    &self,
+    dma_tx: &Dma<Tx>,
+    dmamux_tx: &DmamuxCh<Tx::DmamuxChRes>,
+  );
+
+  #[cfg(not(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  )))]
   /// Initializes DMA for the SPI as peripheral.
   fn dma_tx_init(&self, dma_tx: &Dma<Tx>);
 
@@ -165,11 +202,6 @@ where
   Tx: DmaRes,
 {
   #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6",
     feature = "stm32l4r5",
     feature = "stm32l4r7",
     feature = "stm32l4r9",
@@ -178,23 +210,33 @@ where
     feature = "stm32l4s9"
   ))]
   /// Initializes DMA for the SPI as peripheral.
-  fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>)
-  where
-    Tx: DmaRes<Cselr = Rx::Cselr>;
+  fn dma_dx_init(
+    &self,
+    dma_rx: &Dma<Rx>,
+    dmamux_rx: &DmamuxCh<Rx::DmamuxChRes>,
+    dma_tx: &Dma<Tx>,
+    dmamux_tx: &DmamuxCh<Tx::DmamuxChRes>,
+  );
 
-  #[cfg(not(any(
+  #[cfg(any(
     feature = "stm32l4x1",
     feature = "stm32l4x2",
     feature = "stm32l4x3",
     feature = "stm32l4x5",
-    feature = "stm32l4x6",
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  )))]
+    feature = "stm32l4x6"
+  ))]
+  /// Initializes DMA for the SPI as peripheral.
+  fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>)
+  where
+    Tx: DmaRes<Cselr = Rx::Cselr>;
+
+  #[cfg(any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  ))]
   /// Initializes DMA for the SPI as peripheral.
   fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>);
 
@@ -292,17 +334,25 @@ pub trait SpiIntRes: SpiRes {
 #[allow(missing_docs)]
 pub trait SpiDmaRxRes<T: DmaRes>: SpiRes {
   #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6",
     feature = "stm32l4r5",
     feature = "stm32l4r7",
     feature = "stm32l4r9",
     feature = "stm32l4s5",
     feature = "stm32l4s7",
     feature = "stm32l4s9"
+  ))]
+  fn dmamux_rx_init(
+    &self,
+    cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
+    dmamux: &DmamuxCh<T::DmamuxChRes>,
+  );
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
   ))]
   fn dma_rx_ch_init(&self, cs_val: &mut CselrVal<T>, dma: &Dma<T>);
 }
@@ -311,11 +361,6 @@ pub trait SpiDmaRxRes<T: DmaRes>: SpiRes {
 #[allow(missing_docs)]
 pub trait SpiDmaTxRes<T: DmaRes>: SpiRes {
   #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6",
     feature = "stm32l4r5",
     feature = "stm32l4r7",
     feature = "stm32l4r9",
@@ -323,21 +368,38 @@ pub trait SpiDmaTxRes<T: DmaRes>: SpiRes {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
+  fn dmamux_tx_init(
+    &self,
+    cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
+    dmamux: &DmamuxCh<T::DmamuxChRes>,
+  );
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
+  ))]
   fn dma_tx_ch_init(&self, cs_val: &mut CselrVal<T>, dma: &Dma<T>);
 }
 
 #[cfg(any(
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6",
   feature = "stm32l4r5",
   feature = "stm32l4r7",
   feature = "stm32l4r9",
   feature = "stm32l4s5",
   feature = "stm32l4s7",
   feature = "stm32l4s9"
+))]
+type DmamuxCrVal<T> = <<T as DmamuxChRes>::Cr as Reg<Srt>>::Val;
+
+#[cfg(any(
+  feature = "stm32l4x1",
+  feature = "stm32l4x2",
+  feature = "stm32l4x3",
+  feature = "stm32l4x5",
+  feature = "stm32l4x6"
 ))]
 type CselrVal<T> = <<T as DmaRes>::Cselr as Reg<Srt>>::Val;
 
@@ -581,6 +643,34 @@ where
   T: SpiDmaRxRes<Rx>,
   Rx: DmaRes,
 {
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  #[inline(always)]
+  fn dma_rx_init(
+    &self,
+    dma_rx: &Dma<Rx>,
+    dmamux_rx: &DmamuxCh<Rx::DmamuxChRes>,
+  ) {
+    self.dma_rx_paddr_init(dma_rx);
+    dmamux_rx.cr_dmareq_id().modify(|r| {
+      self.0.dmamux_rx_init(r, dmamux_rx);
+    });
+  }
+
+  #[cfg(not(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  )))]
   #[inline(always)]
   fn dma_rx_init(&self, dma_rx: &Dma<Rx>) {
     self.dma_rx_paddr_init(dma_rx);
@@ -589,13 +679,7 @@ where
       feature = "stm32l4x2",
       feature = "stm32l4x3",
       feature = "stm32l4x5",
-      feature = "stm32l4x6",
-      feature = "stm32l4r5",
-      feature = "stm32l4r7",
-      feature = "stm32l4r9",
-      feature = "stm32l4s5",
-      feature = "stm32l4s7",
-      feature = "stm32l4s9"
+      feature = "stm32l4x6"
     ))]
     dma_rx.cselr_cs().modify(|r| {
       self.0.dma_rx_ch_init(r, dma_rx);
@@ -614,6 +698,34 @@ where
   T: SpiDmaTxRes<Tx>,
   Tx: DmaRes,
 {
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  #[inline(always)]
+  fn dma_tx_init(
+    &self,
+    dma_tx: &Dma<Tx>,
+    dmamux_tx: &DmamuxCh<Tx::DmamuxChRes>,
+  ) {
+    self.dma_tx_paddr_init(dma_tx);
+    dmamux_tx.cr_dmareq_id().modify(|r| {
+      self.0.dmamux_tx_init(r, dmamux_tx);
+    });
+  }
+
+  #[cfg(not(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  )))]
   #[inline(always)]
   fn dma_tx_init(&self, dma_tx: &Dma<Tx>) {
     self.dma_tx_paddr_init(dma_tx);
@@ -622,13 +734,7 @@ where
       feature = "stm32l4x2",
       feature = "stm32l4x3",
       feature = "stm32l4x5",
-      feature = "stm32l4x6",
-      feature = "stm32l4r5",
-      feature = "stm32l4r7",
-      feature = "stm32l4r9",
-      feature = "stm32l4s5",
-      feature = "stm32l4s7",
-      feature = "stm32l4s9"
+      feature = "stm32l4x6"
     ))]
     dma_tx.cselr_cs().modify(|r| {
       self.0.dma_tx_ch_init(r, dma_tx);
@@ -649,17 +755,35 @@ where
   Tx: DmaRes,
 {
   #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6",
     feature = "stm32l4r5",
     feature = "stm32l4r7",
     feature = "stm32l4r9",
     feature = "stm32l4s5",
     feature = "stm32l4s7",
     feature = "stm32l4s9"
+  ))]
+  fn dma_dx_init(
+    &self,
+    dma_rx: &Dma<Rx>,
+    dmamux_rx: &DmamuxCh<Rx::DmamuxChRes>,
+    dma_tx: &Dma<Tx>,
+    dmamux_tx: &DmamuxCh<Tx::DmamuxChRes>,
+  ) {
+    self.dma_dx_paddr_init(dma_rx, dma_tx);
+    dmamux_rx.cr_dmareq_id().modify(|r| {
+      self.0.dmamux_rx_init(r, dmamux_rx);
+    });
+    dmamux_tx.cr_dmareq_id().modify(|r| {
+      self.0.dmamux_tx_init(r, dmamux_tx);
+    });
+  }
+
+  #[cfg(any(
+    feature = "stm32l4x1",
+    feature = "stm32l4x2",
+    feature = "stm32l4x3",
+    feature = "stm32l4x5",
+    feature = "stm32l4x6"
   ))]
   #[inline(always)]
   fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>)
@@ -673,19 +797,13 @@ where
     });
   }
 
-  #[cfg(not(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6",
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  )))]
+  #[cfg(any(
+    feature = "stm32f100",
+    feature = "stm32f101",
+    feature = "stm32f102",
+    feature = "stm32f103",
+    feature = "stm32f107"
+  ))]
   #[inline(always)]
   fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>) {
     self.dma_dx_paddr_init(dma_rx, dma_tx);
@@ -711,20 +829,26 @@ macro_rules! spi_shared {
     $spi_txcrcr:ident,
     $name_res:ident,
     ($($tp:ident: $bound:path),*),
-    ($((
-      [$($dma_rx_attr:meta,)*],
-      $dma_rx_res:ident,
-      $int_dma_rx:ident,
-      $dma_rx_cs:expr,
-      ($($dma_rx_tp:ident: $dma_rx_bound:path),*)
-    ),)*),
-    ($((
-      [$($dma_tx_attr:meta,)*],
-      $dma_tx_res:ident,
-      $int_dma_tx:ident,
-      $dma_tx_cs:expr,
-      ($($dma_tx_tp:ident: $dma_tx_bound:path),*)
-    ),)*),
+    (
+      $dma_rx_req_id:expr,
+      $((
+        [$($dma_rx_attr:meta,)*],
+        $dma_rx_res:ident,
+        $int_dma_rx:ident,
+        $dma_rx_cs:expr,
+        ($($dma_rx_tp:ident: $dma_rx_bound:path),*)
+      ),)*
+    ),
+    (
+      $dma_tx_req_id:expr,
+      $((
+        [$($dma_tx_attr:meta,)*],
+        $dma_tx_res:ident,
+        $int_dma_tx:ident,
+        $dma_tx_cs:expr,
+        ($($dma_tx_tp:ident: $dma_tx_bound:path),*)
+      ),)*
+    ),
   ) => {
     impl<$($tp: $bound,)*> SpiRes for $name_res<$($tp,)* Frt> {
       type Cr1Val = $spi::cr1::Val;
@@ -809,7 +933,38 @@ macro_rules! spi_shared {
       }
     }
 
+    #[cfg(any(
+      feature = "stm32l4r5",
+      feature = "stm32l4r7",
+      feature = "stm32l4r9",
+      feature = "stm32l4s5",
+      feature = "stm32l4s7",
+      feature = "stm32l4s9"
+    ))]
+    impl<$($tp,)* T> SpiDmaRxRes<T> for $name_res<$($tp,)* Frt>
+    where
+      T: DmaRes,
+      $($tp: $bound,)*
+    {
+      #[inline(always)]
+      fn dmamux_rx_init(
+        &self,
+        cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
+        dmamux: &DmamuxCh<T::DmamuxChRes>,
+      ) {
+        dmamux.cr_dmareq_id().write(cr_val, $dma_rx_req_id);
+      }
+    }
+
     $(
+      #[cfg(not(any(
+        feature = "stm32l4r5",
+        feature = "stm32l4r7",
+        feature = "stm32l4r9",
+        feature = "stm32l4s5",
+        feature = "stm32l4s7",
+        feature = "stm32l4s9"
+      )))]
       $(#[$dma_rx_attr])*
       impl<$($dma_rx_tp,)* Rx> SpiDmaRxRes<$dma_rx_res<Rx, Frt>>
         for $name_res<$($dma_rx_tp,)* Frt>
@@ -822,13 +977,7 @@ macro_rules! spi_shared {
           feature = "stm32l4x2",
           feature = "stm32l4x3",
           feature = "stm32l4x5",
-          feature = "stm32l4x6",
-          feature = "stm32l4r5",
-          feature = "stm32l4r7",
-          feature = "stm32l4r9",
-          feature = "stm32l4s5",
-          feature = "stm32l4s7",
-          feature = "stm32l4s9"
+          feature = "stm32l4x6"
         ))]
         #[inline(always)]
         fn dma_rx_ch_init(
@@ -841,7 +990,38 @@ macro_rules! spi_shared {
       }
     )*
 
+    #[cfg(any(
+      feature = "stm32l4r5",
+      feature = "stm32l4r7",
+      feature = "stm32l4r9",
+      feature = "stm32l4s5",
+      feature = "stm32l4s7",
+      feature = "stm32l4s9"
+    ))]
+    impl<$($tp,)* T> SpiDmaTxRes<T> for $name_res<$($tp,)* Frt>
+    where
+      T: DmaRes,
+      $($tp: $bound,)*
+    {
+      #[inline(always)]
+      fn dmamux_tx_init(
+        &self,
+        cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
+        dmamux: &DmamuxCh<T::DmamuxChRes>,
+      ) {
+        dmamux.cr_dmareq_id().write(cr_val, $dma_tx_req_id);
+      }
+    }
+
     $(
+      #[cfg(not(any(
+        feature = "stm32l4r5",
+        feature = "stm32l4r7",
+        feature = "stm32l4r9",
+        feature = "stm32l4s5",
+        feature = "stm32l4s7",
+        feature = "stm32l4s9"
+      )))]
       $(#[$dma_tx_attr])*
       impl<$($dma_tx_tp,)* Tx> SpiDmaTxRes<$dma_tx_res<Tx, Frt>>
         for $name_res<$($dma_tx_tp,)* Frt>
@@ -854,13 +1034,7 @@ macro_rules! spi_shared {
           feature = "stm32l4x2",
           feature = "stm32l4x3",
           feature = "stm32l4x5",
-          feature = "stm32l4x6",
-          feature = "stm32l4r5",
-          feature = "stm32l4r7",
-          feature = "stm32l4r9",
-          feature = "stm32l4s5",
-          feature = "stm32l4s7",
-          feature = "stm32l4s9"
+          feature = "stm32l4x6"
         ))]
         #[inline(always)]
         fn dma_tx_ch_init(
@@ -897,18 +1071,24 @@ macro_rules! spi {
     $spi_rxcrcr:ident,
     $spi_sr:ident,
     $spi_txcrcr:ident,
-    ($((
-      $(#[$dma_rx_attr:meta])*
-      $dma_rx_res:ident,
-      $int_dma_rx:ident,
-      $dma_rx_cs:expr
-    )),*),
-    ($((
-      $(#[$dma_tx_attr:meta])*
-      $dma_tx_res:ident,
-      $int_dma_tx:ident,
-      $dma_tx_cs:expr
-    )),*),
+    (
+      $dma_rx_req_id:expr,
+      $((
+        $(#[$dma_rx_attr:meta])*
+        $dma_rx_res:ident,
+        $int_dma_rx:ident,
+        $dma_rx_cs:expr
+      )),*
+    ),
+    (
+      $dma_tx_req_id:expr,
+      $((
+        $(#[$dma_tx_attr:meta])*
+        $dma_tx_res:ident,
+        $int_dma_tx:ident,
+        $dma_tx_cs:expr
+      )),*
+    ),
   ) => {
     #[doc = $doc]
     pub type $name = Spi<$name_res<Frt>>;
@@ -1006,8 +1186,14 @@ macro_rules! spi {
       $spi_txcrcr,
       $name_res,
       (),
-      ($(([$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs, ()),)*),
-      ($(([$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs, ()),)*),
+      (
+        $dma_rx_req_id,
+        $(([$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs, ()),)*
+      ),
+      (
+        $dma_tx_req_id,
+        $(([$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs, ()),)*
+      ),
     }
 
     impl<I: $int_ty<Ttt>> Resource for $name_int_res<I, Frt> {
@@ -1039,14 +1225,20 @@ macro_rules! spi {
       $spi_txcrcr,
       $name_int_res,
       (I: $int_ty<Ttt>),
-      ($((
-        [$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs,
-        (I: $int_ty<Ttt>)
-      ),)*),
-      ($((
-        [$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs,
-        (I: $int_ty<Ttt>)
-      ),)*),
+      (
+        $dma_rx_req_id,
+        $((
+          [$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs,
+          (I: $int_ty<Ttt>)
+        ),)*
+      ),
+      (
+        $dma_tx_req_id,
+        $((
+          [$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs,
+          (I: $int_ty<Ttt>)
+        ),)*
+      ),
     }
 
     impl<I: $int_ty<Ttt>> SpiIntRes for $name_int_res<I, Frt> {
@@ -1130,6 +1322,7 @@ spi! {
   spi1_sr,
   spi1_txcrcr,
   (
+    10,
     (Dma1Ch2Res, IntDma1Ch2, 1),
     (
       #[cfg(any(
@@ -1149,6 +1342,7 @@ spi! {
     )
   ),
   (
+    11,
     (Dma1Ch3Res, IntDma1Ch3, 1),
     (
       #[cfg(any(
@@ -1207,8 +1401,8 @@ spi! {
   spi2_rxcrcr,
   spi2_sr,
   spi2_txcrcr,
-  ((Dma1Ch4Res, IntDma1Ch4, 1)),
-  ((Dma1Ch5Res, IntDma1Ch5, 1)),
+  (12, (Dma1Ch4Res, IntDma1Ch4, 1)),
+  (13, (Dma1Ch5Res, IntDma1Ch5, 1)),
 }
 
 #[cfg(any(
@@ -1249,6 +1443,6 @@ spi! {
   spi3_rxcrcr,
   spi3_sr,
   spi3_txcrcr,
-  ((Dma2Ch1Res, IntDma2Ch1, 3)),
-  ((Dma2Ch2Res, IntDma2Ch2, 3)),
+  (14, (Dma2Ch1Res, IntDma2Ch1, 3)),
+  (15, (Dma2Ch2Res, IntDma2Ch2, 3)),
 }

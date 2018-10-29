@@ -1,0 +1,1200 @@
+<peripheral>
+  <name>DMAMUX1</name>
+  <description>DMA request multiplexer</description>
+  <groupName>DMAMUX</groupName>
+  <baseAddress>0x40020800</baseAddress>
+  <registers>
+    <register>
+      <name>C0CR</name>
+      <displayName>C0CR</displayName>
+      <description>DMAMUX request line multiplexer channel 0 configuration
+      register</description>
+      <addressOffset>0x0</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C1CR</name>
+      <displayName>C1CR</displayName>
+      <description>DMAMUX request line multiplexer channel 1 configuration
+      register</description>
+      <addressOffset>0x4</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C2CR</name>
+      <displayName>C2CR</displayName>
+      <description>DMAMUX request line multiplexer channel 2 configuration
+      register</description>
+      <addressOffset>0x8</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C3CR</name>
+      <displayName>C3CR</displayName>
+      <description>DMAMUX request line multiplexer channel 3 configuration
+      register</description>
+      <addressOffset>0xC</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C4CR</name>
+      <displayName>C4CR</displayName>
+      <description>DMAMUX request line multiplexer channel 4 configuration
+      register</description>
+      <addressOffset>0x10</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C5CR</name>
+      <displayName>C5CR</displayName>
+      <description>DMAMUX request line multiplexer channel 5 configuration
+      register</description>
+      <addressOffset>0x14</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C6CR</name>
+      <displayName>C6CR</displayName>
+      <description>DMAMUX request line multiplexer channel 6 configuration
+      register</description>
+      <addressOffset>0x18</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C7CR</name>
+      <displayName>C7CR</displayName>
+      <description>DMAMUX request line multiplexer channel 7 configuration
+      register</description>
+      <addressOffset>0x1C</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C8CR</name>
+      <displayName>C8CR</displayName>
+      <description>DMAMUX request line multiplexer channel 8 configuration
+      register</description>
+      <addressOffset>0x20</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C9CR</name>
+      <displayName>C9CR</displayName>
+      <description>DMAMUX request line multiplexer channel 9 configuration
+      register</description>
+      <addressOffset>0x24</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C10CR</name>
+      <displayName>C10CR</displayName>
+      <description>DMAMUX request line multiplexer channel 10 configuration
+      register</description>
+      <addressOffset>0x28</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C11CR</name>
+      <displayName>C11CR</displayName>
+      <description>DMAMUX request line multiplexer channel 11 configuration
+      register</description>
+      <addressOffset>0x2C</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C12CR</name>
+      <displayName>C12CR</displayName>
+      <description>DMAMUX request line multiplexer channel 12 configuration
+      register</description>
+      <addressOffset>0x30</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>C13CR</name>
+      <displayName>C13CR</displayName>
+      <description>DMAMUX request line multiplexer channel 13 configuration
+      register</description>
+      <addressOffset>0x34</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SYNC_ID</name>
+          <description>Synchronization identification</description>
+          <bitOffset>24</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>NBREQ</name>
+          <description>Number of DMA requests minus 1 to forward</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>SPOL</name>
+          <description>Synchronization polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>SE</name>
+          <description>Synchronization enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>EGE</name>
+          <description>Event generation enable</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOIE</name>
+          <description>Synchronization overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>DMAREQ_ID</name>
+          <description>DMA request identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>7</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>CSR</name>
+      <displayName>CSR</displayName>
+      <description>DMAMUX request line multiplexer interrupt channel status
+      register</description>
+      <addressOffset>0x80</addressOffset>
+      <size>0x20</size>
+      <access>read-only</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>SOF13</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>13</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF12</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>12</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF11</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>11</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF10</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>10</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF9</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF8</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF7</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>7</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF6</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>6</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF5</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>5</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF4</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>4</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF3</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>3</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF2</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>2</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF1</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>1</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SOF0</name>
+          <description>Synchronization overrun event flag</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>CFR</name>
+      <displayName>CFR</displayName>
+      <description>DMAMUX request line multiplexer interrupt clear flag
+      register</description>
+      <addressOffset>0x84</addressOffset>
+      <size>0x20</size>
+      <access>write-only</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>CSOF13</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>13</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF12</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>12</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF11</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>11</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF10</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>10</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF9</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>9</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF8</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF7</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>7</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF6</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>6</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF5</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>5</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF4</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>4</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF3</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>3</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF2</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>2</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF1</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>1</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>CSOF0</name>
+          <description>Clear synchronization overrun event flag</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>RG0CR</name>
+      <displayName>RG0CR</displayName>
+      <description>DMAMUX request generator channel 0 configuration
+      register</description>
+      <addressOffset>0x100</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>GNBREQ</name>
+          <description>Number of DMA requests to be generated (minus
+          1)</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>GPOL</name>
+          <description>DMA request generator trigger polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>GE</name>
+          <description>DMA request generator channel 0 enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>OIE</name>
+          <description>Trigger overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SIG_ID</name>
+          <description>Signal identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>RG1CR</name>
+      <displayName>RG1CR</displayName>
+      <description>DMAMUX request generator channel 1 configuration
+      register</description>
+      <addressOffset>0x104</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>GNBREQ</name>
+          <description>Number of DMA requests to be generated (minus
+          1)</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>GPOL</name>
+          <description>DMA request generator trigger polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>GE</name>
+          <description>DMA request generator channel 1 enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>OIE</name>
+          <description>Trigger overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SIG_ID</name>
+          <description>Signal identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>RG2CR</name>
+      <displayName>RG2CR</displayName>
+      <description>DMAMUX request generator channel 2 configuration
+      register</description>
+      <addressOffset>0x108</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>GNBREQ</name>
+          <description>Number of DMA requests to be generated (minus
+          1)</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>GPOL</name>
+          <description>DMA request generator trigger polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>GE</name>
+          <description>DMA request generator channel 2 enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>OIE</name>
+          <description>Trigger overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SIG_ID</name>
+          <description>Signal identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>RG3CR</name>
+      <displayName>RG3CR</displayName>
+      <description>DMAMUX request generator channel 3 configuration
+      register</description>
+      <addressOffset>0x10C</addressOffset>
+      <size>0x20</size>
+      <access>read-write</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>GNBREQ</name>
+          <description>Number of DMA requests to be generated (minus
+          1)</description>
+          <bitOffset>19</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+        <field>
+          <name>GPOL</name>
+          <description>DMA request generator trigger polarity</description>
+          <bitOffset>17</bitOffset>
+          <bitWidth>2</bitWidth>
+        </field>
+        <field>
+          <name>GE</name>
+          <description>DMA request generator channel 3 enable</description>
+          <bitOffset>16</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>OIE</name>
+          <description>Trigger overrun interrupt enable</description>
+          <bitOffset>8</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>SIG_ID</name>
+          <description>Signal identification</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>5</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>RGSR</name>
+      <displayName>RGSR</displayName>
+      <description>DMAMUX request generator interrupt status
+      register</description>
+      <addressOffset>0x140</addressOffset>
+      <size>0x20</size>
+      <access>read-only</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>OF3</name>
+          <description>Trigger overrun event flag</description>
+          <bitOffset>3</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>OF2</name>
+          <description>Trigger overrun event flag</description>
+          <bitOffset>2</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>OF1</name>
+          <description>Trigger overrun event flag</description>
+          <bitOffset>1</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>OF0</name>
+          <description>Trigger overrun event flag</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+      </fields>
+    </register>
+    <register>
+      <name>RGCFR</name>
+      <displayName>RGCFR</displayName>
+      <description>DMAMUX request generator interrupt clear flag
+      register</description>
+      <addressOffset>0x144</addressOffset>
+      <size>0x20</size>
+      <access>write-only</access>
+      <resetValue>0x00000000</resetValue>
+      <fields>
+        <field>
+          <name>COF3</name>
+          <description>Clear trigger overrun event flag</description>
+          <bitOffset>3</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>COF2</name>
+          <description>Clear trigger overrun event flag</description>
+          <bitOffset>2</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>COF1</name>
+          <description>Clear trigger overrun event flag</description>
+          <bitOffset>1</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+        <field>
+          <name>COF0</name>
+          <description>Clear trigger overrun event flag</description>
+          <bitOffset>0</bitOffset>
+          <bitWidth>1</bitWidth>
+        </field>
+      </fields>
+    </register>
+  </registers>
+</peripheral>

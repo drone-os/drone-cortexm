@@ -2,6 +2,20 @@
 
 use drone_core::bitfield::Bitfield;
 use drone_core::drv::Resource;
+#[cfg(any(
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
+))]
+use drv::dmamux::{
+  Dmamux1Ch0Res, Dmamux1Ch10Res, Dmamux1Ch11Res, Dmamux1Ch12Res,
+  Dmamux1Ch13Res, Dmamux1Ch1Res, Dmamux1Ch2Res, Dmamux1Ch3Res, Dmamux1Ch4Res,
+  Dmamux1Ch5Res, Dmamux1Ch6Res, Dmamux1Ch7Res, Dmamux1Ch8Res, Dmamux1Ch9Res,
+  DmamuxChRes,
+};
 use fib;
 use futures::prelude::*;
 use reg::marker::*;
@@ -121,13 +135,7 @@ pub trait DmaRes: Resource {
     feature = "stm32l4x2",
     feature = "stm32l4x3",
     feature = "stm32l4x5",
-    feature = "stm32l4x6",
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
+    feature = "stm32l4x6"
   ))]
   type Cselr: SRwReg;
   #[cfg(any(
@@ -135,13 +143,7 @@ pub trait DmaRes: Resource {
     feature = "stm32l4x2",
     feature = "stm32l4x3",
     feature = "stm32l4x5",
-    feature = "stm32l4x6",
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
+    feature = "stm32l4x6"
   ))]
   type CselrCs: SRwRwRegFieldBits<Reg = Self::Cselr>;
   type Ifcr: FWoRegBitBand;
@@ -154,6 +156,16 @@ pub trait DmaRes: Resource {
   type IsrHtif: FRoRoRegFieldBitBand<Reg = Self::Isr>;
   type IsrTcif: FRoRoRegFieldBitBand<Reg = Self::Isr>;
   type IsrTeif: FRoRoRegFieldBitBand<Reg = Self::Isr>;
+
+  #[cfg(any(
+    feature = "stm32l4r5",
+    feature = "stm32l4r7",
+    feature = "stm32l4r9",
+    feature = "stm32l4s5",
+    feature = "stm32l4s7",
+    feature = "stm32l4s9"
+  ))]
+  type DmamuxChRes: DmamuxChRes;
 
   fn int(&self) -> Self::Int;
 
@@ -180,13 +192,7 @@ pub trait DmaRes: Resource {
     feature = "stm32l4x2",
     feature = "stm32l4x3",
     feature = "stm32l4x5",
-    feature = "stm32l4x6",
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
+    feature = "stm32l4x6"
   ))]
   res_reg_decl!(CselrCs, cselr_cs, cselr_cs_mut);
   res_reg_decl!(IfcrCgif, ifcr_cgif, ifcr_cgif_mut);
@@ -271,13 +277,7 @@ impl<T: DmaRes> Dma<T> {
     feature = "stm32l4x2",
     feature = "stm32l4x3",
     feature = "stm32l4x5",
-    feature = "stm32l4x6",
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
+    feature = "stm32l4x6"
   ))]
   #[inline(always)]
   pub fn cselr_cs(&self) -> &T::CselrCs {
@@ -427,6 +427,7 @@ macro_rules! dma_ch {
     $name_macro:ident,
     $doc_res:expr,
     $name_res:ident,
+    $dmamux_ch_res:ident,
     $int_ty:ident,
     $ccr_ty:ident,
     $cmar_ty:ident,
@@ -489,13 +490,7 @@ macro_rules! dma_ch {
         feature = "stm32l4x2",
         feature = "stm32l4x3",
         feature = "stm32l4x5",
-        feature = "stm32l4x6",
-        feature = "stm32l4r5",
-        feature = "stm32l4r7",
-        feature = "stm32l4r9",
-        feature = "stm32l4s5",
-        feature = "stm32l4s7",
-        feature = "stm32l4s9"
+        feature = "stm32l4x6"
       ))]
       pub $dma_cselr_cs: $dma::cselr::$cs_ty<Srt>,
       pub $dma_ifcr_cgif: $dma::ifcr::$cgif_ty<Rt>,
@@ -513,13 +508,7 @@ macro_rules! dma_ch {
       feature = "stm32l4x2",
       feature = "stm32l4x3",
       feature = "stm32l4x5",
-      feature = "stm32l4x6",
-      feature = "stm32l4r5",
-      feature = "stm32l4r7",
-      feature = "stm32l4r9",
-      feature = "stm32l4s5",
-      feature = "stm32l4s7",
-      feature = "stm32l4s9"
+      feature = "stm32l4x6"
     ))]
     /// Creates a new `Dma`.
     #[macro_export]
@@ -549,13 +538,7 @@ macro_rules! dma_ch {
       feature = "stm32l4x2",
       feature = "stm32l4x3",
       feature = "stm32l4x5",
-      feature = "stm32l4x6",
-      feature = "stm32l4r5",
-      feature = "stm32l4r7",
-      feature = "stm32l4r9",
-      feature = "stm32l4s5",
-      feature = "stm32l4s7",
-      feature = "stm32l4s9"
+      feature = "stm32l4x6"
     )))]
     /// Creates a new `Dma`.
     #[macro_export]
@@ -582,19 +565,6 @@ macro_rules! dma_ch {
     impl<I: $int_ty<Ttt>> Resource for $name_res<I, Frt> {
       type Source = $name_res<I, Srt>;
 
-      #[cfg(any(
-        feature = "stm32l4x1",
-        feature = "stm32l4x2",
-        feature = "stm32l4x3",
-        feature = "stm32l4x5",
-        feature = "stm32l4x6",
-        feature = "stm32l4r5",
-        feature = "stm32l4r7",
-        feature = "stm32l4r9",
-        feature = "stm32l4s5",
-        feature = "stm32l4s7",
-        feature = "stm32l4s9"
-      ))]
       #[inline(always)]
       fn from_source(source: Self::Source) -> Self {
         Self {
@@ -603,39 +573,14 @@ macro_rules! dma_ch {
           $dma_cmar: source.$dma_cmar,
           $dma_cndtr: source.$dma_cndtr,
           $dma_cpar: source.$dma_cpar,
+          #[cfg(any(
+            feature = "stm32l4x1",
+            feature = "stm32l4x2",
+            feature = "stm32l4x3",
+            feature = "stm32l4x5",
+            feature = "stm32l4x6"
+          ))]
           $dma_cselr_cs: source.$dma_cselr_cs,
-          $dma_ifcr_cgif: source.$dma_ifcr_cgif.into(),
-          $dma_ifcr_chtif: source.$dma_ifcr_chtif.into(),
-          $dma_ifcr_ctcif: source.$dma_ifcr_ctcif.into(),
-          $dma_ifcr_cteif: source.$dma_ifcr_cteif.into(),
-          $dma_isr_gif: source.$dma_isr_gif.into(),
-          $dma_isr_htif: source.$dma_isr_htif.into(),
-          $dma_isr_tcif: source.$dma_isr_tcif.into(),
-          $dma_isr_teif: source.$dma_isr_teif.into(),
-        }
-      }
-
-      #[cfg(not(any(
-        feature = "stm32l4x1",
-        feature = "stm32l4x2",
-        feature = "stm32l4x3",
-        feature = "stm32l4x5",
-        feature = "stm32l4x6",
-        feature = "stm32l4r5",
-        feature = "stm32l4r7",
-        feature = "stm32l4r9",
-        feature = "stm32l4s5",
-        feature = "stm32l4s7",
-        feature = "stm32l4s9"
-      )))]
-      #[inline(always)]
-      fn from_source(source: Self::Source) -> Self {
-        Self {
-          $int: source.$int,
-          $dma_ccr: source.$dma_ccr,
-          $dma_cmar: source.$dma_cmar,
-          $dma_cndtr: source.$dma_cndtr,
-          $dma_cpar: source.$dma_cpar,
           $dma_ifcr_cgif: source.$dma_ifcr_cgif.into(),
           $dma_ifcr_chtif: source.$dma_ifcr_chtif.into(),
           $dma_ifcr_ctcif: source.$dma_ifcr_ctcif.into(),
@@ -677,13 +622,7 @@ macro_rules! dma_ch {
         feature = "stm32l4x2",
         feature = "stm32l4x3",
         feature = "stm32l4x5",
-        feature = "stm32l4x6",
-        feature = "stm32l4r5",
-        feature = "stm32l4r7",
-        feature = "stm32l4r9",
-        feature = "stm32l4s5",
-        feature = "stm32l4s7",
-        feature = "stm32l4s9"
+        feature = "stm32l4x6"
       ))]
       type Cselr = $dma::cselr::Reg<Srt>;
       #[cfg(any(
@@ -691,13 +630,7 @@ macro_rules! dma_ch {
         feature = "stm32l4x2",
         feature = "stm32l4x3",
         feature = "stm32l4x5",
-        feature = "stm32l4x6",
-        feature = "stm32l4r5",
-        feature = "stm32l4r7",
-        feature = "stm32l4r9",
-        feature = "stm32l4s5",
-        feature = "stm32l4s7",
-        feature = "stm32l4s9"
+        feature = "stm32l4x6"
       ))]
       type CselrCs = $dma::cselr::$cs_ty<Srt>;
       type Ifcr = $dma::Ifcr<Frt>;
@@ -710,6 +643,16 @@ macro_rules! dma_ch {
       type IsrHtif = $dma::isr::$htif_ty<Frt>;
       type IsrTcif = $dma::isr::$tcif_ty<Frt>;
       type IsrTeif = $dma::isr::$teif_ty<Frt>;
+
+      #[cfg(any(
+        feature = "stm32l4r5",
+        feature = "stm32l4r7",
+        feature = "stm32l4r9",
+        feature = "stm32l4s5",
+        feature = "stm32l4s7",
+        feature = "stm32l4s9"
+      ))]
+      type DmamuxChRes = $dmamux_ch_res;
 
       #[inline(always)]
       fn int(&self) -> Self::Int {
@@ -745,13 +688,7 @@ macro_rules! dma_ch {
         feature = "stm32l4x2",
         feature = "stm32l4x3",
         feature = "stm32l4x5",
-        feature = "stm32l4x6",
-        feature = "stm32l4r5",
-        feature = "stm32l4r7",
-        feature = "stm32l4r9",
-        feature = "stm32l4s5",
-        feature = "stm32l4s7",
-        feature = "stm32l4s9"
+        feature = "stm32l4x6"
       ))]
       res_reg_impl!(CselrCs, cselr_cs, cselr_cs_mut, $dma_cselr_cs);
       res_reg_impl!(IfcrCgif, ifcr_cgif, ifcr_cgif_mut, $dma_ifcr_cgif);
@@ -790,6 +727,7 @@ dma_ch! {
   drv_dma1_ch1,
   "DMA1 Channel 1 resource.",
   Dma1Ch1Res,
+  Dmamux1Ch0Res,
   IntDma1Ch1,
   Ccr1,
   Cmar1,
@@ -861,6 +799,7 @@ dma_ch! {
   drv_dma1_ch2,
   "DMA1 Channel 2 resource.",
   Dma1Ch2Res,
+  Dmamux1Ch1Res,
   IntDma1Ch2,
   Ccr2,
   Cmar2,
@@ -932,6 +871,7 @@ dma_ch! {
   drv_dma1_ch3,
   "DMA1 Channel 3 resource.",
   Dma1Ch3Res,
+  Dmamux1Ch2Res,
   IntDma1Ch3,
   Ccr3,
   Cmar3,
@@ -1003,6 +943,7 @@ dma_ch! {
   drv_dma1_ch4,
   "DMA1 Channel 4 resource.",
   Dma1Ch4Res,
+  Dmamux1Ch3Res,
   IntDma1Ch4,
   Ccr4,
   Cmar4,
@@ -1074,6 +1015,7 @@ dma_ch! {
   drv_dma1_ch5,
   "DMA1 Channel 5 resource.",
   Dma1Ch5Res,
+  Dmamux1Ch4Res,
   IntDma1Ch5,
   Ccr5,
   Cmar5,
@@ -1145,6 +1087,7 @@ dma_ch! {
   drv_dma1_ch6,
   "DMA1 Channel 6 resource.",
   Dma1Ch6Res,
+  Dmamux1Ch5Res,
   IntDma1Ch6,
   Ccr6,
   Cmar6,
@@ -1216,6 +1159,7 @@ dma_ch! {
   drv_dma1_ch7,
   "DMA1 Channel 7 resource.",
   Dma1Ch7Res,
+  Dmamux1Ch6Res,
   IntDma1Ch7,
   Ccr7,
   Cmar7,
@@ -1287,6 +1231,7 @@ dma_ch! {
   drv_dma2_ch1,
   "DMA2 Channel 1 resource.",
   Dma2Ch1Res,
+  Dmamux1Ch7Res,
   IntDma2Ch1,
   Ccr1,
   Cmar1,
@@ -1358,6 +1303,7 @@ dma_ch! {
   drv_dma2_ch2,
   "DMA2 Channel 2 resource.",
   Dma2Ch2Res,
+  Dmamux1Ch8Res,
   IntDma2Ch2,
   Ccr2,
   Cmar2,
@@ -1429,6 +1375,7 @@ dma_ch! {
   drv_dma2_ch3,
   "DMA2 Channel 3 resource.",
   Dma2Ch3Res,
+  Dmamux1Ch9Res,
   IntDma2Ch3,
   Ccr3,
   Cmar3,
@@ -1500,6 +1447,7 @@ dma_ch! {
   drv_dma2_ch4,
   "DMA2 Channel 4 resource.",
   Dma2Ch4Res,
+  Dmamux1Ch10Res,
   IntDma2Ch4,
   Ccr4,
   Cmar4,
@@ -1571,6 +1519,7 @@ dma_ch! {
   drv_dma2_ch5,
   "DMA2 Channel 5 resource.",
   Dma2Ch5Res,
+  Dmamux1Ch11Res,
   IntDma2Ch5,
   Ccr5,
   Cmar5,
@@ -1637,6 +1586,7 @@ dma_ch! {
   drv_dma2_ch6,
   "DMA2 Channel 6 resource.",
   Dma2Ch6Res,
+  Dmamux1Ch12Res,
   IntDma2Ch6,
   Ccr6,
   Cmar6,
@@ -1703,6 +1653,7 @@ dma_ch! {
   drv_dma2_ch7,
   "DMA2 Channel 7 resource.",
   Dma2Ch7Res,
+  Dmamux1Ch13Res,
   IntDma2Ch7,
   Ccr7,
   Cmar7,
