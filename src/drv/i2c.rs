@@ -1191,7 +1191,7 @@ macro_rules! i2c_shared {
         cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
         dmamux: &DmamuxCh<T::DmamuxChRes>,
       ) {
-        dmamux.cr_dmareq_id().write(cr_val, $dma_rx_req_id);
+        dmamux.cr_dmareq_id().write(cr_val, $dma_tx_req_id);
       }
     }
 
