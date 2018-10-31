@@ -18,4 +18,4 @@ syn = "0.15"
 
 [dependencies.drone-macros-core]
 version = "=0.9.0"
-path = "../../drone-core/macros-core"
+git = "https://github.com/drone-os/drone-core"
