@@ -1,6 +1,6 @@
 [package]
 name = "drone-stm32-macros"
-version = "0.9.0" # remember to update html_root_url
+version = "0.9.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 description = "Drone for STM32. Procedural macros."
 readme = "README.md"
@@ -19,3 +19,4 @@ syn = "0.15"
 [dependencies.drone-macros-core]
 version = "=0.9.0"
 git = "https://github.com/drone-os/drone-core"
+# path = "../../drone-core/macros-core"

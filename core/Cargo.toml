@@ -1,0 +1,54 @@
+[package]
+name = "drone-stm32-core"
+version = "0.9.0"
+authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
+description = "Drone for STM32."
+readme = "README.md"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/drone-os/drone-stm32"
+
+[features]
+default = []
+stm32f100 = []
+stm32f101 = []
+stm32f102 = []
+stm32f103 = []
+stm32f107 = []
+stm32l4x1 = []
+stm32l4x2 = []
+stm32l4x3 = []
+stm32l4x5 = []
+stm32l4x6 = []
+stm32l4r5 = []
+stm32l4r7 = []
+stm32l4r9 = []
+stm32l4s5 = []
+stm32l4s7 = []
+stm32l4s9 = []
+
+[dependencies.drone-stm32-macros]
+version = "=0.9.0"
+path = "../macros"
+
+[dependencies.drone-core]
+version = "=0.9.0"
+git = "https://github.com/drone-os/drone-core"
+# path = "../../drone-core"
+
+[dependencies.futures-preview]
+version = "0.2"
+default-features = false
+
+[build-dependencies.drone-mirror-failure]
+version = "0.1"
+git = "https://github.com/drone-os/drone-mirror-failure"
+branch = "version-0.1"
+default-features = false
+features = ["std"]
+
+[build-dependencies.drone-stm32-svd]
+version = "=0.9.0"
+path = "../svd"
+
+[build-dependencies.xml-rs]
+version = "0.8"
