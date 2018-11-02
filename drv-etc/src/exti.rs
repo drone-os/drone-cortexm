@@ -1,7 +1,7 @@
 //! Extended interrupts and events controller.
 
 use drone_core::drv::Resource;
-use drone_stm32::fib::{self, Fiber};
+use drone_stm32_core::fib::{self, Fiber};
 #[cfg(any(
   feature = "stm32f100",
   feature = "stm32f101",
@@ -9,7 +9,7 @@ use drone_stm32::fib::{self, Fiber};
   feature = "stm32f103",
   feature = "stm32f107"
 ))]
-use drone_stm32::reg::afio;
+use drone_stm32_device::reg::afio;
 #[cfg(any(
   feature = "stm32f100",
   feature = "stm32f101",
@@ -28,9 +28,9 @@ use drone_stm32::reg::afio;
   feature = "stm32l4s7",
   feature = "stm32l4s9"
 ))]
-use drone_stm32::reg::exti;
-use drone_stm32::reg::marker::*;
-use drone_stm32::reg::prelude::*;
+use drone_stm32_device::reg::exti;
+use drone_stm32_device::reg::marker::*;
+use drone_stm32_device::reg::prelude::*;
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
@@ -44,7 +44,7 @@ use drone_stm32::reg::prelude::*;
   feature = "stm32l4s7",
   feature = "stm32l4s9"
 ))]
-use drone_stm32::reg::syscfg;
+use drone_stm32_device::reg::syscfg;
 #[cfg(any(
   feature = "stm32f100",
   feature = "stm32f101",
@@ -63,10 +63,10 @@ use drone_stm32::reg::syscfg;
   feature = "stm32l4s7",
   feature = "stm32l4s9"
 ))]
-use drone_stm32::thr::int::{
+use drone_stm32_device::thr::int::{
   IntExti0, IntExti1, IntExti1510, IntExti2, IntExti3, IntExti4, IntExti95,
 };
-use drone_stm32::thr::prelude::*;
+use drone_stm32_device::thr::prelude::*;
 use futures::prelude::*;
 
 /// Error returned from [`ExtiLn::stream`](ExtiLn::stream) on overflow.

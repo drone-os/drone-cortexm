@@ -2,11 +2,11 @@ use super::{Timer, TimerOverflow, TimerRes};
 use core::ptr::write_volatile;
 use drone_core::bitfield::Bitfield;
 use drone_core::drv::Resource;
-use drone_stm32::fib::{self, FiberFuture, FiberStreamUnit};
-use drone_stm32::reg::prelude::*;
-use drone_stm32::reg::{scb, stk};
-use drone_stm32::thr::int::IntSysTick;
-use drone_stm32::thr::prelude::*;
+use drone_stm32_core::fib::{self, FiberFuture, FiberStreamUnit};
+use drone_stm32_device::reg::prelude::*;
+use drone_stm32_device::reg::{scb, stk};
+use drone_stm32_device::thr::int::IntSysTick;
+use drone_stm32_device::thr::prelude::*;
 use futures::prelude::*;
 
 /// SysTick driver.

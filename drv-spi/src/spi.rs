@@ -4,8 +4,8 @@
 use core::ptr::{read_volatile, write_volatile};
 use drone_core::bitfield::Bitfield;
 use drone_core::drv::Resource;
-use drone_stm32::reg::marker::*;
-use drone_stm32::reg::prelude::*;
+use drone_stm32_device::reg::marker::*;
+use drone_stm32_device::reg::prelude::*;
 #[cfg(any(
   feature = "stm32f100",
   feature = "stm32f101",
@@ -24,13 +24,13 @@ use drone_stm32::reg::prelude::*;
   feature = "stm32l4s7",
   feature = "stm32l4s9"
 ))]
-use drone_stm32::reg::{spi1, spi2, spi3};
+use drone_stm32_device::reg::{spi1, spi2, spi3};
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
   feature = "stm32l4x6"
 ))]
-use drone_stm32::thr::int::{
+use drone_stm32_device::thr::int::{
   IntDma1Ch2, IntDma1Ch3, IntDma1Ch4, IntDma1Ch5, IntDma2Ch1, IntDma2Ch2,
   IntDma2Ch3, IntDma2Ch4,
 };
@@ -43,13 +43,13 @@ use drone_stm32::thr::int::{
   feature = "stm32l4x3",
   feature = "stm32l4x5"
 ))]
-use drone_stm32::thr::int::{
+use drone_stm32_device::thr::int::{
   IntDma1Channel2 as IntDma1Ch2, IntDma1Channel3 as IntDma1Ch3,
   IntDma1Channel4 as IntDma1Ch4, IntDma1Channel5 as IntDma1Ch5,
   IntDma2Channel1 as IntDma2Ch1, IntDma2Channel2 as IntDma2Ch2,
 };
 #[cfg(any(feature = "stm32l4x3", feature = "stm32l4x5"))]
-use drone_stm32::thr::int::{
+use drone_stm32_device::thr::int::{
   IntDma2Channel3 as IntDma2Ch3, IntDma2Channel4 as IntDma2Ch4,
 };
 #[cfg(any(
@@ -70,8 +70,8 @@ use drone_stm32::thr::int::{
   feature = "stm32l4s7",
   feature = "stm32l4s9"
 ))]
-use drone_stm32::thr::int::{IntSpi1, IntSpi2, IntSpi3};
-use drone_stm32::thr::prelude::*;
+use drone_stm32_device::thr::int::{IntSpi1, IntSpi2, IntSpi3};
+use drone_stm32_device::thr::prelude::*;
 use drone_stm32_drv_dma::dma::{Dma, DmaRes};
 #[cfg(any(
   feature = "stm32f100",

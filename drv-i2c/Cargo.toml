@@ -3,7 +3,6 @@ name = "drone-stm32-drv-i2c"
 version = "0.9.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 description = "Drone for STM32. I2C driver."
-readme = "README.md"
 license = "MIT/Apache-2.0"
 repository = "https://github.com/drone-os/drone-stm32"
 
@@ -34,6 +33,10 @@ git = "https://github.com/drone-os/drone-core"
 [dependencies.drone-stm32-core]
 version = "0.9.0"
 path = "../core"
+
+[dependencies.drone-stm32-device]
+version = "=0.9.0"
+path = "../device"
 
 [dependencies.drone-stm32-drv-dmamux]
 version = "0.9.0"

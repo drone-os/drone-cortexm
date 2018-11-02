@@ -1,13 +1,6 @@
 //! Interrupt mappings.
 
-#![allow(clippy::doc_markdown)]
-
-#[allow(unused_imports)]
-use thr::int;
-#[allow(unused_imports)]
 use thr::prelude::*;
-
-include!(concat!(env!("OUT_DIR"), "/svd_interrupts.rs"));
 
 /// NVIC register bundle.
 pub trait IntBundle {

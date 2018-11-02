@@ -2,9 +2,9 @@
 
 use drone_core::bitfield::Bitfield;
 use drone_core::drv::Resource;
-use drone_stm32::reg::dmamux1;
-use drone_stm32::reg::marker::*;
-use drone_stm32::reg::prelude::*;
+use drone_stm32_device::reg::dmamux1;
+use drone_stm32_device::reg::marker::*;
+use drone_stm32_device::reg::prelude::*;
 
 /// DMAMUX channel driver.
 #[derive(Driver)]

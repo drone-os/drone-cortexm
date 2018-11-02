@@ -18,13 +18,3 @@ mod map {
 }
 
 pub use self::map::*;
-
-#[allow(clippy::doc_markdown)]
-mod tokens {
-  use drone_core::reg::tokens;
-  use reg::map::*;
-
-  include!(concat!(env!("OUT_DIR"), "/svd_reg_tokens.rs"));
-}
-
-pub use self::tokens::*;

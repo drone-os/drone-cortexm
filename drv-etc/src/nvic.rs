@@ -18,9 +18,9 @@
   feature = "stm32l4s7",
   feature = "stm32l4s9"
 ))]
-use drone_stm32::reg::nvic;
+use drone_stm32_device::reg::nvic;
 #[allow(unused_imports)]
-use drone_stm32::reg::prelude::*;
+use drone_stm32_device::reg::prelude::*;
 
 /// Nested vectored interrupt controller.
 #[allow(missing_docs)]

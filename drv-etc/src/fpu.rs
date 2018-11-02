@@ -1,7 +1,7 @@
 //! Floating point unit.
 
-use drone_stm32::reg::prelude::*;
-use drone_stm32::reg::{fpu, fpu_cpacr};
+use drone_stm32_device::reg::prelude::*;
+use drone_stm32_device::reg::{fpu, fpu_cpacr};
 
 /// FPU driver.
 #[derive(Driver)]

@@ -1,6 +1,13 @@
 [workspace]
 members = [
   "core",
+  "device",
+  "device-0",
+  "device-1",
+  "device-2",
+  "device-3",
+  "device-4",
+  "device-5",
   "drv-dma",
   "drv-dmamux",
   "drv-i2c",
@@ -24,6 +31,7 @@ repository = "https://github.com/drone-os/drone-stm32"
 default = []
 stm32f100 = [
   "drone-stm32-core/stm32f100",
+  "drone-stm32-device/stm32f100",
   "drone-stm32-drv-dma/stm32f100",
   "drone-stm32-drv-dmamux/stm32f100",
   "drone-stm32-drv-i2c/stm32f100",
@@ -33,6 +41,7 @@ stm32f100 = [
 ]
 stm32f101 = [
   "drone-stm32-core/stm32f101",
+  "drone-stm32-device/stm32f101",
   "drone-stm32-drv-dma/stm32f101",
   "drone-stm32-drv-dmamux/stm32f101",
   "drone-stm32-drv-i2c/stm32f101",
@@ -42,6 +51,7 @@ stm32f101 = [
 ]
 stm32f102 = [
   "drone-stm32-core/stm32f102",
+  "drone-stm32-device/stm32f102",
   "drone-stm32-drv-dma/stm32f102",
   "drone-stm32-drv-dmamux/stm32f102",
   "drone-stm32-drv-i2c/stm32f102",
@@ -51,6 +61,7 @@ stm32f102 = [
 ]
 stm32f103 = [
   "drone-stm32-core/stm32f103",
+  "drone-stm32-device/stm32f103",
   "drone-stm32-drv-dma/stm32f103",
   "drone-stm32-drv-dmamux/stm32f103",
   "drone-stm32-drv-i2c/stm32f103",
@@ -60,6 +71,7 @@ stm32f103 = [
 ]
 stm32f107 = [
   "drone-stm32-core/stm32f107",
+  "drone-stm32-device/stm32f107",
   "drone-stm32-drv-dma/stm32f107",
   "drone-stm32-drv-dmamux/stm32f107",
   "drone-stm32-drv-i2c/stm32f107",
@@ -69,6 +81,7 @@ stm32f107 = [
 ]
 stm32l4x1 = [
   "drone-stm32-core/stm32l4x1",
+  "drone-stm32-device/stm32l4x1",
   "drone-stm32-drv-dma/stm32l4x1",
   "drone-stm32-drv-dmamux/stm32l4x1",
   "drone-stm32-drv-i2c/stm32l4x1",
@@ -78,6 +91,7 @@ stm32l4x1 = [
 ]
 stm32l4x2 = [
   "drone-stm32-core/stm32l4x2",
+  "drone-stm32-device/stm32l4x2",
   "drone-stm32-drv-dma/stm32l4x2",
   "drone-stm32-drv-dmamux/stm32l4x2",
   "drone-stm32-drv-i2c/stm32l4x2",
@@ -87,6 +101,7 @@ stm32l4x2 = [
 ]
 stm32l4x3 = [
   "drone-stm32-core/stm32l4x3",
+  "drone-stm32-device/stm32l4x3",
   "drone-stm32-drv-dma/stm32l4x3",
   "drone-stm32-drv-dmamux/stm32l4x3",
   "drone-stm32-drv-i2c/stm32l4x3",
@@ -96,6 +111,7 @@ stm32l4x3 = [
 ]
 stm32l4x5 = [
   "drone-stm32-core/stm32l4x5",
+  "drone-stm32-device/stm32l4x5",
   "drone-stm32-drv-dma/stm32l4x5",
   "drone-stm32-drv-dmamux/stm32l4x5",
   "drone-stm32-drv-i2c/stm32l4x5",
@@ -105,6 +121,7 @@ stm32l4x5 = [
 ]
 stm32l4x6 = [
   "drone-stm32-core/stm32l4x6",
+  "drone-stm32-device/stm32l4x6",
   "drone-stm32-drv-dma/stm32l4x6",
   "drone-stm32-drv-dmamux/stm32l4x6",
   "drone-stm32-drv-i2c/stm32l4x6",
@@ -114,6 +131,7 @@ stm32l4x6 = [
 ]
 stm32l4r5 = [
   "drone-stm32-core/stm32l4r5",
+  "drone-stm32-device/stm32l4r5",
   "drone-stm32-drv-dma/stm32l4r5",
   "drone-stm32-drv-dmamux/stm32l4r5",
   "drone-stm32-drv-i2c/stm32l4r5",
@@ -123,6 +141,7 @@ stm32l4r5 = [
 ]
 stm32l4r7 = [
   "drone-stm32-core/stm32l4r7",
+  "drone-stm32-device/stm32l4r7",
   "drone-stm32-drv-dma/stm32l4r7",
   "drone-stm32-drv-dmamux/stm32l4r7",
   "drone-stm32-drv-i2c/stm32l4r7",
@@ -132,6 +151,7 @@ stm32l4r7 = [
 ]
 stm32l4r9 = [
   "drone-stm32-core/stm32l4r9",
+  "drone-stm32-device/stm32l4r9",
   "drone-stm32-drv-dma/stm32l4r9",
   "drone-stm32-drv-dmamux/stm32l4r9",
   "drone-stm32-drv-i2c/stm32l4r9",
@@ -141,6 +161,7 @@ stm32l4r9 = [
 ]
 stm32l4s5 = [
   "drone-stm32-core/stm32l4s5",
+  "drone-stm32-device/stm32l4s5",
   "drone-stm32-drv-dma/stm32l4s5",
   "drone-stm32-drv-dmamux/stm32l4s5",
   "drone-stm32-drv-i2c/stm32l4s5",
@@ -150,6 +171,7 @@ stm32l4s5 = [
 ]
 stm32l4s7 = [
   "drone-stm32-core/stm32l4s7",
+  "drone-stm32-device/stm32l4s7",
   "drone-stm32-drv-dma/stm32l4s7",
   "drone-stm32-drv-dmamux/stm32l4s7",
   "drone-stm32-drv-i2c/stm32l4s7",
@@ -159,6 +181,7 @@ stm32l4s7 = [
 ]
 stm32l4s9 = [
   "drone-stm32-core/stm32l4s9",
+  "drone-stm32-device/stm32l4s9",
   "drone-stm32-drv-dma/stm32l4s9",
   "drone-stm32-drv-dmamux/stm32l4s9",
   "drone-stm32-drv-i2c/stm32l4s9",
@@ -175,6 +198,10 @@ git = "https://github.com/drone-os/drone-core"
 [dependencies.drone-stm32-core]
 version = "=0.9.0"
 path = "core"
+
+[dependencies.drone-stm32-device]
+version = "=0.9.0"
+path = "device"
 
 [dependencies.drone-stm32-drv-dma]
 version = "=0.9.0"

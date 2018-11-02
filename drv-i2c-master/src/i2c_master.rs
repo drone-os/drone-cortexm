@@ -1,7 +1,7 @@
 //! I2C master session.
 
-use drone_stm32::reg::prelude::*;
-use drone_stm32::thr::prelude::*;
+use drone_stm32_core::reg::prelude::*;
+use drone_stm32_core::thr::prelude::*;
 use drone_stm32_drv_dma::dma::{Dma, DmaRes, DmaTransferError};
 #[cfg(any(
   feature = "stm32l4r5",

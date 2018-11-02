@@ -35,6 +35,7 @@
 
 extern crate drone_core;
 extern crate drone_stm32_core;
+extern crate drone_stm32_device;
 extern crate drone_stm32_drv_dma;
 extern crate drone_stm32_drv_dmamux;
 extern crate drone_stm32_drv_etc;
@@ -47,6 +48,7 @@ extern crate test;
 pub mod drv;
 
 pub use drone_stm32_core::*;
+pub use drone_stm32_device::{reg, thr};
 
 #[cfg(test)]
 use drone_core::heap;

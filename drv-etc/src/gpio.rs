@@ -13,7 +13,7 @@
   feature = "stm32l4s7",
   feature = "stm32l4s9"
 ))]
-use drone_stm32::reg::gpioh;
+use drone_stm32_device::reg::gpioh;
 #[cfg(any(
   feature = "stm32l4x6",
   feature = "stm32l4r5",
@@ -23,8 +23,8 @@ use drone_stm32::reg::gpioh;
   feature = "stm32l4s7",
   feature = "stm32l4s9"
 ))]
-use drone_stm32::reg::gpioi;
-use drone_stm32::reg::prelude::*;
+use drone_stm32_device::reg::gpioi;
+use drone_stm32_device::reg::prelude::*;
 #[cfg(any(
   feature = "stm32f100",
   feature = "stm32f101",
@@ -43,7 +43,7 @@ use drone_stm32::reg::prelude::*;
   feature = "stm32l4s7",
   feature = "stm32l4s9"
 ))]
-use drone_stm32::reg::{gpioa, gpiob, gpioc, gpiod, gpioe};
+use drone_stm32_device::reg::{gpioa, gpiob, gpioc, gpiod, gpioe};
 #[cfg(any(
   feature = "stm32f100",
   feature = "stm32f101",
@@ -59,7 +59,7 @@ use drone_stm32::reg::{gpioa, gpiob, gpioc, gpiod, gpioe};
   feature = "stm32l4s7",
   feature = "stm32l4s9"
 ))]
-use drone_stm32::reg::{gpiof, gpiog};
+use drone_stm32_device::reg::{gpiof, gpiog};
 
 /// GPIO port.
 #[allow(missing_docs)]

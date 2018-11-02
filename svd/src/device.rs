@@ -91,9 +91,32 @@ enum Access {
 }
 
 impl Device {
-  pub fn generate(
+  pub fn generate_reg_map(
     self,
     reg_map: &mut File,
+    only: &[&str],
+    except: &[&str],
+    pool: Option<(usize, usize)>,
+  ) -> Result<(), Error> {
+    for (i, peripheral) in self.peripherals.peripheral.values().enumerate() {
+      if !only.is_empty() && only.iter().all(|&name| name != peripheral.name) {
+        continue;
+      }
+      if except.iter().any(|&name| name == peripheral.name) {
+        continue;
+      }
+      if let Some((number, size)) = pool {
+        if i % size != number {
+          continue;
+        }
+      }
+      peripheral.generate_reg_map(&self.peripherals, reg_map)?;
+    }
+    Ok(())
+  }
+
+  pub fn generate_rest(
+    self,
     reg_tokens: &mut File,
     interrupts: &mut File,
   ) -> Result<(), Error> {
@@ -102,10 +125,9 @@ impl Device {
     writeln!(reg_tokens, "  /// Register tokens for {}", self.name)?;
     writeln!(reg_tokens, "  pub struct RegIdx;")?;
     for peripheral in self.peripherals.peripheral.values() {
-      peripheral.generate(
+      peripheral.generate_rest(
         &self.peripherals,
         &mut int_names,
-        reg_map,
         reg_tokens,
         interrupts,
       )?;
@@ -116,21 +138,18 @@ impl Device {
 }
 
 impl Peripheral {
-  fn generate(
+  fn generate_reg_map(
     &self,
     peripherals: &Peripherals,
-    int_names: &mut HashSet<String>,
     reg_map: &mut File,
-    reg_tokens: &mut File,
-    interrupts: &mut File,
   ) -> Result<(), Error> {
     let &Peripheral {
       ref derived_from,
       ref name,
       ref description,
       base_address,
-      ref interrupt,
       ref registers,
+      ..
     } = self;
     let parent = if let Some(derived_from) = derived_from {
       Some(
@@ -151,15 +170,47 @@ impl Peripheral {
       writeln!(reg_map, "  /// {}", line.trim())?;
     }
     writeln!(reg_map, "  pub mod {};", name)?;
+    registers
+      .as_ref()
+      .or_else(|| parent.and_then(|x| x.registers.as_ref()))
+      .ok_or_else(|| err_msg("Peripheral registers not found"))?
+      .generate_reg_map(base_address, reg_map)?;
+    writeln!(reg_map, "}}")?;
+    Ok(())
+  }
+
+  fn generate_rest(
+    &self,
+    peripherals: &Peripherals,
+    int_names: &mut HashSet<String>,
+    reg_tokens: &mut File,
+    interrupts: &mut File,
+  ) -> Result<(), Error> {
+    let &Peripheral {
+      ref derived_from,
+      ref name,
+      ref interrupt,
+      ref registers,
+      ..
+    } = self;
+    let parent = if let Some(derived_from) = derived_from {
+      Some(
+        peripherals
+          .peripheral
+          .get(derived_from)
+          .ok_or_else(|| err_msg("Peripheral `derivedFrom` not found"))?,
+      )
+    } else {
+      None
+    };
     writeln!(reg_tokens, "  {} {{", name)?;
     registers
       .as_ref()
       .or_else(|| parent.and_then(|x| x.registers.as_ref()))
       .ok_or_else(|| err_msg("Peripheral registers not found"))?
-      .generate(base_address, reg_map, reg_tokens)?;
-    interrupt.generate(int_names, interrupts)?;
+      .generate_reg_tokens(reg_tokens)?;
     writeln!(reg_tokens, "  }}")?;
-    writeln!(reg_map, "}}")?;
+    interrupt.generate(int_names, interrupts)?;
     Ok(())
   }
 }
@@ -198,11 +249,10 @@ impl Interrupts for Vec<Interrupt> {
 }
 
 impl Registers {
-  fn generate(
+  fn generate_reg_map(
     &self,
     base_address: u32,
     reg_map: &mut File,
-    reg_tokens: &mut File,
   ) -> Result<(), Error> {
     for register in &self.register {
       let &Register {
@@ -251,6 +301,17 @@ impl Registers {
         fields.generate(access, reg_map)?;
       }
       writeln!(reg_map, "  }}")?;
+    }
+    Ok(())
+  }
+
+  fn generate_reg_tokens(&self, reg_tokens: &mut File) -> Result<(), Error> {
+    for register in &self.register {
+      let &Register {
+        ref name,
+        ref description,
+        ..
+      } = register;
       for line in description.lines() {
         writeln!(reg_tokens, "    /// {}", line.trim())?;
       }

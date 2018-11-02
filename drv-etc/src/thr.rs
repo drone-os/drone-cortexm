@@ -1,8 +1,8 @@
 //! Drone threading system resources.
 
 use drone_core::thr::ThrTokens;
-use drone_stm32::reg::prelude::*;
-use drone_stm32::reg::{mpu, scb};
+use drone_stm32_device::reg::prelude::*;
+use drone_stm32_device::reg::{mpu, scb};
 use nvic::Nvic;
 
 static MPU_RESET_TABLE: [u32; 16] = [
