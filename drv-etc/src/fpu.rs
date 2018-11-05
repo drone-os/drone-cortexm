@@ -51,7 +51,9 @@ impl Fpu {
   pub fn fpu_fpscr(&self) -> &fpu::Fpscr<Srt> {
     &self.0.fpu_fpscr
   }
+}
 
+impl Fpu {
   /// Enables FPU.
   pub fn enable(&self) {
     self.0.fpu_cpacr.store(|r| r.write_cp(0b1111));

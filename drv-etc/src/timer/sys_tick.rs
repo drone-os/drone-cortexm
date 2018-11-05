@@ -169,7 +169,9 @@ impl<I: IntSysTick<Att>> Timer<SysTickRes<I, Frt>> {
   pub fn val(&self) -> &stk::Val<Srt> {
     &self.0.stk_val
   }
+}
 
+impl<I: IntSysTick<Att>> Timer<SysTickRes<I, Frt>> {
   /// Change SysTick exception state to pending.
   #[inline(always)]
   pub fn set_pending(&self) {

@@ -342,7 +342,9 @@ impl<T: DmaRes> Dma<T> {
   pub fn isr_teif(&self) -> &T::IsrTeif {
     self.0.isr_teif()
   }
+}
 
+impl<T: DmaRes> Dma<T> {
   /// Returns a number of data to transfer.
   #[inline(always)]
   pub fn size(&self) -> usize {

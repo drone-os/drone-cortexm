@@ -120,7 +120,14 @@ where
   pub fn dmamux_tx(&self) -> &DmamuxCh<DmaTxRes::DmamuxChRes> {
     &self.0.dmamux_tx
   }
+}
 
+impl<I2CRes, DmaRxRes, DmaTxRes> I2CMaster<I2CRes, DmaRxRes, DmaTxRes>
+where
+  I2CRes: I2CIntRes + I2CDmaRxRes<DmaRxRes> + I2CDmaTxRes<DmaTxRes>,
+  DmaRxRes: DmaRes,
+  DmaTxRes: DmaRes,
+{
   #[cfg(any(
     feature = "stm32l4r5",
     feature = "stm32l4r7",

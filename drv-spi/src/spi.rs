@@ -541,7 +541,9 @@ impl<T: SpiRes> Spi<T> {
   pub fn txcrcr(&self) -> &T::Txcrcr {
     self.0.txcrcr()
   }
+}
 
+impl<T: SpiRes> Spi<T> {
   /// Sets the size of a data frame to 8 bits.
   #[inline(always)]
   pub fn set_frame_8(&self, _cr2: &mut T::Cr2Val) {

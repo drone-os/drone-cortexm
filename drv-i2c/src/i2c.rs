@@ -726,7 +726,9 @@ impl<T: I2CIntRes> I2C<T> {
   pub fn int_er(&self) -> T::IntEr {
     self.0.int_er()
   }
+}
 
+impl<T: I2CIntRes> I2C<T> {
   /// Returns a future, which resolves on I2C error event.
   pub fn transfer_error(&mut self) -> impl Future<Item = !, Error = I2CError> {
     let berr = self.0.isr_berr_mut().fork();
