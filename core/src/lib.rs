@@ -17,6 +17,7 @@
 #![feature(never_type)]
 #![feature(prelude_import)]
 #![feature(range_contains)]
+#![feature(self_struct_ctor)]
 #![feature(untagged_unions)]
 #![no_std]
 #![warn(missing_docs)]

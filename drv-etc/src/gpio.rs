@@ -1,5 +1,8 @@
 //! General-purpose I/O.
 
+use core::marker::PhantomData;
+use drone_core::bitfield::Bitfield;
+use drone_core::drv::Resource;
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
@@ -24,7 +27,27 @@ use drone_stm32_device::reg::gpioh;
   feature = "stm32l4s9"
 ))]
 use drone_stm32_device::reg::gpioi;
+use drone_stm32_device::reg::marker::*;
 use drone_stm32_device::reg::prelude::*;
+#[cfg(any(
+  feature = "stm32f100",
+  feature = "stm32f101",
+  feature = "stm32f102",
+  feature = "stm32f103",
+  feature = "stm32f107",
+  feature = "stm32l4x1",
+  feature = "stm32l4x2",
+  feature = "stm32l4x3",
+  feature = "stm32l4x5",
+  feature = "stm32l4x6",
+  feature = "stm32l4r5",
+  feature = "stm32l4r7",
+  feature = "stm32l4r9",
+  feature = "stm32l4s5",
+  feature = "stm32l4s7",
+  feature = "stm32l4s9"
+))]
+use drone_stm32_device::reg::rcc;
 #[cfg(any(
   feature = "stm32f100",
   feature = "stm32f101",
@@ -60,11 +83,13 @@ use drone_stm32_device::reg::{gpioa, gpiob, gpioc, gpiod, gpioe};
   feature = "stm32l4s9"
 ))]
 use drone_stm32_device::reg::{gpiof, gpiog};
+use drone_stm32_device::reg::{RegGuard, RegGuardCnt, RegGuardRes};
 
 /// GPIO port.
 #[allow(missing_docs)]
 pub trait GpioPort<T: RegTag>: Sized + Send + Sync + 'static {
   type Pins;
+  type RccRes: GpioRccRes;
 
   #[cfg(any(
     feature = "stm32l4x1",
@@ -334,6 +359,9 @@ pub trait GpioPortAscr<T: RegTag>: GpioPort<T> {
 /// GPIO pin.
 #[allow(missing_docs)]
 pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
+  type Port: GpioPort<T>;
+  type RccRes: GpioRccRes;
+
   #[cfg(any(
     feature = "stm32l4x1",
     feature = "stm32l4x2",
@@ -681,6 +709,63 @@ pub trait GpioPinAscr<T: RegTag>: GpioPin<T> {
   res_reg_decl!(AscrAsc, ascr, ascr_mut);
 }
 
+/// GPIO port reset and clock control driver.
+#[derive(Driver)]
+pub struct GpioRcc<T, C>(T, PhantomData<C>)
+where
+  T: GpioRccRes,
+  C: RegGuardCnt<GpioOn<T>, Frt>;
+
+/// GPIO port reset and clock control resource.
+#[allow(missing_docs)]
+pub trait GpioRccRes: Resource {
+  type RccAhb2EnrVal: Bitfield<Bits = u32>;
+  type RccAhb2Enr: FRwRegBitBand<Val = Self::RccAhb2EnrVal>;
+  type RccAhb2EnrGpioen: FRwRwRegFieldBitBand<Reg = Self::RccAhb2Enr>;
+
+  res_reg_decl!(RccAhb2EnrGpioen, en, en_mut);
+}
+
+impl<T, C> GpioRcc<T, C>
+where
+  T: GpioRccRes,
+  C: RegGuardCnt<GpioOn<T>, Frt>,
+{
+  /// Enables the port clock.
+  pub fn on(&mut self) -> RegGuard<GpioOn<T>, C, Frt> {
+    RegGuard::new(GpioOn(self.0.en_mut().fork()))
+  }
+}
+
+/// GPIO port clock on guard resource.
+pub struct GpioOn<T: GpioRccRes>(T::RccAhb2EnrGpioen);
+
+impl<T: GpioRccRes> RegFork for GpioOn<T> {
+  fn fork(&mut self) -> Self {
+    Self(self.0.fork())
+  }
+}
+
+impl<T: GpioRccRes> RegGuardRes<Frt> for GpioOn<T> {
+  type Reg = T::RccAhb2Enr;
+  type Field = T::RccAhb2EnrGpioen;
+
+  #[inline(always)]
+  fn field(&self) -> &Self::Field {
+    &self.0
+  }
+
+  #[inline(always)]
+  fn up(&self, val: &mut <Self::Reg as Reg<Frt>>::Val) {
+    self.0.set(val)
+  }
+
+  #[inline(always)]
+  fn down(&self, val: &mut <Self::Reg as Reg<Frt>>::Val) {
+    self.0.clear(val)
+  }
+}
+
 #[allow(unused_macros)]
 macro_rules! gpio_port {
   (
@@ -689,6 +774,16 @@ macro_rules! gpio_port {
     $name_port_macro:ident,
     $doc_pins:expr,
     $name_pins:ident,
+    $doc_rcc:expr,
+    $name_rcc:ident,
+    $name_rcc_macro:ident,
+    $doc_rcc_res:expr,
+    $name_rcc_res:ident,
+    $doc_on_res:expr,
+    $name_on_res:ident,
+    $doc_on:expr,
+    $name_on:ident,
+    $gpioen_ty:ident,
     $gpio:ident,
     $gpio_afrl:ident,
     $gpio_afrh:ident,
@@ -704,6 +799,8 @@ macro_rules! gpio_port {
     $gpio_ospeedr:ident,
     $gpio_otyper:ident,
     $gpio_pupdr:ident,
+    $gpioen:ident,
+    $rcc_ahb2enr_gpioen:ident,
     #[$ascr_cfg:meta],
     $((
       $afr_path:ident,
@@ -902,6 +999,21 @@ macro_rules! gpio_port {
       )*
     }
 
+    #[doc = $doc_rcc]
+    pub type $name_rcc<C> = GpioRcc<$name_rcc_res<Frt>, C>;
+
+    #[doc = $doc_rcc_res]
+    #[allow(missing_docs)]
+    pub struct $name_rcc_res<Rt: RegTag> {
+      pub $rcc_ahb2enr_gpioen: rcc::ahb2enr::$gpioen_ty<Rt>,
+    }
+
+    #[doc = $doc_on_res]
+    pub type $name_on_res = GpioOn<$name_rcc_res<Frt>>;
+
+    #[doc = $doc_on]
+    pub type $name_on<C> = RegGuard<$name_on_res, C, Frt>;
+
     #[cfg(any(
       feature = "stm32l4x6",
       feature = "stm32l4r5",
@@ -981,8 +1093,21 @@ macro_rules! gpio_port {
       };
     }
 
+    /// Creates a new `GpioRcc`.
+    #[macro_export]
+    macro_rules! $name_rcc_macro {
+      ($reg:ident, $rgc:path) => {
+        <$crate::gpio::GpioRcc<_, $rgc> as ::drone_core::drv::Driver>::new(
+          $crate::gpio::$name_rcc_res {
+            $rcc_ahb2enr_gpioen: $reg.rcc_ahb2enr.$gpioen,
+          },
+        )
+      };
+    }
+
     impl<T: RegTag> GpioPort<T> for $name_port<T> {
       type Pins = $name_pins<T>;
+      type RccRes = $name_rcc_res<Frt>;
 
       #[cfg(any(
         feature = "stm32l4x1",
@@ -1516,6 +1641,25 @@ macro_rules! gpio_port {
       res_reg_impl!(Ascr, ascr, ascr_mut, $gpio_ascr);
     }
 
+    impl Resource for $name_rcc_res<Frt> {
+      type Source = $name_rcc_res<Srt>;
+
+      #[inline(always)]
+      fn from_source(source: Self::Source) -> Self {
+        Self {
+          $rcc_ahb2enr_gpioen: source.$rcc_ahb2enr_gpioen.into(),
+        }
+      }
+    }
+
+    impl GpioRccRes for $name_rcc_res<Frt> {
+      type RccAhb2EnrVal= rcc::ahb2enr::Val;
+      type RccAhb2Enr= rcc::ahb2enr::Reg<Frt>;
+      type RccAhb2EnrGpioen = rcc::ahb2enr::$gpioen_ty<Frt>;
+
+      res_reg_impl!(RccAhb2EnrGpioen, en, en_mut, $rcc_ahb2enr_gpioen);
+    }
+
     $(
       $(
         #[doc = $doc_pin]
@@ -1720,6 +1864,9 @@ macro_rules! gpio_port {
         }
 
         impl<T: RegTag> GpioPin<T> for $name_pin_ty<T> {
+          type Port = $name_port<T>;
+          type RccRes = $name_rcc_res<Frt>;
+
           #[cfg(any(
             feature = "stm32l4x1",
             feature = "stm32l4x2",
@@ -2076,6 +2223,16 @@ gpio_port! {
   drv_gpio_a,
   "GPIO port A pins.",
   GpioAPins,
+  "GPIO port A reset and clock control driver.",
+  GpioARcc,
+  drv_gpio_a_rcc,
+  "GPIO port A reset and clock control resource.",
+  GpioARccRes,
+  "GPIO port A clock on guard resource.",
+  GpioAOnRes,
+  "GPIO port A clock on guard driver.",
+  GpioAOn,
+  Gpioaen,
   gpioa,
   gpioa_afrl,
   gpioa_afrh,
@@ -2091,6 +2248,8 @@ gpio_port! {
   gpioa_ospeedr,
   gpioa_otyper,
   gpioa_pupdr,
+  gpioaen,
+  rcc_ahb2enr_gpioaen,
   #[not(__false__)],
   (
     afrl,
@@ -2866,6 +3025,16 @@ gpio_port! {
   drv_gpio_b,
   "GPIO port B pins.",
   GpioBPins,
+  "GPIO port B reset and clock control driver.",
+  GpioBRcc,
+  drv_gpio_b_rcc,
+  "GPIO port B reset and clock control resource.",
+  GpioBRccRes,
+  "GPIO port B clock on guard resource.",
+  GpioBOnRes,
+  "GPIO port B clock on guard driver.",
+  GpioBOn,
+  Gpioben,
   gpiob,
   gpiob_afrl,
   gpiob_afrh,
@@ -2881,6 +3050,8 @@ gpio_port! {
   gpiob_ospeedr,
   gpiob_otyper,
   gpiob_pupdr,
+  gpioben,
+  rcc_ahb2enr_gpioben,
   #[not(__false__)],
   (
     afrl,
@@ -3656,6 +3827,16 @@ gpio_port! {
   drv_gpio_c,
   "GPIO port C pins.",
   GpioCPins,
+  "GPIO port C reset and clock control driver.",
+  GpioCRcc,
+  drv_gpio_c_rcc,
+  "GPIO port C reset and clock control resource.",
+  GpioCRccRes,
+  "GPIO port C clock on guard resource.",
+  GpioCOnRes,
+  "GPIO port C clock on guard driver.",
+  GpioCOn,
+  Gpiocen,
   gpioc,
   gpioc_afrl,
   gpioc_afrh,
@@ -3671,6 +3852,8 @@ gpio_port! {
   gpioc_ospeedr,
   gpioc_otyper,
   gpioc_pupdr,
+  gpiocen,
+  rcc_ahb2enr_gpiocen,
   #[not(__false__)],
   (
     afrl,
@@ -4446,6 +4629,16 @@ gpio_port! {
   drv_gpio_d,
   "GPIO port D pins.",
   GpioDPins,
+  "GPIO port D reset and clock control driver.",
+  GpioDRcc,
+  drv_gpio_d_rcc,
+  "GPIO port D reset and clock control resource.",
+  GpioDRccRes,
+  "GPIO port D clock on guard resource.",
+  GpioDOnRes,
+  "GPIO port D clock on guard driver.",
+  GpioDOn,
+  Gpioden,
   gpiod,
   gpiod_afrl,
   gpiod_afrh,
@@ -4461,6 +4654,8 @@ gpio_port! {
   gpiod_ospeedr,
   gpiod_otyper,
   gpiod_pupdr,
+  gpioden,
+  rcc_ahb2enr_gpioden,
   #[not(__false__)],
   (
     afrl,
@@ -5236,6 +5431,16 @@ gpio_port! {
   drv_gpio_e,
   "GPIO port E pins.",
   GpioEPins,
+  "GPIO port E reset and clock control driver.",
+  GpioERcc,
+  drv_gpio_e_rcc,
+  "GPIO port E reset and clock control resource.",
+  GpioERccRes,
+  "GPIO port E clock on guard resource.",
+  GpioEOnRes,
+  "GPIO port E clock on guard driver.",
+  GpioEOn,
+  Gpioeen,
   gpioe,
   gpioe_afrl,
   gpioe_afrh,
@@ -5251,6 +5456,8 @@ gpio_port! {
   gpioe_ospeedr,
   gpioe_otyper,
   gpioe_pupdr,
+  gpioeen,
+  rcc_ahb2enr_gpioeen,
   #[not(__false__)],
   (
     afrl,
@@ -6023,6 +6230,16 @@ gpio_port! {
   drv_gpio_f,
   "GPIO port F pins.",
   GpioFPins,
+  "GPIO port F reset and clock control driver.",
+  GpioFRcc,
+  drv_gpio_f_rcc,
+  "GPIO port F reset and clock control resource.",
+  GpioFRccRes,
+  "GPIO port F clock on guard resource.",
+  GpioFOnRes,
+  "GPIO port F clock on guard driver.",
+  GpioFOn,
+  Gpiofen,
   gpiof,
   gpiof_afrl,
   gpiof_afrh,
@@ -6038,6 +6255,8 @@ gpio_port! {
   gpiof_ospeedr,
   gpiof_otyper,
   gpiof_pupdr,
+  gpiofen,
+  rcc_ahb2enr_gpiofen,
   #[not(__false__)],
   (
     afrl,
@@ -6810,6 +7029,16 @@ gpio_port! {
   drv_gpio_g,
   "GPIO port G pins.",
   GpioGPins,
+  "GPIO port G reset and clock control driver.",
+  GpioGRcc,
+  drv_gpio_g_rcc,
+  "GPIO port G reset and clock control resource.",
+  GpioGRccRes,
+  "GPIO port G clock on guard resource.",
+  GpioGOnRes,
+  "GPIO port G clock on guard driver.",
+  GpioGOn,
+  Gpiogen,
   gpiog,
   gpiog_afrl,
   gpiog_afrh,
@@ -6825,6 +7054,8 @@ gpio_port! {
   gpiog_ospeedr,
   gpiog_otyper,
   gpiog_pupdr,
+  gpiogen,
+  rcc_ahb2enr_gpiogen,
   #[not(__false__)],
   (
     afrl,
@@ -7595,6 +7826,16 @@ gpio_port! {
   drv_gpio_h,
   "GPIO port H pins.",
   GpioHPins,
+  "GPIO port H reset and clock control driver.",
+  GpioHRcc,
+  drv_gpio_h_rcc,
+  "GPIO port H reset and clock control resource.",
+  GpioHRccRes,
+  "GPIO port H clock on guard resource.",
+  GpioHOnRes,
+  "GPIO port H clock on guard driver.",
+  GpioHOn,
+  Gpiohen,
   gpioh,
   gpioh_afrl,
   gpioh_afrh,
@@ -7610,6 +7851,8 @@ gpio_port! {
   gpioh_ospeedr,
   gpioh_otyper,
   gpioh_pupdr,
+  gpiohen,
+  rcc_ahb2enr_gpiohen,
   #[not(__false__)],
   (
     afrl,
@@ -8376,6 +8619,16 @@ gpio_port! {
   drv_gpio_i,
   "GPIO port I pins.",
   GpioIPins,
+  "GPIO port I reset and clock control driver.",
+  GpioIRcc,
+  drv_gpio_i_rcc,
+  "GPIO port I reset and clock control resource.",
+  GpioIRccRes,
+  "GPIO port I clock on guard resource.",
+  GpioIOnRes,
+  "GPIO port I clock on guard driver.",
+  GpioIOn,
+  Gpioien,
   gpioi,
   gpioi_afrl,
   gpioi_afrh,
@@ -8391,6 +8644,8 @@ gpio_port! {
   gpioi_ospeedr,
   gpioi_otyper,
   gpioi_pupdr,
+  gpioien,
+  rcc_ahb2enr_gpioien,
   #[__false__],
   (
     afrl,

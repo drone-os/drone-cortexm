@@ -3,7 +3,9 @@
 //! See `drone-stm32` documentation for details.
 
 #![feature(generators)]
+#![feature(marker_trait_attr)]
 #![feature(prelude_import)]
+#![feature(self_struct_ctor)]
 #![no_std]
 #![warn(missing_docs)]
 #![allow(clippy::precedence)]

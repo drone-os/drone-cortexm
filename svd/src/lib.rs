@@ -187,7 +187,8 @@ fn patch_stm32f1(
 fn patch_stm32l4(
 ) -> impl FnMut(&mut EventWriter<&mut File>, &ReaderEvent, &[OwnedName])
   -> Result<(), Error> {
-  |o, e, path| match e {
+  let mut register_name = String::new();
+  move |o, e, path| match e {
     ReaderEvent::StartElement { name, .. }
       if name.local_name == "peripherals" && check_path(path, &["device"]) =>
     {
@@ -197,6 +198,42 @@ fn patch_stm32l4(
       patch_add(o, "../svd_files/patch/add_mpu.xml")?;
       patch_add(o, "../svd_files/patch/add_scb.xml")?;
       patch_add(o, "../svd_files/patch/add_stk.xml")
+    }
+    ReaderEvent::Characters(s)
+      if check_path(
+        path,
+        &[
+          "device",
+          "peripherals",
+          "peripheral",
+          "registers",
+          "register",
+          "name",
+        ],
+      ) =>
+    {
+      register_name = s.clone();
+      patch_pass(o, e)
+    }
+    ReaderEvent::Characters(s)
+      if s == "SP3EN"
+        && check_path(
+          path,
+          &[
+            "device",
+            "peripherals",
+            "peripheral",
+            "registers",
+            "register",
+            "fields",
+            "field",
+            "name",
+          ],
+        )
+        && register_name == "APB1ENR1" =>
+    {
+      o.write(WriterEvent::Characters("SPI3EN"))?;
+      Ok(())
     }
     _ => patch_pass(o, e),
   }
@@ -261,6 +298,26 @@ fn patch_stm32l4plus(
         && register_name == "MPU_CTRL" =>
     {
       o.write(WriterEvent::Characters("read-write"))?;
+      Ok(())
+    }
+    ReaderEvent::Characters(s)
+      if s == "SP3EN"
+        && check_path(
+          path,
+          &[
+            "device",
+            "peripherals",
+            "peripheral",
+            "registers",
+            "register",
+            "fields",
+            "field",
+            "name",
+          ],
+        )
+        && register_name == "APB1ENR1" =>
+    {
+      o.write(WriterEvent::Characters("SPI3EN"))?;
       Ok(())
     }
     _ => patch_pass(o, e),

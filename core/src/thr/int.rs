@@ -20,6 +20,7 @@ pub trait IntToken<T: ThrTag>: ThrToken<T> {
 macro_rules! exception {
   ($doc:expr, $name:ident,) => {
     #[doc = $doc]
+    #[marker]
     pub trait $name<T: ThrTag>: ThrToken<T> {}
   };
 }

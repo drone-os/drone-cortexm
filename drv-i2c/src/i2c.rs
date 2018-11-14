@@ -1,9 +1,9 @@
 //! Inter-Integrated Circuit.
 
+use core::marker::PhantomData;
 use drone_core::bitfield::Bitfield;
 use drone_core::drv::Resource;
 use drone_stm32_core::fib;
-use drone_stm32_device::reg::i2c3;
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
@@ -18,7 +18,8 @@ use drone_stm32_device::reg::i2c3;
 use drone_stm32_device::reg::i2c4;
 use drone_stm32_device::reg::marker::*;
 use drone_stm32_device::reg::prelude::*;
-use drone_stm32_device::reg::{i2c1, i2c2};
+use drone_stm32_device::reg::{i2c1, i2c2, i2c3, rcc};
+use drone_stm32_device::reg::{RegGuard, RegGuardCnt, RegGuardRes};
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
@@ -51,7 +52,6 @@ use drone_stm32_device::thr::int::{
 ))]
 use drone_stm32_device::thr::int::{IntI2C4Er, IntI2C4Ev};
 use drone_stm32_device::thr::prelude::*;
-use drone_stm32_drv_dma::dma::{Dma, DmaRes};
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
@@ -60,15 +60,19 @@ use drone_stm32_drv_dma::dma::{Dma, DmaRes};
   feature = "stm32l4x6"
 ))]
 use drone_stm32_drv_dma::dma::{
-  Dma1Ch2Res, Dma1Ch3Res, Dma1Ch4Res, Dma1Ch5Res, Dma1Ch6Res, Dma1Ch7Res,
-  Dma2Ch6Res, Dma2Ch7Res,
+  Dma, Dma1Ch2Bond, Dma1Ch2Res, Dma1Ch3Bond, Dma1Ch3Res, Dma1Ch4Bond,
+  Dma1Ch4Res, Dma1Ch5Bond, Dma1Ch5Res, Dma1Ch6Bond, Dma1Ch6Res, Dma1Ch7Bond,
+  Dma1Ch7Res, Dma2Ch6Bond, Dma2Ch6Res, Dma2Ch7Bond, Dma2Ch7Res, DmaRes,
 };
 #[cfg(any(
   feature = "stm32l4x1",
   feature = "stm32l4x2",
   feature = "stm32l4x6",
 ))]
-use drone_stm32_drv_dma::dma::{Dma2Ch1Res, Dma2Ch2Res};
+use drone_stm32_drv_dma::dma::{
+  Dma2Ch1Bond, Dma2Ch1Res, Dma2Ch2Bond, Dma2Ch2Res,
+};
+use drone_stm32_drv_dma::dma::{DmaBond, DmaBondOnRgc, DmaTxRes};
 #[cfg(any(
   feature = "stm32l4r5",
   feature = "stm32l4r7",
@@ -116,123 +120,18 @@ pub enum I2CBreak {
 
 /// I2C driver.
 #[derive(Driver)]
-pub struct I2C<T: I2CRes>(T);
-
-/// DMA-driven I2C driver.
-pub trait I2CDmaRx<T, Rx>
+pub struct I2C<T, C>(T, PhantomData<C>)
 where
-  T: I2CDmaRxRes<Rx>,
-  Rx: DmaRes,
-{
-  #[cfg(any(
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  ))]
-  /// Initializes DMA for the I2C as peripheral.
-  fn dma_rx_init(
-    &self,
-    dma_rx: &Dma<Rx>,
-    dmamux_rx: &DmamuxCh<Rx::DmamuxChRes>,
-  );
-
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
-  /// Initializes DMA for the I2C as peripheral.
-  fn dma_rx_init(&self, dma_rx: &Dma<Rx>);
-
-  /// Initializes DMA for the I2C as peripheral.
-  fn dma_rx_paddr_init(&self, dma_rx: &Dma<Rx>);
-}
-
-/// DMA-driven I2C driver.
-pub trait I2CDmaTx<T, Tx>
-where
-  T: I2CDmaTxRes<Tx>,
-  Tx: DmaRes,
-{
-  #[cfg(any(
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  ))]
-  /// Initializes DMA for the I2C as peripheral.
-  fn dma_tx_init(
-    &self,
-    dma_tx: &Dma<Tx>,
-    dmamux_tx: &DmamuxCh<Tx::DmamuxChRes>,
-  );
-
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
-  /// Initializes DMA for the I2C as peripheral.
-  fn dma_tx_init(&self, dma_tx: &Dma<Tx>);
-
-  /// Initializes DMA for the I2C as peripheral.
-  fn dma_tx_paddr_init(&self, dma_tx: &Dma<Tx>);
-}
-
-/// DMA-driven I2C driver.
-pub trait I2CDmaDx<T, Rx, Tx>
-where
-  T: I2CDmaRxRes<Rx> + I2CDmaTxRes<Tx>,
-  Rx: DmaRes,
-  Tx: DmaRes,
-{
-  #[cfg(any(
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  ))]
-  /// Initializes DMA for the I2C as peripheral.
-  fn dma_dx_init(
-    &self,
-    dma_rx: &Dma<Rx>,
-    dmamux_rx: &DmamuxCh<Rx::DmamuxChRes>,
-    dma_tx: &Dma<Tx>,
-    dmamux_tx: &DmamuxCh<Tx::DmamuxChRes>,
-  );
-
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
-  /// Initializes DMA for the I2C as peripheral.
-  fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>)
-  where
-    Tx: DmaRes<Cselr = Rx::Cselr>;
-
-  /// Initializes DMA for the I2C as peripheral.
-  fn dma_dx_paddr_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>);
-}
+  T: I2CRes,
+  C: RegGuardCnt<I2COn<T>, Frt>;
 
 /// I2C resource.
 #[allow(missing_docs)]
 pub trait I2CRes:
   Resource + I2CResCr1 + I2CResCr2 + I2CResIsr + I2CResIcr
 {
+  type IntEv: IntToken<Ttt>;
+  type IntEr: IntToken<Ttt>;
   type Oar1: SRwRegBitBand;
   type Oar2: SRwRegBitBand;
   type Timingr: SRwRegBitBand;
@@ -244,6 +143,12 @@ pub trait I2CRes:
   type TxdrVal: Bitfield<Bits = u32>;
   type Txdr: SRwRegBitBand<Val = Self::TxdrVal>;
   type TxdrTxdata: SRwRwRegFieldBits<Reg = Self::Txdr>;
+  type RccApbEnrVal: Bitfield<Bits = u32>;
+  type RccApbEnr: FRwRegBitBand<Val = Self::RccApbEnrVal>;
+  type RccApbEnrI2CEn: FRwRwRegFieldBitBand<Reg = Self::RccApbEnr>;
+
+  fn int_ev(&self) -> Self::IntEv;
+  fn int_er(&self) -> Self::IntEr;
 
   res_reg_decl!(Oar1, oar1, oar1_mut);
   res_reg_decl!(Oar2, oar2, oar2_mut);
@@ -254,6 +159,7 @@ pub trait I2CRes:
   res_reg_decl!(RxdrRxdata, rxdr_rxdata, rxdr_rxdata_mut);
   res_reg_decl!(Txdr, txdr, txdr_mut);
   res_reg_decl!(TxdrTxdata, txdr_txdata, txdr_txdata_mut);
+  res_reg_decl!(RccApbEnrI2CEn, rcc_en, rcc_en_mut);
 }
 
 #[allow(missing_docs)]
@@ -384,29 +290,9 @@ pub trait I2CResIcr {
   res_reg_decl!(IcrAlertcf, icr_alertcf, icr_alertcf_mut);
 }
 
-/// Interrupt-driven I2C resource.
-#[allow(missing_docs)]
-pub trait I2CIntRes: I2CRes {
-  type WithoutInt: I2CRes;
-  type IntEv: IntToken<Ttt>;
-  type IntEr: IntToken<Ttt>;
-
-  fn join_int(
-    res: Self::WithoutInt,
-    int_ev: Self::IntEv,
-    int_er: Self::IntEr,
-  ) -> Self;
-
-  fn split_int(self) -> (Self::WithoutInt, Self::IntEv, Self::IntEr);
-
-  fn int_ev(&self) -> Self::IntEv;
-
-  fn int_er(&self) -> Self::IntEr;
-}
-
 /// DMA-driven I2C resource.
 #[allow(missing_docs)]
-pub trait I2CDmaRxRes<T: DmaRes>: I2CRes {
+pub trait I2CDmaRxRes<T: DmaBond>: I2CRes {
   #[cfg(any(
     feature = "stm32l4r5",
     feature = "stm32l4r7",
@@ -428,12 +314,16 @@ pub trait I2CDmaRxRes<T: DmaRes>: I2CRes {
     feature = "stm32l4x5",
     feature = "stm32l4x6"
   ))]
-  fn dma_rx_ch_init(&self, cs_val: &mut CselrVal<T>, dma: &Dma<T>);
+  fn dma_rx_ch_init(
+    &self,
+    cs_val: &mut CselrVal<T::DmaRes>,
+    dma: &Dma<T::DmaRes>,
+  );
 }
 
 /// DMA-driven I2C resource.
 #[allow(missing_docs)]
-pub trait I2CDmaTxRes<T: DmaRes>: I2CRes {
+pub trait I2CDmaTxRes<T: DmaBond>: I2CRes {
   #[cfg(any(
     feature = "stm32l4r5",
     feature = "stm32l4r7",
@@ -455,8 +345,15 @@ pub trait I2CDmaTxRes<T: DmaRes>: I2CRes {
     feature = "stm32l4x5",
     feature = "stm32l4x6"
   ))]
-  fn dma_tx_ch_init(&self, cs_val: &mut CselrVal<T>, dma: &Dma<T>);
+  fn dma_tx_ch_init(
+    &self,
+    cs_val: &mut CselrVal<T::DmaRes>,
+    dma: &Dma<T::DmaRes>,
+  );
 }
+
+/// I2C clock on guard resource.
+pub struct I2COn<T: I2CRes>(T::RccApbEnrI2CEn);
 
 #[cfg(any(
   feature = "stm32l4r5",
@@ -478,7 +375,21 @@ type DmamuxCrVal<T> = <<T as DmamuxChRes>::Cr as Reg<Srt>>::Val;
 type CselrVal<T> = <<T as DmaRes>::Cselr as Reg<Srt>>::Val;
 
 #[allow(missing_docs)]
-impl<T: I2CRes> I2C<T> {
+impl<T, C> I2C<T, C>
+where
+  T: I2CRes,
+  C: RegGuardCnt<I2COn<T>, Frt>,
+{
+  #[inline(always)]
+  pub fn int_ev(&self) -> T::IntEv {
+    self.0.int_ev()
+  }
+
+  #[inline(always)]
+  pub fn int_er(&self) -> T::IntEr {
+    self.0.int_er()
+  }
+
   #[inline(always)]
   pub fn cr1(&self) -> &T::Cr1 {
     self.0.cr1()
@@ -700,35 +611,84 @@ impl<T: I2CRes> I2C<T> {
   }
 }
 
-#[allow(missing_docs)]
-impl<T: I2CIntRes> I2C<T> {
-  #[inline(always)]
-  pub fn join_int(
-    res: I2C<T::WithoutInt>,
-    int_ev: T::IntEv,
-    int_er: T::IntEr,
-  ) -> I2C<T> {
-    I2C(T::join_int(res.0, int_ev, int_er))
+impl<T, C> I2C<T, C>
+where
+  T: I2CRes,
+  C: RegGuardCnt<I2COn<T>, Frt>,
+{
+  /// Enables the clock.
+  pub fn on(&mut self) -> RegGuard<I2COn<T>, C, Frt> {
+    RegGuard::new(I2COn(self.0.rcc_en_mut().fork()))
   }
 
-  #[inline(always)]
-  pub fn split_int(self) -> (I2C<T::WithoutInt>, T::IntEv, T::IntEr) {
-    let (res, int_ev, int_er) = self.0.split_int();
-    (I2C(res), int_ev, int_er)
+  /// Initializes DMA for the SPI as peripheral.
+  pub fn dma_rx_init<Rx>(&self, rx: &Rx)
+  where
+    Rx: DmaBond,
+    T: I2CDmaRxRes<Rx>,
+    C: DmaBondOnRgc<Rx::DmaRes>,
+  {
+    self.set_dma_rx_paddr(rx);
+    self.dmamux_rx_init(rx);
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    rx.dma_ch().cselr_cs().modify(|r| {
+      self.0.dma_rx_ch_init(r, rx.dma_ch());
+    });
   }
 
-  #[inline(always)]
-  pub fn int_ev(&self) -> T::IntEv {
-    self.0.int_ev()
+  /// Initializes DMA for the SPI as peripheral.
+  pub fn dma_tx_init<Tx>(&self, tx: &Tx)
+  where
+    Tx: DmaBond,
+    T: I2CDmaTxRes<Tx>,
+    C: DmaBondOnRgc<Tx::DmaRes>,
+  {
+    self.set_dma_tx_paddr(tx);
+    self.dmamux_tx_init(tx);
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    tx.dma_ch().cselr_cs().modify(|r| {
+      self.0.dma_tx_ch_init(r, tx.dma_ch());
+    });
   }
 
-  #[inline(always)]
-  pub fn int_er(&self) -> T::IntEr {
-    self.0.int_er()
+  /// Initializes DMA for the SPI as peripheral.
+  pub fn dma_init<Rx, Tx>(&self, rx: &Rx, tx: &Tx)
+  where
+    Rx: DmaBond,
+    Tx: DmaBond,
+    Tx::DmaRes: DmaTxRes<Rx::DmaRes>,
+    T: I2CDmaRxRes<Rx> + I2CDmaTxRes<Tx>,
+    C: DmaBondOnRgc<Rx::DmaRes> + DmaBondOnRgc<Tx::DmaRes>,
+  {
+    self.set_dma_rx_paddr(rx);
+    self.set_dma_tx_paddr(tx);
+    self.dmamux_rx_init(rx);
+    self.dmamux_tx_init(tx);
+    #[cfg(any(
+      feature = "stm32l4x1",
+      feature = "stm32l4x2",
+      feature = "stm32l4x3",
+      feature = "stm32l4x5",
+      feature = "stm32l4x6"
+    ))]
+    rx.dma_ch().cselr_cs().modify(|r| {
+      self.0.dma_rx_ch_init(r, rx.dma_ch());
+      self.0.dma_tx_ch_init(r, tx.dma_ch());
+    });
   }
-}
 
-impl<T: I2CIntRes> I2C<T> {
   /// Returns a future, which resolves on I2C error event.
   pub fn transfer_error(&mut self) -> impl Future<Item = !, Error = I2CError> {
     let berr = self.0.isr_berr_mut().fork();
@@ -796,163 +756,104 @@ impl<T: I2CIntRes> I2C<T> {
       }),
     )
   }
-}
 
-#[allow(missing_docs)]
-impl<T, Rx> I2CDmaRx<T, Rx> for I2C<T>
-where
-  T: I2CDmaRxRes<Rx>,
-  Rx: DmaRes,
-{
-  #[cfg(any(
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  ))]
   #[inline(always)]
-  fn dma_rx_init(
-    &self,
-    dma_rx: &Dma<Rx>,
-    dmamux_rx: &DmamuxCh<Rx::DmamuxChRes>,
-  ) {
-    self.dma_rx_paddr_init(dma_rx);
-    dmamux_rx.cr_dmareq_id().modify(|r| {
-      self.0.dmamux_rx_init(r, dmamux_rx);
-    });
-  }
-
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
-  #[inline(always)]
-  fn dma_rx_init(&self, dma_rx: &Dma<Rx>) {
-    self.dma_rx_paddr_init(dma_rx);
-    dma_rx.cselr_cs().modify(|r| {
-      self.0.dma_rx_ch_init(r, dma_rx);
-    });
+  fn set_dma_rx_paddr<Rx: DmaBond>(&self, rx: &Rx) {
+    unsafe { rx.dma_ch().set_paddr(self.0.rxdr().to_ptr() as usize) };
   }
 
   #[inline(always)]
-  fn dma_rx_paddr_init(&self, dma_rx: &Dma<Rx>) {
-    unsafe { dma_rx.set_paddr(self.0.rxdr().to_ptr() as usize) };
+  fn set_dma_tx_paddr<Tx: DmaBond>(&self, tx: &Tx) {
+    unsafe { tx.dma_ch().set_paddr(self.0.txdr().to_mut_ptr() as usize) };
   }
-}
 
-#[allow(missing_docs)]
-impl<T, Tx> I2CDmaTx<T, Tx> for I2C<T>
-where
-  T: I2CDmaTxRes<Tx>,
-  Tx: DmaRes,
-{
-  #[cfg(any(
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  ))]
+  #[allow(unused_variables)]
   #[inline(always)]
-  fn dma_tx_init(
-    &self,
-    dma_tx: &Dma<Tx>,
-    dmamux_tx: &DmamuxCh<Tx::DmamuxChRes>,
-  ) {
-    self.dma_tx_paddr_init(dma_tx);
-    dmamux_tx.cr_dmareq_id().modify(|r| {
-      self.0.dmamux_tx_init(r, dmamux_tx);
-    });
-  }
-
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
-  #[inline(always)]
-  fn dma_tx_init(&self, dma_tx: &Dma<Tx>) {
-    self.dma_tx_paddr_init(dma_tx);
-    dma_tx.cselr_cs().modify(|r| {
-      self.0.dma_tx_ch_init(r, dma_tx);
-    });
-  }
-
-  #[inline(always)]
-  fn dma_tx_paddr_init(&self, dma_tx: &Dma<Tx>) {
-    unsafe { dma_tx.set_paddr(self.0.txdr().to_mut_ptr() as usize) };
-  }
-}
-
-#[allow(missing_docs)]
-impl<T, Rx, Tx> I2CDmaDx<T, Rx, Tx> for I2C<T>
-where
-  T: I2CDmaRxRes<Rx> + I2CDmaTxRes<Tx>,
-  Rx: DmaRes,
-  Tx: DmaRes,
-{
-  #[cfg(any(
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  ))]
-  fn dma_dx_init(
-    &self,
-    dma_rx: &Dma<Rx>,
-    dmamux_rx: &DmamuxCh<Rx::DmamuxChRes>,
-    dma_tx: &Dma<Tx>,
-    dmamux_tx: &DmamuxCh<Tx::DmamuxChRes>,
-  ) {
-    self.dma_dx_paddr_init(dma_rx, dma_tx);
-    dmamux_rx.cr_dmareq_id().modify(|r| {
-      self.0.dmamux_rx_init(r, dmamux_rx);
-    });
-    dmamux_tx.cr_dmareq_id().modify(|r| {
-      self.0.dmamux_tx_init(r, dmamux_tx);
-    });
-  }
-
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
-  #[inline(always)]
-  fn dma_dx_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>)
+  fn dmamux_rx_init<Rx>(&self, rx: &Rx)
   where
-    Tx: DmaRes<Cselr = Rx::Cselr>,
+    Rx: DmaBond,
+    T: I2CDmaRxRes<Rx>,
+    C: DmaBondOnRgc<Rx::DmaRes>,
   {
-    self.dma_dx_paddr_init(dma_rx, dma_tx);
-    dma_rx.cselr_cs().modify(|r| {
-      self.0.dma_rx_ch_init(r, dma_rx);
-      self.0.dma_tx_ch_init(r, dma_tx);
+    #[cfg(any(
+      feature = "stm32l4r5",
+      feature = "stm32l4r7",
+      feature = "stm32l4r9",
+      feature = "stm32l4s5",
+      feature = "stm32l4s7",
+      feature = "stm32l4s9"
+    ))]
+    rx.dmamux_ch().cr_dmareq_id().modify(|r| {
+      self.0.dmamux_rx_init(r, rx.dmamux_ch());
     });
   }
 
+  #[allow(unused_variables)]
   #[inline(always)]
-  fn dma_dx_paddr_init(&self, dma_rx: &Dma<Rx>, dma_tx: &Dma<Tx>) {
-    self.dma_rx_paddr_init(dma_rx);
-    self.dma_tx_paddr_init(dma_tx);
+  fn dmamux_tx_init<Tx>(&self, tx: &Tx)
+  where
+    Tx: DmaBond,
+    T: I2CDmaTxRes<Tx>,
+    C: DmaBondOnRgc<Tx::DmaRes>,
+  {
+    #[cfg(any(
+      feature = "stm32l4r5",
+      feature = "stm32l4r7",
+      feature = "stm32l4r9",
+      feature = "stm32l4s5",
+      feature = "stm32l4s7",
+      feature = "stm32l4s9"
+    ))]
+    tx.dmamux_ch().cr_dmareq_id().modify(|r| {
+      self.0.dmamux_tx_init(r, tx.dmamux_ch());
+    });
+  }
+}
+
+impl<T: I2CRes> RegFork for I2COn<T> {
+  fn fork(&mut self) -> Self {
+    Self(self.0.fork())
+  }
+}
+
+impl<T: I2CRes> RegGuardRes<Frt> for I2COn<T> {
+  type Reg = T::RccApbEnr;
+  type Field = T::RccApbEnrI2CEn;
+
+  #[inline(always)]
+  fn field(&self) -> &Self::Field {
+    &self.0
+  }
+
+  #[inline(always)]
+  fn up(&self, val: &mut <Self::Reg as Reg<Frt>>::Val) {
+    self.0.set(val)
+  }
+
+  #[inline(always)]
+  fn down(&self, val: &mut <Self::Reg as Reg<Frt>>::Val) {
+    self.0.clear(val)
   }
 }
 
 #[allow(unused_macros)]
-macro_rules! i2c_shared {
+macro_rules! i2c {
   (
+    $doc:expr,
+    $name:ident,
+    $name_macro:ident,
+    $doc_res:expr,
+    $name_res:ident,
+    $doc_on_res:expr,
+    $name_on_res:ident,
+    $doc_on:expr,
+    $name_on:ident,
+    $int_ev_ty:ident,
+    $int_er_ty:ident,
+    $i2cen_ty:ident,
     $i2c:ident,
+    $i2c_ev:ident,
+    $i2c_er:ident,
     $i2c_cr1:ident,
     $i2c_cr2:ident,
     $i2c_oar1:ident,
@@ -964,30 +865,122 @@ macro_rules! i2c_shared {
     $i2c_pecr:ident,
     $i2c_rxdr:ident,
     $i2c_txdr:ident,
-    $name_res:ident,
-    ($($tp:ident: $bound:path),*),
+    $apb_enr:ident,
+    $rcc_apb_enr_i2cen:ident,
+    $rcc_apb_enr:ident,
+    $i2cen:ident,
     (
       $dma_rx_req_id:expr,
       $((
-        [$($dma_rx_attr:meta,)*],
+        $dma_rx_bond:ident,
         $dma_rx_res:ident,
         $int_dma_rx:ident,
-        $dma_rx_cs:expr,
-        ($($dma_rx_tp:ident: $dma_rx_bound:path),*)
-      ),)*
+        $dma_rx_cs:expr
+      )),*
     ),
     (
       $dma_tx_req_id:expr,
       $((
-        [$($dma_tx_attr:meta,)*],
+        $dma_tx_bond:ident,
         $dma_tx_res:ident,
         $int_dma_tx:ident,
-        $dma_tx_cs:expr,
-        ($($dma_tx_tp:ident: $dma_tx_bound:path),*)
-      ),)*
+        $dma_tx_cs:expr
+      )),*
     ),
   ) => {
-    impl<$($tp: $bound),*> I2CRes for $name_res<$($tp,)* Frt> {
+    #[doc = $doc]
+    pub type $name<Ev, Er, C> = I2C<$name_res<Ev, Er, Frt>, C>;
+
+    #[doc = $doc_res]
+    #[allow(missing_docs)]
+    pub struct $name_res<Ev, Er, Rt>
+    where
+      Ev: $int_ev_ty<Ttt>,
+      Er: $int_er_ty<Ttt>,
+      Rt: RegTag,
+    {
+      pub $i2c_ev: Ev,
+      pub $i2c_er: Er,
+      pub $i2c_cr1: $i2c::Cr1<Srt>,
+      pub $i2c_cr2: $i2c::Cr2<Srt>,
+      pub $i2c_oar1: $i2c::Oar1<Srt>,
+      pub $i2c_oar2: $i2c::Oar2<Srt>,
+      pub $i2c_timingr: $i2c::Timingr<Srt>,
+      pub $i2c_timeoutr: $i2c::Timeoutr<Srt>,
+      pub $i2c_isr: $i2c::Isr<Rt>,
+      pub $i2c_icr: $i2c::Icr<Rt>,
+      pub $i2c_pecr: $i2c::Pecr<Srt>,
+      pub $i2c_rxdr: $i2c::Rxdr<Srt>,
+      pub $i2c_txdr: $i2c::Txdr<Srt>,
+      pub $rcc_apb_enr_i2cen: rcc::$apb_enr::$i2cen_ty<Rt>,
+    }
+
+    #[doc = $doc_on_res]
+    pub type $name_on_res<Ev, Er> = I2COn<$name_res<Ev, Er, Frt>>;
+
+    #[doc = $doc_on]
+    pub type $name_on<Ev, Er, C> = RegGuard<$name_on_res<Ev, Er>, C, Frt>;
+
+    /// Creates a new `I2C`.
+    #[macro_export]
+    macro_rules! $name_macro {
+      ($reg: ident, $thr: ident, $rgc:path) => {
+        <$crate::i2c::I2C<_, $rgc> as ::drone_core::drv::Driver>::new(
+          $crate::i2c::$name_res {
+            $i2c_ev: $thr.$i2c_ev.into(),
+            $i2c_er: $thr.$i2c_er.into(),
+            $i2c_cr1: $reg.$i2c_cr1,
+            $i2c_cr2: $reg.$i2c_cr2,
+            $i2c_oar1: $reg.$i2c_oar1,
+            $i2c_oar2: $reg.$i2c_oar2,
+            $i2c_timingr: $reg.$i2c_timingr,
+            $i2c_timeoutr: $reg.$i2c_timeoutr,
+            $i2c_isr: $reg.$i2c_isr,
+            $i2c_icr: $reg.$i2c_icr,
+            $i2c_pecr: $reg.$i2c_pecr,
+            $i2c_rxdr: $reg.$i2c_rxdr,
+            $i2c_txdr: $reg.$i2c_txdr,
+            $rcc_apb_enr_i2cen: $reg.$rcc_apb_enr.$i2cen,
+          },
+        )
+      };
+    }
+
+    impl<Ev, Er> Resource for $name_res<Ev, Er, Frt>
+    where
+      Ev: $int_ev_ty<Ttt>,
+      Er: $int_er_ty<Ttt>,
+    {
+      type Source = $name_res<Ev, Er, Srt>;
+
+      #[inline(always)]
+      fn from_source(source: Self::Source) -> Self {
+        Self {
+          $i2c_ev: source.$i2c_ev,
+          $i2c_er: source.$i2c_er,
+          $i2c_cr1: source.$i2c_cr1,
+          $i2c_cr2: source.$i2c_cr2,
+          $i2c_oar1: source.$i2c_oar1,
+          $i2c_oar2: source.$i2c_oar2,
+          $i2c_timingr: source.$i2c_timingr,
+          $i2c_timeoutr: source.$i2c_timeoutr,
+          $i2c_isr: source.$i2c_isr.into(),
+          $i2c_icr: source.$i2c_icr.into(),
+          $i2c_pecr: source.$i2c_pecr,
+          $i2c_rxdr: source.$i2c_rxdr,
+          $i2c_txdr: source.$i2c_txdr,
+          $rcc_apb_enr_i2cen: source.$rcc_apb_enr_i2cen.into(),
+        }
+      }
+    }
+
+    impl<Ev, Er> I2CRes for $name_res<Ev, Er, Frt>
+    where
+      Ev: $int_ev_ty<Ttt>,
+      Er: $int_er_ty<Ttt>,
+    {
+      type IntEv = Ev;
+      type IntEr = Er;
       type Oar1 = $i2c::Oar1<Srt>;
       type Oar2 = $i2c::Oar2<Srt>;
       type Timingr = $i2c::Timingr<Srt>;
@@ -999,6 +992,19 @@ macro_rules! i2c_shared {
       type TxdrVal = $i2c::txdr::Val;
       type Txdr = $i2c::Txdr<Srt>;
       type TxdrTxdata = $i2c::txdr::Txdata<Srt>;
+      type RccApbEnrVal = rcc::$apb_enr::Val;
+      type RccApbEnr = rcc::$apb_enr::Reg<Frt>;
+      type RccApbEnrI2CEn = rcc::$apb_enr::$i2cen_ty<Frt>;
+
+      #[inline(always)]
+      fn int_ev(&self) -> Self::IntEv {
+        self.$i2c_ev
+      }
+
+      #[inline(always)]
+      fn int_er(&self) -> Self::IntEr {
+        self.$i2c_er
+      }
 
       res_reg_impl!(Oar1, oar1, oar1_mut, $i2c_oar1);
       res_reg_impl!(Oar2, oar2, oar2_mut, $i2c_oar2);
@@ -1006,14 +1012,29 @@ macro_rules! i2c_shared {
       res_reg_impl!(Timeoutr, timeoutr, timeoutr_mut, $i2c_timeoutr);
       res_reg_impl!(Pecr, pecr, pecr_mut, $i2c_pecr);
       res_reg_impl!(Rxdr, rxdr, rxdr_mut, $i2c_rxdr);
-      res_reg_field_impl!(RxdrRxdata, rxdr_rxdata, rxdr_rxdata_mut, $i2c_rxdr,
-                          rxdata);
+      res_reg_field_impl!(
+        RxdrRxdata,
+        rxdr_rxdata,
+        rxdr_rxdata_mut,
+        $i2c_rxdr,
+        rxdata
+      );
       res_reg_impl!(Txdr, txdr, txdr_mut, $i2c_txdr);
-      res_reg_field_impl!(TxdrTxdata, txdr_txdata, txdr_txdata_mut, $i2c_txdr,
-                          txdata);
+      res_reg_field_impl!(
+        TxdrTxdata,
+        txdr_txdata,
+        txdr_txdata_mut,
+        $i2c_txdr,
+        txdata
+      );
+      res_reg_impl!(RccApbEnrI2CEn, rcc_en, rcc_en_mut, $rcc_apb_enr_i2cen);
     }
 
-    impl<$($tp: $bound),*> I2CResCr1 for $name_res<$($tp,)* Frt> {
+    impl<Ev, Er> I2CResCr1 for $name_res<Ev, Er, Frt>
+    where
+      Ev: $int_ev_ty<Ttt>,
+      Er: $int_er_ty<Ttt>,
+    {
       type Cr1Val = $i2c::cr1::Val;
       type Cr1 = $i2c::Cr1<Srt>;
       type Cr1Pe = $i2c::cr1::Pe<Srt>;
@@ -1041,36 +1062,90 @@ macro_rules! i2c_shared {
       res_reg_field_impl!(Cr1Pe, cr1_pe, cr1_pe_mut, $i2c_cr1, pe);
       res_reg_field_impl!(Cr1Txie, cr1_txie, cr1_txie_mut, $i2c_cr1, txie);
       res_reg_field_impl!(Cr1Rxie, cr1_rxie, cr1_rxie_mut, $i2c_cr1, rxie);
-      res_reg_field_impl!(Cr1Addrie, cr1_addrie, cr1_addrie_mut, $i2c_cr1,
-                          addrie);
-      res_reg_field_impl!(Cr1Nackie, cr1_nackie, cr1_nackie_mut, $i2c_cr1,
-                          nackie);
-      res_reg_field_impl!(Cr1Stopie, cr1_stopie, cr1_stopie_mut, $i2c_cr1,
-                          stopie);
+      res_reg_field_impl!(
+        Cr1Addrie,
+        cr1_addrie,
+        cr1_addrie_mut,
+        $i2c_cr1,
+        addrie
+      );
+      res_reg_field_impl!(
+        Cr1Nackie,
+        cr1_nackie,
+        cr1_nackie_mut,
+        $i2c_cr1,
+        nackie
+      );
+      res_reg_field_impl!(
+        Cr1Stopie,
+        cr1_stopie,
+        cr1_stopie_mut,
+        $i2c_cr1,
+        stopie
+      );
       res_reg_field_impl!(Cr1Tcie, cr1_tcie, cr1_tcie_mut, $i2c_cr1, tcie);
       res_reg_field_impl!(Cr1Errie, cr1_errie, cr1_errie_mut, $i2c_cr1, errie);
       res_reg_field_impl!(Cr1Dnf, cr1_dnf, cr1_dnf_mut, $i2c_cr1, dnf);
-      res_reg_field_impl!(Cr1Anfoff, cr1_anfoff, cr1_anfoff_mut, $i2c_cr1,
-                          anfoff);
-      res_reg_field_impl!(Cr1Txdmaen, cr1_txdmaen, cr1_txdmaen_mut, $i2c_cr1,
-                          txdmaen);
-      res_reg_field_impl!(Cr1Rxdmaen, cr1_rxdmaen, cr1_rxdmaen_mut, $i2c_cr1,
-                          rxdmaen);
+      res_reg_field_impl!(
+        Cr1Anfoff,
+        cr1_anfoff,
+        cr1_anfoff_mut,
+        $i2c_cr1,
+        anfoff
+      );
+      res_reg_field_impl!(
+        Cr1Txdmaen,
+        cr1_txdmaen,
+        cr1_txdmaen_mut,
+        $i2c_cr1,
+        txdmaen
+      );
+      res_reg_field_impl!(
+        Cr1Rxdmaen,
+        cr1_rxdmaen,
+        cr1_rxdmaen_mut,
+        $i2c_cr1,
+        rxdmaen
+      );
       res_reg_field_impl!(Cr1Sbc, cr1_sbc, cr1_sbc_mut, $i2c_cr1, sbc);
-      res_reg_field_impl!(Cr1Nostretch, cr1_nostretch, cr1_nostretch_mut,
-                          $i2c_cr1, nostretch);
+      res_reg_field_impl!(
+        Cr1Nostretch,
+        cr1_nostretch,
+        cr1_nostretch_mut,
+        $i2c_cr1,
+        nostretch
+      );
       res_reg_field_impl!(Cr1Wupen, cr1_wupen, cr1_wupen_mut, $i2c_cr1, wupen);
       res_reg_field_impl!(Cr1Gcen, cr1_gcen, cr1_gcen_mut, $i2c_cr1, gcen);
-      res_reg_field_impl!(Cr1Smbhen, cr1_smbhen, cr1_smbhen_mut, $i2c_cr1,
-                          smbhen);
-      res_reg_field_impl!(Cr1Smbden, cr1_smbden, cr1_smbden_mut, $i2c_cr1,
-                          smbden);
-      res_reg_field_impl!(Cr1Alerten, cr1_alerten, cr1_alerten_mut, $i2c_cr1,
-                          alerten);
+      res_reg_field_impl!(
+        Cr1Smbhen,
+        cr1_smbhen,
+        cr1_smbhen_mut,
+        $i2c_cr1,
+        smbhen
+      );
+      res_reg_field_impl!(
+        Cr1Smbden,
+        cr1_smbden,
+        cr1_smbden_mut,
+        $i2c_cr1,
+        smbden
+      );
+      res_reg_field_impl!(
+        Cr1Alerten,
+        cr1_alerten,
+        cr1_alerten_mut,
+        $i2c_cr1,
+        alerten
+      );
       res_reg_field_impl!(Cr1Pecen, cr1_pecen, cr1_pecen_mut, $i2c_cr1, pecen);
     }
 
-    impl<$($tp: $bound),*> I2CResCr2 for $name_res<$($tp,)* Frt> {
+    impl<Ev, Er> I2CResCr2 for $name_res<Ev, Er, Frt>
+    where
+      Ev: $int_ev_ty<Ttt>,
+      Er: $int_er_ty<Ttt>,
+    {
       type Cr2Val = $i2c::cr2::Val;
       type Cr2 = $i2c::Cr2<Srt>;
       type Cr2Pecbyte = $i2c::cr2::Pecbyte<Srt>;
@@ -1086,26 +1161,60 @@ macro_rules! i2c_shared {
       type Cr2Sadd = $i2c::cr2::Sadd<Srt>;
 
       res_reg_impl!(Cr2, cr2, cr2_mut, $i2c_cr2);
-      res_reg_field_impl!(Cr2Pecbyte, cr2_pecbyte, cr2_pecbyte_mut, $i2c_cr2,
-                          pecbyte);
-      res_reg_field_impl!(Cr2Autoend, cr2_autoend, cr2_autoend_mut, $i2c_cr2,
-                          autoend);
-      res_reg_field_impl!(Cr2Reload, cr2_reload, cr2_reload_mut, $i2c_cr2,
-                          reload);
-      res_reg_field_impl!(Cr2Nbytes, cr2_nbytes, cr2_nbytes_mut, $i2c_cr2,
-                          nbytes);
+      res_reg_field_impl!(
+        Cr2Pecbyte,
+        cr2_pecbyte,
+        cr2_pecbyte_mut,
+        $i2c_cr2,
+        pecbyte
+      );
+      res_reg_field_impl!(
+        Cr2Autoend,
+        cr2_autoend,
+        cr2_autoend_mut,
+        $i2c_cr2,
+        autoend
+      );
+      res_reg_field_impl!(
+        Cr2Reload,
+        cr2_reload,
+        cr2_reload_mut,
+        $i2c_cr2,
+        reload
+      );
+      res_reg_field_impl!(
+        Cr2Nbytes,
+        cr2_nbytes,
+        cr2_nbytes_mut,
+        $i2c_cr2,
+        nbytes
+      );
       res_reg_field_impl!(Cr2Nack, cr2_nack, cr2_nack_mut, $i2c_cr2, nack);
       res_reg_field_impl!(Cr2Stop, cr2_stop, cr2_stop_mut, $i2c_cr2, stop);
       res_reg_field_impl!(Cr2Start, cr2_start, cr2_start_mut, $i2c_cr2, start);
-      res_reg_field_impl!(Cr2Head10R, cr2_head10r, cr2_head10r_mut, $i2c_cr2,
-                          head10r);
+      res_reg_field_impl!(
+        Cr2Head10R,
+        cr2_head10r,
+        cr2_head10r_mut,
+        $i2c_cr2,
+        head10r
+      );
       res_reg_field_impl!(Cr2Add10, cr2_add10, cr2_add10_mut, $i2c_cr2, add10);
-      res_reg_field_impl!(Cr2RdWrn, cr2_rd_wrn, cr2_rd_wrn_mut, $i2c_cr2,
-                          rd_wrn);
+      res_reg_field_impl!(
+        Cr2RdWrn,
+        cr2_rd_wrn,
+        cr2_rd_wrn_mut,
+        $i2c_cr2,
+        rd_wrn
+      );
       res_reg_field_impl!(Cr2Sadd, cr2_sadd, cr2_sadd_mut, $i2c_cr2, sadd);
     }
 
-    impl<$($tp: $bound),*> I2CResIsr for $name_res<$($tp,)* Frt> {
+    impl<Ev, Er> I2CResIsr for $name_res<Ev, Er, Frt>
+    where
+      Ev: $int_ev_ty<Ttt>,
+      Er: $int_er_ty<Ttt>,
+    {
       type Isr = $i2c::Isr<Frt>;
       type IsrNackf = $i2c::isr::Nackf<Frt>;
       type IsrStopf = $i2c::isr::Stopf<Frt>;
@@ -1126,14 +1235,28 @@ macro_rules! i2c_shared {
       res_reg_field_impl!(IsrBerr, isr_berr, isr_berr_mut, $i2c_isr, berr);
       res_reg_field_impl!(IsrArlo, isr_arlo, isr_arlo_mut, $i2c_isr, arlo);
       res_reg_field_impl!(IsrOvr, isr_ovr, isr_ovr_mut, $i2c_isr, ovr);
-      res_reg_field_impl!(IsrPecerr, isr_pecerr, isr_pecerr_mut, $i2c_isr,
-                          pecerr);
-      res_reg_field_impl!(IsrTimeout, isr_timeout, isr_timeout_mut, $i2c_isr,
-                          timeout);
+      res_reg_field_impl!(
+        IsrPecerr,
+        isr_pecerr,
+        isr_pecerr_mut,
+        $i2c_isr,
+        pecerr
+      );
+      res_reg_field_impl!(
+        IsrTimeout,
+        isr_timeout,
+        isr_timeout_mut,
+        $i2c_isr,
+        timeout
+      );
       res_reg_field_impl!(IsrAlert, isr_alert, isr_alert_mut, $i2c_isr, alert);
     }
 
-    impl<$($tp: $bound),*> I2CResIcr for $name_res<$($tp,)* Frt> {
+    impl<Ev, Er> I2CResIcr for $name_res<Ev, Er, Frt>
+    where
+      Ev: $int_ev_ty<Ttt>,
+      Er: $int_er_ty<Ttt>,
+    {
       type Icr = $i2c::Icr<Frt>;
       type IcrNackcf = $i2c::icr::Nackcf<Frt>;
       type IcrStopcf = $i2c::icr::Stopcf<Frt>;
@@ -1145,22 +1268,50 @@ macro_rules! i2c_shared {
       type IcrAlertcf = $i2c::icr::Alertcf<Frt>;
 
       res_reg_impl!(Icr, icr, icr_mut, $i2c_icr);
-      res_reg_field_impl!(IcrNackcf, icr_nackcf, icr_nackcf_mut, $i2c_icr,
-                          nackcf);
-      res_reg_field_impl!(IcrStopcf, icr_stopcf, icr_stopcf_mut, $i2c_icr,
-                          stopcf);
-      res_reg_field_impl!(IcrBerrcf, icr_berrcf, icr_berrcf_mut, $i2c_icr,
-                          berrcf);
-      res_reg_field_impl!(IcrArlocf, icr_arlocf, icr_arlocf_mut, $i2c_icr,
-                          arlocf);
-      res_reg_field_impl!(IcrOvrcf, icr_ovrcf, icr_ovrcf_mut, $i2c_icr,
-                          ovrcf);
-      res_reg_field_impl!(IcrPeccf, icr_peccf, icr_peccf_mut, $i2c_icr,
-                          peccf);
-      res_reg_field_impl!(IcrTimoutcf, icr_timoutcf, icr_timoutcf_mut,
-                          $i2c_icr, timoutcf);
-      res_reg_field_impl!(IcrAlertcf, icr_alertcf, icr_alertcf_mut, $i2c_icr,
-                          alertcf);
+      res_reg_field_impl!(
+        IcrNackcf,
+        icr_nackcf,
+        icr_nackcf_mut,
+        $i2c_icr,
+        nackcf
+      );
+      res_reg_field_impl!(
+        IcrStopcf,
+        icr_stopcf,
+        icr_stopcf_mut,
+        $i2c_icr,
+        stopcf
+      );
+      res_reg_field_impl!(
+        IcrBerrcf,
+        icr_berrcf,
+        icr_berrcf_mut,
+        $i2c_icr,
+        berrcf
+      );
+      res_reg_field_impl!(
+        IcrArlocf,
+        icr_arlocf,
+        icr_arlocf_mut,
+        $i2c_icr,
+        arlocf
+      );
+      res_reg_field_impl!(IcrOvrcf, icr_ovrcf, icr_ovrcf_mut, $i2c_icr, ovrcf);
+      res_reg_field_impl!(IcrPeccf, icr_peccf, icr_peccf_mut, $i2c_icr, peccf);
+      res_reg_field_impl!(
+        IcrTimoutcf,
+        icr_timoutcf,
+        icr_timoutcf_mut,
+        $i2c_icr,
+        timoutcf
+      );
+      res_reg_field_impl!(
+        IcrAlertcf,
+        icr_alertcf,
+        icr_alertcf_mut,
+        $i2c_icr,
+        alertcf
+      );
     }
 
     #[cfg(any(
@@ -1171,10 +1322,11 @@ macro_rules! i2c_shared {
       feature = "stm32l4s7",
       feature = "stm32l4s9"
     ))]
-    impl<$($tp,)* T> I2CDmaRxRes<T> for $name_res<$($tp,)* Frt>
+    impl<Ev, Er, T> I2CDmaRxRes<T> for $name_res<Ev, Er, Frt>
     where
-      T: DmaRes,
-      $($tp: $bound,)*
+      T: DmaBond,
+      Ev: $int_ev_ty<Ttt>,
+      Er: $int_er_ty<Ttt>,
     {
       #[inline(always)]
       fn dmamux_rx_init(
@@ -1194,18 +1346,19 @@ macro_rules! i2c_shared {
         feature = "stm32l4x5",
         feature = "stm32l4x6"
       ))]
-      $(#[$dma_rx_attr])*
-      impl<$($dma_rx_tp,)* Rx> I2CDmaRxRes<$dma_rx_res<Rx, Frt>>
-        for $name_res<$($dma_rx_tp,)* Frt>
+      impl<Ev, Er, Rx, C> I2CDmaRxRes<$dma_rx_bond<Rx, C>>
+        for $name_res<Ev, Er, Frt>
       where
         Rx: $int_dma_rx<Ttt>,
-        $($dma_rx_tp: $dma_rx_bound,)*
+        Ev: $int_ev_ty<Ttt>,
+        Er: $int_er_ty<Ttt>,
+        C: DmaBondOnRgc<$dma_rx_res<Rx, Frt>>,
       {
         #[inline(always)]
         fn dma_rx_ch_init(
           &self,
-          cs_val: &mut CselrVal<$dma_rx_res<Rx, Frt>>,
-          dma: &Dma<$dma_rx_res<Rx, Frt>>,
+          cs_val: &mut CselrVal<<$dma_rx_bond<Rx, C> as DmaBond>::DmaRes>,
+          dma: &Dma<<$dma_rx_bond<Rx, C> as DmaBond>::DmaRes>,
         ) {
           dma.cselr_cs().write(cs_val, $dma_rx_cs);
         }
@@ -1220,10 +1373,11 @@ macro_rules! i2c_shared {
       feature = "stm32l4s7",
       feature = "stm32l4s9"
     ))]
-    impl<$($tp,)* T> I2CDmaTxRes<T> for $name_res<$($tp,)* Frt>
+    impl<Ev, Er, T> I2CDmaTxRes<T> for $name_res<Ev, Er, Frt>
     where
-      T: DmaRes,
-      $($tp: $bound,)*
+      T: DmaBond,
+      Ev: $int_ev_ty<Ttt>,
+      Er: $int_er_ty<Ttt>,
     {
       #[inline(always)]
       fn dmamux_tx_init(
@@ -1243,18 +1397,19 @@ macro_rules! i2c_shared {
         feature = "stm32l4x5",
         feature = "stm32l4x6"
       ))]
-      $(#[$dma_tx_attr])*
-      impl<$($dma_tx_tp,)* Tx> I2CDmaTxRes<$dma_tx_res<Tx, Frt>>
-        for $name_res<$($dma_tx_tp,)* Frt>
+      impl<Ev, Er, Tx, C> I2CDmaTxRes<$dma_tx_bond<Tx, C>>
+        for $name_res<Ev, Er, Frt>
       where
         Tx: $int_dma_tx<Ttt>,
-        $($dma_tx_tp: $dma_tx_bound,)*
+        Ev: $int_ev_ty<Ttt>,
+        Er: $int_er_ty<Ttt>,
+        C: DmaBondOnRgc<$dma_tx_res<Tx, Frt>>,
       {
         #[inline(always)]
         fn dma_tx_ch_init(
           &self,
-          cs_val: &mut CselrVal<$dma_tx_res<Tx, Frt>>,
-          dma: &Dma<$dma_tx_res<Tx, Frt>>,
+          cs_val: &mut CselrVal<<$dma_tx_bond<Tx, C> as DmaBond>::DmaRes>,
+          dma: &Dma<<$dma_tx_bond<Tx, C> as DmaBond>::DmaRes>,
         ) {
           dma.cselr_cs().write(cs_val, $dma_tx_cs);
         }
@@ -1263,328 +1418,19 @@ macro_rules! i2c_shared {
   };
 }
 
-#[allow(unused_macros)]
-macro_rules! i2c {
-  (
-    $doc:expr,
-    $name:ident,
-    $name_macro:ident,
-    $doc_int:expr,
-    $name_int:ident,
-    $name_int_macro:ident,
-    $doc_res:expr,
-    $name_res:ident,
-    $doc_int_res:expr,
-    $name_int_res:ident,
-    $int_ev_ty:ident,
-    $int_er_ty:ident,
-    $i2c:ident,
-    $i2c_ev:ident,
-    $i2c_er:ident,
-    $i2c_cr1:ident,
-    $i2c_cr2:ident,
-    $i2c_oar1:ident,
-    $i2c_oar2:ident,
-    $i2c_timingr:ident,
-    $i2c_timeoutr:ident,
-    $i2c_isr:ident,
-    $i2c_icr:ident,
-    $i2c_pecr:ident,
-    $i2c_rxdr:ident,
-    $i2c_txdr:ident,
-    (
-      $dma_rx_req_id:expr,
-      $((
-        $(#[$dma_rx_attr:meta])*
-        $dma_rx_res:ident,
-        $int_dma_rx:ident,
-        $dma_rx_cs:expr
-      )),*
-    ),
-    (
-      $dma_tx_req_id:expr,
-      $((
-        $(#[$dma_tx_attr:meta])*
-        $dma_tx_res:ident,
-        $int_dma_tx:ident,
-        $dma_tx_cs:expr
-      )),*
-    ),
-  ) => {
-    #[doc = $doc]
-    pub type $name = I2C<$name_res<Frt>>;
-
-    #[doc = $doc_int]
-    pub type $name_int<Ev, Er> = I2C<$name_int_res<Ev, Er, Frt>>;
-
-    #[doc = $doc_res]
-    #[allow(missing_docs)]
-    pub struct $name_res<Rt: RegTag> {
-      pub $i2c_cr1: $i2c::Cr1<Srt>,
-      pub $i2c_cr2: $i2c::Cr2<Srt>,
-      pub $i2c_oar1: $i2c::Oar1<Srt>,
-      pub $i2c_oar2: $i2c::Oar2<Srt>,
-      pub $i2c_timingr: $i2c::Timingr<Srt>,
-      pub $i2c_timeoutr: $i2c::Timeoutr<Srt>,
-      pub $i2c_isr: $i2c::Isr<Rt>,
-      pub $i2c_icr: $i2c::Icr<Rt>,
-      pub $i2c_pecr: $i2c::Pecr<Srt>,
-      pub $i2c_rxdr: $i2c::Rxdr<Srt>,
-      pub $i2c_txdr: $i2c::Txdr<Srt>,
-    }
-
-    #[doc = $doc_int_res]
-    #[allow(missing_docs)]
-    pub struct $name_int_res<Ev, Er, Rt>
-    where
-      Ev: $int_ev_ty<Ttt>,
-      Er: $int_er_ty<Ttt>,
-      Rt: RegTag,
-    {
-      pub $i2c_ev: Ev,
-      pub $i2c_er: Er,
-      pub $i2c_cr1: $i2c::Cr1<Srt>,
-      pub $i2c_cr2: $i2c::Cr2<Srt>,
-      pub $i2c_oar1: $i2c::Oar1<Srt>,
-      pub $i2c_oar2: $i2c::Oar2<Srt>,
-      pub $i2c_timingr: $i2c::Timingr<Srt>,
-      pub $i2c_timeoutr: $i2c::Timeoutr<Srt>,
-      pub $i2c_isr: $i2c::Isr<Rt>,
-      pub $i2c_icr: $i2c::Icr<Rt>,
-      pub $i2c_pecr: $i2c::Pecr<Srt>,
-      pub $i2c_rxdr: $i2c::Rxdr<Srt>,
-      pub $i2c_txdr: $i2c::Txdr<Srt>,
-    }
-
-    /// Creates a new `I2C`.
-    #[macro_export]
-    macro_rules! $name_macro {
-      ($reg: ident) => {
-        <$crate::i2c::I2C<_> as ::drone_core::drv::Driver>::new(
-          $crate::i2c::$name_res {
-            $i2c_cr1: $reg.$i2c_cr1,
-            $i2c_cr2: $reg.$i2c_cr2,
-            $i2c_oar1: $reg.$i2c_oar1,
-            $i2c_oar2: $reg.$i2c_oar2,
-            $i2c_timingr: $reg.$i2c_timingr,
-            $i2c_timeoutr: $reg.$i2c_timeoutr,
-            $i2c_isr: $reg.$i2c_isr,
-            $i2c_icr: $reg.$i2c_icr,
-            $i2c_pecr: $reg.$i2c_pecr,
-            $i2c_rxdr: $reg.$i2c_rxdr,
-            $i2c_txdr: $reg.$i2c_txdr,
-          },
-        )
-      };
-    }
-
-    /// Creates a new `I2CInt`.
-    #[macro_export]
-    macro_rules! $name_int_macro {
-      ($reg: ident, $thr: ident) => {
-        <$crate::i2c::I2C<_> as ::drone_core::drv::Driver>::new(
-          $crate::i2c::$name_int_res {
-            $i2c_ev: $thr.$i2c_ev.into(),
-            $i2c_er: $thr.$i2c_er.into(),
-            $i2c_cr1: $reg.$i2c_cr1,
-            $i2c_cr2: $reg.$i2c_cr2,
-            $i2c_oar1: $reg.$i2c_oar1,
-            $i2c_oar2: $reg.$i2c_oar2,
-            $i2c_timingr: $reg.$i2c_timingr,
-            $i2c_timeoutr: $reg.$i2c_timeoutr,
-            $i2c_isr: $reg.$i2c_isr,
-            $i2c_icr: $reg.$i2c_icr,
-            $i2c_pecr: $reg.$i2c_pecr,
-            $i2c_rxdr: $reg.$i2c_rxdr,
-            $i2c_txdr: $reg.$i2c_txdr,
-          },
-        )
-      };
-    }
-
-    impl Resource for $name_res<Frt> {
-      type Source = $name_res<Srt>;
-
-      #[inline(always)]
-      fn from_source(source: Self::Source) -> Self {
-        Self {
-          $i2c_cr1: source.$i2c_cr1,
-          $i2c_cr2: source.$i2c_cr2,
-          $i2c_oar1: source.$i2c_oar1,
-          $i2c_oar2: source.$i2c_oar2,
-          $i2c_timingr: source.$i2c_timingr,
-          $i2c_timeoutr: source.$i2c_timeoutr,
-          $i2c_isr: source.$i2c_isr.into(),
-          $i2c_icr: source.$i2c_icr.into(),
-          $i2c_pecr: source.$i2c_pecr,
-          $i2c_rxdr: source.$i2c_rxdr,
-          $i2c_txdr: source.$i2c_txdr,
-        }
-      }
-    }
-
-    i2c_shared! {
-      $i2c,
-      $i2c_cr1,
-      $i2c_cr2,
-      $i2c_oar1,
-      $i2c_oar2,
-      $i2c_timingr,
-      $i2c_timeoutr,
-      $i2c_isr,
-      $i2c_icr,
-      $i2c_pecr,
-      $i2c_rxdr,
-      $i2c_txdr,
-      $name_res,
-      (),
-      (
-        $dma_rx_req_id,
-        $(([$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs, ()),)*
-      ),
-      (
-        $dma_tx_req_id,
-        $(([$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs, ()),)*
-      ),
-    }
-
-    impl<Ev, Er> Resource for $name_int_res<Ev, Er, Frt>
-    where
-      Ev: $int_ev_ty<Ttt>,
-      Er: $int_er_ty<Ttt>,
-    {
-      type Source = $name_int_res<Ev, Er, Srt>;
-
-      #[inline(always)]
-      fn from_source(source: Self::Source) -> Self {
-        Self {
-          $i2c_ev: source.$i2c_ev,
-          $i2c_er: source.$i2c_er,
-          $i2c_cr1: source.$i2c_cr1,
-          $i2c_cr2: source.$i2c_cr2,
-          $i2c_oar1: source.$i2c_oar1,
-          $i2c_oar2: source.$i2c_oar2,
-          $i2c_timingr: source.$i2c_timingr,
-          $i2c_timeoutr: source.$i2c_timeoutr,
-          $i2c_isr: source.$i2c_isr.into(),
-          $i2c_icr: source.$i2c_icr.into(),
-          $i2c_pecr: source.$i2c_pecr,
-          $i2c_rxdr: source.$i2c_rxdr,
-          $i2c_txdr: source.$i2c_txdr,
-        }
-      }
-    }
-
-    i2c_shared! {
-      $i2c,
-      $i2c_cr1,
-      $i2c_cr2,
-      $i2c_oar1,
-      $i2c_oar2,
-      $i2c_timingr,
-      $i2c_timeoutr,
-      $i2c_isr,
-      $i2c_icr,
-      $i2c_pecr,
-      $i2c_rxdr,
-      $i2c_txdr,
-      $name_int_res,
-      (Ev: $int_ev_ty<Ttt>, Er: $int_er_ty<Ttt>),
-      (
-        $dma_rx_req_id,
-        $((
-          [$($dma_rx_attr,)*], $dma_rx_res, $int_dma_rx, $dma_rx_cs,
-          (Ev: $int_ev_ty<Ttt>, Er: $int_er_ty<Ttt>)
-        ),)*
-      ),
-      (
-        $dma_tx_req_id,
-        $((
-          [$($dma_tx_attr,)*], $dma_tx_res, $int_dma_tx, $dma_tx_cs,
-          (Ev: $int_ev_ty<Ttt>, Er: $int_er_ty<Ttt>)
-        ),)*
-      ),
-    }
-
-    impl<Ev, Er> I2CIntRes for $name_int_res<Ev, Er, Frt>
-    where
-      Ev: $int_ev_ty<Ttt>,
-      Er: $int_er_ty<Ttt>,
-    {
-      type WithoutInt = $name_res<Frt>;
-      type IntEv = Ev;
-      type IntEr = Er;
-
-      #[inline(always)]
-      fn join_int(
-        res: Self::WithoutInt,
-        int_ev: Self::IntEv,
-        int_er: Self::IntEr,
-      ) -> Self {
-        $name_int_res {
-          $i2c_ev: int_ev,
-          $i2c_er: int_er,
-          $i2c_cr1: res.$i2c_cr1,
-          $i2c_cr2: res.$i2c_cr2,
-          $i2c_oar1: res.$i2c_oar1,
-          $i2c_oar2: res.$i2c_oar2,
-          $i2c_timingr: res.$i2c_timingr,
-          $i2c_timeoutr: res.$i2c_timeoutr,
-          $i2c_isr: res.$i2c_isr,
-          $i2c_icr: res.$i2c_icr,
-          $i2c_pecr: res.$i2c_pecr,
-          $i2c_rxdr: res.$i2c_rxdr,
-          $i2c_txdr: res.$i2c_txdr,
-        }
-      }
-
-      #[inline(always)]
-      fn split_int(self) -> (Self::WithoutInt, Self::IntEv, Self::IntEr) {
-        (
-          $name_res {
-            $i2c_cr1: self.$i2c_cr1,
-            $i2c_cr2: self.$i2c_cr2,
-            $i2c_oar1: self.$i2c_oar1,
-            $i2c_oar2: self.$i2c_oar2,
-            $i2c_timingr: self.$i2c_timingr,
-            $i2c_timeoutr: self.$i2c_timeoutr,
-            $i2c_isr: self.$i2c_isr,
-            $i2c_icr: self.$i2c_icr,
-            $i2c_pecr: self.$i2c_pecr,
-            $i2c_rxdr: self.$i2c_rxdr,
-            $i2c_txdr: self.$i2c_txdr,
-          },
-          self.$i2c_ev,
-          self.$i2c_er,
-        )
-      }
-
-      #[inline(always)]
-      fn int_ev(&self) -> Self::IntEv {
-        self.$i2c_ev
-      }
-
-      #[inline(always)]
-      fn int_er(&self) -> Self::IntEr {
-        self.$i2c_er
-      }
-    }
-  };
-}
-
 i2c! {
   "I2C1 driver.",
   I2C1,
   drv_i2c1,
-  "I2C1 driver with interrupt.",
-  I2C1Int,
-  drv_i2c1_int,
   "I2C1 resource.",
   I2C1Res,
-  "I2C1 resource with interrupt.",
-  I2C1IntRes,
+  "I2C1 clock on guard resource.",
+  I2C1OnRes,
+  "I2C1 clock on guard driver.",
+  I2C1On,
   IntI2C1Ev,
   IntI2C1Er,
+  I2C1En,
   i2c1,
   i2c1_ev,
   i2c1_er,
@@ -1599,15 +1445,19 @@ i2c! {
   i2c1_pecr,
   i2c1_rxdr,
   i2c1_txdr,
+  apb1enr1,
+  rcc_apb1enr1_i2c1en,
+  rcc_apb1enr1,
+  i2c1en,
   (
     16,
-    (Dma1Ch7Res, IntDma1Ch7, 3),
-    (Dma2Ch6Res, IntDma2Ch6, 5)
+    (Dma1Ch7Bond, Dma1Ch7Res, IntDma1Ch7, 3),
+    (Dma2Ch6Bond, Dma2Ch6Res, IntDma2Ch6, 5)
   ),
   (
     17,
-    (Dma1Ch6Res, IntDma1Ch6, 3),
-    (Dma2Ch7Res, IntDma2Ch7, 5)
+    (Dma1Ch6Bond, Dma1Ch6Res, IntDma1Ch6, 3),
+    (Dma2Ch7Bond, Dma2Ch7Res, IntDma2Ch7, 5)
   ),
 }
 
@@ -1615,15 +1465,15 @@ i2c! {
   "I2C2 driver.",
   I2C2,
   drv_i2c2,
-  "I2C2 driver with interrupt.",
-  I2C2Int,
-  drv_i2c2_int,
   "I2C2 resource.",
   I2C2Res,
-  "I2C2 resource with interrupt.",
-  I2C2IntRes,
+  "I2C2 clock on guard resource.",
+  I2C2OnRes,
+  "I2C2 clock on guard driver.",
+  I2C2On,
   IntI2C2Ev,
   IntI2C2Er,
+  I2C2En,
   i2c2,
   i2c2_ev,
   i2c2_er,
@@ -1638,23 +1488,27 @@ i2c! {
   i2c2_pecr,
   i2c2_rxdr,
   i2c2_txdr,
-  (18, (Dma1Ch5Res, IntDma1Ch5, 3)),
-  (19, (Dma1Ch4Res, IntDma1Ch4, 3)),
+  apb1enr1,
+  rcc_apb1enr1_i2c2en,
+  rcc_apb1enr1,
+  i2c2en,
+  (18, (Dma1Ch5Bond, Dma1Ch5Res, IntDma1Ch5, 3)),
+  (19, (Dma1Ch4Bond, Dma1Ch4Res, IntDma1Ch4, 3)),
 }
 
 i2c! {
   "I2C3 driver.",
   I2C3,
   drv_i2c3,
-  "I2C3 driver with interrupt.",
-  I2C3Int,
-  drv_i2c3_int,
   "I2C3 resource.",
   I2C3Res,
-  "I2C3 resource with interrupt.",
-  I2C3IntRes,
+  "I2C3 clock on guard resource.",
+  I2C3OnRes,
+  "I2C3 clock on guard driver.",
+  I2C3On,
   IntI2C3Ev,
   IntI2C3Er,
+  I2C3En,
   i2c3,
   i2c3_ev,
   i2c3_er,
@@ -1669,8 +1523,12 @@ i2c! {
   i2c3_pecr,
   i2c3_rxdr,
   i2c3_txdr,
-  (20, (Dma1Ch3Res, IntDma1Ch3, 3)),
-  (21, (Dma1Ch2Res, IntDma1Ch2, 3)),
+  apb1enr1,
+  rcc_apb1enr1_i2c3en,
+  rcc_apb1enr1,
+  i2c3en,
+  (20, (Dma1Ch3Bond, Dma1Ch3Res, IntDma1Ch3, 3)),
+  (21, (Dma1Ch2Bond, Dma1Ch2Res, IntDma1Ch2, 3)),
 }
 
 #[cfg(any(
@@ -1688,15 +1546,15 @@ i2c! {
   "I2C4 driver.",
   I2C4,
   drv_i2c4,
-  "I2C4 driver with interrupt.",
-  I2C4Int,
-  drv_i2c4_int,
   "I2C4 resource.",
   I2C4Res,
-  "I2C4 resource with interrupt.",
-  I2C4IntRes,
+  "I2C4 clock on guard resource.",
+  I2C4OnRes,
+  "I2C4 clock on guard driver.",
+  I2C4On,
   IntI2C4Ev,
   IntI2C4Er,
+  I2C4En,
   i2c4,
   i2c4_ev,
   i2c4_er,
@@ -1711,6 +1569,10 @@ i2c! {
   i2c4_pecr,
   i2c4_rxdr,
   i2c4_txdr,
-  (22, (Dma2Ch1Res, IntDma2Ch1, 0)),
-  (23, (Dma2Ch2Res, IntDma2Ch2, 0)),
+  apb1enr2,
+  rcc_apb1enr2_i2c4en,
+  rcc_apb1enr2,
+  i2c4en,
+  (22, (Dma2Ch1Bond, Dma2Ch1Res, IntDma2Ch1, 0)),
+  (23, (Dma2Ch2Bond, Dma2Ch2Res, IntDma2Ch2, 0)),
 }

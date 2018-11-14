@@ -2,18 +2,12 @@
 
 use drone_stm32_core::reg::prelude::*;
 use drone_stm32_core::thr::prelude::*;
-use drone_stm32_drv_dma::dma::{Dma, DmaRes, DmaTransferError};
-#[cfg(any(
-  feature = "stm32l4r5",
-  feature = "stm32l4r7",
-  feature = "stm32l4r9",
-  feature = "stm32l4s5",
-  feature = "stm32l4s7",
-  feature = "stm32l4s9"
-))]
-use drone_stm32_drv_dmamux::dmamux::DmamuxCh;
+use drone_stm32_device::reg::{RegGuard, RegGuardCnt};
+use drone_stm32_drv_dma::dma::{
+  DmaBond, DmaBondOnRgc, DmaResCcr, DmaTransferError, DmaTxRes,
+};
 use drone_stm32_drv_i2c::i2c::{
-  I2CBreak, I2CDmaDx, I2CDmaRxRes, I2CDmaTxRes, I2CError, I2CIntRes, I2C,
+  I2CBreak, I2CDmaRxRes, I2CDmaTxRes, I2CError, I2COn, I2C,
 };
 use futures::future::Either;
 use futures::prelude::*;
@@ -34,130 +28,78 @@ pub enum I2CMasterError {
 
 /// I2C master session driver.
 #[derive(Driver)]
-pub struct I2CMaster<I2CRes, DmaRxRes, DmaTxRes>(
-  I2CMasterRes<I2CRes, DmaRxRes, DmaTxRes>,
+pub struct I2CMaster<I2CRes, DmaRxBond, DmaTxBond, C>(
+  I2CMasterRes<I2CRes, DmaRxBond, DmaTxBond, C>,
 )
 where
-  I2CRes: I2CIntRes + I2CDmaRxRes<DmaRxRes> + I2CDmaTxRes<DmaTxRes>,
-  DmaRxRes: DmaRes,
-  DmaTxRes: DmaRes;
+  I2CRes: I2CDmaRxRes<DmaRxBond> + I2CDmaTxRes<DmaTxBond>,
+  DmaRxBond: DmaBond,
+  DmaTxBond: DmaBond,
+  DmaTxBond::DmaRes: DmaTxRes<DmaRxBond::DmaRes>,
+  C: RegGuardCnt<I2COn<I2CRes>, Frt>
+    + DmaBondOnRgc<DmaRxBond::DmaRes>
+    + DmaBondOnRgc<DmaTxBond::DmaRes>;
 
 /// I2C master session resource.
 #[allow(missing_docs)]
 #[derive(Resource)]
-pub struct I2CMasterRes<I2CRes, DmaRxRes, DmaTxRes>
+pub struct I2CMasterRes<I2CRes, DmaRxBond, DmaTxBond, C>
 where
-  I2CRes: I2CIntRes + I2CDmaRxRes<DmaRxRes> + I2CDmaTxRes<DmaTxRes>,
-  DmaRxRes: DmaRes,
-  DmaTxRes: DmaRes,
+  I2CRes: I2CDmaRxRes<DmaRxBond> + I2CDmaTxRes<DmaTxBond>,
+  DmaRxBond: DmaBond,
+  DmaTxBond: DmaBond,
+  DmaTxBond::DmaRes: DmaTxRes<DmaRxBond::DmaRes>,
+  C: RegGuardCnt<I2COn<I2CRes>, Frt>
+    + DmaBondOnRgc<DmaRxBond::DmaRes>
+    + DmaBondOnRgc<DmaTxBond::DmaRes>,
 {
-  pub i2c: I2C<I2CRes>,
-  pub dma_rx: Dma<DmaRxRes>,
-  pub dma_tx: Dma<DmaTxRes>,
-  #[cfg(any(
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  ))]
-  pub dmamux_rx: DmamuxCh<DmaRxRes::DmamuxChRes>,
-  #[cfg(any(
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  ))]
-  pub dmamux_tx: DmamuxCh<DmaTxRes::DmamuxChRes>,
+  pub i2c: I2C<I2CRes, C>,
+  pub i2c_on: RegGuard<I2COn<I2CRes>, C, Frt>,
+  pub dma_rx: DmaRxBond,
+  pub dma_tx: DmaTxBond,
 }
 
 #[allow(missing_docs)]
-impl<I2CRes, DmaRxRes, DmaTxRes> I2CMaster<I2CRes, DmaRxRes, DmaTxRes>
+impl<I2CRes, DmaRxBond, DmaTxBond, C> I2CMaster<I2CRes, DmaRxBond, DmaTxBond, C>
 where
-  I2CRes: I2CIntRes + I2CDmaRxRes<DmaRxRes> + I2CDmaTxRes<DmaTxRes>,
-  DmaRxRes: DmaRes,
-  DmaTxRes: DmaRes,
+  I2CRes: I2CDmaRxRes<DmaRxBond> + I2CDmaTxRes<DmaTxBond>,
+  DmaRxBond: DmaBond,
+  DmaTxBond: DmaBond,
+  DmaTxBond::DmaRes: DmaTxRes<DmaRxBond::DmaRes>,
+  C: RegGuardCnt<I2COn<I2CRes>, Frt>
+    + DmaBondOnRgc<DmaRxBond::DmaRes>
+    + DmaBondOnRgc<DmaTxBond::DmaRes>,
 {
   #[inline(always)]
-  pub fn i2c(&self) -> &I2C<I2CRes> {
+  pub fn i2c(&self) -> &I2C<I2CRes, C> {
     &self.0.i2c
   }
 
   #[inline(always)]
-  pub fn dma_rx(&self) -> &Dma<DmaRxRes> {
+  pub fn dma_rx(&self) -> &DmaRxBond {
     &self.0.dma_rx
   }
 
   #[inline(always)]
-  pub fn dma_tx(&self) -> &Dma<DmaTxRes> {
+  pub fn dma_tx(&self) -> &DmaTxBond {
     &self.0.dma_tx
-  }
-
-  #[cfg(any(
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  ))]
-  #[inline(always)]
-  pub fn dmamux_rx(&self) -> &DmamuxCh<DmaRxRes::DmamuxChRes> {
-    &self.0.dmamux_rx
-  }
-
-  #[cfg(any(
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  ))]
-  pub fn dmamux_tx(&self) -> &DmamuxCh<DmaTxRes::DmamuxChRes> {
-    &self.0.dmamux_tx
   }
 }
 
-impl<I2CRes, DmaRxRes, DmaTxRes> I2CMaster<I2CRes, DmaRxRes, DmaTxRes>
+impl<I2CRes, DmaRxBond, DmaTxBond, C> I2CMaster<I2CRes, DmaRxBond, DmaTxBond, C>
 where
-  I2CRes: I2CIntRes + I2CDmaRxRes<DmaRxRes> + I2CDmaTxRes<DmaTxRes>,
-  DmaRxRes: DmaRes,
-  DmaTxRes: DmaRes,
+  I2CRes: I2CDmaRxRes<DmaRxBond> + I2CDmaTxRes<DmaTxBond>,
+  DmaRxBond: DmaBond,
+  DmaTxBond: DmaBond,
+  DmaTxBond::DmaRes: DmaTxRes<DmaRxBond::DmaRes>,
+  C: RegGuardCnt<I2COn<I2CRes>, Frt>
+    + DmaBondOnRgc<DmaRxBond::DmaRes>
+    + DmaBondOnRgc<DmaTxBond::DmaRes>,
 {
-  #[cfg(any(
-    feature = "stm32l4r5",
-    feature = "stm32l4r7",
-    feature = "stm32l4r9",
-    feature = "stm32l4s5",
-    feature = "stm32l4s7",
-    feature = "stm32l4s9"
-  ))]
   /// Initializes DMA for the I2C as peripheral.
   #[inline(always)]
   pub fn dma_init(&self) {
-    self.0.i2c.dma_dx_init(
-      &self.0.dma_rx,
-      &self.0.dmamux_rx,
-      &self.0.dma_tx,
-      &self.0.dmamux_tx,
-    );
-  }
-
-  #[cfg(any(
-    feature = "stm32l4x1",
-    feature = "stm32l4x2",
-    feature = "stm32l4x3",
-    feature = "stm32l4x5",
-    feature = "stm32l4x6"
-  ))]
-  /// Initializes DMA for the I2C as peripheral.
-  #[inline(always)]
-  pub fn dma_init(&self) {
-    self.0.i2c.dma_dx_init(&self.0.dma_rx, &self.0.dma_tx);
+    self.0.i2c.dma_init(&self.0.dma_rx, &self.0.dma_tx);
   }
 
   /// Reads bytes to `buf` from `slave_addr`. Leaves the session open.
@@ -231,12 +173,12 @@ where
     if buf.len() > 255 {
       panic!("I2C session overflow");
     }
-    async(static move || {
-      unsafe { self.0.dma_rx.set_maddr(buf.as_mut_ptr() as usize) };
-      self.0.dma_rx.set_size(buf.len());
-      self.0.dma_rx.ccr().store_val({
+    async(move || {
+      unsafe { self.0.dma_rx.dma_ch().set_maddr(buf.as_mut_ptr() as usize) };
+      self.0.dma_rx.dma_ch().set_size(buf.len());
+      self.0.dma_rx.dma_ch().ccr().store_val({
         let mut rx_ccr = self.init_dma_rx_ccr();
-        self.0.dma_rx.ccr_en().set(&mut rx_ccr);
+        self.0.dma_rx.dma_ch().ccr_en().set(&mut rx_ccr);
         rx_ccr
       });
       self.0.i2c.cr1().store_val({
@@ -246,7 +188,7 @@ where
         self.0.i2c.cr1_rxdmaen().set(&mut i2c_cr1_val);
         i2c_cr1_val
       });
-      let dma_rx = self.0.dma_rx.transfer_complete();
+      let dma_rx = self.0.dma_rx.dma_ch_mut().transfer_complete();
       let i2c_break = self.0.i2c.transfer_break();
       let i2c_error = self.0.i2c.transfer_error();
       self.set_i2c_cr2(&mut i2c_cr2_val, slave_addr, autoend, buf.len(), false);
@@ -255,7 +197,12 @@ where
         Ok(Either::Left((Either::Left(((), i2c_break)), i2c_error))) => {
           drop(i2c_break);
           drop(i2c_error);
-          self.0.dma_rx.ccr().store_val(self.init_dma_rx_ccr());
+          self
+            .0
+            .dma_rx
+            .dma_ch()
+            .ccr()
+            .store_val(self.init_dma_rx_ccr());
           self.0.i2c.int_ev().trigger();
           self.0.i2c.int_er().trigger();
           Ok(())
@@ -263,7 +210,12 @@ where
         Err(Either::Left((Either::Left((dma_rx, i2c_break)), i2c_error))) => {
           drop(i2c_break);
           drop(i2c_error);
-          self.0.dma_rx.ccr().store_val(self.init_dma_rx_ccr());
+          self
+            .0
+            .dma_rx
+            .dma_ch()
+            .ccr()
+            .store_val(self.init_dma_rx_ccr());
           self.0.i2c.int_ev().trigger();
           self.0.i2c.int_er().trigger();
           Err(dma_rx.into())
@@ -271,15 +223,25 @@ where
         Err(Either::Left((Either::Right((i2c_break, dma_rx)), i2c_error))) => {
           drop(dma_rx);
           drop(i2c_error);
-          self.0.dma_rx.ccr().store_val(self.init_dma_rx_ccr());
-          self.0.dma_rx.int().trigger();
+          self
+            .0
+            .dma_rx
+            .dma_ch()
+            .ccr()
+            .store_val(self.init_dma_rx_ccr());
+          self.0.dma_rx.dma_ch().int().trigger();
           self.0.i2c.int_er().trigger();
           Err(i2c_break.into())
         }
         Err(Either::Right((i2c_error, rest))) => {
           drop(rest);
-          self.0.dma_rx.ccr().store_val(self.init_dma_rx_ccr());
-          self.0.dma_rx.int().trigger();
+          self
+            .0
+            .dma_rx
+            .dma_ch()
+            .ccr()
+            .store_val(self.init_dma_rx_ccr());
+          self.0.dma_rx.dma_ch().int().trigger();
           self.0.i2c.int_ev().trigger();
           Err(i2c_error.into())
         }
@@ -298,12 +260,12 @@ where
     if buf.len() > 255 {
       panic!("I2C session overflow");
     }
-    async(static move || {
-      unsafe { self.0.dma_tx.set_maddr(buf.as_ptr() as usize) };
-      self.0.dma_tx.set_size(buf.len());
-      self.0.dma_tx.ccr().store_val({
+    async(move || {
+      unsafe { self.0.dma_tx.dma_ch().set_maddr(buf.as_ptr() as usize) };
+      self.0.dma_tx.dma_ch().set_size(buf.len());
+      self.0.dma_tx.dma_ch().ccr().store_val({
         let mut tx_ccr = self.init_dma_tx_ccr();
-        self.0.dma_tx.ccr_en().set(&mut tx_ccr);
+        self.0.dma_tx.dma_ch().ccr_en().set(&mut tx_ccr);
         tx_ccr
       });
       self.0.i2c.cr1().store_val({
@@ -313,7 +275,7 @@ where
         self.0.i2c.cr1_txdmaen().set(&mut i2c_cr1_val);
         i2c_cr1_val
       });
-      let dma_tx = self.0.dma_tx.transfer_complete();
+      let dma_tx = self.0.dma_tx.dma_ch_mut().transfer_complete();
       let i2c_break = self.0.i2c.transfer_break();
       let i2c_error = self.0.i2c.transfer_error();
       self.set_i2c_cr2(&mut i2c_cr2_val, slave_addr, autoend, buf.len(), true);
@@ -322,7 +284,12 @@ where
         Ok(Either::Left((Either::Left(((), i2c_break)), i2c_error))) => {
           drop(i2c_break);
           drop(i2c_error);
-          self.0.dma_tx.ccr().store_val(self.init_dma_tx_ccr());
+          self
+            .0
+            .dma_tx
+            .dma_ch()
+            .ccr()
+            .store_val(self.init_dma_tx_ccr());
           self.0.i2c.int_ev().trigger();
           self.0.i2c.int_er().trigger();
           Ok(())
@@ -330,7 +297,12 @@ where
         Err(Either::Left((Either::Left((dma_tx, i2c_break)), i2c_error))) => {
           drop(i2c_break);
           drop(i2c_error);
-          self.0.dma_tx.ccr().store_val(self.init_dma_tx_ccr());
+          self
+            .0
+            .dma_tx
+            .dma_ch()
+            .ccr()
+            .store_val(self.init_dma_tx_ccr());
           self.0.i2c.int_ev().trigger();
           self.0.i2c.int_er().trigger();
           Err(dma_tx.into())
@@ -338,15 +310,25 @@ where
         Err(Either::Left((Either::Right((i2c_break, dma_tx)), i2c_error))) => {
           drop(dma_tx);
           drop(i2c_error);
-          self.0.dma_tx.ccr().store_val(self.init_dma_tx_ccr());
-          self.0.dma_tx.int().trigger();
+          self
+            .0
+            .dma_tx
+            .dma_ch()
+            .ccr()
+            .store_val(self.init_dma_tx_ccr());
+          self.0.dma_tx.dma_ch().int().trigger();
           self.0.i2c.int_er().trigger();
           Err(i2c_break.into())
         }
         Err(Either::Right((i2c_error, rest))) => {
           drop(rest);
-          self.0.dma_tx.ccr().store_val(self.init_dma_tx_ccr());
-          self.0.dma_tx.int().trigger();
+          self
+            .0
+            .dma_tx
+            .dma_ch()
+            .ccr()
+            .store_val(self.init_dma_tx_ccr());
+          self.0.dma_tx.dma_ch().int().trigger();
           self.0.i2c.int_ev().trigger();
           Err(i2c_error.into())
         }
@@ -379,35 +361,35 @@ where
     self.0.i2c.cr2_start().set(val);
   }
 
-  fn init_dma_rx_ccr(&self) -> DmaRxRes::CcrVal {
-    let mut val = self.0.dma_rx.ccr().default_val();
-    self.0.dma_rx.ccr_mem2mem().clear(&mut val);
-    self.0.dma_rx.ccr_msize().write(&mut val, 0b00);
-    self.0.dma_rx.ccr_psize().write(&mut val, 0b00);
-    self.0.dma_rx.ccr_minc().set(&mut val);
-    self.0.dma_rx.ccr_pinc().clear(&mut val);
-    self.0.dma_rx.ccr_circ().clear(&mut val);
-    self.0.dma_rx.ccr_dir().clear(&mut val);
-    self.0.dma_rx.ccr_teie().set(&mut val);
-    self.0.dma_rx.ccr_htie().clear(&mut val);
-    self.0.dma_rx.ccr_tcie().set(&mut val);
-    self.0.dma_rx.ccr_en().clear(&mut val);
+  fn init_dma_rx_ccr(&self) -> <DmaRxBond::DmaRes as DmaResCcr>::CcrVal {
+    let mut val = self.0.dma_rx.dma_ch().ccr().default_val();
+    self.0.dma_rx.dma_ch().ccr_mem2mem().clear(&mut val);
+    self.0.dma_rx.dma_ch().ccr_msize().write(&mut val, 0b00);
+    self.0.dma_rx.dma_ch().ccr_psize().write(&mut val, 0b00);
+    self.0.dma_rx.dma_ch().ccr_minc().set(&mut val);
+    self.0.dma_rx.dma_ch().ccr_pinc().clear(&mut val);
+    self.0.dma_rx.dma_ch().ccr_circ().clear(&mut val);
+    self.0.dma_rx.dma_ch().ccr_dir().clear(&mut val);
+    self.0.dma_rx.dma_ch().ccr_teie().set(&mut val);
+    self.0.dma_rx.dma_ch().ccr_htie().clear(&mut val);
+    self.0.dma_rx.dma_ch().ccr_tcie().set(&mut val);
+    self.0.dma_rx.dma_ch().ccr_en().clear(&mut val);
     val
   }
 
-  fn init_dma_tx_ccr(&self) -> DmaTxRes::CcrVal {
-    let mut val = self.0.dma_tx.ccr().default_val();
-    self.0.dma_tx.ccr_mem2mem().clear(&mut val);
-    self.0.dma_tx.ccr_msize().write(&mut val, 0b00);
-    self.0.dma_tx.ccr_psize().write(&mut val, 0b00);
-    self.0.dma_tx.ccr_minc().set(&mut val);
-    self.0.dma_tx.ccr_pinc().clear(&mut val);
-    self.0.dma_tx.ccr_circ().clear(&mut val);
-    self.0.dma_tx.ccr_dir().set(&mut val);
-    self.0.dma_tx.ccr_teie().set(&mut val);
-    self.0.dma_tx.ccr_htie().clear(&mut val);
-    self.0.dma_tx.ccr_tcie().set(&mut val);
-    self.0.dma_tx.ccr_en().clear(&mut val);
+  fn init_dma_tx_ccr(&self) -> <DmaTxBond::DmaRes as DmaResCcr>::CcrVal {
+    let mut val = self.0.dma_tx.dma_ch().ccr().default_val();
+    self.0.dma_tx.dma_ch().ccr_mem2mem().clear(&mut val);
+    self.0.dma_tx.dma_ch().ccr_msize().write(&mut val, 0b00);
+    self.0.dma_tx.dma_ch().ccr_psize().write(&mut val, 0b00);
+    self.0.dma_tx.dma_ch().ccr_minc().set(&mut val);
+    self.0.dma_tx.dma_ch().ccr_pinc().clear(&mut val);
+    self.0.dma_tx.dma_ch().ccr_circ().clear(&mut val);
+    self.0.dma_tx.dma_ch().ccr_dir().set(&mut val);
+    self.0.dma_tx.dma_ch().ccr_teie().set(&mut val);
+    self.0.dma_tx.dma_ch().ccr_htie().clear(&mut val);
+    self.0.dma_tx.dma_ch().ccr_tcie().set(&mut val);
+    self.0.dma_tx.dma_ch().ccr_en().clear(&mut val);
     val
   }
 }

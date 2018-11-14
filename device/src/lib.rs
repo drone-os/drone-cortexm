@@ -1,3 +1,4 @@
+#![feature(marker_trait_attr)]
 #![no_std]
 #![allow(clippy::precedence)]
 
