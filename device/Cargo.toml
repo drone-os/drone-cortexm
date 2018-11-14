@@ -9,132 +9,228 @@ repository = "https://github.com/drone-os/drone-stm32"
 [features]
 default = []
 stm32f100 = [
-  "drone-stm32-device-0/stm32f100",
-  "drone-stm32-device-1/stm32f100",
-  "drone-stm32-device-2/stm32f100",
-  "drone-stm32-device-3/stm32f100",
-  "drone-stm32-device-4/stm32f100",
-  "drone-stm32-device-5/stm32f100",
+  "drone-stm32-device-pool-1/stm32f100",
+  "drone-stm32-device-pool-2/stm32f100",
+  "drone-stm32-device-pool-3/stm32f100",
+  "drone-stm32-device-pool-4/stm32f100",
+  "drone-stm32-device-pool-5/stm32f100",
+  "drone-stm32-device-pool-6/stm32f100",
+  "drone-stm32-device-pool-7/stm32f100",
+  "drone-stm32-device-pool-8/stm32f100",
+  "drone-stm32-device-pool-9/stm32f100",
+  "drone-stm32-device-pool-10/stm32f100",
+  "drone-stm32-device-pool-11/stm32f100",
+  "drone-stm32-device-pool-12/stm32f100",
 ]
 stm32f101 = [
-  "drone-stm32-device-0/stm32f101",
-  "drone-stm32-device-1/stm32f101",
-  "drone-stm32-device-2/stm32f101",
-  "drone-stm32-device-3/stm32f101",
-  "drone-stm32-device-4/stm32f101",
-  "drone-stm32-device-5/stm32f101",
+  "drone-stm32-device-pool-1/stm32f101",
+  "drone-stm32-device-pool-2/stm32f101",
+  "drone-stm32-device-pool-3/stm32f101",
+  "drone-stm32-device-pool-4/stm32f101",
+  "drone-stm32-device-pool-5/stm32f101",
+  "drone-stm32-device-pool-6/stm32f101",
+  "drone-stm32-device-pool-7/stm32f101",
+  "drone-stm32-device-pool-8/stm32f101",
+  "drone-stm32-device-pool-9/stm32f101",
+  "drone-stm32-device-pool-10/stm32f101",
+  "drone-stm32-device-pool-11/stm32f101",
+  "drone-stm32-device-pool-12/stm32f101",
 ]
 stm32f102 = [
-  "drone-stm32-device-0/stm32f102",
-  "drone-stm32-device-1/stm32f102",
-  "drone-stm32-device-2/stm32f102",
-  "drone-stm32-device-3/stm32f102",
-  "drone-stm32-device-4/stm32f102",
-  "drone-stm32-device-5/stm32f102",
+  "drone-stm32-device-pool-1/stm32f102",
+  "drone-stm32-device-pool-2/stm32f102",
+  "drone-stm32-device-pool-3/stm32f102",
+  "drone-stm32-device-pool-4/stm32f102",
+  "drone-stm32-device-pool-5/stm32f102",
+  "drone-stm32-device-pool-6/stm32f102",
+  "drone-stm32-device-pool-7/stm32f102",
+  "drone-stm32-device-pool-8/stm32f102",
+  "drone-stm32-device-pool-9/stm32f102",
+  "drone-stm32-device-pool-10/stm32f102",
+  "drone-stm32-device-pool-11/stm32f102",
+  "drone-stm32-device-pool-12/stm32f102",
 ]
 stm32f103 = [
-  "drone-stm32-device-0/stm32f103",
-  "drone-stm32-device-1/stm32f103",
-  "drone-stm32-device-2/stm32f103",
-  "drone-stm32-device-3/stm32f103",
-  "drone-stm32-device-4/stm32f103",
-  "drone-stm32-device-5/stm32f103",
+  "drone-stm32-device-pool-1/stm32f103",
+  "drone-stm32-device-pool-2/stm32f103",
+  "drone-stm32-device-pool-3/stm32f103",
+  "drone-stm32-device-pool-4/stm32f103",
+  "drone-stm32-device-pool-5/stm32f103",
+  "drone-stm32-device-pool-6/stm32f103",
+  "drone-stm32-device-pool-7/stm32f103",
+  "drone-stm32-device-pool-8/stm32f103",
+  "drone-stm32-device-pool-9/stm32f103",
+  "drone-stm32-device-pool-10/stm32f103",
+  "drone-stm32-device-pool-11/stm32f103",
+  "drone-stm32-device-pool-12/stm32f103",
 ]
 stm32f107 = [
-  "drone-stm32-device-0/stm32f107",
-  "drone-stm32-device-1/stm32f107",
-  "drone-stm32-device-2/stm32f107",
-  "drone-stm32-device-3/stm32f107",
-  "drone-stm32-device-4/stm32f107",
-  "drone-stm32-device-5/stm32f107",
+  "drone-stm32-device-pool-1/stm32f107",
+  "drone-stm32-device-pool-2/stm32f107",
+  "drone-stm32-device-pool-3/stm32f107",
+  "drone-stm32-device-pool-4/stm32f107",
+  "drone-stm32-device-pool-5/stm32f107",
+  "drone-stm32-device-pool-6/stm32f107",
+  "drone-stm32-device-pool-7/stm32f107",
+  "drone-stm32-device-pool-8/stm32f107",
+  "drone-stm32-device-pool-9/stm32f107",
+  "drone-stm32-device-pool-10/stm32f107",
+  "drone-stm32-device-pool-11/stm32f107",
+  "drone-stm32-device-pool-12/stm32f107",
 ]
 stm32l4x1 = [
-  "drone-stm32-device-0/stm32l4x1",
-  "drone-stm32-device-1/stm32l4x1",
-  "drone-stm32-device-2/stm32l4x1",
-  "drone-stm32-device-3/stm32l4x1",
-  "drone-stm32-device-4/stm32l4x1",
-  "drone-stm32-device-5/stm32l4x1",
+  "drone-stm32-device-pool-1/stm32l4x1",
+  "drone-stm32-device-pool-2/stm32l4x1",
+  "drone-stm32-device-pool-3/stm32l4x1",
+  "drone-stm32-device-pool-4/stm32l4x1",
+  "drone-stm32-device-pool-5/stm32l4x1",
+  "drone-stm32-device-pool-6/stm32l4x1",
+  "drone-stm32-device-pool-7/stm32l4x1",
+  "drone-stm32-device-pool-8/stm32l4x1",
+  "drone-stm32-device-pool-9/stm32l4x1",
+  "drone-stm32-device-pool-10/stm32l4x1",
+  "drone-stm32-device-pool-11/stm32l4x1",
+  "drone-stm32-device-pool-12/stm32l4x1",
 ]
 stm32l4x2 = [
-  "drone-stm32-device-0/stm32l4x2",
-  "drone-stm32-device-1/stm32l4x2",
-  "drone-stm32-device-2/stm32l4x2",
-  "drone-stm32-device-3/stm32l4x2",
-  "drone-stm32-device-4/stm32l4x2",
-  "drone-stm32-device-5/stm32l4x2",
+  "drone-stm32-device-pool-1/stm32l4x2",
+  "drone-stm32-device-pool-2/stm32l4x2",
+  "drone-stm32-device-pool-3/stm32l4x2",
+  "drone-stm32-device-pool-4/stm32l4x2",
+  "drone-stm32-device-pool-5/stm32l4x2",
+  "drone-stm32-device-pool-6/stm32l4x2",
+  "drone-stm32-device-pool-7/stm32l4x2",
+  "drone-stm32-device-pool-8/stm32l4x2",
+  "drone-stm32-device-pool-9/stm32l4x2",
+  "drone-stm32-device-pool-10/stm32l4x2",
+  "drone-stm32-device-pool-11/stm32l4x2",
+  "drone-stm32-device-pool-12/stm32l4x2",
 ]
 stm32l4x3 = [
-  "drone-stm32-device-0/stm32l4x3",
-  "drone-stm32-device-1/stm32l4x3",
-  "drone-stm32-device-2/stm32l4x3",
-  "drone-stm32-device-3/stm32l4x3",
-  "drone-stm32-device-4/stm32l4x3",
-  "drone-stm32-device-5/stm32l4x3",
+  "drone-stm32-device-pool-1/stm32l4x3",
+  "drone-stm32-device-pool-2/stm32l4x3",
+  "drone-stm32-device-pool-3/stm32l4x3",
+  "drone-stm32-device-pool-4/stm32l4x3",
+  "drone-stm32-device-pool-5/stm32l4x3",
+  "drone-stm32-device-pool-6/stm32l4x3",
+  "drone-stm32-device-pool-7/stm32l4x3",
+  "drone-stm32-device-pool-8/stm32l4x3",
+  "drone-stm32-device-pool-9/stm32l4x3",
+  "drone-stm32-device-pool-10/stm32l4x3",
+  "drone-stm32-device-pool-11/stm32l4x3",
+  "drone-stm32-device-pool-12/stm32l4x3",
 ]
 stm32l4x5 = [
-  "drone-stm32-device-0/stm32l4x5",
-  "drone-stm32-device-1/stm32l4x5",
-  "drone-stm32-device-2/stm32l4x5",
-  "drone-stm32-device-3/stm32l4x5",
-  "drone-stm32-device-4/stm32l4x5",
-  "drone-stm32-device-5/stm32l4x5",
+  "drone-stm32-device-pool-1/stm32l4x5",
+  "drone-stm32-device-pool-2/stm32l4x5",
+  "drone-stm32-device-pool-3/stm32l4x5",
+  "drone-stm32-device-pool-4/stm32l4x5",
+  "drone-stm32-device-pool-5/stm32l4x5",
+  "drone-stm32-device-pool-6/stm32l4x5",
+  "drone-stm32-device-pool-7/stm32l4x5",
+  "drone-stm32-device-pool-8/stm32l4x5",
+  "drone-stm32-device-pool-9/stm32l4x5",
+  "drone-stm32-device-pool-10/stm32l4x5",
+  "drone-stm32-device-pool-11/stm32l4x5",
+  "drone-stm32-device-pool-12/stm32l4x5",
 ]
 stm32l4x6 = [
-  "drone-stm32-device-0/stm32l4x6",
-  "drone-stm32-device-1/stm32l4x6",
-  "drone-stm32-device-2/stm32l4x6",
-  "drone-stm32-device-3/stm32l4x6",
-  "drone-stm32-device-4/stm32l4x6",
-  "drone-stm32-device-5/stm32l4x6",
+  "drone-stm32-device-pool-1/stm32l4x6",
+  "drone-stm32-device-pool-2/stm32l4x6",
+  "drone-stm32-device-pool-3/stm32l4x6",
+  "drone-stm32-device-pool-4/stm32l4x6",
+  "drone-stm32-device-pool-5/stm32l4x6",
+  "drone-stm32-device-pool-6/stm32l4x6",
+  "drone-stm32-device-pool-7/stm32l4x6",
+  "drone-stm32-device-pool-8/stm32l4x6",
+  "drone-stm32-device-pool-9/stm32l4x6",
+  "drone-stm32-device-pool-10/stm32l4x6",
+  "drone-stm32-device-pool-11/stm32l4x6",
+  "drone-stm32-device-pool-12/stm32l4x6",
 ]
 stm32l4r5 = [
-  "drone-stm32-device-0/stm32l4r5",
-  "drone-stm32-device-1/stm32l4r5",
-  "drone-stm32-device-2/stm32l4r5",
-  "drone-stm32-device-3/stm32l4r5",
-  "drone-stm32-device-4/stm32l4r5",
-  "drone-stm32-device-5/stm32l4r5",
+  "drone-stm32-device-pool-1/stm32l4r5",
+  "drone-stm32-device-pool-2/stm32l4r5",
+  "drone-stm32-device-pool-3/stm32l4r5",
+  "drone-stm32-device-pool-4/stm32l4r5",
+  "drone-stm32-device-pool-5/stm32l4r5",
+  "drone-stm32-device-pool-6/stm32l4r5",
+  "drone-stm32-device-pool-7/stm32l4r5",
+  "drone-stm32-device-pool-8/stm32l4r5",
+  "drone-stm32-device-pool-9/stm32l4r5",
+  "drone-stm32-device-pool-10/stm32l4r5",
+  "drone-stm32-device-pool-11/stm32l4r5",
+  "drone-stm32-device-pool-12/stm32l4r5",
 ]
 stm32l4r7 = [
-  "drone-stm32-device-0/stm32l4r7",
-  "drone-stm32-device-1/stm32l4r7",
-  "drone-stm32-device-2/stm32l4r7",
-  "drone-stm32-device-3/stm32l4r7",
-  "drone-stm32-device-4/stm32l4r7",
-  "drone-stm32-device-5/stm32l4r7",
+  "drone-stm32-device-pool-1/stm32l4r7",
+  "drone-stm32-device-pool-2/stm32l4r7",
+  "drone-stm32-device-pool-3/stm32l4r7",
+  "drone-stm32-device-pool-4/stm32l4r7",
+  "drone-stm32-device-pool-5/stm32l4r7",
+  "drone-stm32-device-pool-6/stm32l4r7",
+  "drone-stm32-device-pool-7/stm32l4r7",
+  "drone-stm32-device-pool-8/stm32l4r7",
+  "drone-stm32-device-pool-9/stm32l4r7",
+  "drone-stm32-device-pool-10/stm32l4r7",
+  "drone-stm32-device-pool-11/stm32l4r7",
+  "drone-stm32-device-pool-12/stm32l4r7",
 ]
 stm32l4r9 = [
-  "drone-stm32-device-0/stm32l4r9",
-  "drone-stm32-device-1/stm32l4r9",
-  "drone-stm32-device-2/stm32l4r9",
-  "drone-stm32-device-3/stm32l4r9",
-  "drone-stm32-device-4/stm32l4r9",
-  "drone-stm32-device-5/stm32l4r9",
+  "drone-stm32-device-pool-1/stm32l4r9",
+  "drone-stm32-device-pool-2/stm32l4r9",
+  "drone-stm32-device-pool-3/stm32l4r9",
+  "drone-stm32-device-pool-4/stm32l4r9",
+  "drone-stm32-device-pool-5/stm32l4r9",
+  "drone-stm32-device-pool-6/stm32l4r9",
+  "drone-stm32-device-pool-7/stm32l4r9",
+  "drone-stm32-device-pool-8/stm32l4r9",
+  "drone-stm32-device-pool-9/stm32l4r9",
+  "drone-stm32-device-pool-10/stm32l4r9",
+  "drone-stm32-device-pool-11/stm32l4r9",
+  "drone-stm32-device-pool-12/stm32l4r9",
 ]
 stm32l4s5 = [
-  "drone-stm32-device-0/stm32l4s5",
-  "drone-stm32-device-1/stm32l4s5",
-  "drone-stm32-device-2/stm32l4s5",
-  "drone-stm32-device-3/stm32l4s5",
-  "drone-stm32-device-4/stm32l4s5",
-  "drone-stm32-device-5/stm32l4s5",
+  "drone-stm32-device-pool-1/stm32l4s5",
+  "drone-stm32-device-pool-2/stm32l4s5",
+  "drone-stm32-device-pool-3/stm32l4s5",
+  "drone-stm32-device-pool-4/stm32l4s5",
+  "drone-stm32-device-pool-5/stm32l4s5",
+  "drone-stm32-device-pool-6/stm32l4s5",
+  "drone-stm32-device-pool-7/stm32l4s5",
+  "drone-stm32-device-pool-8/stm32l4s5",
+  "drone-stm32-device-pool-9/stm32l4s5",
+  "drone-stm32-device-pool-10/stm32l4s5",
+  "drone-stm32-device-pool-11/stm32l4s5",
+  "drone-stm32-device-pool-12/stm32l4s5",
 ]
 stm32l4s7 = [
-  "drone-stm32-device-0/stm32l4s7",
-  "drone-stm32-device-1/stm32l4s7",
-  "drone-stm32-device-2/stm32l4s7",
-  "drone-stm32-device-3/stm32l4s7",
-  "drone-stm32-device-4/stm32l4s7",
-  "drone-stm32-device-5/stm32l4s7",
+  "drone-stm32-device-pool-1/stm32l4s7",
+  "drone-stm32-device-pool-2/stm32l4s7",
+  "drone-stm32-device-pool-3/stm32l4s7",
+  "drone-stm32-device-pool-4/stm32l4s7",
+  "drone-stm32-device-pool-5/stm32l4s7",
+  "drone-stm32-device-pool-6/stm32l4s7",
+  "drone-stm32-device-pool-7/stm32l4s7",
+  "drone-stm32-device-pool-8/stm32l4s7",
+  "drone-stm32-device-pool-9/stm32l4s7",
+  "drone-stm32-device-pool-10/stm32l4s7",
+  "drone-stm32-device-pool-11/stm32l4s7",
+  "drone-stm32-device-pool-12/stm32l4s7",
 ]
 stm32l4s9 = [
-  "drone-stm32-device-0/stm32l4s9",
-  "drone-stm32-device-1/stm32l4s9",
-  "drone-stm32-device-2/stm32l4s9",
-  "drone-stm32-device-3/stm32l4s9",
-  "drone-stm32-device-4/stm32l4s9",
-  "drone-stm32-device-5/stm32l4s9",
+  "drone-stm32-device-pool-1/stm32l4s9",
+  "drone-stm32-device-pool-2/stm32l4s9",
+  "drone-stm32-device-pool-3/stm32l4s9",
+  "drone-stm32-device-pool-4/stm32l4s9",
+  "drone-stm32-device-pool-5/stm32l4s9",
+  "drone-stm32-device-pool-6/stm32l4s9",
+  "drone-stm32-device-pool-7/stm32l4s9",
+  "drone-stm32-device-pool-8/stm32l4s9",
+  "drone-stm32-device-pool-9/stm32l4s9",
+  "drone-stm32-device-pool-10/stm32l4s9",
+  "drone-stm32-device-pool-11/stm32l4s9",
+  "drone-stm32-device-pool-12/stm32l4s9",
 ]
 
 [dependencies.drone-core]
@@ -146,29 +242,53 @@ git = "https://github.com/drone-os/drone-core"
 version = "0.9.0"
 path = "../core"
 
-[dependencies.drone-stm32-device-0]
+[dependencies.drone-stm32-device-pool-1]
 version = "=0.9.0"
-path = "../device-0"
+path = "pool-1"
 
-[dependencies.drone-stm32-device-1]
+[dependencies.drone-stm32-device-pool-2]
 version = "=0.9.0"
-path = "../device-1"
+path = "pool-2"
 
-[dependencies.drone-stm32-device-2]
+[dependencies.drone-stm32-device-pool-3]
 version = "=0.9.0"
-path = "../device-2"
+path = "pool-3"
 
-[dependencies.drone-stm32-device-3]
+[dependencies.drone-stm32-device-pool-4]
 version = "=0.9.0"
-path = "../device-3"
+path = "pool-4"
 
-[dependencies.drone-stm32-device-4]
+[dependencies.drone-stm32-device-pool-5]
 version = "=0.9.0"
-path = "../device-4"
+path = "pool-5"
 
-[dependencies.drone-stm32-device-5]
+[dependencies.drone-stm32-device-pool-6]
 version = "=0.9.0"
-path = "../device-5"
+path = "pool-6"
+
+[dependencies.drone-stm32-device-pool-7]
+version = "=0.9.0"
+path = "pool-7"
+
+[dependencies.drone-stm32-device-pool-8]
+version = "=0.9.0"
+path = "pool-8"
+
+[dependencies.drone-stm32-device-pool-9]
+version = "=0.9.0"
+path = "pool-9"
+
+[dependencies.drone-stm32-device-pool-10]
+version = "=0.9.0"
+path = "pool-10"
+
+[dependencies.drone-stm32-device-pool-11]
+version = "=0.9.0"
+path = "pool-11"
+
+[dependencies.drone-stm32-device-pool-12]
+version = "=0.9.0"
+path = "pool-12"
 
 [build-dependencies.drone-stm32-svd]
 version = "=0.9.0"

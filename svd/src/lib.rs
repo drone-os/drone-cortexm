@@ -118,48 +118,48 @@ fn svd_deserialize(feature: &str, out_dir: &Path) -> Result<Device, Error> {
 
 fn make_svd(feature: &str, svd: &mut File) -> Result<(), Error> {
   if feature == "stm32f100" {
-    patch("../svd_files/STM32F100.svd", svd, patch_stm32f1())?;
+    patch("STM32F100.svd", svd, patch_stm32f1())?;
   } else if feature == "stm32f101" {
-    patch("../svd_files/STM32F101.svd", svd, patch_stm32f1())?;
+    patch("STM32F101.svd", svd, patch_stm32f1())?;
   } else if feature == "stm32f102" {
-    patch("../svd_files/STM32F102.svd", svd, patch_stm32f1())?;
+    patch("STM32F102.svd", svd, patch_stm32f1())?;
   } else if feature == "stm32f103" {
-    patch("../svd_files/STM32F103.svd", svd, patch_stm32f1())?;
+    patch("STM32F103.svd", svd, patch_stm32f1())?;
   } else if feature == "stm32f107" {
-    patch("../svd_files/STM32F107.svd", svd, patch_stm32f1())?;
+    patch("STM32F107.svd", svd, patch_stm32f1())?;
   } else if feature == "stm32l4x1" {
-    patch("../svd_files/STM32L4x1.svd", svd, patch_stm32l4())?;
+    patch("STM32L4x1.svd", svd, patch_stm32l4())?;
   } else if feature == "stm32l4x2" {
-    patch("../svd_files/STM32L4x2.svd", svd, patch_stm32l4())?;
+    patch("STM32L4x2.svd", svd, patch_stm32l4())?;
   } else if feature == "stm32l4x3" {
-    patch("../svd_files/STM32L4x3.svd", svd, patch_stm32l4())?;
+    patch("STM32L4x3.svd", svd, patch_stm32l4())?;
   } else if feature == "stm32l4x5" {
-    patch("../svd_files/STM32L4x5.svd", svd, patch_stm32l4())?;
+    patch("STM32L4x5.svd", svd, patch_stm32l4())?;
   } else if feature == "stm32l4x6" {
-    patch("../svd_files/STM32L4x6.svd", svd, patch_stm32l4())?;
+    patch("STM32L4x6.svd", svd, patch_stm32l4())?;
   } else if feature == "stm32l4r5" {
-    patch("../svd_files/STM32L4R5.svd", svd, patch_stm32l4plus())?;
+    patch("STM32L4R5.svd", svd, patch_stm32l4plus())?;
   } else if feature == "stm32l4r7" {
-    patch("../svd_files/STM32L4R7.svd", svd, patch_stm32l4plus())?;
+    patch("STM32L4R7.svd", svd, patch_stm32l4plus())?;
   } else if feature == "stm32l4r9" {
-    patch("../svd_files/STM32L4R9.svd", svd, patch_stm32l4plus())?;
+    patch("STM32L4R9.svd", svd, patch_stm32l4plus())?;
   } else if feature == "stm32l4s5" {
-    patch("../svd_files/STM32L4S5.svd", svd, patch_stm32l4plus())?;
+    patch("STM32L4S5.svd", svd, patch_stm32l4plus())?;
   } else if feature == "stm32l4s7" {
-    patch("../svd_files/STM32L4S7.svd", svd, patch_stm32l4plus())?;
+    patch("STM32L4S7.svd", svd, patch_stm32l4plus())?;
   } else if feature == "stm32l4s9" {
-    patch("../svd_files/STM32L4S9.svd", svd, patch_stm32l4plus())?;
+    patch("STM32L4S9.svd", svd, patch_stm32l4plus())?;
   } else {
-    patch("../svd_files/blank.svd", svd, |o, e, path| match e {
+    patch("blank.svd", svd, |o, e, path| match e {
       ReaderEvent::StartElement { name, .. }
         if name.local_name == "peripherals"
           && check_path(path, &["device"]) =>
       {
         patch_pass(o, e)?;
-        patch_add(o, "../svd_files/patch/add_itm.xml")?;
-        patch_add(o, "../svd_files/patch/add_mpu.xml")?;
-        patch_add(o, "../svd_files/patch/add_scb.xml")?;
-        patch_add(o, "../svd_files/patch/add_stk.xml")
+        patch_add(o, "patch/add_itm.xml")?;
+        patch_add(o, "patch/add_mpu.xml")?;
+        patch_add(o, "patch/add_scb.xml")?;
+        patch_add(o, "patch/add_stk.xml")
       }
       _ => patch_pass(o, e),
     })?;
@@ -175,10 +175,10 @@ fn patch_stm32f1(
       if name.local_name == "peripherals" && check_path(path, &["device"]) =>
     {
       patch_pass(o, e)?;
-      patch_add(o, "../svd_files/patch/add_itm.xml")?;
-      patch_add(o, "../svd_files/patch/add_mpu.xml")?;
-      patch_add(o, "../svd_files/patch/add_scb.xml")?;
-      patch_add(o, "../svd_files/patch/add_stk.xml")
+      patch_add(o, "patch/add_itm.xml")?;
+      patch_add(o, "patch/add_mpu.xml")?;
+      patch_add(o, "patch/add_scb.xml")?;
+      patch_add(o, "patch/add_stk.xml")
     }
     _ => patch_pass(o, e),
   }
@@ -193,11 +193,11 @@ fn patch_stm32l4(
       if name.local_name == "peripherals" && check_path(path, &["device"]) =>
     {
       patch_pass(o, e)?;
-      patch_add(o, "../svd_files/patch/add_fpu.xml")?;
-      patch_add(o, "../svd_files/patch/add_itm.xml")?;
-      patch_add(o, "../svd_files/patch/add_mpu.xml")?;
-      patch_add(o, "../svd_files/patch/add_scb.xml")?;
-      patch_add(o, "../svd_files/patch/add_stk.xml")
+      patch_add(o, "patch/add_fpu.xml")?;
+      patch_add(o, "patch/add_itm.xml")?;
+      patch_add(o, "patch/add_mpu.xml")?;
+      patch_add(o, "patch/add_scb.xml")?;
+      patch_add(o, "patch/add_stk.xml")
     }
     ReaderEvent::Characters(s)
       if check_path(
@@ -249,8 +249,8 @@ fn patch_stm32l4plus(
       if name.local_name == "peripherals" && check_path(path, &["device"]) =>
     {
       patch_pass(o, e)?;
-      patch_add(o, "../svd_files/patch/add_itm.xml")?;
-      patch_add(o, "../svd_files/patch/add_dmamux.xml")
+      patch_add(o, "patch/add_itm.xml")?;
+      patch_add(o, "patch/add_dmamux.xml")
     }
     ReaderEvent::StartElement { name, .. }
       if name.local_name == "registers"
@@ -258,7 +258,7 @@ fn patch_stm32l4plus(
         && peripheral_name == "SCB" =>
     {
       patch_pass(o, e)?;
-      patch_add(o, "../svd_files/patch/add_scb_demcr.xml")
+      patch_add(o, "patch/add_scb_demcr.xml")
     }
     ReaderEvent::Characters(s)
       if check_path(path, &["device", "peripherals", "peripheral", "name"]) =>
@@ -332,6 +332,7 @@ fn patch<
   output: &mut File,
   mut f: F,
 ) -> Result<(), Error> {
+  let input = format!("{}/../svd_files/{}", env!("CARGO_MANIFEST_DIR"), input);
   let input = EventReader::new(BufReader::new(File::open(input)?));
   let mut output = EventWriter::new(output);
   let mut path = Vec::new();
@@ -367,6 +368,7 @@ fn patch_add(
   output: &mut EventWriter<&mut File>,
   patch: &str,
 ) -> Result<(), Error> {
+  let patch = format!("{}/../svd_files/{}", env!("CARGO_MANIFEST_DIR"), patch);
   for e in EventReader::new(BufReader::new(File::open(patch)?)) {
     match e? {
       ReaderEvent::StartDocument { .. } | ReaderEvent::EndDocument => {}

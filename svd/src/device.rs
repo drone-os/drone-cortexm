@@ -106,7 +106,7 @@ impl Device {
         continue;
       }
       if let Some((number, size)) = pool {
-        if i % size != number {
+        if i % size != number - 1 {
           continue;
         }
       }
