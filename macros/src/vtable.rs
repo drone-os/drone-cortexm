@@ -295,7 +295,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       #[inline(always)]
       unsafe fn new() -> Self {
         Self {
-          reset: Reset::new(),
+          reset: #rt::ThrToken::<#rt::Utt>::new(),
           #(#index_ctor_tokens),*
         }
       }
@@ -357,7 +357,7 @@ fn gen_exc(
         #vis #field_ident: #struct_ident<#rt::Utt>
       });
       index_ctor_tokens.push(quote! {
-        #field_ident: #struct_ident::new()
+        #field_ident: #rt::ThrToken::<#rt::Utt>::new()
       });
       array_tokens.push(quote! {
         #thr_ident::new(#index)
@@ -367,44 +367,24 @@ fn gen_exc(
         #[derive(Clone, Copy)]
         #vis struct #struct_ident<T: #rt::ThrTag>(#rt::PhantomData<T>);
 
-        impl<T: #rt::ThrTag> #struct_ident<T> {
+        impl<T: #rt::ThrTag> #rt::ThrToken<T> for #struct_ident<T> {
+          type Thr = #thr_ident;
+          type UThrToken = #struct_ident<#rt::Utt>;
+          type TThrToken = #struct_ident<#rt::Ttt>;
+          type AThrToken = #struct_ident<#rt::Att>;
+
+          const THR_NUM: usize = #index;
+
           #[inline(always)]
           unsafe fn new() -> Self {
             #struct_ident(#rt::PhantomData)
           }
         }
 
-        impl<T: #rt::ThrTag> #rt::ThrToken<T> for #struct_ident<T> {
-          type Thr = #thr_ident;
-
-          const THR_NUM: usize = #index;
-        }
-
         impl<T: #rt::ThrTag> AsRef<#thr_ident> for #struct_ident<T> {
           #[inline(always)]
           fn as_ref(&self) -> &#thr_ident {
-            <Self as #rt::ThrToken<T>>::get_thr()
-          }
-        }
-
-        impl From<#struct_ident<#rt::Utt>> for #struct_ident<#rt::Ttt> {
-          #[inline(always)]
-          fn from(_token: #struct_ident<#rt::Utt>) -> Self {
-            unsafe { Self::new() }
-          }
-        }
-
-        impl From<#struct_ident<#rt::Utt>> for #struct_ident<#rt::Att> {
-          #[inline(always)]
-          fn from(_token: #struct_ident<#rt::Utt>) -> Self {
-            unsafe { Self::new() }
-          }
-        }
-
-        impl From<#struct_ident<#rt::Ttt>> for #struct_ident<#rt::Att> {
-          #[inline(always)]
-          fn from(_token: #struct_ident<#rt::Ttt>) -> Self {
-            unsafe { Self::new() }
+            unsafe { <Self as #rt::ThrToken<T>>::get_thr() }
           }
         }
       });

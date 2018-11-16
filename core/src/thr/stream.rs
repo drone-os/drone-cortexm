@@ -29,7 +29,7 @@ impl<T: Stream> StreamPlat for T {
 }
 
 impl<T: Stream> StreamTrunkWait<T> {
-  #[inline(always)]
+  #[inline]
   fn new(stream: T) -> Self {
     Self {
       stream,

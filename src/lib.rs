@@ -36,6 +36,7 @@
 extern crate drone_core;
 extern crate drone_stm32_core;
 extern crate drone_stm32_device;
+extern crate drone_stm32_drv_adc;
 extern crate drone_stm32_drv_dma;
 extern crate drone_stm32_drv_dmamux;
 extern crate drone_stm32_drv_etc;

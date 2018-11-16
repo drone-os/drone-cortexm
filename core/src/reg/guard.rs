@@ -12,17 +12,16 @@ macro_rules! reg_guard_cnt {
     )*
   ) => {
     $(#[$rgc_attr])*
-    #[derive(Default)]
+    #[derive(Clone, Default)]
     $rgc_vis struct $rgc_ident;
 
     $(
       $vis static $ident: ::core::sync::atomic::AtomicUsize =
         ::core::sync::atomic::AtomicUsize::new(0);
 
-      impl<T> $crate::reg::RegGuardCnt<$bit_guard_res, T> for $rgc_ident
+      impl $crate::reg::RegGuardCnt<$bit_guard_res> for $rgc_ident
       where
-        $bit_guard_res: $crate::reg::RegGuardRes<T>,
-        T: ::drone_core::reg::RegAtomic,
+        $bit_guard_res: $crate::reg::RegGuardRes,
       {
         fn atomic() -> &'static ::core::sync::atomic::AtomicUsize {
           &$ident
@@ -33,46 +32,44 @@ macro_rules! reg_guard_cnt {
 }
 
 /// Register guard driver.
-pub struct RegGuard<T, U, V>(T, U, V)
+#[must_use]
+pub struct RegGuard<T, U>(T, U)
 where
-  T: RegGuardRes<V>,
-  U: RegGuardCnt<T, V>,
-  V: RegAtomic;
+  T: RegGuardRes,
+  U: RegGuardCnt<T>;
 
 /// Register guard resource.
-pub trait RegGuardRes<T: RegAtomic>: RegFork {
+pub trait RegGuardRes: Clone {
   /// Register.
-  type Reg: RwRegAtomic<T>;
+  type Reg: RwRegAtomic<Crt>;
 
   /// Register field.
-  type Field: WRwRegFieldAtomic<T, Reg = Self::Reg>;
+  type Field: WRwRegFieldAtomic<Crt, Reg = Self::Reg>;
 
   /// Returns a reference to the register field.
   fn field(&self) -> &Self::Field;
 
   /// Sets on value.
-  fn up(&self, val: &mut <Self::Reg as Reg<T>>::Val);
+  fn up(&self, val: &mut <Self::Reg as Reg<Crt>>::Val);
 
   /// Sets off value.
-  fn down(&self, val: &mut <Self::Reg as Reg<T>>::Val);
+  fn down(&self, val: &mut <Self::Reg as Reg<Crt>>::Val);
 }
 
 /// A static counter for [`RegGuard`].
-pub trait RegGuardCnt<T, U>
+pub trait RegGuardCnt<T>
 where
-  Self: Sized + Send + Sync + Default + 'static,
-  T: RegGuardRes<U>,
-  U: RegAtomic,
+  Self: Sized + Send + Sync + Default + Clone + 'static,
+  T: RegGuardRes,
 {
   /// Returns a reference to a static atomic counter.
   fn atomic() -> &'static AtomicUsize;
 }
 
-impl<T, U, V> RegGuard<T, U, V>
+impl<T, U> RegGuard<T, U>
 where
-  T: RegGuardRes<V>,
-  U: RegGuardCnt<T, V>,
-  V: RegAtomic,
+  T: RegGuardRes,
+  U: RegGuardCnt<T>,
 {
   /// Enables the resource and returns the new guard.
   pub fn new(res: T) -> Self {
@@ -80,27 +77,25 @@ where
     res.field().modify(|val| {
       res.up(val);
     });
-    Self(res, U::default(), V::default())
+    Self(res, U::default())
   }
 }
 
-impl<T, U, V> RegFork for RegGuard<T, U, V>
+impl<T, U> Clone for RegGuard<T, U>
 where
-  T: RegGuardRes<V>,
-  U: RegGuardCnt<T, V>,
-  V: RegAtomic,
+  T: RegGuardRes,
+  U: RegGuardCnt<T>,
 {
-  fn fork(&mut self) -> Self {
+  fn clone(&self) -> Self {
     U::atomic().fetch_add(1, Relaxed);
-    Self(self.0.fork(), U::default(), V::default())
+    Self(self.0.clone(), self.1.clone())
   }
 }
 
-impl<T, U, V> Drop for RegGuard<T, U, V>
+impl<T, U> Drop for RegGuard<T, U>
 where
-  T: RegGuardRes<V>,
-  U: RegGuardCnt<T, V>,
-  V: RegAtomic,
+  T: RegGuardRes,
+  U: RegGuardCnt<T>,
 {
   fn drop(&mut self) {
     U::atomic().fetch_sub(1, Relaxed);

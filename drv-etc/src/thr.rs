@@ -75,6 +75,7 @@ impl Thr {
     }
   }
 
+  #[inline]
   unsafe fn mpu_reset(&self) {
     if self.0.mpu_typer.load().dregion() == 0 {
       return;

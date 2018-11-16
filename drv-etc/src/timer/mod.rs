@@ -49,7 +49,7 @@ pub trait TimerRes: Resource {
 
 impl<T: TimerRes> Timer<T> {
   /// Returns a future that completes once `dur` ticks have elapsed.
-  #[inline(always)]
+  #[inline]
   pub fn sleep(
     &mut self,
     dur: T::Duration,
@@ -59,7 +59,7 @@ impl<T: TimerRes> Timer<T> {
   }
 
   /// Returns a stream that resolves every `dur` ticks.
-  #[inline(always)]
+  #[inline]
   pub fn interval(
     &mut self,
     dur: T::Duration,
@@ -69,7 +69,7 @@ impl<T: TimerRes> Timer<T> {
   }
 
   /// Returns a stream that resolves every `dur` ticks. Skips overflow.
-  #[inline(always)]
+  #[inline]
   pub fn interval_skip(
     &mut self,
     dur: T::Duration,
@@ -79,7 +79,7 @@ impl<T: TimerRes> Timer<T> {
   }
 
   /// Stops the timer.
-  #[inline(always)]
+  #[inline]
   pub fn stop(&mut self, ctrl_val: T::CtrlVal) {
     self.0.stop(ctrl_val)
   }

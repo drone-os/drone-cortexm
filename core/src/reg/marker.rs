@@ -1,8 +1,8 @@
 //! Marker traits for memory-mapped registers.
 
 pub use drone_core::reg::marker::{
-  self, FRoReg, FRoRoRegFieldBit, FRoRoRegFieldBits, FRoRwRegFieldBit,
-  FRoRwRegFieldBits, FWoReg, FWoWoRegFieldBit, FWoWoRegFieldBits, SRoReg,
+  self, CRoReg, CRoRoRegFieldBit, CRoRoRegFieldBits, CRoRwRegFieldBit,
+  CRoRwRegFieldBits, CWoReg, CWoWoRegFieldBit, CWoWoRegFieldBits, SRoReg,
   SRoRoRegFieldBit, SRoRoRegFieldBits, SRoRwRegFieldBit, SRoRwRegFieldBits,
   SWoReg, SWoWoRegFieldBit, SWoWoRegFieldBits, URoReg, URoRoRegFieldBit,
   URoRoRegFieldBits, URoRwRegFieldBit, URoRwRegFieldBits, URwReg,
@@ -30,20 +30,20 @@ where
 }
 
 // }}}
-// {{{ FRwReg
-/// Forkable read-write register token.
+// {{{ CRwReg
+/// Copyable read-write register token.
 #[marker]
-pub trait FRwReg
+pub trait CRwReg
 where
-  Self: marker::FRwReg,
-  Self: for<'a> RwRegAtomicRef<'a, Frt>,
+  Self: marker::CRwReg,
+  Self: for<'a> RwRegAtomicRef<'a, Crt>,
 {
 }
 
-impl<R> FRwReg for R
+impl<R> CRwReg for R
 where
-  R: marker::FRwReg,
-  R: for<'a> RwRegAtomicRef<'a, Frt>,
+  R: marker::CRwReg,
+  R: for<'a> RwRegAtomicRef<'a, Crt>,
 {
 }
 
@@ -156,56 +156,56 @@ where
 }
 
 // }}}
-// {{{ FRwRegBitBand
-/// Forkable bit-band read-write register token.
+// {{{ CRwRegBitBand
+/// Copyable bit-band read-write register token.
 #[marker]
-pub trait FRwRegBitBand
+pub trait CRwRegBitBand
 where
-  Self: FRwReg,
-  Self: RegBitBand<Frt>,
+  Self: CRwReg,
+  Self: RegBitBand<Crt>,
 {
 }
 
-impl<R> FRwRegBitBand for R
+impl<R> CRwRegBitBand for R
 where
-  R: FRwReg,
-  R: RegBitBand<Frt>,
+  R: CRwReg,
+  R: RegBitBand<Crt>,
 {
 }
 
 // }}}
-// {{{ FRoRegBitBand
-/// Forkable bit-band read-only register token.
+// {{{ CRoRegBitBand
+/// Copyable bit-band read-only register token.
 #[marker]
-pub trait FRoRegBitBand
+pub trait CRoRegBitBand
 where
-  Self: FRoReg,
-  Self: RegBitBand<Frt>,
+  Self: CRoReg,
+  Self: RegBitBand<Crt>,
 {
 }
 
-impl<R> FRoRegBitBand for R
+impl<R> CRoRegBitBand for R
 where
-  R: FRoReg,
-  R: RegBitBand<Frt>,
+  R: CRoReg,
+  R: RegBitBand<Crt>,
 {
 }
 
 // }}}
-// {{{ FWoRegBitBand
-/// Forkable bit-band write-only register token.
+// {{{ CWoRegBitBand
+/// Copyable bit-band write-only register token.
 #[marker]
-pub trait FWoRegBitBand
+pub trait CWoRegBitBand
 where
-  Self: FWoReg,
-  Self: RegBitBand<Frt>,
+  Self: CWoReg,
+  Self: RegBitBand<Crt>,
 {
 }
 
-impl<R> FWoRegBitBand for R
+impl<R> CWoRegBitBand for R
 where
-  R: FWoReg,
-  R: RegBitBand<Frt>,
+  R: CWoReg,
+  R: RegBitBand<Crt>,
 {
 }
 
@@ -290,82 +290,82 @@ where
 }
 
 // }}}
-// {{{ FRwRwRegFieldBit
-/// Forkable one-bit read-write field of read-write register token.
+// {{{ CRwRwRegFieldBit
+/// Copyable one-bit read-write field of read-write register token.
 #[marker]
-pub trait FRwRwRegFieldBit
+pub trait CRwRwRegFieldBit
 where
-  Self: marker::FRwRwRegFieldBit,
-  Self: WRwRegFieldBitAtomic<Frt>,
-  Self::Reg: FRwReg,
+  Self: marker::CRwRwRegFieldBit,
+  Self: WRwRegFieldBitAtomic<Crt>,
+  Self::Reg: CRwReg,
 {
 }
 
-impl<R> FRwRwRegFieldBit for R
+impl<R> CRwRwRegFieldBit for R
 where
-  R: marker::FRwRwRegFieldBit,
-  R: WRwRegFieldBitAtomic<Frt>,
-  R::Reg: FRwReg,
+  R: marker::CRwRwRegFieldBit,
+  R: WRwRegFieldBitAtomic<Crt>,
+  R::Reg: CRwReg,
 {
 }
 
 // }}}
-// {{{ FRwRwRegFieldBits
-/// Forkable multi-bit read-write field of read-write register token.
+// {{{ CRwRwRegFieldBits
+/// Copyable multi-bit read-write field of read-write register token.
 #[marker]
-pub trait FRwRwRegFieldBits
+pub trait CRwRwRegFieldBits
 where
-  Self: marker::FRwRwRegFieldBits,
-  Self: WRwRegFieldBitsAtomic<Frt>,
-  Self::Reg: FRwReg,
+  Self: marker::CRwRwRegFieldBits,
+  Self: WRwRegFieldBitsAtomic<Crt>,
+  Self::Reg: CRwReg,
 {
 }
 
-impl<R> FRwRwRegFieldBits for R
+impl<R> CRwRwRegFieldBits for R
 where
-  R: marker::FRwRwRegFieldBits,
-  R: WRwRegFieldBitsAtomic<Frt>,
-  R::Reg: FRwReg,
+  R: marker::CRwRwRegFieldBits,
+  R: WRwRegFieldBitsAtomic<Crt>,
+  R::Reg: CRwReg,
 {
 }
 
 // }}}
-// {{{ FWoRwRegFieldBit
-/// Forkable one-bit write-only field of read-write register token.
+// {{{ CWoRwRegFieldBit
+/// Copyable one-bit write-only field of read-write register token.
 #[marker]
-pub trait FWoRwRegFieldBit
+pub trait CWoRwRegFieldBit
 where
-  Self: marker::FWoRwRegFieldBit,
-  Self: WRwRegFieldBitAtomic<Frt>,
-  Self::Reg: FRwReg,
+  Self: marker::CWoRwRegFieldBit,
+  Self: WRwRegFieldBitAtomic<Crt>,
+  Self::Reg: CRwReg,
 {
 }
 
-impl<R> FWoRwRegFieldBit for R
+impl<R> CWoRwRegFieldBit for R
 where
-  R: marker::FWoRwRegFieldBit,
-  R: WRwRegFieldBitAtomic<Frt>,
-  R::Reg: FRwReg,
+  R: marker::CWoRwRegFieldBit,
+  R: WRwRegFieldBitAtomic<Crt>,
+  R::Reg: CRwReg,
 {
 }
 
 // }}}
-// {{{ FWoRwRegFieldBits
-/// Forkable multi-bit write-only field of read-write register token.
+// {{{ CWoRwRegFieldBits
+/// Copyable multi-bit write-only field of read-write register token.
 #[marker]
-pub trait FWoRwRegFieldBits
+pub trait CWoRwRegFieldBits
 where
-  Self: marker::FWoRwRegFieldBits,
-  Self: WRwRegFieldBitsAtomic<Frt>,
-  Self::Reg: FRwReg,
+  Self: marker::CWoRwRegFieldBits,
+  Self: WRwRegFieldBitsAtomic<Crt>,
+  Self::Reg: CRwReg,
 {
 }
 
-impl<R> FWoRwRegFieldBits for R
+impl<R> CWoRwRegFieldBits for R
 where
-  R: marker::FWoRwRegFieldBits,
-  R: WRwRegFieldBitsAtomic<Frt>,
-  R::Reg: FRwReg,
+  R: marker::CWoRwRegFieldBits,
+  R: WRwRegFieldBitsAtomic<Crt>,
+  R::Reg: CRwReg,
 {
 }
 
@@ -574,104 +574,104 @@ where
 }
 
 // }}}
-// {{{ FRwRwRegFieldBitBand
-/// Forkable one-bit read-write field of read-write register token.
+// {{{ CRwRwRegFieldBitBand
+/// Copyable one-bit read-write field of read-write register token.
 #[marker]
-pub trait FRwRwRegFieldBitBand
+pub trait CRwRwRegFieldBitBand
 where
-  Self: FRwRwRegFieldBit,
-  Self: RRRegFieldBitBand<Frt>,
-  Self: WWRegFieldBitBand<Frt>,
-  Self::Reg: FRwRegBitBand,
+  Self: CRwRwRegFieldBit,
+  Self: RRRegFieldBitBand<Crt>,
+  Self: WWRegFieldBitBand<Crt>,
+  Self::Reg: CRwRegBitBand,
 {
 }
 
-impl<R> FRwRwRegFieldBitBand for R
+impl<R> CRwRwRegFieldBitBand for R
 where
-  R: FRwRwRegFieldBit,
-  R: RRRegFieldBitBand<Frt>,
-  R: WWRegFieldBitBand<Frt>,
-  R::Reg: FRwRegBitBand,
+  R: CRwRwRegFieldBit,
+  R: RRRegFieldBitBand<Crt>,
+  R: WWRegFieldBitBand<Crt>,
+  R::Reg: CRwRegBitBand,
 {
 }
 
 // }}}
-// {{{ FWoRwRegFieldBitBand
-/// Forkable one-bit write-only field of read-write register token.
+// {{{ CWoRwRegFieldBitBand
+/// Copyable one-bit write-only field of read-write register token.
 #[marker]
-pub trait FWoRwRegFieldBitBand
+pub trait CWoRwRegFieldBitBand
 where
-  Self: FWoRwRegFieldBit,
-  Self: WWRegFieldBitBand<Frt>,
-  Self::Reg: FRwRegBitBand,
+  Self: CWoRwRegFieldBit,
+  Self: WWRegFieldBitBand<Crt>,
+  Self::Reg: CRwRegBitBand,
 {
 }
 
-impl<R> FWoRwRegFieldBitBand for R
+impl<R> CWoRwRegFieldBitBand for R
 where
-  R: FWoRwRegFieldBit,
-  R: WWRegFieldBitBand<Frt>,
-  R::Reg: FRwRegBitBand,
+  R: CWoRwRegFieldBit,
+  R: WWRegFieldBitBand<Crt>,
+  R::Reg: CRwRegBitBand,
 {
 }
 
 // }}}
-// {{{ FWoWoRegFieldBitBand
-/// Forkable one-bit write-only field of write-only register token.
+// {{{ CWoWoRegFieldBitBand
+/// Copyable one-bit write-only field of write-only register token.
 #[marker]
-pub trait FWoWoRegFieldBitBand
+pub trait CWoWoRegFieldBitBand
 where
-  Self: FWoWoRegFieldBit,
-  Self: WWRegFieldBitBand<Frt>,
-  Self::Reg: FWoRegBitBand,
+  Self: CWoWoRegFieldBit,
+  Self: WWRegFieldBitBand<Crt>,
+  Self::Reg: CWoRegBitBand,
 {
 }
 
-impl<R> FWoWoRegFieldBitBand for R
+impl<R> CWoWoRegFieldBitBand for R
 where
-  R: FWoWoRegFieldBit,
-  R: WWRegFieldBitBand<Frt>,
-  R::Reg: FWoRegBitBand,
+  R: CWoWoRegFieldBit,
+  R: WWRegFieldBitBand<Crt>,
+  R::Reg: CWoRegBitBand,
 {
 }
 
 // }}}
-// {{{ FRoRwRegFieldBitBand
-/// Forkable one-bit read-only field of read-write register token.
+// {{{ CRoRwRegFieldBitBand
+/// Copyable one-bit read-only field of read-write register token.
 #[marker]
-pub trait FRoRwRegFieldBitBand
+pub trait CRoRwRegFieldBitBand
 where
-  Self: FRoRwRegFieldBit,
-  Self: RRRegFieldBitBand<Frt>,
-  Self::Reg: FRwRegBitBand,
+  Self: CRoRwRegFieldBit,
+  Self: RRRegFieldBitBand<Crt>,
+  Self::Reg: CRwRegBitBand,
 {
 }
 
-impl<R> FRoRwRegFieldBitBand for R
+impl<R> CRoRwRegFieldBitBand for R
 where
-  R: FRoRwRegFieldBit,
-  R: RRRegFieldBitBand<Frt>,
-  R::Reg: FRwRegBitBand,
+  R: CRoRwRegFieldBit,
+  R: RRRegFieldBitBand<Crt>,
+  R::Reg: CRwRegBitBand,
 {
 }
 
 // }}}
-// {{{ FRoRoRegFieldBitBand
-/// Forkable one-bit read-only field of read-only register token.
+// {{{ CRoRoRegFieldBitBand
+/// Copyable one-bit read-only field of read-only register token.
 #[marker]
-pub trait FRoRoRegFieldBitBand
+pub trait CRoRoRegFieldBitBand
 where
-  Self: FRoRoRegFieldBit,
-  Self: RRRegFieldBitBand<Frt>,
-  Self::Reg: FRoRegBitBand,
+  Self: CRoRoRegFieldBit,
+  Self: RRRegFieldBitBand<Crt>,
+  Self::Reg: CRoRegBitBand,
 {
 }
 
-impl<R> FRoRoRegFieldBitBand for R
+impl<R> CRoRoRegFieldBitBand for R
 where
-  R: FRoRoRegFieldBit,
-  R: RRRegFieldBitBand<Frt>,
-  R::Reg: FRoRegBitBand,
+  R: CRoRoRegFieldBit,
+  R: RRRegFieldBitBand<Crt>,
+  R::Reg: CRoRegBitBand,
 {
 }
 

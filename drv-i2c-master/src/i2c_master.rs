@@ -36,7 +36,7 @@ where
   DmaRxBond: DmaBond,
   DmaTxBond: DmaBond,
   DmaTxBond::DmaRes: DmaTxRes<DmaRxBond::DmaRes>,
-  C: RegGuardCnt<I2COn<I2CRes>, Frt>
+  C: RegGuardCnt<I2COn<I2CRes>>
     + DmaBondOnRgc<DmaRxBond::DmaRes>
     + DmaBondOnRgc<DmaTxBond::DmaRes>;
 
@@ -49,12 +49,12 @@ where
   DmaRxBond: DmaBond,
   DmaTxBond: DmaBond,
   DmaTxBond::DmaRes: DmaTxRes<DmaRxBond::DmaRes>,
-  C: RegGuardCnt<I2COn<I2CRes>, Frt>
+  C: RegGuardCnt<I2COn<I2CRes>>
     + DmaBondOnRgc<DmaRxBond::DmaRes>
     + DmaBondOnRgc<DmaTxBond::DmaRes>,
 {
   pub i2c: I2C<I2CRes, C>,
-  pub i2c_on: RegGuard<I2COn<I2CRes>, C, Frt>,
+  pub i2c_on: RegGuard<I2COn<I2CRes>, C>,
   pub dma_rx: DmaRxBond,
   pub dma_tx: DmaTxBond,
 }
@@ -66,7 +66,7 @@ where
   DmaRxBond: DmaBond,
   DmaTxBond: DmaBond,
   DmaTxBond::DmaRes: DmaTxRes<DmaRxBond::DmaRes>,
-  C: RegGuardCnt<I2COn<I2CRes>, Frt>
+  C: RegGuardCnt<I2COn<I2CRes>>
     + DmaBondOnRgc<DmaRxBond::DmaRes>
     + DmaBondOnRgc<DmaTxBond::DmaRes>,
 {
@@ -92,12 +92,12 @@ where
   DmaRxBond: DmaBond,
   DmaTxBond: DmaBond,
   DmaTxBond::DmaRes: DmaTxRes<DmaRxBond::DmaRes>,
-  C: RegGuardCnt<I2COn<I2CRes>, Frt>
+  C: RegGuardCnt<I2COn<I2CRes>>
     + DmaBondOnRgc<DmaRxBond::DmaRes>
     + DmaBondOnRgc<DmaTxBond::DmaRes>,
 {
   /// Initializes DMA for the I2C as peripheral.
-  #[inline(always)]
+  #[inline]
   pub fn dma_init(&self) {
     self.0.i2c.dma_init(&self.0.dma_rx, &self.0.dma_tx);
   }
@@ -108,7 +108,7 @@ where
   ///
   /// If length of `buf` is greater than 255.
   pub fn read<'sess>(
-    &'sess mut self,
+    &'sess self,
     buf: &'sess mut [u8],
     slave_addr: u8,
     i2c_cr1_val: I2CRes::Cr1Val,
@@ -123,7 +123,7 @@ where
   ///
   /// If length of `buf` is greater than 255.
   pub fn read_and_stop<'sess>(
-    &'sess mut self,
+    &'sess self,
     buf: &'sess mut [u8],
     slave_addr: u8,
     i2c_cr1_val: I2CRes::Cr1Val,
@@ -138,7 +138,7 @@ where
   ///
   /// If length of `buf` is greater than 255.
   pub fn write<'sess>(
-    &'sess mut self,
+    &'sess self,
     buf: &'sess [u8],
     slave_addr: u8,
     i2c_cr1_val: I2CRes::Cr1Val,
@@ -153,7 +153,7 @@ where
   ///
   /// If length of `buf` is greater than 255.
   pub fn write_and_stop<'sess>(
-    &'sess mut self,
+    &'sess self,
     buf: &'sess [u8],
     slave_addr: u8,
     i2c_cr1_val: I2CRes::Cr1Val,
@@ -163,7 +163,7 @@ where
   }
 
   fn read_impl<'sess>(
-    &'sess mut self,
+    &'sess self,
     buf: &'sess mut [u8],
     slave_addr: u8,
     mut i2c_cr1_val: I2CRes::Cr1Val,
@@ -188,7 +188,7 @@ where
         self.0.i2c.cr1_rxdmaen().set(&mut i2c_cr1_val);
         i2c_cr1_val
       });
-      let dma_rx = self.0.dma_rx.dma_ch_mut().transfer_complete();
+      let dma_rx = self.0.dma_rx.dma_ch().transfer_complete();
       let i2c_break = self.0.i2c.transfer_break();
       let i2c_error = self.0.i2c.transfer_error();
       self.set_i2c_cr2(&mut i2c_cr2_val, slave_addr, autoend, buf.len(), false);
@@ -250,7 +250,7 @@ where
   }
 
   fn write_impl<'sess>(
-    &'sess mut self,
+    &'sess self,
     buf: &'sess [u8],
     slave_addr: u8,
     mut i2c_cr1_val: I2CRes::Cr1Val,
@@ -275,7 +275,7 @@ where
         self.0.i2c.cr1_txdmaen().set(&mut i2c_cr1_val);
         i2c_cr1_val
       });
-      let dma_tx = self.0.dma_tx.dma_ch_mut().transfer_complete();
+      let dma_tx = self.0.dma_tx.dma_ch().transfer_complete();
       let i2c_break = self.0.i2c.transfer_break();
       let i2c_error = self.0.i2c.transfer_error();
       self.set_i2c_cr2(&mut i2c_cr2_val, slave_addr, autoend, buf.len(), true);

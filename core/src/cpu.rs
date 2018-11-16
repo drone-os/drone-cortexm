@@ -23,7 +23,7 @@ pub fn send_event() {
 
 /// Makes a system reset request.
 #[allow(clippy::empty_loop)]
-#[inline(always)]
+#[inline]
 pub fn self_reset() -> ! {
   unsafe {
     asm!("
@@ -41,7 +41,7 @@ pub fn self_reset() -> ! {
 }
 
 /// Spins a specified amount of CPU cycles.
-#[inline(always)]
+#[inline]
 pub fn spin(mut _cycles: u32) {
   unsafe {
     asm!("

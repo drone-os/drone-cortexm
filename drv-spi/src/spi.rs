@@ -129,14 +129,14 @@ pub enum SpiError {
 pub struct Spi<T, C>(T, PhantomData<C>)
 where
   T: SpiRes,
-  C: RegGuardCnt<SpiOn<T>, Frt>;
+  C: RegGuardCnt<SpiOn<T>>;
 
 /// SPI resource.
 #[allow(missing_docs)]
 pub trait SpiRes: Resource + SpiResCr1 + SpiResCr2 {
   type Int: IntToken<Ttt>;
   type Crcpr: SRwRegBitBand;
-  type Dr: FRwRegBitBand;
+  type Dr: CRwRegBitBand;
   type Rxcrcr: SRoRegBitBand;
   type SrVal: Bitfield<Bits = u32>;
   type Sr: SRwRegBitBand<Val = Self::SrVal>;
@@ -147,22 +147,22 @@ pub trait SpiRes: Resource + SpiResCr1 + SpiResCr2 {
   type SrRxne: SRoRwRegFieldBitBand<Reg = Self::Sr>;
   type Txcrcr: SRoRegBitBand;
   type RccApbEnrVal: Bitfield<Bits = u32>;
-  type RccApbEnr: FRwRegBitBand<Val = Self::RccApbEnrVal>;
-  type RccApbEnrSpiEn: FRwRwRegFieldBitBand<Reg = Self::RccApbEnr>;
+  type RccApbEnr: CRwRegBitBand<Val = Self::RccApbEnrVal>;
+  type RccApbEnrSpiEn: CRwRwRegFieldBitBand<Reg = Self::RccApbEnr>;
 
   fn int(&self) -> Self::Int;
 
-  res_reg_decl!(Crcpr, crcpr, crcpr_mut);
-  res_reg_decl!(Dr, dr, dr_mut);
-  res_reg_decl!(Rxcrcr, rxcrcr, rxcrcr_mut);
-  res_reg_decl!(Sr, sr, sr_mut);
-  res_reg_decl!(SrBsy, sr_bsy, sr_bsy_mut);
-  res_reg_decl!(SrOvr, sr_ovr, sr_ovr_mut);
-  res_reg_decl!(SrModf, sr_modf, sr_modf_mut);
-  res_reg_decl!(SrCrcerr, sr_crcerr, sr_crcerr_mut);
-  res_reg_decl!(SrRxne, sr_rxne, sr_rxne_mut);
-  res_reg_decl!(Txcrcr, txcrcr, txcrcr_mut);
-  res_reg_decl!(RccApbEnrSpiEn, rcc_en, rcc_en_mut);
+  res_decl!(Crcpr, crcpr);
+  res_decl!(Dr, dr);
+  res_decl!(Rxcrcr, rxcrcr);
+  res_decl!(Sr, sr);
+  res_decl!(SrBsy, sr_bsy);
+  res_decl!(SrOvr, sr_ovr);
+  res_decl!(SrModf, sr_modf);
+  res_decl!(SrCrcerr, sr_crcerr);
+  res_decl!(SrRxne, sr_rxne);
+  res_decl!(Txcrcr, txcrcr);
+  res_decl!(RccApbEnrSpiEn, rcc_en);
 }
 
 #[allow(missing_docs)]
@@ -178,15 +178,15 @@ pub trait SpiResCr1 {
   type Cr1Cpol: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
   type Cr1Cpha: SRwRwRegFieldBitBand<Reg = Self::Cr1>;
 
-  res_reg_decl!(Cr1, cr1, cr1_mut);
-  res_reg_decl!(Cr1Bidimode, cr1_bidimode, cr1_bidimode_mut);
-  res_reg_decl!(Cr1Bidioe, cr1_bidioe, cr1_bidioe_mut);
-  res_reg_decl!(Cr1Rxonly, cr1_rxonly, cr1_rxonly_mut);
-  res_reg_decl!(Cr1Lsbfirst, cr1_lsbfirst, cr1_lsbfirst_mut);
-  res_reg_decl!(Cr1Spe, cr1_spe, cr1_spe_mut);
-  res_reg_decl!(Cr1Mstr, cr1_mstr, cr1_mstr_mut);
-  res_reg_decl!(Cr1Cpol, cr1_cpol, cr1_cpol_mut);
-  res_reg_decl!(Cr1Cpha, cr1_cpha, cr1_cpha_mut);
+  res_decl!(Cr1, cr1);
+  res_decl!(Cr1Bidimode, cr1_bidimode);
+  res_decl!(Cr1Bidioe, cr1_bidioe);
+  res_decl!(Cr1Rxonly, cr1_rxonly);
+  res_decl!(Cr1Lsbfirst, cr1_lsbfirst);
+  res_decl!(Cr1Spe, cr1_spe);
+  res_decl!(Cr1Mstr, cr1_mstr);
+  res_decl!(Cr1Cpol, cr1_cpol);
+  res_decl!(Cr1Cpha, cr1_cpha);
 }
 
 #[allow(missing_docs)]
@@ -199,12 +199,12 @@ pub trait SpiResCr2 {
   type Cr2Txdmaen: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
   type Cr2Rxdmaen: SRwRwRegFieldBitBand<Reg = Self::Cr2>;
 
-  res_reg_decl!(Cr2, cr2, cr2_mut);
-  res_reg_decl!(Cr2Txeie, cr2_txeie, cr2_txeie_mut);
-  res_reg_decl!(Cr2Rxneie, cr2_rxneie, cr2_rxneie_mut);
-  res_reg_decl!(Cr2Errie, cr2_errie, cr2_errie_mut);
-  res_reg_decl!(Cr2Txdmaen, cr2_txdmaen, cr2_txdmaen_mut);
-  res_reg_decl!(Cr2Rxdmaen, cr2_rxdmaen, cr2_rxdmaen_mut);
+  res_decl!(Cr2, cr2);
+  res_decl!(Cr2Txeie, cr2_txeie);
+  res_decl!(Cr2Rxneie, cr2_rxneie);
+  res_decl!(Cr2Errie, cr2_errie);
+  res_decl!(Cr2Txdmaen, cr2_txdmaen);
+  res_decl!(Cr2Rxdmaen, cr2_rxdmaen);
 
   #[cfg(any(
     feature = "stm32l4x1",
@@ -235,7 +235,7 @@ pub trait SpiDmaRxRes<T: DmaBond>: SpiRes {
   ))]
   fn dmamux_rx_init(
     &self,
-    cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
+    cr_val: &mut <<T::DmamuxChRes as DmamuxChRes>::Cr as Reg<Srt>>::Val,
     dmamux: &DmamuxCh<T::DmamuxChRes>,
   );
 
@@ -248,7 +248,7 @@ pub trait SpiDmaRxRes<T: DmaBond>: SpiRes {
   ))]
   fn dma_rx_ch_init(
     &self,
-    cs_val: &mut CselrVal<T::DmaRes>,
+    cs_val: &mut <<T::DmaRes as DmaRes>::Cselr as Reg<Srt>>::Val,
     dma: &Dma<T::DmaRes>,
   );
 }
@@ -266,7 +266,7 @@ pub trait SpiDmaTxRes<T: DmaBond>: SpiRes {
   ))]
   fn dmamux_tx_init(
     &self,
-    cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
+    cr_val: &mut <<T::DmamuxChRes as DmamuxChRes>::Cr as Reg<Srt>>::Val,
     dmamux: &DmamuxCh<T::DmamuxChRes>,
   );
 
@@ -279,7 +279,7 @@ pub trait SpiDmaTxRes<T: DmaBond>: SpiRes {
   ))]
   fn dma_tx_ch_init(
     &self,
-    cs_val: &mut CselrVal<T::DmaRes>,
+    cs_val: &mut <<T::DmaRes as DmaRes>::Cselr as Reg<Srt>>::Val,
     dma: &Dma<T::DmaRes>,
   );
 }
@@ -287,30 +287,11 @@ pub trait SpiDmaTxRes<T: DmaBond>: SpiRes {
 /// SPI clock on guard resource.
 pub struct SpiOn<T: SpiRes>(T::RccApbEnrSpiEn);
 
-#[cfg(any(
-  feature = "stm32l4r5",
-  feature = "stm32l4r7",
-  feature = "stm32l4r9",
-  feature = "stm32l4s5",
-  feature = "stm32l4s7",
-  feature = "stm32l4s9"
-))]
-type DmamuxCrVal<T> = <<T as DmamuxChRes>::Cr as Reg<Srt>>::Val;
-
-#[cfg(any(
-  feature = "stm32l4x1",
-  feature = "stm32l4x2",
-  feature = "stm32l4x3",
-  feature = "stm32l4x5",
-  feature = "stm32l4x6"
-))]
-type CselrVal<T> = <<T as DmaRes>::Cselr as Reg<Srt>>::Val;
-
 #[allow(missing_docs)]
 impl<T, C> Spi<T, C>
 where
   T: SpiRes,
-  C: RegGuardCnt<SpiOn<T>, Frt>,
+  C: RegGuardCnt<SpiOn<T>>,
 {
   #[inline(always)]
   pub fn int(&self) -> T::Int {
@@ -398,8 +379,8 @@ where
   }
 
   #[inline(always)]
-  pub fn dr(&self) -> &T::Dr {
-    self.0.dr()
+  pub fn dr(&self) -> &<T::Dr as Reg<Crt>>::SReg {
+    self.0.dr().as_sync()
   }
 
   #[inline(always)]
@@ -446,11 +427,11 @@ where
 impl<T, C> Spi<T, C>
 where
   T: SpiRes,
-  C: RegGuardCnt<SpiOn<T>, Frt>,
+  C: RegGuardCnt<SpiOn<T>>,
 {
   /// Enables the clock.
-  pub fn on(&mut self) -> RegGuard<SpiOn<T>, C, Frt> {
-    RegGuard::new(SpiOn(self.0.rcc_en_mut().fork()))
+  pub fn on(&self) -> RegGuard<SpiOn<T>, C> {
+    RegGuard::new(SpiOn(*self.0.rcc_en()))
   }
 
   /// Initializes DMA for the SPI as peripheral.
@@ -548,8 +529,8 @@ where
 
   /// Returns a closure, which writes a byte to the data register.
   #[inline(always)]
-  pub fn send_byte_fn(&mut self) -> impl Fn(u8) {
-    let dr = self.0.dr_mut().fork();
+  pub fn send_byte_fn(&self) -> impl Fn(u8) {
+    let dr = *self.0.dr();
     move |value| Self::dr_send_byte(&dr, value)
   }
 
@@ -561,8 +542,8 @@ where
 
   /// Returns a closure, which writes a half word to the data register.
   #[inline(always)]
-  pub fn send_hword_fn(&mut self) -> impl Fn(u16) {
-    let dr = self.0.dr_mut().fork();
+  pub fn send_hword_fn(&self) -> impl Fn(u16) {
+    let dr = *self.0.dr();
     move |value| Self::dr_send_hword(&dr, value)
   }
 
@@ -579,13 +560,13 @@ where
   }
 
   /// Waits while SPI is busy in communication or Tx buffer is not empty.
-  #[inline(always)]
+  #[inline]
   pub fn busy_wait(&self) {
     while self.0.sr_bsy().read_bit_band() {}
   }
 
   /// Checks for SPI mode errors.
-  #[inline(always)]
+  #[inline]
   pub fn spi_errck(&self, sr: &T::SrVal) -> Result<(), SpiError> {
     if self.sr_ovr().read(sr) {
       Err(SpiError::Ovr)
@@ -608,18 +589,18 @@ where
     unsafe { write_volatile(dr.to_mut_ptr() as *mut _, value) };
   }
 
-  #[inline(always)]
+  #[inline]
   fn set_dma_rx_paddr<Rx: DmaBond>(&self, rx: &Rx) {
     unsafe { rx.dma_ch().set_paddr(self.0.dr().to_ptr() as usize) };
   }
 
-  #[inline(always)]
+  #[inline]
   fn set_dma_tx_paddr<Tx: DmaBond>(&self, tx: &Tx) {
     unsafe { tx.dma_ch().set_paddr(self.0.dr().to_mut_ptr() as usize) };
   }
 
   #[allow(unused_variables)]
-  #[inline(always)]
+  #[inline]
   fn dmamux_rx_init<Rx>(&self, rx: &Rx)
   where
     Rx: DmaBond,
@@ -640,7 +621,7 @@ where
   }
 
   #[allow(unused_variables)]
-  #[inline(always)]
+  #[inline]
   fn dmamux_tx_init<Tx>(&self, tx: &Tx)
   where
     Tx: DmaBond,
@@ -661,13 +642,14 @@ where
   }
 }
 
-impl<T: SpiRes> RegFork for SpiOn<T> {
-  fn fork(&mut self) -> Self {
-    Self(self.0.fork())
+impl<T: SpiRes> Clone for SpiOn<T> {
+  #[inline(always)]
+  fn clone(&self) -> Self {
+    Self(self.0)
   }
 }
 
-impl<T: SpiRes> RegGuardRes<Frt> for SpiOn<T> {
+impl<T: SpiRes> RegGuardRes for SpiOn<T> {
   type Reg = T::RccApbEnr;
   type Field = T::RccApbEnrSpiEn;
 
@@ -677,12 +659,12 @@ impl<T: SpiRes> RegGuardRes<Frt> for SpiOn<T> {
   }
 
   #[inline(always)]
-  fn up(&self, val: &mut <Self::Reg as Reg<Frt>>::Val) {
+  fn up(&self, val: &mut <Self::Reg as Reg<Crt>>::Val) {
     self.0.set(val)
   }
 
   #[inline(always)]
-  fn down(&self, val: &mut <Self::Reg as Reg<Frt>>::Val) {
+  fn down(&self, val: &mut <Self::Reg as Reg<Crt>>::Val) {
     self.0.clear(val)
   }
 }
@@ -695,8 +677,6 @@ macro_rules! spi {
     $name_macro:ident,
     $doc_res:expr,
     $name_res:ident,
-    $doc_on_res:expr,
-    $name_on_res:ident,
     $doc_on:expr,
     $name_on:ident,
     $int_ty:ident,
@@ -739,7 +719,7 @@ macro_rules! spi {
     ),
   ) => {
     #[doc = $doc]
-    pub type $name<I, C> = Spi<$name_res<I, Frt>, C>;
+    pub type $name<I, C> = Spi<$name_res<I, Crt>, C>;
 
     #[doc = $doc_res]
     #[allow(missing_docs)]
@@ -755,11 +735,8 @@ macro_rules! spi {
       pub $rcc_apb_enr_spien: rcc::$apb_enr::$spien_ty<Rt>,
     }
 
-    #[doc = $doc_on_res]
-    pub type $name_on_res<I> = SpiOn<$name_res<I, Frt>>;
-
     #[doc = $doc_on]
-    pub type $name_on<I, C> = RegGuard<$name_on_res<I>, C, Frt>;
+    pub type $name_on<I> = SpiOn<$name_res<I, Crt>>;
 
     /// Creates a new `Spi`.
     #[macro_export]
@@ -767,7 +744,7 @@ macro_rules! spi {
       ($reg:ident, $thr:ident, $rgc:path) => {
         <$crate::spi::Spi<_, $rgc> as ::drone_core::drv::Driver>::new(
           $crate::spi::$name_res {
-            $spi: $thr.$spi.into(),
+            $spi: $thr.$spi.to_trigger(),
             $spi_cr1: $reg.$spi_cr1,
             $spi_cr2: $reg.$spi_cr2,
             $spi_crcpr: $reg.$spi_crcpr,
@@ -781,7 +758,7 @@ macro_rules! spi {
       };
     }
 
-    impl<I: $int_ty<Ttt>> Resource for $name_res<I, Frt> {
+    impl<I: $int_ty<Ttt>> Resource for $name_res<I, Crt> {
       type Source = $name_res<I, Srt>;
 
       #[inline(always)]
@@ -791,19 +768,19 @@ macro_rules! spi {
           $spi_cr1: source.$spi_cr1,
           $spi_cr2: source.$spi_cr2,
           $spi_crcpr: source.$spi_crcpr,
-          $spi_dr: source.$spi_dr.into(),
+          $spi_dr: source.$spi_dr.to_copy(),
           $spi_rxcrcr: source.$spi_rxcrcr,
           $spi_sr: source.$spi_sr,
           $spi_txcrcr: source.$spi_txcrcr,
-          $rcc_apb_enr_spien: source.$rcc_apb_enr_spien.into(),
+          $rcc_apb_enr_spien: source.$rcc_apb_enr_spien.to_copy(),
         }
       }
     }
 
-    impl<I: $int_ty<Ttt>> SpiRes for $name_res<I, Frt> {
+    impl<I: $int_ty<Ttt>> SpiRes for $name_res<I, Crt> {
       type Int = I;
       type Crcpr = $spi::Crcpr<Srt>;
-      type Dr = $spi::Dr<Frt>;
+      type Dr = $spi::Dr<Crt>;
       type Rxcrcr = $spi::Rxcrcr<Srt>;
       type SrVal = $spi::sr::Val;
       type Sr = $spi::Sr<Srt>;
@@ -814,28 +791,28 @@ macro_rules! spi {
       type SrRxne = $spi::sr::Rxne<Srt>;
       type Txcrcr = $spi::Txcrcr<Srt>;
       type RccApbEnrVal = rcc::$apb_enr::Val;
-      type RccApbEnr = rcc::$apb_enr::Reg<Frt>;
-      type RccApbEnrSpiEn = rcc::$apb_enr::$spien_ty<Frt>;
+      type RccApbEnr = rcc::$apb_enr::Reg<Crt>;
+      type RccApbEnrSpiEn = rcc::$apb_enr::$spien_ty<Crt>;
 
       #[inline(always)]
       fn int(&self) -> Self::Int {
         self.$spi
       }
 
-      res_reg_impl!(Crcpr, crcpr, crcpr_mut, $spi_crcpr);
-      res_reg_impl!(Dr, dr, dr_mut, $spi_dr);
-      res_reg_impl!(Rxcrcr, rxcrcr, rxcrcr_mut, $spi_rxcrcr);
-      res_reg_impl!(Sr, sr, sr_mut, $spi_sr);
-      res_reg_field_impl!(SrBsy, sr_bsy, sr_bsy_mut, $spi_sr, bsy);
-      res_reg_field_impl!(SrOvr, sr_ovr, sr_ovr_mut, $spi_sr, ovr);
-      res_reg_field_impl!(SrModf, sr_modf, sr_modf_mut, $spi_sr, modf);
-      res_reg_field_impl!(SrCrcerr, sr_crcerr, sr_crcerr_mut, $spi_sr, crcerr);
-      res_reg_field_impl!(SrRxne, sr_rxne, sr_rxne_mut, $spi_sr, rxne);
-      res_reg_impl!(Txcrcr, txcrcr, txcrcr_mut, $spi_txcrcr);
-      res_reg_impl!(RccApbEnrSpiEn, rcc_en, rcc_en_mut, $rcc_apb_enr_spien);
+      res_impl!(Crcpr, crcpr, $spi_crcpr);
+      res_impl!(Dr, dr, $spi_dr);
+      res_impl!(Rxcrcr, rxcrcr, $spi_rxcrcr);
+      res_impl!(Sr, sr, $spi_sr);
+      res_impl!(SrBsy, sr_bsy, $spi_sr.bsy);
+      res_impl!(SrOvr, sr_ovr, $spi_sr.ovr);
+      res_impl!(SrModf, sr_modf, $spi_sr.modf);
+      res_impl!(SrCrcerr, sr_crcerr, $spi_sr.crcerr);
+      res_impl!(SrRxne, sr_rxne, $spi_sr.rxne);
+      res_impl!(Txcrcr, txcrcr, $spi_txcrcr);
+      res_impl!(RccApbEnrSpiEn, rcc_en, $rcc_apb_enr_spien);
     }
 
-    impl<I: $int_ty<Ttt>> SpiResCr1 for $name_res<I, Frt> {
+    impl<I: $int_ty<Ttt>> SpiResCr1 for $name_res<I, Crt> {
       type Cr1Val = $spi::cr1::Val;
       type Cr1 = $spi::Cr1<Srt>;
       type Cr1Bidimode = $spi::cr1::Bidimode<Srt>;
@@ -847,22 +824,18 @@ macro_rules! spi {
       type Cr1Cpol = $spi::cr1::Cpol<Srt>;
       type Cr1Cpha = $spi::cr1::Cpha<Srt>;
 
-      res_reg_impl!(Cr1, cr1, cr1_mut, $spi_cr1);
-      res_reg_field_impl!(Cr1Bidimode, cr1_bidimode, cr1_bidimode_mut,
-                          $spi_cr1, bidimode);
-      res_reg_field_impl!(Cr1Bidioe, cr1_bidioe, cr1_bidioe_mut, $spi_cr1,
-                          bidioe);
-      res_reg_field_impl!(Cr1Rxonly, cr1_rxonly, cr1_rxonly_mut, $spi_cr1,
-                          rxonly);
-      res_reg_field_impl!(Cr1Lsbfirst, cr1_lsbfirst, cr1_lsbfirst_mut,
-                          $spi_cr1, lsbfirst);
-      res_reg_field_impl!(Cr1Spe, cr1_spe, cr1_spe_mut, $spi_cr1, spe);
-      res_reg_field_impl!(Cr1Mstr, cr1_mstr, cr1_mstr_mut, $spi_cr1, mstr);
-      res_reg_field_impl!(Cr1Cpol, cr1_cpol, cr1_cpol_mut, $spi_cr1, cpol);
-      res_reg_field_impl!(Cr1Cpha, cr1_cpha, cr1_cpha_mut, $spi_cr1, cpha);
+      res_impl!(Cr1, cr1, $spi_cr1);
+      res_impl!(Cr1Bidimode, cr1_bidimode, $spi_cr1.bidimode);
+      res_impl!(Cr1Bidioe, cr1_bidioe, $spi_cr1.bidioe);
+      res_impl!(Cr1Rxonly, cr1_rxonly, $spi_cr1.rxonly);
+      res_impl!(Cr1Lsbfirst, cr1_lsbfirst, $spi_cr1.lsbfirst);
+      res_impl!(Cr1Spe, cr1_spe, $spi_cr1.spe);
+      res_impl!(Cr1Mstr, cr1_mstr, $spi_cr1.mstr);
+      res_impl!(Cr1Cpol, cr1_cpol, $spi_cr1.cpol);
+      res_impl!(Cr1Cpha, cr1_cpha, $spi_cr1.cpha);
     }
 
-    impl<I: $int_ty<Ttt>> SpiResCr2 for $name_res<I, Frt> {
+    impl<I: $int_ty<Ttt>> SpiResCr2 for $name_res<I, Crt> {
       type Cr2Val = $spi::cr2::Val;
       type Cr2 = $spi::Cr2<Srt>;
       type Cr2Txeie = $spi::cr2::Txeie<Srt>;
@@ -871,15 +844,12 @@ macro_rules! spi {
       type Cr2Txdmaen = $spi::cr2::Txdmaen<Srt>;
       type Cr2Rxdmaen = $spi::cr2::Rxdmaen<Srt>;
 
-      res_reg_impl!(Cr2, cr2, cr2_mut, $spi_cr2);
-      res_reg_field_impl!(Cr2Txeie, cr2_txeie, cr2_txeie_mut, $spi_cr2, txeie);
-      res_reg_field_impl!(Cr2Rxneie, cr2_rxneie, cr2_rxneie_mut, $spi_cr2,
-                          rxneie);
-      res_reg_field_impl!(Cr2Errie, cr2_errie, cr2_errie_mut, $spi_cr2, errie);
-      res_reg_field_impl!(Cr2Txdmaen, cr2_txdmaen, cr2_txdmaen_mut, $spi_cr2,
-                          txdmaen);
-      res_reg_field_impl!(Cr2Rxdmaen, cr2_rxdmaen, cr2_rxdmaen_mut, $spi_cr2,
-                          rxdmaen);
+      res_impl!(Cr2, cr2, $spi_cr2);
+      res_impl!(Cr2Txeie, cr2_txeie, $spi_cr2.txeie);
+      res_impl!(Cr2Rxneie, cr2_rxneie, $spi_cr2.rxneie);
+      res_impl!(Cr2Errie, cr2_errie, $spi_cr2.errie);
+      res_impl!(Cr2Txdmaen, cr2_txdmaen, $spi_cr2.txdmaen);
+      res_impl!(Cr2Rxdmaen, cr2_rxdmaen, $spi_cr2.rxdmaen);
 
       #[cfg(any(
         feature = "stm32l4x1",
@@ -894,7 +864,7 @@ macro_rules! spi {
         feature = "stm32l4s7",
         feature = "stm32l4s9"
       ))]
-      #[inline(always)]
+      #[inline]
       fn set_frame_8(&self, cr2: &mut Self::Cr2Val) {
         self.$spi_cr2.frxth.set(cr2);
         self.$spi_cr2.ds.write(cr2, 0b0111);
@@ -909,7 +879,7 @@ macro_rules! spi {
       feature = "stm32l4s7",
       feature = "stm32l4s9"
     ))]
-    impl<I, T> SpiDmaRxRes<T> for $name_res<I, Frt>
+    impl<I, T> SpiDmaRxRes<T> for $name_res<I, Crt>
     where
       T: DmaBond,
       I: $int_ty<Ttt>,
@@ -917,7 +887,7 @@ macro_rules! spi {
       #[inline(always)]
       fn dmamux_rx_init(
         &self,
-        cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
+        cr_val: &mut <<T::DmamuxChRes as DmamuxChRes>::Cr as Reg<Srt>>::Val,
         dmamux: &DmamuxCh<T::DmamuxChRes>,
       ) {
         dmamux.cr_dmareq_id().write(cr_val, $dma_rx_req_id);
@@ -934,11 +904,11 @@ macro_rules! spi {
         feature = "stm32l4s9"
       )))]
       $(#[$dma_rx_attr])*
-      impl<I, Rx, C> SpiDmaRxRes<$dma_rx_bond<Rx, C>> for $name_res<I, Frt>
+      impl<I, Rx, C> SpiDmaRxRes<$dma_rx_bond<Rx, C>> for $name_res<I, Crt>
       where
         Rx: $int_dma_rx<Ttt>,
         I: $int_ty<Ttt>,
-        C: DmaBondOnRgc<$dma_rx_res<Rx, Frt>>,
+        C: DmaBondOnRgc<$dma_rx_res<Rx, Crt>>,
       {
         #[cfg(any(
           feature = "stm32l4x1",
@@ -950,7 +920,8 @@ macro_rules! spi {
         #[inline(always)]
         fn dma_rx_ch_init(
           &self,
-          cs_val: &mut CselrVal<<$dma_rx_bond<Rx, C> as DmaBond>::DmaRes>,
+          cs_val: &mut <<<$dma_rx_bond<Rx, C> as DmaBond>::DmaRes
+            as DmaRes>::Cselr as Reg<Srt>>::Val,
           dma: &Dma<<$dma_rx_bond<Rx, C> as DmaBond>::DmaRes>,
         ) {
           dma.cselr_cs().write(cs_val, $dma_rx_cs);
@@ -966,7 +937,7 @@ macro_rules! spi {
       feature = "stm32l4s7",
       feature = "stm32l4s9"
     ))]
-    impl<I, T> SpiDmaTxRes<T> for $name_res<I, Frt>
+    impl<I, T> SpiDmaTxRes<T> for $name_res<I, Crt>
     where
       T: DmaBond,
       I: $int_ty<Ttt>,
@@ -974,7 +945,7 @@ macro_rules! spi {
       #[inline(always)]
       fn dmamux_tx_init(
         &self,
-        cr_val: &mut DmamuxCrVal<T::DmamuxChRes>,
+        cr_val: &mut <<T::DmamuxChRes as DmamuxChRes>::Cr as Reg<Srt>>::Val,
         dmamux: &DmamuxCh<T::DmamuxChRes>,
       ) {
         dmamux.cr_dmareq_id().write(cr_val, $dma_tx_req_id);
@@ -991,11 +962,11 @@ macro_rules! spi {
         feature = "stm32l4s9"
       )))]
       $(#[$dma_tx_attr])*
-      impl<I, Tx, C> SpiDmaTxRes<$dma_tx_bond<Tx, C>> for $name_res<I, Frt>
+      impl<I, Tx, C> SpiDmaTxRes<$dma_tx_bond<Tx, C>> for $name_res<I, Crt>
       where
         Tx: $int_dma_tx<Ttt>,
         I: $int_ty<Ttt>,
-        C: DmaBondOnRgc<$dma_tx_res<Tx, Frt>>,
+        C: DmaBondOnRgc<$dma_tx_res<Tx, Crt>>,
       {
         #[cfg(any(
           feature = "stm32l4x1",
@@ -1007,7 +978,8 @@ macro_rules! spi {
         #[inline(always)]
         fn dma_tx_ch_init(
           &self,
-          cs_val: &mut CselrVal<<$dma_tx_bond<Tx, C> as DmaBond>::DmaRes>,
+          cs_val: &mut <<<$dma_tx_bond<Tx, C> as DmaBond>::DmaRes
+            as DmaRes>::Cselr as Reg<Srt>>::Val,
           dma: &Dma<<$dma_tx_bond<Tx, C> as DmaBond>::DmaRes>,
         ) {
           dma.cselr_cs().write(cs_val, $dma_tx_cs);
@@ -1042,8 +1014,6 @@ spi! {
   "SPI1 resource.",
   Spi1Res,
   "SPI1 clock on guard resource.",
-  Spi1OnRes,
-  "SPI1 clock on guard driver.",
   Spi1On,
   IntSpi1,
   Spi1En,
@@ -1122,8 +1092,6 @@ spi! {
   "SPI2 resource.",
   Spi2Res,
   "SPI2 clock on guard resource.",
-  Spi2OnRes,
-  "SPI2 clock on guard driver.",
   Spi2On,
   IntSpi2,
   Spi2En,
@@ -1168,8 +1136,6 @@ spi! {
   "SPI3 resource.",
   Spi3Res,
   "SPI3 clock on guard resource.",
-  Spi3OnRes,
-  "SPI3 clock on guard driver.",
   Spi3On,
   IntSpi3,
   Spi3En,

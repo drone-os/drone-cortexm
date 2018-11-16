@@ -30,16 +30,16 @@ pub trait DmamuxChRes: Resource {
   type Cfr: SWoReg;
   type CfrCsof: SWoWoRegFieldBit<Reg = Self::Cfr>;
 
-  res_reg_decl!(Cr, cr, cr_mut);
-  res_reg_decl!(CrSyncId, cr_sync_id, cr_sync_id_mut);
-  res_reg_decl!(CrNbreq, cr_nbreq, cr_nbreq_mut);
-  res_reg_decl!(CrSpol, cr_spol, cr_spol_mut);
-  res_reg_decl!(CrSe, cr_se, cr_se_mut);
-  res_reg_decl!(CrEge, cr_ege, cr_ege_mut);
-  res_reg_decl!(CrSoie, cr_soie, cr_soie_mut);
-  res_reg_decl!(CrDmareqId, cr_dmareq_id, cr_dmareq_id_mut);
-  res_reg_decl!(CsrSof, csr_sof, csr_sof_mut);
-  res_reg_decl!(CfrCsof, cfr_csof, cfr_csof_mut);
+  res_decl!(Cr, cr);
+  res_decl!(CrSyncId, cr_sync_id);
+  res_decl!(CrNbreq, cr_nbreq);
+  res_decl!(CrSpol, cr_spol);
+  res_decl!(CrSe, cr_se);
+  res_decl!(CrEge, cr_ege);
+  res_decl!(CrSoie, cr_soie);
+  res_decl!(CrDmareqId, cr_dmareq_id);
+  res_decl!(CsrSof, csr_sof);
+  res_decl!(CfrCsof, cfr_csof);
 }
 
 /// DMAMUX request generator driver.
@@ -62,14 +62,14 @@ pub trait DmamuxRgRes: Resource {
   type Rgcfr: SWoReg;
   type RgcfrCof: SWoWoRegFieldBit<Reg = Self::Rgcfr>;
 
-  res_reg_decl!(Cr, cr, cr_mut);
-  res_reg_decl!(CrGnbreq, cr_gnbreq, cr_gnbreq_mut);
-  res_reg_decl!(CrGpol, cr_gpol, cr_gpol_mut);
-  res_reg_decl!(CrGe, cr_ge, cr_ge_mut);
-  res_reg_decl!(CrOie, cr_oie, cr_oie_mut);
-  res_reg_decl!(CrSigId, cr_sig_id, cr_sig_id_mut);
-  res_reg_decl!(RgsrOf, rgsr_of, rgsr_of_mut);
-  res_reg_decl!(RgcfrCof, rgcfr_cof, rgcfr_cof_mut);
+  res_decl!(Cr, cr);
+  res_decl!(CrGnbreq, cr_gnbreq);
+  res_decl!(CrGpol, cr_gpol);
+  res_decl!(CrGe, cr_ge);
+  res_decl!(CrOie, cr_oie);
+  res_decl!(CrSigId, cr_sig_id);
+  res_decl!(RgsrOf, rgsr_of);
+  res_decl!(RgcfrCof, rgcfr_cof);
 }
 
 /// DMAMUX reset and clock control driver.
@@ -77,16 +77,16 @@ pub trait DmamuxRgRes: Resource {
 pub struct DmamuxRcc<T, C>(T, PhantomData<C>)
 where
   T: DmamuxRccRes,
-  C: RegGuardCnt<DmamuxOn<T>, Frt>;
+  C: RegGuardCnt<DmamuxOn<T>>;
 
 /// DMAMUX reset and clock control resource.
 #[allow(missing_docs)]
 pub trait DmamuxRccRes: Resource {
   type RccAhb1EnrVal: Bitfield<Bits = u32>;
-  type RccAhb1Enr: FRwRegBitBand<Val = Self::RccAhb1EnrVal>;
-  type RccAhb1EnrDmamuxEn: FRwRwRegFieldBitBand<Reg = Self::RccAhb1Enr>;
+  type RccAhb1Enr: CRwRegBitBand<Val = Self::RccAhb1EnrVal>;
+  type RccAhb1EnrDmamuxEn: CRwRwRegFieldBitBand<Reg = Self::RccAhb1Enr>;
 
-  res_reg_decl!(RccAhb1EnrDmamuxEn, en, en_mut);
+  res_decl!(RccAhb1EnrDmamuxEn, en);
 }
 
 /// DMAMUX clock on guard resource.
@@ -191,21 +191,22 @@ impl<T: DmamuxRgRes> DmamuxRg<T> {
 impl<T, C> DmamuxRcc<T, C>
 where
   T: DmamuxRccRes,
-  C: RegGuardCnt<DmamuxOn<T>, Frt>,
+  C: RegGuardCnt<DmamuxOn<T>>,
 {
   /// Enables the clock.
-  pub fn on(&mut self) -> RegGuard<DmamuxOn<T>, C, Frt> {
-    RegGuard::new(DmamuxOn(self.0.en_mut().fork()))
+  pub fn on(&self) -> RegGuard<DmamuxOn<T>, C> {
+    RegGuard::new(DmamuxOn(*self.0.en()))
   }
 }
 
-impl<T: DmamuxRccRes> RegFork for DmamuxOn<T> {
-  fn fork(&mut self) -> Self {
-    Self(self.0.fork())
+impl<T: DmamuxRccRes> Clone for DmamuxOn<T> {
+  #[inline(always)]
+  fn clone(&self) -> Self {
+    Self(self.0)
   }
 }
 
-impl<T: DmamuxRccRes> RegGuardRes<Frt> for DmamuxOn<T> {
+impl<T: DmamuxRccRes> RegGuardRes for DmamuxOn<T> {
   type Reg = T::RccAhb1Enr;
   type Field = T::RccAhb1EnrDmamuxEn;
 
@@ -215,12 +216,12 @@ impl<T: DmamuxRccRes> RegGuardRes<Frt> for DmamuxOn<T> {
   }
 
   #[inline(always)]
-  fn up(&self, val: &mut <Self::Reg as Reg<Frt>>::Val) {
+  fn up(&self, val: &mut <Self::Reg as Reg<Crt>>::Val) {
     self.0.set(val)
   }
 
   #[inline(always)]
-  fn down(&self, val: &mut <Self::Reg as Reg<Frt>>::Val) {
+  fn down(&self, val: &mut <Self::Reg as Reg<Crt>>::Val) {
     self.0.clear(val)
   }
 }
@@ -232,8 +233,6 @@ macro_rules! dmamux {
     $name_macro:ident,
     $doc_res:expr,
     $name_res:ident,
-    $doc_on_res:expr,
-    $name_on_res:ident,
     $doc_on:expr,
     $name_on:ident,
     $dmamuxen_ty:ident,
@@ -271,7 +270,7 @@ macro_rules! dmamux {
     )),*),
   ) => {
     #[doc = $doc]
-    pub type $name<C> = DmamuxRcc<$name_res<Frt>, C>;
+    pub type $name<C> = DmamuxRcc<$name_res<Crt>, C>;
 
     #[doc = $doc_res]
     #[allow(missing_docs)]
@@ -279,11 +278,8 @@ macro_rules! dmamux {
       pub $rcc_ahb1enr_dmamuxen: rcc::ahb1enr::$dmamuxen_ty<Rt>,
     }
 
-    #[doc = $doc_on_res]
-    pub type $name_on_res = DmamuxOn<$name_res<Frt>>;
-
     #[doc = $doc_on]
-    pub type $name_on<C> = RegGuard<$name_on_res, C, Frt>;
+    pub type $name_on = DmamuxOn<$name_res<Crt>>;
 
     /// Creates a new `DmamuxRcc`.
     #[macro_export]
@@ -297,23 +293,23 @@ macro_rules! dmamux {
       };
     }
 
-    impl Resource for $name_res<Frt> {
+    impl Resource for $name_res<Crt> {
       type Source = $name_res<Srt>;
 
       #[inline(always)]
       fn from_source(source: Self::Source) -> Self {
         Self {
-          $rcc_ahb1enr_dmamuxen: source.$rcc_ahb1enr_dmamuxen.into(),
+          $rcc_ahb1enr_dmamuxen: source.$rcc_ahb1enr_dmamuxen.to_copy(),
         }
       }
     }
 
-    impl DmamuxRccRes for $name_res<Frt> {
+    impl DmamuxRccRes for $name_res<Crt> {
       type RccAhb1EnrVal = rcc::ahb1enr::Val;
-      type RccAhb1Enr = rcc::ahb1enr::Reg<Frt>;
-      type RccAhb1EnrDmamuxEn = rcc::ahb1enr::$dmamuxen_ty<Frt>;
+      type RccAhb1Enr = rcc::ahb1enr::Reg<Crt>;
+      type RccAhb1EnrDmamuxEn = rcc::ahb1enr::$dmamuxen_ty<Crt>;
 
-      res_reg_impl!(RccAhb1EnrDmamuxEn, en, en_mut, $rcc_ahb1enr_dmamuxen);
+      res_impl!(RccAhb1EnrDmamuxEn, en, $rcc_ahb1enr_dmamuxen);
     }
 
     $(
@@ -344,7 +340,7 @@ macro_rules! dmamux {
       }
 
       impl DmamuxChRes for $name_ch_res {
-        type RccRes = $name_res<Frt>;
+        type RccRes = $name_res<Crt>;
         type CrVal = dmamux1::$chcr::Val;
         type Cr = dmamux1::$chcr::Reg<Srt>;
         type CrSyncId = dmamux1::$chcr::SyncId<Srt>;
@@ -359,34 +355,16 @@ macro_rules! dmamux {
         type Cfr = dmamux1::cfr::Reg<Srt>;
         type CfrCsof = dmamux1::cfr::$csof_ty<Srt>;
 
-        res_reg_impl!(Cr, cr, cr_mut, $dmamux_chcr);
-        res_reg_field_impl!(
-          CrSyncId,
-          cr_sync_id,
-          cr_sync_id_mut,
-          $dmamux_chcr,
-          sync_id
-        );
-        res_reg_field_impl!(
-          CrNbreq,
-          cr_nbreq,
-          cr_nbreq_mut,
-          $dmamux_chcr,
-          nbreq
-        );
-        res_reg_field_impl!(CrSpol, cr_spol, cr_spol_mut, $dmamux_chcr, spol);
-        res_reg_field_impl!(CrSe, cr_se, cr_se_mut, $dmamux_chcr, se);
-        res_reg_field_impl!(CrEge, cr_ege, cr_ege_mut, $dmamux_chcr, ege);
-        res_reg_field_impl!(CrSoie, cr_soie, cr_soie_mut, $dmamux_chcr, soie);
-        res_reg_field_impl!(
-          CrDmareqId,
-          cr_dmareq_id,
-          cr_dmareq_id_mut,
-          $dmamux_chcr,
-          dmareq_id
-        );
-        res_reg_impl!(CsrSof, csr_sof, csr_sof_mut, $dmamux_csr_sof);
-        res_reg_impl!(CfrCsof, cfr_csof, cfr_csof_mut, $dmamux_cfr_csof);
+        res_impl!(Cr, cr, $dmamux_chcr);
+        res_impl!(CrSyncId, cr_sync_id, $dmamux_chcr.sync_id);
+        res_impl!(CrNbreq, cr_nbreq, $dmamux_chcr.nbreq);
+        res_impl!(CrSpol, cr_spol, $dmamux_chcr.spol);
+        res_impl!(CrSe, cr_se, $dmamux_chcr.se);
+        res_impl!(CrEge, cr_ege, $dmamux_chcr.ege);
+        res_impl!(CrSoie, cr_soie, $dmamux_chcr.soie);
+        res_impl!(CrDmareqId, cr_dmareq_id, $dmamux_chcr.dmareq_id);
+        res_impl!(CsrSof, csr_sof, $dmamux_csr_sof);
+        res_impl!(CfrCsof, cfr_csof, $dmamux_cfr_csof);
       }
     )*
 
@@ -418,7 +396,7 @@ macro_rules! dmamux {
       }
 
       impl DmamuxRgRes for $name_rg_res {
-        type RccRes = $name_res<Frt>;
+        type RccRes = $name_res<Crt>;
         type CrVal = dmamux1::$rgcr::Val;
         type Cr = dmamux1::$rgcr::Reg<Srt>;
         type CrGnbreq = dmamux1::$rgcr::Gnbreq<Srt>;
@@ -431,26 +409,14 @@ macro_rules! dmamux {
         type Rgcfr = dmamux1::rgcfr::Reg<Srt>;
         type RgcfrCof = dmamux1::rgcfr::$cof_ty<Srt>;
 
-        res_reg_impl!(Cr, cr, cr_mut, $dmamux_rgcr);
-        res_reg_field_impl!(
-          CrGnbreq,
-          cr_gnbreq,
-          cr_gnbreq_mut,
-          $dmamux_rgcr,
-          gnbreq
-        );
-        res_reg_field_impl!(CrGpol, cr_gpol, cr_gpol_mut, $dmamux_rgcr, gpol);
-        res_reg_field_impl!(CrGe, cr_ge, cr_ge_mut, $dmamux_rgcr, ge);
-        res_reg_field_impl!(CrOie, cr_oie, cr_oie_mut, $dmamux_rgcr, oie);
-        res_reg_field_impl!(
-          CrSigId,
-          cr_sig_id,
-          cr_sig_id_mut,
-          $dmamux_rgcr,
-          sig_id
-        );
-        res_reg_impl!(RgsrOf, rgsr_of, rgsr_of_mut, $dmamux_rgsr_of);
-        res_reg_impl!(RgcfrCof, rgcfr_cof, rgcfr_cof_mut, $dmamux_rgcfr_cof);
+        res_impl!(Cr, cr, $dmamux_rgcr);
+        res_impl!(CrGnbreq, cr_gnbreq, $dmamux_rgcr.gnbreq);
+        res_impl!(CrGpol, cr_gpol, $dmamux_rgcr.gpol);
+        res_impl!(CrGe, cr_ge, $dmamux_rgcr.ge);
+        res_impl!(CrOie, cr_oie, $dmamux_rgcr.oie);
+        res_impl!(CrSigId, cr_sig_id, $dmamux_rgcr.sig_id);
+        res_impl!(RgsrOf, rgsr_of, $dmamux_rgsr_of);
+        res_impl!(RgcfrCof, rgcfr_cof, $dmamux_rgcfr_cof);
       }
     )*
   };
@@ -463,8 +429,6 @@ dmamux! {
   "DMAMUX1 reset and clock control resource.",
   Dmamux1RccRes,
   "DMAMUX1 clock on guard resource.",
-  Dmamux1OnRes,
-  "DMAMUX1 clock on guard driver.",
   Dmamux1On,
   Dmamux1En,
   dmamux1en,

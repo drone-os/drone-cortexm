@@ -18,7 +18,7 @@ impl WakeInt {
     unsafe { write_volatile(NVIC_STIR as *mut u32, self.0 as u32) };
   }
 
-  #[inline(always)]
+  #[inline]
   pub(in thr) fn into_waker(self) -> Waker {
     unsafe { Waker::new(self.0 as *const WakeIntWrapped as *const UnsafeWake) }
   }

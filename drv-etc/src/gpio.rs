@@ -227,7 +227,7 @@ pub trait GpioPort<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(Afrl, afrl, afrl_mut);
+  res_decl!(Afrl, afrl, afrl_mut);
   #[cfg(any(
     feature = "stm32l4x1",
     feature = "stm32l4x2",
@@ -241,7 +241,7 @@ pub trait GpioPort<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(Afrh, afrh, afrh_mut);
+  res_decl!(Afrh, afrh, afrh_mut);
   #[cfg(any(
     feature = "stm32f100",
     feature = "stm32f101",
@@ -256,8 +256,8 @@ pub trait GpioPort<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(Brr, brr, brr_mut);
-  res_reg_decl!(Bsrr, bsrr, bsrr_mut);
+  res_decl!(Brr, brr, brr_mut);
+  res_decl!(Bsrr, bsrr, bsrr_mut);
   #[cfg(any(
     feature = "stm32f100",
     feature = "stm32f101",
@@ -265,7 +265,7 @@ pub trait GpioPort<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32f103",
     feature = "stm32f107"
   ))]
-  res_reg_decl!(Crl, crl, crl_mut);
+  res_decl!(Crl, crl, crl_mut);
   #[cfg(any(
     feature = "stm32f100",
     feature = "stm32f101",
@@ -273,9 +273,9 @@ pub trait GpioPort<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32f103",
     feature = "stm32f107"
   ))]
-  res_reg_decl!(Crh, crh, crh_mut);
-  res_reg_decl!(Idr, idr, idr_mut);
-  res_reg_decl!(Lckr, lckr, lckr_mut);
+  res_decl!(Crh, crh, crh_mut);
+  res_decl!(Idr, idr, idr_mut);
+  res_decl!(Lckr, lckr, lckr_mut);
   #[cfg(any(
     feature = "stm32l4x1",
     feature = "stm32l4x2",
@@ -289,8 +289,8 @@ pub trait GpioPort<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(Moder, moder, moder_mut);
-  res_reg_decl!(Odr, odr, odr_mut);
+  res_decl!(Moder, moder, moder_mut);
+  res_decl!(Odr, odr, odr_mut);
   #[cfg(any(
     feature = "stm32l4x1",
     feature = "stm32l4x2",
@@ -304,7 +304,7 @@ pub trait GpioPort<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(Ospeedr, ospeedr, ospeedr_mut);
+  res_decl!(Ospeedr, ospeedr, ospeedr_mut);
   #[cfg(any(
     feature = "stm32l4x1",
     feature = "stm32l4x2",
@@ -318,7 +318,7 @@ pub trait GpioPort<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(Otyper, otyper, otyper_mut);
+  res_decl!(Otyper, otyper, otyper_mut);
   #[cfg(any(
     feature = "stm32l4x1",
     feature = "stm32l4x2",
@@ -332,7 +332,7 @@ pub trait GpioPort<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(Pupdr, pupdr, pupdr_mut);
+  res_decl!(Pupdr, pupdr, pupdr_mut);
 
   fn into_pins(self) -> (Self::Pins, Self::LckrLckk);
 
@@ -353,7 +353,7 @@ pub trait GpioPort<T: RegTag>: Sized + Send + Sync + 'static {
 pub trait GpioPortAscr<T: RegTag>: GpioPort<T> {
   type Ascr: RReg<T> + WReg<T>;
 
-  res_reg_decl!(Ascr, ascr, ascr_mut);
+  res_decl!(Ascr, ascr, ascr_mut);
 }
 
 /// GPIO pin.
@@ -597,7 +597,7 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(AfrAfr, afr, afr_mut);
+  res_decl!(AfrAfr, afr, afr_mut);
   #[cfg(any(
     feature = "stm32f100",
     feature = "stm32f101",
@@ -612,9 +612,9 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(BrrBr, brr_br, brr_br_mut);
-  res_reg_decl!(BsrrBr, bsrr_br, bsrr_br_mut);
-  res_reg_decl!(BsrrBs, bsrr_bs, bsrr_bs_mut);
+  res_decl!(BrrBr, brr_br, brr_br_mut);
+  res_decl!(BsrrBr, bsrr_br, bsrr_br_mut);
+  res_decl!(BsrrBs, bsrr_bs, bsrr_bs_mut);
   #[cfg(any(
     feature = "stm32f100",
     feature = "stm32f101",
@@ -622,7 +622,7 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32f103",
     feature = "stm32f107"
   ))]
-  res_reg_decl!(CrCnf, cr_cnf, cr_cnf_mut);
+  res_decl!(CrCnf, cr_cnf, cr_cnf_mut);
   #[cfg(any(
     feature = "stm32f100",
     feature = "stm32f101",
@@ -630,9 +630,9 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32f103",
     feature = "stm32f107"
   ))]
-  res_reg_decl!(CrMode, cr_mode, cr_mode_mut);
-  res_reg_decl!(IdrIdr, idr, idr_mut);
-  res_reg_decl!(LckrLck, lckr, lckr_mut);
+  res_decl!(CrMode, cr_mode, cr_mode_mut);
+  res_decl!(IdrIdr, idr, idr_mut);
+  res_decl!(LckrLck, lckr, lckr_mut);
   #[cfg(any(
     feature = "stm32l4x1",
     feature = "stm32l4x2",
@@ -646,8 +646,8 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(ModerModer, moder, moder_mut);
-  res_reg_decl!(OdrOdr, odr, odr_mut);
+  res_decl!(ModerModer, moder, moder_mut);
+  res_decl!(OdrOdr, odr, odr_mut);
   #[cfg(any(
     feature = "stm32l4x1",
     feature = "stm32l4x2",
@@ -661,7 +661,7 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(OspeedrOspeedr, ospeedr, ospeedr_mut);
+  res_decl!(OspeedrOspeedr, ospeedr, ospeedr_mut);
   #[cfg(any(
     feature = "stm32l4x1",
     feature = "stm32l4x2",
@@ -675,7 +675,7 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(OtyperOt, otyper, otyper_mut);
+  res_decl!(OtyperOt, otyper, otyper_mut);
   #[cfg(any(
     feature = "stm32l4x1",
     feature = "stm32l4x2",
@@ -689,7 +689,7 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
     feature = "stm32l4s7",
     feature = "stm32l4s9"
   ))]
-  res_reg_decl!(PupdrPupdr, pupdr, pupdr_mut);
+  res_decl!(PupdrPupdr, pupdr, pupdr_mut);
 }
 
 /// GPIO pin with `ASCR` register.
@@ -706,7 +706,7 @@ pub trait GpioPin<T: RegTag>: Sized + Send + Sync + 'static {
 pub trait GpioPinAscr<T: RegTag>: GpioPin<T> {
   type AscrAsc: RegField<T>;
 
-  res_reg_decl!(AscrAsc, ascr, ascr_mut);
+  res_decl!(AscrAsc, ascr, ascr_mut);
 }
 
 /// GPIO port reset and clock control driver.
@@ -714,39 +714,40 @@ pub trait GpioPinAscr<T: RegTag>: GpioPin<T> {
 pub struct GpioRcc<T, C>(T, PhantomData<C>)
 where
   T: GpioRccRes,
-  C: RegGuardCnt<GpioOn<T>, Frt>;
+  C: RegGuardCnt<GpioOn<T>>;
 
 /// GPIO port reset and clock control resource.
 #[allow(missing_docs)]
 pub trait GpioRccRes: Resource {
   type RccAhb2EnrVal: Bitfield<Bits = u32>;
-  type RccAhb2Enr: FRwRegBitBand<Val = Self::RccAhb2EnrVal>;
-  type RccAhb2EnrGpioen: FRwRwRegFieldBitBand<Reg = Self::RccAhb2Enr>;
+  type RccAhb2Enr: CRwRegBitBand<Val = Self::RccAhb2EnrVal>;
+  type RccAhb2EnrGpioen: CRwRwRegFieldBitBand<Reg = Self::RccAhb2Enr>;
 
-  res_reg_decl!(RccAhb2EnrGpioen, en, en_mut);
+  res_decl!(RccAhb2EnrGpioen, en);
 }
 
 impl<T, C> GpioRcc<T, C>
 where
   T: GpioRccRes,
-  C: RegGuardCnt<GpioOn<T>, Frt>,
+  C: RegGuardCnt<GpioOn<T>>,
 {
   /// Enables the port clock.
-  pub fn on(&mut self) -> RegGuard<GpioOn<T>, C, Frt> {
-    RegGuard::new(GpioOn(self.0.en_mut().fork()))
+  pub fn on(&self) -> RegGuard<GpioOn<T>, C> {
+    RegGuard::new(GpioOn(*self.0.en()))
   }
 }
 
 /// GPIO port clock on guard resource.
 pub struct GpioOn<T: GpioRccRes>(T::RccAhb2EnrGpioen);
 
-impl<T: GpioRccRes> RegFork for GpioOn<T> {
-  fn fork(&mut self) -> Self {
-    Self(self.0.fork())
+impl<T: GpioRccRes> Clone for GpioOn<T> {
+  #[inline(always)]
+  fn clone(&self) -> Self {
+    Self(self.0)
   }
 }
 
-impl<T: GpioRccRes> RegGuardRes<Frt> for GpioOn<T> {
+impl<T: GpioRccRes> RegGuardRes for GpioOn<T> {
   type Reg = T::RccAhb2Enr;
   type Field = T::RccAhb2EnrGpioen;
 
@@ -756,12 +757,12 @@ impl<T: GpioRccRes> RegGuardRes<Frt> for GpioOn<T> {
   }
 
   #[inline(always)]
-  fn up(&self, val: &mut <Self::Reg as Reg<Frt>>::Val) {
+  fn up(&self, val: &mut <Self::Reg as Reg<Crt>>::Val) {
     self.0.set(val)
   }
 
   #[inline(always)]
-  fn down(&self, val: &mut <Self::Reg as Reg<Frt>>::Val) {
+  fn down(&self, val: &mut <Self::Reg as Reg<Crt>>::Val) {
     self.0.clear(val)
   }
 }
@@ -779,8 +780,6 @@ macro_rules! gpio_port {
     $name_rcc_macro:ident,
     $doc_rcc_res:expr,
     $name_rcc_res:ident,
-    $doc_on_res:expr,
-    $name_on_res:ident,
     $doc_on:expr,
     $name_on:ident,
     $gpioen_ty:ident,
@@ -1000,7 +999,7 @@ macro_rules! gpio_port {
     }
 
     #[doc = $doc_rcc]
-    pub type $name_rcc<C> = GpioRcc<$name_rcc_res<Frt>, C>;
+    pub type $name_rcc<C> = GpioRcc<$name_rcc_res<Crt>, C>;
 
     #[doc = $doc_rcc_res]
     #[allow(missing_docs)]
@@ -1008,11 +1007,8 @@ macro_rules! gpio_port {
       pub $rcc_ahb2enr_gpioen: rcc::ahb2enr::$gpioen_ty<Rt>,
     }
 
-    #[doc = $doc_on_res]
-    pub type $name_on_res = GpioOn<$name_rcc_res<Frt>>;
-
     #[doc = $doc_on]
-    pub type $name_on<C> = RegGuard<$name_on_res, C, Frt>;
+    pub type $name_on = GpioOn<$name_rcc_res<Crt>>;
 
     #[cfg(any(
       feature = "stm32l4x6",
@@ -1026,21 +1022,21 @@ macro_rules! gpio_port {
     /// Creates a new `GpioPort`.
     #[macro_export]
     macro_rules! $name_port_macro {
-      ($reg:ident) => {
+      ($reg:ident, $conv:ident) => {
         $crate::gpio::$name_port {
-          $gpio_afrl: $reg.$gpio_afrl.into(),
-          $gpio_afrh: $reg.$gpio_afrh.into(),
+          $gpio_afrl: $reg.$gpio_afrl.$conv(),
+          $gpio_afrh: $reg.$gpio_afrh.$conv(),
           #[cfg($ascr_cfg)]
-          $gpio_ascr: $reg.$gpio_ascr.into(),
-          $gpio_brr: $reg.$gpio_brr.into(),
-          $gpio_bsrr: $reg.$gpio_bsrr.into(),
-          $gpio_idr: $reg.$gpio_idr.into(),
-          $gpio_lckr: $reg.$gpio_lckr.into(),
-          $gpio_moder: $reg.$gpio_moder.into(),
-          $gpio_odr: $reg.$gpio_odr.into(),
-          $gpio_ospeedr: $reg.$gpio_ospeedr.into(),
-          $gpio_otyper: $reg.$gpio_otyper.into(),
-          $gpio_pupdr: $reg.$gpio_pupdr.into(),
+          $gpio_ascr: $reg.$gpio_ascr.$conv(),
+          $gpio_brr: $reg.$gpio_brr.$conv(),
+          $gpio_bsrr: $reg.$gpio_bsrr.$conv(),
+          $gpio_idr: $reg.$gpio_idr.$conv(),
+          $gpio_lckr: $reg.$gpio_lckr.$conv(),
+          $gpio_moder: $reg.$gpio_moder.$conv(),
+          $gpio_odr: $reg.$gpio_odr.$conv(),
+          $gpio_ospeedr: $reg.$gpio_ospeedr.$conv(),
+          $gpio_otyper: $reg.$gpio_otyper.$conv(),
+          $gpio_pupdr: $reg.$gpio_pupdr.$conv(),
         }
       };
     }
@@ -1054,18 +1050,18 @@ macro_rules! gpio_port {
     /// Creates a new `GpioPort`.
     #[macro_export]
     macro_rules! $name_port_macro {
-      ($reg:ident) => {
+      ($reg:ident, $conv:ident) => {
         $crate::gpio::$name_port {
-          $gpio_afrl: $reg.$gpio_afrl.into(),
-          $gpio_afrh: $reg.$gpio_afrh.into(),
-          $gpio_bsrr: $reg.$gpio_bsrr.into(),
-          $gpio_idr: $reg.$gpio_idr.into(),
-          $gpio_lckr: $reg.$gpio_lckr.into(),
-          $gpio_moder: $reg.$gpio_moder.into(),
-          $gpio_odr: $reg.$gpio_odr.into(),
-          $gpio_ospeedr: $reg.$gpio_ospeedr.into(),
-          $gpio_otyper: $reg.$gpio_otyper.into(),
-          $gpio_pupdr: $reg.$gpio_pupdr.into(),
+          $gpio_afrl: $reg.$gpio_afrl.$conv(),
+          $gpio_afrh: $reg.$gpio_afrh.$conv(),
+          $gpio_bsrr: $reg.$gpio_bsrr.$conv(),
+          $gpio_idr: $reg.$gpio_idr.$conv(),
+          $gpio_lckr: $reg.$gpio_lckr.$conv(),
+          $gpio_moder: $reg.$gpio_moder.$conv(),
+          $gpio_odr: $reg.$gpio_odr.$conv(),
+          $gpio_ospeedr: $reg.$gpio_ospeedr.$conv(),
+          $gpio_otyper: $reg.$gpio_otyper.$conv(),
+          $gpio_pupdr: $reg.$gpio_pupdr.$conv(),
         }
       };
     }
@@ -1080,15 +1076,15 @@ macro_rules! gpio_port {
     /// Creates a new `GpioPort`.
     #[macro_export]
     macro_rules! $name_port_macro {
-      ($reg:ident) => {
+      ($reg:ident, $conv:ident) => {
         $crate::gpio::$name_port {
-          $gpio_brr: $reg.$gpio_brr.into(),
-          $gpio_bsrr: $reg.$gpio_bsrr.into(),
-          $gpio_crl: $reg.$gpio_crl.into(),
-          $gpio_crh: $reg.$gpio_crh.into(),
-          $gpio_idr: $reg.$gpio_idr.into(),
-          $gpio_lckr: $reg.$gpio_lckr.into(),
-          $gpio_odr: $reg.$gpio_odr.into(),
+          $gpio_brr: $reg.$gpio_brr.$conv(),
+          $gpio_bsrr: $reg.$gpio_bsrr.$conv(),
+          $gpio_crl: $reg.$gpio_crl.$conv(),
+          $gpio_crh: $reg.$gpio_crh.$conv(),
+          $gpio_idr: $reg.$gpio_idr.$conv(),
+          $gpio_lckr: $reg.$gpio_lckr.$conv(),
+          $gpio_odr: $reg.$gpio_odr.$conv(),
         }
       };
     }
@@ -1107,7 +1103,7 @@ macro_rules! gpio_port {
 
     impl<T: RegTag> GpioPort<T> for $name_port<T> {
       type Pins = $name_pins<T>;
-      type RccRes = $name_rcc_res<Frt>;
+      type RccRes = $name_rcc_res<Crt>;
 
       #[cfg(any(
         feature = "stm32l4x1",
@@ -1243,7 +1239,7 @@ macro_rules! gpio_port {
         feature = "stm32l4s7",
         feature = "stm32l4s9"
       ))]
-      res_reg_impl!(Afrl, afrl, afrl_mut, $gpio_afrl);
+      res_impl!(Afrl, afrl, afrl_mut, $gpio_afrl);
       #[cfg(any(
         feature = "stm32l4x1",
         feature = "stm32l4x2",
@@ -1257,7 +1253,7 @@ macro_rules! gpio_port {
         feature = "stm32l4s7",
         feature = "stm32l4s9"
       ))]
-      res_reg_impl!(Afrh, afrh, afrh_mut, $gpio_afrh);
+      res_impl!(Afrh, afrh, afrh_mut, $gpio_afrh);
       #[cfg(any(
         feature = "stm32f100",
         feature = "stm32f101",
@@ -1272,8 +1268,8 @@ macro_rules! gpio_port {
         feature = "stm32l4s7",
         feature = "stm32l4s9"
       ))]
-      res_reg_impl!(Brr, brr, brr_mut, $gpio_brr);
-      res_reg_impl!(Bsrr, bsrr, bsrr_mut, $gpio_bsrr);
+      res_impl!(Brr, brr, brr_mut, $gpio_brr);
+      res_impl!(Bsrr, bsrr, bsrr_mut, $gpio_bsrr);
       #[cfg(any(
         feature = "stm32f100",
         feature = "stm32f101",
@@ -1281,7 +1277,7 @@ macro_rules! gpio_port {
         feature = "stm32f103",
         feature = "stm32f107"
       ))]
-      res_reg_impl!(Crl, crl, crl_mut, $gpio_crl);
+      res_impl!(Crl, crl, crl_mut, $gpio_crl);
       #[cfg(any(
         feature = "stm32f100",
         feature = "stm32f101",
@@ -1289,9 +1285,9 @@ macro_rules! gpio_port {
         feature = "stm32f103",
         feature = "stm32f107"
       ))]
-      res_reg_impl!(Crh, crh, crh_mut, $gpio_crh);
-      res_reg_impl!(Idr, idr, idr_mut, $gpio_idr);
-      res_reg_impl!(Lckr, lckr, lckr_mut, $gpio_lckr);
+      res_impl!(Crh, crh, crh_mut, $gpio_crh);
+      res_impl!(Idr, idr, idr_mut, $gpio_idr);
+      res_impl!(Lckr, lckr, lckr_mut, $gpio_lckr);
       #[cfg(any(
         feature = "stm32l4x1",
         feature = "stm32l4x2",
@@ -1305,8 +1301,8 @@ macro_rules! gpio_port {
         feature = "stm32l4s7",
         feature = "stm32l4s9"
       ))]
-      res_reg_impl!(Moder, moder, moder_mut, $gpio_moder);
-      res_reg_impl!(Odr, odr, odr_mut, $gpio_odr);
+      res_impl!(Moder, moder, moder_mut, $gpio_moder);
+      res_impl!(Odr, odr, odr_mut, $gpio_odr);
       #[cfg(any(
         feature = "stm32l4x1",
         feature = "stm32l4x2",
@@ -1320,7 +1316,7 @@ macro_rules! gpio_port {
         feature = "stm32l4s7",
         feature = "stm32l4s9"
       ))]
-      res_reg_impl!(Ospeedr, ospeedr, ospeedr_mut, $gpio_ospeedr);
+      res_impl!(Ospeedr, ospeedr, ospeedr_mut, $gpio_ospeedr);
       #[cfg(any(
         feature = "stm32l4x1",
         feature = "stm32l4x2",
@@ -1334,7 +1330,7 @@ macro_rules! gpio_port {
         feature = "stm32l4s7",
         feature = "stm32l4s9"
       ))]
-      res_reg_impl!(Otyper, otyper, otyper_mut, $gpio_otyper);
+      res_impl!(Otyper, otyper, otyper_mut, $gpio_otyper);
       #[cfg(any(
         feature = "stm32l4x1",
         feature = "stm32l4x2",
@@ -1348,7 +1344,7 @@ macro_rules! gpio_port {
         feature = "stm32l4s7",
         feature = "stm32l4s9"
       ))]
-      res_reg_impl!(Pupdr, pupdr, pupdr_mut, $gpio_pupdr);
+      res_impl!(Pupdr, pupdr, pupdr_mut, $gpio_pupdr);
 
       fn into_pins(self) -> (Self::Pins, Self::LckrLckk) {
         (
@@ -1638,26 +1634,26 @@ macro_rules! gpio_port {
     impl<T: RegTag> GpioPortAscr<T> for $name_port<T> {
       type Ascr = $gpio::ascr::Reg<T>;
 
-      res_reg_impl!(Ascr, ascr, ascr_mut, $gpio_ascr);
+      res_impl!(Ascr, ascr, ascr_mut, $gpio_ascr);
     }
 
-    impl Resource for $name_rcc_res<Frt> {
+    impl Resource for $name_rcc_res<Crt> {
       type Source = $name_rcc_res<Srt>;
 
       #[inline(always)]
       fn from_source(source: Self::Source) -> Self {
         Self {
-          $rcc_ahb2enr_gpioen: source.$rcc_ahb2enr_gpioen.into(),
+          $rcc_ahb2enr_gpioen: source.$rcc_ahb2enr_gpioen.to_copy(),
         }
       }
     }
 
-    impl GpioRccRes for $name_rcc_res<Frt> {
+    impl GpioRccRes for $name_rcc_res<Crt> {
       type RccAhb2EnrVal= rcc::ahb2enr::Val;
-      type RccAhb2Enr= rcc::ahb2enr::Reg<Frt>;
-      type RccAhb2EnrGpioen = rcc::ahb2enr::$gpioen_ty<Frt>;
+      type RccAhb2Enr= rcc::ahb2enr::Reg<Crt>;
+      type RccAhb2EnrGpioen = rcc::ahb2enr::$gpioen_ty<Crt>;
 
-      res_reg_impl!(RccAhb2EnrGpioen, en, en_mut, $rcc_ahb2enr_gpioen);
+      res_impl!(RccAhb2EnrGpioen, en, $rcc_ahb2enr_gpioen);
     }
 
     $(
@@ -1795,21 +1791,21 @@ macro_rules! gpio_port {
         /// Creates a new `GpioPin`.
         #[macro_export]
         macro_rules! $name_pin_macro {
-          ($reg:ident) => {
+          ($reg:ident, $conv:ident) => {
             $crate::gpio::$name_pin_ty {
-              $gpio_afr_afr: $reg.$gpio_afr.$afr.into(),
+              $gpio_afr_afr: $reg.$gpio_afr.$afr.$conv(),
               #[cfg($ascr_cfg)]
-              $gpio_ascr_asc: $reg.$gpio_ascr.$asc.into(),
-              $gpio_brr_br: $reg.$gpio_brr.$br.into(),
-              $gpio_bsrr_br: $reg.$gpio_bsrr.$br.into(),
-              $gpio_bsrr_bs: $reg.$gpio_bsrr.$bs.into(),
-              $gpio_idr_idr: $reg.$gpio_idr.$idr.into(),
-              $gpio_lckr_lck: $reg.$gpio_lckr.$lck.into(),
-              $gpio_moder_moder: $reg.$gpio_moder.$moder.into(),
-              $gpio_odr_odr: $reg.$gpio_odr.$odr.into(),
-              $gpio_ospeedr_ospeedr: $reg.$gpio_ospeedr.$ospeedr.into(),
-              $gpio_otyper_ot: $reg.$gpio_otyper.$ot.into(),
-              $gpio_pupdr_pupdr: $reg.$gpio_pupdr.$pupdr.into(),
+              $gpio_ascr_asc: $reg.$gpio_ascr.$asc.$conv(),
+              $gpio_brr_br: $reg.$gpio_brr.$br.$conv(),
+              $gpio_bsrr_br: $reg.$gpio_bsrr.$br.$conv(),
+              $gpio_bsrr_bs: $reg.$gpio_bsrr.$bs.$conv(),
+              $gpio_idr_idr: $reg.$gpio_idr.$idr.$conv(),
+              $gpio_lckr_lck: $reg.$gpio_lckr.$lck.$conv(),
+              $gpio_moder_moder: $reg.$gpio_moder.$moder.$conv(),
+              $gpio_odr_odr: $reg.$gpio_odr.$odr.$conv(),
+              $gpio_ospeedr_ospeedr: $reg.$gpio_ospeedr.$ospeedr.$conv(),
+              $gpio_otyper_ot: $reg.$gpio_otyper.$ot.$conv(),
+              $gpio_pupdr_pupdr: $reg.$gpio_pupdr.$pupdr.$conv(),
             }
           };
         }
@@ -1823,18 +1819,18 @@ macro_rules! gpio_port {
         /// Creates a new `GpioPin`.
         #[macro_export]
         macro_rules! $name_pin_macro {
-          ($reg:ident) => {
+          ($reg:ident, $conv:ident) => {
             $crate::gpio::$name_pin_ty {
-              $gpio_afr_afr: $reg.$gpio_afr.$afr.into(),
-              $gpio_bsrr_br: $reg.$gpio_bsrr.$br.into(),
-              $gpio_bsrr_bs: $reg.$gpio_bsrr.$bs.into(),
-              $gpio_idr_idr: $reg.$gpio_idr.$idr.into(),
-              $gpio_lckr_lck: $reg.$gpio_lckr.$lck.into(),
-              $gpio_moder_moder: $reg.$gpio_moder.$moder.into(),
-              $gpio_odr_odr: $reg.$gpio_odr.$odr.into(),
-              $gpio_ospeedr_ospeedr: $reg.$gpio_ospeedr.$ospeedr.into(),
-              $gpio_otyper_ot: $reg.$gpio_otyper.$ot.into(),
-              $gpio_pupdr_pupdr: $reg.$gpio_pupdr.$pupdr.into(),
+              $gpio_afr_afr: $reg.$gpio_afr.$afr.$conv(),
+              $gpio_bsrr_br: $reg.$gpio_bsrr.$br.$conv(),
+              $gpio_bsrr_bs: $reg.$gpio_bsrr.$bs.$conv(),
+              $gpio_idr_idr: $reg.$gpio_idr.$idr.$conv(),
+              $gpio_lckr_lck: $reg.$gpio_lckr.$lck.$conv(),
+              $gpio_moder_moder: $reg.$gpio_moder.$moder.$conv(),
+              $gpio_odr_odr: $reg.$gpio_odr.$odr.$conv(),
+              $gpio_ospeedr_ospeedr: $reg.$gpio_ospeedr.$ospeedr.$conv(),
+              $gpio_otyper_ot: $reg.$gpio_otyper.$ot.$conv(),
+              $gpio_pupdr_pupdr: $reg.$gpio_pupdr.$pupdr.$conv(),
             }
           };
         }
@@ -1849,23 +1845,23 @@ macro_rules! gpio_port {
         /// Creates a new `GpioPin`.
         #[macro_export]
         macro_rules! $name_pin_macro {
-          ($reg:ident) => {
+          ($reg:ident, $conv:ident) => {
             $crate::gpio::$name_pin_ty {
-              $gpio_brr_br: $reg.$gpio_brr.$br.into(),
-              $gpio_bsrr_br: $reg.$gpio_bsrr.$br.into(),
-              $gpio_bsrr_bs: $reg.$gpio_bsrr.$bs.into(),
-              $gpio_cr_cnf: $reg.$gpio_cr.$cnf.into(),
-              $gpio_cr_mode: $reg.$gpio_cr.$mode.into(),
-              $gpio_idr_idr: $reg.$gpio_idr.$idr.into(),
-              $gpio_lckr_lck: $reg.$gpio_lckr.$lck.into(),
-              $gpio_odr_odr: $reg.$gpio_odr.$odr.into(),
+              $gpio_brr_br: $reg.$gpio_brr.$br.$conv(),
+              $gpio_bsrr_br: $reg.$gpio_bsrr.$br.$conv(),
+              $gpio_bsrr_bs: $reg.$gpio_bsrr.$bs.$conv(),
+              $gpio_cr_cnf: $reg.$gpio_cr.$cnf.$conv(),
+              $gpio_cr_mode: $reg.$gpio_cr.$mode.$conv(),
+              $gpio_idr_idr: $reg.$gpio_idr.$idr.$conv(),
+              $gpio_lckr_lck: $reg.$gpio_lckr.$lck.$conv(),
+              $gpio_odr_odr: $reg.$gpio_odr.$odr.$conv(),
             }
           };
         }
 
         impl<T: RegTag> GpioPin<T> for $name_pin_ty<T> {
           type Port = $name_port<T>;
-          type RccRes = $name_rcc_res<Frt>;
+          type RccRes = $name_rcc_res<Crt>;
 
           #[cfg(any(
             feature = "stm32l4x1",
@@ -2084,7 +2080,7 @@ macro_rules! gpio_port {
             feature = "stm32l4s7",
             feature = "stm32l4s9"
           ))]
-          res_reg_impl!(AfrAfr, afr, afr_mut, $gpio_afr_afr);
+          res_impl!(AfrAfr, afr, afr_mut, $gpio_afr_afr);
           #[cfg(any(
             feature = "stm32f100",
             feature = "stm32f101",
@@ -2099,9 +2095,9 @@ macro_rules! gpio_port {
             feature = "stm32l4s7",
             feature = "stm32l4s9"
           ))]
-          res_reg_impl!(BrrBr, brr_br, brr_br_mut, $gpio_brr_br);
-          res_reg_impl!(BsrrBr, bsrr_br, bsrr_br_mut, $gpio_bsrr_br);
-          res_reg_impl!(BsrrBs, bsrr_bs, bsrr_bs_mut, $gpio_bsrr_bs);
+          res_impl!(BrrBr, brr_br, brr_br_mut, $gpio_brr_br);
+          res_impl!(BsrrBr, bsrr_br, bsrr_br_mut, $gpio_bsrr_br);
+          res_impl!(BsrrBs, bsrr_bs, bsrr_bs_mut, $gpio_bsrr_bs);
           #[cfg(any(
             feature = "stm32f100",
             feature = "stm32f101",
@@ -2109,7 +2105,7 @@ macro_rules! gpio_port {
             feature = "stm32f103",
             feature = "stm32f107"
           ))]
-          res_reg_impl!(CrCnf, cr_cnf, cr_cnf_mut, $gpio_cr_cnf);
+          res_impl!(CrCnf, cr_cnf, cr_cnf_mut, $gpio_cr_cnf);
           #[cfg(any(
             feature = "stm32f100",
             feature = "stm32f101",
@@ -2117,9 +2113,9 @@ macro_rules! gpio_port {
             feature = "stm32f103",
             feature = "stm32f107"
           ))]
-          res_reg_impl!(CrMode, cr_mode, cr_mode_mut, $gpio_cr_mode);
-          res_reg_impl!(IdrIdr, idr, idr_mut, $gpio_idr_idr);
-          res_reg_impl!(LckrLck, lckr, lckr_mut, $gpio_lckr_lck);
+          res_impl!(CrMode, cr_mode, cr_mode_mut, $gpio_cr_mode);
+          res_impl!(IdrIdr, idr, idr_mut, $gpio_idr_idr);
+          res_impl!(LckrLck, lckr, lckr_mut, $gpio_lckr_lck);
           #[cfg(any(
             feature = "stm32l4x1",
             feature = "stm32l4x2",
@@ -2133,8 +2129,8 @@ macro_rules! gpio_port {
             feature = "stm32l4s7",
             feature = "stm32l4s9"
           ))]
-          res_reg_impl!(ModerModer, moder, moder_mut, $gpio_moder_moder);
-          res_reg_impl!(OdrOdr, odr, odr_mut, $gpio_odr_odr);
+          res_impl!(ModerModer, moder, moder_mut, $gpio_moder_moder);
+          res_impl!(OdrOdr, odr, odr_mut, $gpio_odr_odr);
           #[cfg(any(
             feature = "stm32l4x1",
             feature = "stm32l4x2",
@@ -2148,8 +2144,12 @@ macro_rules! gpio_port {
             feature = "stm32l4s7",
             feature = "stm32l4s9"
           ))]
-          res_reg_impl!(OspeedrOspeedr, ospeedr, ospeedr_mut,
-                        $gpio_ospeedr_ospeedr);
+          res_impl!(
+            OspeedrOspeedr,
+            ospeedr,
+            ospeedr_mut,
+            $gpio_ospeedr_ospeedr
+          );
           #[cfg(any(
             feature = "stm32l4x1",
             feature = "stm32l4x2",
@@ -2163,7 +2163,7 @@ macro_rules! gpio_port {
             feature = "stm32l4s7",
             feature = "stm32l4s9"
           ))]
-          res_reg_impl!(OtyperOt, otyper, otyper_mut, $gpio_otyper_ot);
+          res_impl!(OtyperOt, otyper, otyper_mut, $gpio_otyper_ot);
           #[cfg(any(
             feature = "stm32l4x1",
             feature = "stm32l4x2",
@@ -2177,7 +2177,7 @@ macro_rules! gpio_port {
             feature = "stm32l4s7",
             feature = "stm32l4s9"
           ))]
-          res_reg_impl!(PupdrPupdr, pupdr, pupdr_mut, $gpio_pupdr_pupdr);
+          res_impl!(PupdrPupdr, pupdr, pupdr_mut, $gpio_pupdr_pupdr);
         }
 
         #[cfg(all($ascr_cfg, any(
@@ -2192,7 +2192,7 @@ macro_rules! gpio_port {
         impl<T: RegTag> GpioPinAscr<T> for $name_pin_ty<T> {
           type AscrAsc = $gpio::ascr::$asc_ty<T>;
 
-          res_reg_impl!(AscrAsc, ascr, ascr_mut, $gpio_ascr_asc);
+          res_impl!(AscrAsc, ascr, ascr_mut, $gpio_ascr_asc);
         }
       )*
     )*
@@ -2229,8 +2229,6 @@ gpio_port! {
   "GPIO port A reset and clock control resource.",
   GpioARccRes,
   "GPIO port A clock on guard resource.",
-  GpioAOnRes,
-  "GPIO port A clock on guard driver.",
   GpioAOn,
   Gpioaen,
   gpioa,
@@ -3031,8 +3029,6 @@ gpio_port! {
   "GPIO port B reset and clock control resource.",
   GpioBRccRes,
   "GPIO port B clock on guard resource.",
-  GpioBOnRes,
-  "GPIO port B clock on guard driver.",
   GpioBOn,
   Gpioben,
   gpiob,
@@ -3833,8 +3829,6 @@ gpio_port! {
   "GPIO port C reset and clock control resource.",
   GpioCRccRes,
   "GPIO port C clock on guard resource.",
-  GpioCOnRes,
-  "GPIO port C clock on guard driver.",
   GpioCOn,
   Gpiocen,
   gpioc,
@@ -4635,8 +4629,6 @@ gpio_port! {
   "GPIO port D reset and clock control resource.",
   GpioDRccRes,
   "GPIO port D clock on guard resource.",
-  GpioDOnRes,
-  "GPIO port D clock on guard driver.",
   GpioDOn,
   Gpioden,
   gpiod,
@@ -5437,8 +5429,6 @@ gpio_port! {
   "GPIO port E reset and clock control resource.",
   GpioERccRes,
   "GPIO port E clock on guard resource.",
-  GpioEOnRes,
-  "GPIO port E clock on guard driver.",
   GpioEOn,
   Gpioeen,
   gpioe,
@@ -6236,8 +6226,6 @@ gpio_port! {
   "GPIO port F reset and clock control resource.",
   GpioFRccRes,
   "GPIO port F clock on guard resource.",
-  GpioFOnRes,
-  "GPIO port F clock on guard driver.",
   GpioFOn,
   Gpiofen,
   gpiof,
@@ -7035,8 +7023,6 @@ gpio_port! {
   "GPIO port G reset and clock control resource.",
   GpioGRccRes,
   "GPIO port G clock on guard resource.",
-  GpioGOnRes,
-  "GPIO port G clock on guard driver.",
   GpioGOn,
   Gpiogen,
   gpiog,
@@ -7832,8 +7818,6 @@ gpio_port! {
   "GPIO port H reset and clock control resource.",
   GpioHRccRes,
   "GPIO port H clock on guard resource.",
-  GpioHOnRes,
-  "GPIO port H clock on guard driver.",
   GpioHOn,
   Gpiohen,
   gpioh,
@@ -8625,8 +8609,6 @@ gpio_port! {
   "GPIO port I reset and clock control resource.",
   GpioIRccRes,
   "GPIO port I clock on guard resource.",
-  GpioIOnRes,
-  "GPIO port I clock on guard driver.",
   GpioIOn,
   Gpioien,
   gpioi,

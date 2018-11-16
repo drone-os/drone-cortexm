@@ -12,7 +12,7 @@ pub trait ThrRequest<T: ThrTrigger>: IntToken<T> {
     F::Future: Send + 'static;
 
   /// Requests the interrupt.
-  #[inline(always)]
+  #[inline]
   fn trigger(&self) {
     WakeInt::new(Self::INT_NUM).wake();
   }
