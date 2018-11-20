@@ -235,7 +235,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       pub use self::drone_core::thr::ThrTokens;
       pub use self::drone_plat::sv::sv_handler;
       pub use self::drone_plat::thr::thr_handler;
-      pub use self::drone_plat::thr::int::*;
+      pub use self::drone_plat::thr::map::*;
       pub use self::drone_plat::thr::prelude::*;
       pub use self::drone_plat::thr::vtable::{Handler, Reserved, Reset,
                                               ResetHandler};

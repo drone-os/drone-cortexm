@@ -7,7 +7,6 @@ export CROSS_COMPILE=arm-none-eabi
 set -x
 
 cargo test \
-  --package drone-stm32-macros \
-  --package drone-stm32-svd
+  --package drone-stm32-macros
 xargo test --target $TEST_TARGET \
   --package drone-stm32

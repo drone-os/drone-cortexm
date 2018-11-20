@@ -5,8 +5,6 @@ export RUSTC_WRAPPER=$(dirname $0)/_rustc_wrapper.sh
 set -x
 
 cargo doc \
-  --package drone-stm32-macros \
-  --package drone-stm32-svd
+  --package drone-stm32-macros
 xargo doc --target $BUILD_TARGET --all "$@" \
-  --exclude drone-stm32-macros \
-  --exclude drone-stm32-svd
+  --exclude drone-stm32-macros
