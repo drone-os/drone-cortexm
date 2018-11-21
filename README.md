@@ -1,8 +1,8 @@
-# drone-stm32
+# drone-cortex-m
 
-## [Documentation](https://docs.rs/drone-stm32)
+## [Documentation](https://docs.rs/drone-cortex-m)
 
-[Drone] implementation for STM32 microcontrollers.
+[Drone] implementation for ARM Cortex-M microcontrollers.
 
 ## Installation
 

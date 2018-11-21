@@ -5,7 +5,7 @@
 #![no_std]
 
 extern crate drone_core;
-extern crate drone_stm32 as drone_plat;
+extern crate drone_cortex_m as drone_plat;
 extern crate test;
 
 #[prelude_import]
@@ -54,7 +54,7 @@ impl SvService for BarService {
 mod a {
   use super::{BarService, FooService};
   use drone_core::thr;
-  use drone_plat::thr::int::*;
+  use drone_plat::thr::map::*;
   use drone_plat::thr::prelude::*;
   use drone_plat::{sv, vtable};
 

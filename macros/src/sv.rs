@@ -78,7 +78,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
   let expanded = quote! {
     mod #rt {
       extern crate drone_core;
-      extern crate drone_stm32 as drone_plat;
+      extern crate drone_cortex_m as drone_plat;
 
       pub use self::drone_core::sv::{Supervisor, SvCall};
       pub use self::drone_plat::sv::{service_handler, sv_call};

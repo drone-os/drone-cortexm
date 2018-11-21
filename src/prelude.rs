@@ -1,4 +1,4 @@
-//! The Drone STM32 Prelude.
+//! The Drone ARM Cortex-M Prelude.
 //!
 //! It is an analogue of [`std::prelude`], which is not available in
 //! `#![no_std]` contexts.
@@ -9,7 +9,7 @@
 //! ```
 //! #![feature(prelude_import)]
 //!
-//! extern crate drone_stm32 as drone_plat;
+//! extern crate drone_cortex_m as drone_plat;
 //!
 //! #[prelude_import]
 //! #[allow(unused_imports)]

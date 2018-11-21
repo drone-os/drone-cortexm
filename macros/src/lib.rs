@@ -1,6 +1,6 @@
-//! Drone for STM32. Procedural macros.
+//! Drone for ARM Cortex-M. Procedural macros.
 //!
-//! See `drone-stm32` documentation for details.
+//! See `drone-cortex-m` documentation for details.
 
 #![allow(clippy::precedence)]
 #![recursion_limit = "256"]

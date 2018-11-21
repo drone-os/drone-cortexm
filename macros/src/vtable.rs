@@ -229,7 +229,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     mod #rt {
       extern crate core;
       extern crate drone_core;
-      extern crate drone_stm32 as drone_plat;
+      extern crate drone_cortex_m as drone_plat;
 
       pub use self::core::marker::PhantomData;
       pub use self::drone_core::thr::ThrTokens;

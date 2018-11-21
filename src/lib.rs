@@ -1,4 +1,4 @@
-//! [Drone] implementation for STM32 microcontrollers.
+//! [Drone] implementation for ARM Cortex-M microcontrollers.
 //!
 //! # Installation
 //!
@@ -54,7 +54,7 @@ extern crate alloc;
 #[allow(unused_imports)]
 #[macro_use]
 extern crate drone_core;
-extern crate drone_stm32_macros;
+extern crate drone_cortex_m_macros;
 extern crate futures;
 #[cfg(test)]
 extern crate test;
@@ -72,7 +72,7 @@ pub mod thr;
 
 mod lang_items;
 
-pub use drone_stm32_macros::{sv, vtable};
+pub use drone_cortex_m_macros::{sv, vtable};
 
 #[prelude_import]
 #[allow(unused_imports)]
