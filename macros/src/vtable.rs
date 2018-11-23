@@ -221,9 +221,6 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       })
     })
     .collect::<Vec<_>>();
-  vtable_ctor_tokens.push(quote! {
-    sv_call: #rt::sv_handler::<<#thr_ident as #rt::Thread>::Sv>
-  });
 
   let expanded = quote! {
     mod #rt {
@@ -233,12 +230,13 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
 
       pub use self::core::marker::PhantomData;
       pub use self::drone_core::thr::ThrTokens;
+      pub use self::drone_plat::map::thr::*;
       pub use self::drone_plat::sv::sv_handler;
-      pub use self::drone_plat::thr::thr_handler;
-      pub use self::drone_plat::thr::map::*;
       pub use self::drone_plat::thr::prelude::*;
-      pub use self::drone_plat::thr::vtable::{Handler, Reserved, Reset,
-                                              ResetHandler};
+      pub use self::drone_plat::thr::thr_handler;
+      pub use self::drone_plat::thr::vtable::{
+        Handler, Reserved, Reset, ResetHandler,
+      };
     }
 
     #(#vtable_attrs)*
@@ -251,7 +249,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       bus_fault: Option<#rt::Handler>,
       usage_fault: Option<#rt::Handler>,
       #def_reserved0: [#rt::Reserved; 4],
-      sv_call: #rt::Handler,
+      sv_call: Option<#rt::Handler>,
       debug: Option<#rt::Handler>,
       #def_reserved1: [#rt::Reserved; 1],
       pend_sv: Option<#rt::Handler>,
@@ -269,7 +267,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     #(#index_attrs)*
     #index_vis struct #index_ident {
       /// Reset thread token.
-      pub reset: Reset<#rt::Utt>,
+      pub reset: Reset<#rt::Ctt>,
       #(#index_tokens),*
     }
 
@@ -295,7 +293,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       #[inline(always)]
       unsafe fn new() -> Self {
         Self {
-          reset: #rt::ThrToken::<#rt::Utt>::new(),
+          reset: #rt::ThrToken::<#rt::Ctt>::new(),
           #(#index_ctor_tokens),*
         }
       }
@@ -328,8 +326,17 @@ fn gen_exc(
     ref mode,
     ref ident,
   } = exc;
+  let field_ident = ident.to_string().to_snake_case();
+  if let Mode::Extern(_) = *mode {
+    if field_ident == "sv_call" {
+      vtable_ctor_tokens.push(quote! {
+        sv_call: Some(#rt::sv_handler::<<#thr_ident as #rt::Thread>::Sv>)
+      });
+      return (Ident::new("sv_call", call_site), None);
+    }
+  }
+  let field_ident = Ident::new(&field_ident, call_site);
   let struct_ident = Ident::new(&ident.to_string().to_pascal_case(), call_site);
-  let field_ident = Ident::new(&ident.to_string().to_snake_case(), call_site);
   match *mode {
     Mode::Thread(_) => {
       vtable_ctor_tokens.push(quote! {
@@ -354,10 +361,10 @@ fn gen_exc(
       *thr_counter += 1;
       index_tokens.push(quote! {
         #(#attrs)*
-        #vis #field_ident: #struct_ident<#rt::Utt>
+        #vis #field_ident: #struct_ident<#rt::Ctt>
       });
       index_ctor_tokens.push(quote! {
-        #field_ident: #rt::ThrToken::<#rt::Utt>::new()
+        #field_ident: #rt::ThrToken::<#rt::Ctt>::new()
       });
       array_tokens.push(quote! {
         #thr_ident::new(#index)
@@ -369,22 +376,16 @@ fn gen_exc(
 
         impl<T: #rt::ThrTag> #rt::ThrToken<T> for #struct_ident<T> {
           type Thr = #thr_ident;
-          type UThrToken = #struct_ident<#rt::Utt>;
-          type TThrToken = #struct_ident<#rt::Ttt>;
           type AThrToken = #struct_ident<#rt::Att>;
+          type TThrToken = #struct_ident<#rt::Ttt>;
+          type CThrToken = #struct_ident<#rt::Ctt>;
+          type RThrToken = #struct_ident<#rt::Rtt>;
 
           const THR_NUM: usize = #index;
 
           #[inline(always)]
           unsafe fn new() -> Self {
             #struct_ident(#rt::PhantomData)
-          }
-        }
-
-        impl<T: #rt::ThrTag> AsRef<#thr_ident> for #struct_ident<T> {
-          #[inline(always)]
-          fn as_ref(&self) -> &#thr_ident {
-            unsafe { <Self as #rt::ThrToken<T>>::get_thr() }
           }
         }
       });
@@ -401,6 +402,7 @@ fn exc_set() -> HashSet<&'static str> {
   set.insert("mem_manage");
   set.insert("bus_fault");
   set.insert("usage_fault");
+  set.insert("sv_call");
   set.insert("debug");
   set.insert("pend_sv");
   set.insert("sys_tick");

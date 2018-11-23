@@ -1,2 +1,2 @@
-BUILD_TARGET=thumbv7m-none-eabi
-TEST_TARGET=thumbv7m-linux-eabi
+BUILD_TARGET=thumbv7em-none-eabihf
+TEST_TARGET=thumbv7em-linux-eabihf

@@ -23,6 +23,14 @@ git = "https://github.com/drone-os/drone-core"
 version = "0.2"
 default-features = false
 
+[dependencies.failure]
+version = "0.1"
+default-features = false
+
+[dependencies.failure_derive]
+version = "0.1"
+default-features = false
+
 [dev-dependencies.test]
 version = "0.2"
 git = "https://github.com/drone-os/drone-test"

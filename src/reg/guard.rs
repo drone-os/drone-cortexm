@@ -77,7 +77,7 @@ where
     res.field().modify(|val| {
       res.up(val);
     });
-    Self(res, U::default())
+    RegGuard(res, U::default())
   }
 }
 
@@ -88,7 +88,7 @@ where
 {
   fn clone(&self) -> Self {
     U::atomic().fetch_add(1, Relaxed);
-    Self(self.0.clone(), self.1.clone())
+    RegGuard(self.0.clone(), self.1.clone())
   }
 }
 

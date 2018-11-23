@@ -37,9 +37,10 @@ type AdapterYielder<Sv, A> = fib::Yielder<
   !,
 >;
 
-type CmdLoopFn<Sv, A> =
-  fn(In<<A as Adapter>::Cmd, <A as Adapter>::ReqRes>, AdapterYielder<Sv, A>)
-    -> !;
+type CmdLoopFn<Sv, A> = fn(
+  In<<A as Adapter>::Cmd, <A as Adapter>::ReqRes>,
+  AdapterYielder<Sv, A>,
+) -> !;
 
 #[allow(clippy::new_without_default)]
 impl<Sv, A> FiberStack<Sv, A>

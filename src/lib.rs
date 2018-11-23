@@ -42,7 +42,6 @@
 #![feature(never_type)]
 #![feature(prelude_import)]
 #![feature(range_contains)]
-#![feature(self_struct_ctor)]
 #![feature(untagged_unions)]
 #![no_std]
 #![warn(missing_docs)]
@@ -55,6 +54,9 @@ extern crate alloc;
 #[macro_use]
 extern crate drone_core;
 extern crate drone_cortex_m_macros;
+extern crate failure;
+#[macro_use]
+extern crate failure_derive;
 extern crate futures;
 #[cfg(test)]
 extern crate test;
@@ -63,7 +65,9 @@ extern crate test;
 pub mod itm;
 
 pub mod cpu;
+pub mod drv;
 pub mod fib;
+pub mod map;
 pub mod prelude;
 pub mod reg;
 pub mod stack_adapter;

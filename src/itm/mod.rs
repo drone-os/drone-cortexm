@@ -5,7 +5,7 @@ pub use self::port::Port;
 use core::alloc::Layout;
 use core::fmt::{self, Write};
 use drone_core::heap::Pool;
-use reg::map::{itm, scb};
+use map::reg::{itm, scb};
 use reg::prelude::*;
 
 pub mod port;

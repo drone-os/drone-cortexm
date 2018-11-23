@@ -23,21 +23,15 @@ pub struct Reset<T: ThrTag, U>(PhantomData<T>, PhantomData<U>);
 
 impl<T: ThrTag, U: Thread> ThrToken<T> for Reset<T, &'static U> {
   type Thr = U;
-  type UThrToken = Reset<Utt, &'static U>;
-  type TThrToken = Reset<Ttt, &'static U>;
   type AThrToken = Reset<Att, &'static U>;
+  type TThrToken = Reset<Ttt, &'static U>;
+  type CThrToken = Reset<Ctt, &'static U>;
+  type RThrToken = Reset<Rtt, &'static U>;
 
   const THR_NUM: usize = 0;
 
   #[inline(always)]
   unsafe fn new() -> Self {
     Reset(PhantomData, PhantomData)
-  }
-}
-
-impl<T: ThrTag, U: Thread> AsRef<U> for Reset<T, &'static U> {
-  #[inline(always)]
-  fn as_ref(&self) -> &U {
-    unsafe { Self::get_thr() }
   }
 }

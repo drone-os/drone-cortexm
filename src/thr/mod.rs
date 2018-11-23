@@ -37,7 +37,6 @@
 //!
 //! [`vtable!`]: ../macro.vtable.html
 
-pub mod map;
 pub mod prelude;
 pub mod vtable;
 

@@ -1,6 +1,6 @@
 //! A module for working with CPU.
 
-use reg::map::scb;
+use map::reg::scb;
 use reg::prelude::*;
 
 /// Wait for interrupt.

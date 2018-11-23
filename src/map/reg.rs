@@ -1,7 +1,104 @@
-//! Core register mappings.
+//! Core ARM Cortex-M register mappings.
 
 use drone_core::reg::map;
 use reg::prelude::*;
+
+#[macro_export]
+macro_rules! cortex_m_reg_tokens {
+  ($($body:tt)*) => {
+    ::drone_core::reg::tokens! {
+      $($body)*
+      ITM {
+        TPR; TCR; LAR;
+      }
+      SCB {
+        CPUID; ICSR; VTOR; AIRCR; SCR; CCR; SHPR1; SHPR2; SHPR3; SHCSR; MMFSR;
+        BFSR; UFSR; HFSR; DFSR; MMFAR; BFAR; AFSR; DEMCR;
+      }
+      STK {
+        CTRL; LOAD; VAL; CALIB;
+      }
+      FPU {
+        CPACR; FPCCR; FPCAR; FPDSCR;
+      }
+      MPU {
+        TYPE; CTRL; RNR; RBAR; RASR;
+      }
+      TPIU {
+        SPPR; FFCR;
+      }
+    }
+  };
+}
+
+map! {
+  /// Floating point unit.
+  pub mod FPU;
+
+  /// Coprocessor access control register.
+  CPACR {
+    0xE000_ED88 0x20 0x0000_0000
+    RReg WReg;
+    /// Access privileges for coprocessor 11.
+    CP11 { 22 2 RRRegField WWRegField }
+    /// Access privileges for coprocessor 10.
+    CP10 { 20 2 RRRegField WWRegField }
+  }
+
+  /// Floating-point context control register.
+  FPCCR {
+    0xE000_EF34 0x20 0xC000_0000
+    RReg WReg;
+    /// When this bit is set to 1, execution of a floating-point instruction
+    /// sets the CONTROL.FPCA bit to 1.
+    ASPEN { 31 1 RRRegField WWRegField }
+    /// Enables lazy context save of FP state.
+    LSPEN { 30 1 RRRegField WWRegField }
+    /// Indicates whether the software executing when the processor allocated
+    /// the FP stack frame was able to set the DebugMonitor exception to
+    /// pending.
+    MONRDY { 8 1 RRRegField }
+    /// Indicates whether the software executing when the processor allocated
+    /// the FP stack frame was able to set the BusFault exception to pending.
+    BFRDY { 6 1 RRRegField }
+    /// Indicates whether the software executing when the processor allocated
+    /// the FP stack frame was able to set the MemManage exception to pending.
+    MMRDY { 5 1 RRRegField }
+    /// Indicates whether the software executing when the processor allocated
+    /// the FP stack frame was able to set the HardFault exception to pending.
+    HFRDY { 4 1 RRRegField }
+    /// Indicates the processor mode when it allocated the FP stack frame.
+    THREAD { 3 1 RRRegField }
+    /// Indicates the privilege level of the software executing when the
+    /// processor allocated the FP stack frame.
+    USER { 1 1 RRRegField }
+    /// Indicates whether Lazy preservation of the FP state is active.
+    LSPACT { 0 1 RRRegField }
+  }
+
+  /// Floating-point context address register.
+  FPCAR {
+    0xE000_EF38 0x20 0x0000_0000
+    RReg;
+    /// The location of the unpopulated floating-point register space allocated
+    /// on an exception stack frame.
+    ADDRESS { 3 29 RRRegField }
+  }
+
+  /// Floating-point default status control register.
+  FPDSCR {
+    0xE000_EF3C 0x20 0x0000_0000
+    RReg WReg;
+    /// Default value for FPSCR.AHP.
+    AHP { 26 1 RRRegField WWRegField }
+    /// Default value for FPSCR.DN.
+    DN { 25 1 RRRegField WWRegField }
+    /// Default value for FPSCR.FZ.
+    FZ { 24 1 RRRegField WWRegField }
+    /// Default value for FPSCR.RMode.
+    RMode { 22 2 RRRegField WWRegField }
+  }
+}
 
 map! {
   /// Instrumentation trace macrocell.
@@ -46,6 +143,89 @@ map! {
     WReg WoReg;
     /// Write `0xC5ACCE55` to unlock Write Access to the other ITM registers.
     UNLOCK { 0 32 WWRegField WoWRegField }
+  }
+}
+
+map! {
+  /// Memory protection unit.
+  pub mod MPU;
+
+  /// The MPU Type Register indicates how many regions the MPU support.
+  /// Software can use it to determine if the processor implements an MPU.
+  TYPE {
+    0xE000_ED90 0x20 0x0000_0000
+    RReg RoReg;
+    /// Instruction region.
+    IREGION { 16 8 RRRegField RoRRegField }
+    /// Number of regions supported by the MPU. If this field reads-as-zero the
+    /// processor does not implement an MPU.
+    DREGION { 8 8 RRRegField RoRRegField }
+    /// Indicates support for separate instruction and data address maps.
+    SEPARATE { 0 1 RRRegField RoRRegField }
+  }
+
+  /// Enables the MPU, and when the MPU is enabled, controls whether the
+  /// default memory map is enabled as a background region for privileged
+  /// accesses, and whether the MPU is enabled for HardFaults, NMIs, and
+  /// exception handlers when FAULTMASK is set to 1.
+  CTRL {
+    0xE000_ED94 0x20 0x0000_0000
+    RReg WReg;
+    /// Enables the default memory map as a background region for privileged
+    /// access.
+    PRIVDEFENA { 2 1 RRRegField WWRegField }
+    /// Enables the operation of MPU during hard fault, NMI, and FAULTMASK
+    /// handlers.
+    HFNMIENA { 1 1 RRRegField WWRegField }
+    /// Enables the MPU.
+    ENABLE { 0 1 RRRegField WWRegField }
+  }
+
+  /// Selects the region currently accessed by RBAR and RASR.
+  RNR {
+    0xE000_ED98 0x20 0x0000_0000
+    RReg WReg;
+    /// Indicates the memory region accessed by RBAR and RASR.
+    REGION { 0 8 RRRegField WWRegField }
+  }
+
+  /// Holds the base address of the region identified by RNR. On a write,
+  /// can also be used to update the base address of a specified region, in
+  /// the range 0 to 15, updating RNR with the new region number.
+  RBAR {
+    0xE000_ED9C 0x20 0x0000_0000
+    RReg WReg;
+    /// Region base address field.
+    ADDR { 5 27 RRRegField WWRegField }
+    /// MPU region number valid.
+    VALID { 4 1 RRRegField WWRegField }
+    /// MPU region field.
+    REGION { 0 4 RRRegField WWRegField }
+  }
+
+  /// Defines the size and access behavior of the region identified by
+  /// RNR, and enables that region.
+  RASR {
+    0xE000_EDA0 0x20 0x0000_0000
+    RReg WReg;
+    /// Instruction access disable bit.
+    XN { 28 1 RRRegField WWRegField }
+    /// Access permission.
+    AP { 24 3 RRRegField WWRegField }
+    /// Memory attribute.
+    TEX { 19 3 RRRegField WWRegField }
+    /// Shareable memory attribute.
+    S { 18 1 RRRegField WWRegField }
+    /// Memory attribute.
+    C { 17 1 RRRegField WWRegField }
+    /// Memory attribute.
+    B { 16 1 RRRegField WWRegField }
+    /// Subregion disable bits.
+    SRD { 8 8 RRRegField WWRegField }
+    /// Size of the MPU protection region.
+    SIZE { 1 5 RRRegField WWRegField }
+    /// Region enable bit.
+    ENABLE { 0 1 RRRegField WWRegField }
   }
 }
 
@@ -395,84 +575,72 @@ map! {
 }
 
 map! {
-  /// Memory protection unit.
-  pub mod MPU;
+  /// SysTick timer.
+  pub mod STK;
 
-  /// The MPU Type Register indicates how many regions the MPU support.
-  /// Software can use it to determine if the processor implements an MPU.
-  MPU_TYPE {
-    0xE000_ED90 0x20 0x0000_0000
+  /// SysTick control and status register.
+  CTRL {
+    0xE000_E010 0x20 0x0000_0000
+    RReg WReg;
+    /// Returns `true` if timer counted to `0` since last time this was read.
+    COUNTFLAG { 16 1 RRRegField WWRegField }
+    /// Clock source selection.
+    CLKSOURCE { 2 1 RRRegField WWRegField }
+    /// SysTick exception request enable.
+    TICKINT { 1 1 RRRegField WWRegField }
+    /// Counter enable.
+    ENABLE { 0 1 RRRegField WWRegField }
+  }
+
+  /// SysTick reload value register.
+  LOAD {
+    0xE000_E014 0x20 0x0000_0000
+    RReg WReg;
+    /// RELOAD value.
+    RELOAD { 0 24 RRRegField WWRegField }
+  }
+
+  /// SysTick current value register.
+  VAL {
+    0xE000_E018 0x20 0x0000_0000
+    RReg WReg;
+    /// Current counter value.
+    CURRENT { 0 24 RRRegField WWRegField }
+  }
+
+  /// SysTick calibration value register.
+  CALIB {
+    0xE000_E01C 0x20 0x0000_0000
     RReg RoReg;
-    /// Instruction region.
-    IREGION { 16 8 RRRegField RoRRegField }
-    /// Number of regions supported by the MPU. If this field reads-as-zero the
-    /// processor does not implement an MPU.
-    DREGION { 8 8 RRRegField RoRRegField }
-    /// Indicates support for separate instruction and data address maps.
-    SEPARATE { 0 1 RRRegField RoRRegField }
+    /// NOREF flag.
+    NOREF { 31 1 RRRegField RoRRegField }
+    /// SKEW flag.
+    SKEW { 30 1 RRRegField RoRRegField }
+    /// Calibration value.
+    TENMS { 0 24 RRRegField RoRRegField }
+  }
+}
+
+map! {
+  /// Trace port interface unit.
+  pub mod TPIU;
+
+  /// Selected Pin Protocol Register.
+  SPPR {
+    0xE004_00F0 0x20 0x0000_0001
+    RReg WReg;
+    /// Specified the protocol for trace output from the TPIU.
+    TXMODE { 0 2 RRRegField WWRegField }
   }
 
-  /// Enables the MPU, and when the MPU is enabled, controls whether the
-  /// default memory map is enabled as a background region for privileged
-  /// accesses, and whether the MPU is enabled for HardFaults, NMIs, and
-  /// exception handlers when FAULTMASK is set to 1.
-  MPU_CTRL {
-    0xE000_ED94 0x20 0x0000_0000
+  /// Formatter and Flush Control Register.
+  FFCR {
+    0xE004_0304 0x20 0x0000_0102
     RReg WReg;
-    /// Enables the default memory map as a background region for privileged
-    /// access.
-    PRIVDEFENA { 2 1 RRRegField WWRegField }
-    /// Enables the operation of MPU during hard fault, NMI, and FAULTMASK
-    /// handlers.
-    HFNMIENA { 1 1 RRRegField WWRegField }
-    /// Enables the MPU.
-    ENABLE { 0 1 RRRegField WWRegField }
-  }
-
-  /// Selects the region currently accessed by MPU_RBAR and MPU_RASR.
-  MPU_RNR {
-    0xE000_ED98 0x20 0x0000_0000
-    RReg WReg;
-    /// Indicates the memory region accessed by MPU_RBAR and MPU_RASR.
-    REGION { 0 8 RRRegField WWRegField }
-  }
-
-  /// Holds the base address of the region identified by MPU_RNR. On a write,
-  /// can also be used to update the base address of a specified region, in
-  /// the range 0 to 15, updating MPU_RNR with the new region number.
-  MPU_RBAR {
-    0xE000_ED9C 0x20 0x0000_0000
-    RReg WReg;
-    /// Region base address field.
-    ADDR { 5 27 RRRegField WWRegField }
-    /// MPU region number valid.
-    VALID { 4 1 RRRegField WWRegField }
-    /// MPU region field.
-    REGION { 0 4 RRRegField WWRegField }
-  }
-
-  /// Defines the size and access behavior of the region identified by
-  /// MPU_RNR, and enables that region.
-  MPU_RASR {
-    0xE000_EDA0 0x20 0x0000_0000
-    RReg WReg;
-    /// Instruction access disable bit.
-    XN { 28 1 RRRegField WWRegField }
-    /// Access permission.
-    AP { 24 3 RRRegField WWRegField }
-    /// Memory attribute.
-    TEX { 19 3 RRRegField WWRegField }
-    /// Shareable memory attribute.
-    S { 18 1 RRRegField WWRegField }
-    /// Memory attribute.
-    C { 17 1 RRRegField WWRegField }
-    /// Memory attribute.
-    B { 16 1 RRRegField WWRegField }
-    /// Subregion disable bits.
-    SRD { 8 8 RRRegField WWRegField }
-    /// Size of the MPU protection region.
-    SIZE { 1 5 RRRegField WWRegField }
-    /// Region enable bit.
-    ENABLE { 0 1 RRRegField WWRegField }
+    /// This bit Reads-As-One (RAO), specifying that triggers are inserted when
+    /// a trigger pin is asserted.
+    TrigIn { 8 1 RRRegField RoRRegField }
+    /// Enable continuous formatting.
+    EnFCont { 1 1 RRRegField WWRegField }
   }
 }

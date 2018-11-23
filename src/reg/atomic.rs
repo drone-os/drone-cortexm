@@ -42,8 +42,9 @@ where
   /// Atomically updates the register's value.
   fn modify<F>(&'a self, f: F)
   where
-    F: for<'b> Fn(&'b mut <Self as RegRef<'a, T>>::Hold)
-      -> &'b mut <Self as RegRef<'a, T>>::Hold;
+    F: for<'b> Fn(
+      &'b mut <Self as RegRef<'a, T>>::Hold,
+    ) -> &'b mut <Self as RegRef<'a, T>>::Hold;
 }
 
 /// Write field of shared read-write register.
@@ -123,8 +124,9 @@ where
   #[inline(always)]
   fn modify<F>(&'a self, f: F)
   where
-    F: for<'b> Fn(&'b mut <U as RegRef<'a, T>>::Hold)
-      -> &'b mut <U as RegRef<'a, T>>::Hold,
+    F: for<'b> Fn(
+      &'b mut <U as RegRef<'a, T>>::Hold,
+    ) -> &'b mut <U as RegRef<'a, T>>::Hold,
   {
     loop {
       let mut val = self.load_excl();

@@ -54,7 +54,7 @@ impl SvService for BarService {
 mod a {
   use super::{BarService, FooService};
   use drone_core::thr;
-  use drone_plat::thr::map::*;
+  use drone_plat::map::thr::*;
   use drone_plat::thr::prelude::*;
   use drone_plat::{sv, vtable};
 
@@ -72,6 +72,9 @@ mod a {
     /// Test doc attribute
     #[doc = "test attribute"]
     pub extern NMI;
+    /// Test doc attribute
+    #[doc = "test attribute"]
+    pub extern SV_CALL;
     /// Test doc attribute
     #[doc = "test attribute"]
     pub SYS_TICK;
@@ -102,7 +105,7 @@ mod a {
 
 mod b {
   use drone_core::thr;
-  use drone_plat::{sv, vtable};
+  use drone_plat::vtable;
 
   vtable! {
     pub struct Vtable;
@@ -117,13 +120,7 @@ mod b {
     pub struct Thr;
     #[allow(dead_code)]
     pub struct ThrLocal;
-    extern struct Sv;
     extern static THREADS;
-  }
-
-  sv! {
-    pub struct Sv;
-    pub static SERVICES;
   }
 }
 
@@ -144,7 +141,6 @@ fn size() {
   assert_eq!(unsafe { b::THREADS.len() }, 1);
   assert_eq!((size_of::<a::Vtable>() - size_of::<b::Vtable>()) / 4, 11);
   assert_eq!(a::SERVICES.len(), 2);
-  assert_eq!(b::SERVICES.len(), 0);
 }
 
 #[test]
