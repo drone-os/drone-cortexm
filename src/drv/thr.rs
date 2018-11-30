@@ -24,12 +24,10 @@ static MPU_RESET_TABLE: [u32; 16] = [
 ];
 
 /// `Thr` driver.
-#[derive(Driver)]
 pub struct Thr(ThrRes);
 
 /// `Thr` resource.
 #[allow(missing_docs)]
-#[derive(Resource)]
 pub struct ThrRes {
   pub mpu_type: mpu::Type<Srt>,
   pub mpu_ctrl: mpu::Ctrl<Srt>,
@@ -43,20 +41,30 @@ pub struct ThrRes {
 #[macro_export]
 macro_rules! drv_thr {
   ($reg:ident) => {
-    <$crate::drv::thr::Thr as ::drone_core::drv::Driver>::new(
-      $crate::drv::thr::ThrRes {
-        mpu_type: $reg.mpu_type,
-        mpu_ctrl: $reg.mpu_ctrl,
-        mpu_rnr: $reg.mpu_rnr,
-        mpu_rbar: $reg.mpu_rbar,
-        mpu_rasr: $reg.mpu_rasr,
-        scb_ccr: $reg.scb_ccr,
-      },
-    )
+    $crate::drv::thr::Thr::new($crate::drv::thr::ThrRes {
+      mpu_type: $reg.mpu_type,
+      mpu_ctrl: $reg.mpu_ctrl,
+      mpu_rnr: $reg.mpu_rnr,
+      mpu_rbar: $reg.mpu_rbar,
+      mpu_rasr: $reg.mpu_rasr,
+      scb_ccr: $reg.scb_ccr,
+    })
   };
 }
 
 impl Thr {
+  /// Creates a new `Thr`.
+  #[inline(always)]
+  pub fn new(res: ThrRes) -> Self {
+    Thr(res)
+  }
+
+  /// Releases the underlying resources.
+  #[inline(always)]
+  pub fn free(self) -> ThrRes {
+    self.0
+  }
+
   /// Initialized the Drone threading system, and returns an instance of `T`.
   #[inline(always)]
   pub fn init<T: ThrTokens>(

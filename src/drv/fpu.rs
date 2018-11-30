@@ -4,12 +4,10 @@ use map::reg::fpu;
 use reg::prelude::*;
 
 /// FPU driver.
-#[derive(Driver)]
 pub struct Fpu(FpuRes);
 
 /// FPU resource.
 #[allow(missing_docs)]
-#[derive(Resource)]
 pub struct FpuRes {
   pub fpu_cpacr: fpu::Cpacr<Srt>,
   pub fpu_fpccr: fpu::Fpccr<Srt>,
@@ -21,14 +19,12 @@ pub struct FpuRes {
 #[macro_export]
 macro_rules! drv_fpu {
   ($reg:ident) => {
-    <$crate::drv::fpu::Fpu as ::drone_core::drv::Driver>::new(
-      $crate::drv::fpu::FpuRes {
-        fpu_cpacr: $reg.fpu_cpacr,
-        fpu_fpccr: $reg.fpu_fpccr,
-        fpu_fpcar: $reg.fpu_fpcar,
-        fpu_fpdscr: $reg.fpu_fpdscr,
-      },
-    )
+    $crate::drv::fpu::Fpu::new($crate::drv::fpu::FpuRes {
+      fpu_cpacr: $reg.fpu_cpacr,
+      fpu_fpccr: $reg.fpu_fpccr,
+      fpu_fpcar: $reg.fpu_fpcar,
+      fpu_fpdscr: $reg.fpu_fpdscr,
+    })
   };
 }
 
@@ -52,6 +48,20 @@ impl Fpu {
   #[inline(always)]
   pub fn fpu_fpdscr(&self) -> &fpu::Fpdscr<Srt> {
     &self.0.fpu_fpdscr
+  }
+}
+
+impl Fpu {
+  /// Creates a new `Fpu`.
+  #[inline(always)]
+  pub fn new(res: FpuRes) -> Self {
+    Fpu(res)
+  }
+
+  /// Releases the underlying resources.
+  #[inline(always)]
+  pub fn free(self) -> FpuRes {
+    self.0
   }
 }
 

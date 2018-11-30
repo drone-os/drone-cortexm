@@ -1,7 +1,6 @@
 use super::{Timer, TimerOverflow, TimerRes};
 use core::ptr::write_volatile;
 use drone_core::bitfield::Bitfield;
-use drone_core::drv::Resource;
 use fib::{self, FiberFuture, FiberStreamUnit};
 use futures::prelude::*;
 use map::reg::{scb, stk};
@@ -10,15 +9,15 @@ use reg::prelude::*;
 use thr::prelude::*;
 
 /// SysTick driver.
-pub type SysTick<I> = Timer<SysTickRes<I, Crt>>;
+pub type SysTick<I> = Timer<SysTickRes<I>>;
 
 /// SysTick resource.
 #[allow(missing_docs)]
-pub struct SysTickRes<I: IntSysTick<Att>, Rt: RegTag> {
+pub struct SysTickRes<I: IntSysTick<Att>> {
   pub sys_tick: I,
-  pub scb_icsr_pendstclr: scb::icsr::Pendstclr<Rt>,
+  pub scb_icsr_pendstclr: scb::icsr::Pendstclr<Crt>,
   pub scb_icsr_pendstset: scb::icsr::Pendstset<Srt>,
-  pub stk_ctrl: stk::Ctrl<Rt>,
+  pub stk_ctrl: stk::Ctrl<Crt>,
   pub stk_load: stk::Load<Srt>,
   pub stk_val: stk::Val<Srt>,
 }
@@ -27,36 +26,20 @@ pub struct SysTickRes<I: IntSysTick<Att>, Rt: RegTag> {
 #[macro_export]
 macro_rules! drv_sys_tick {
   ($reg:ident, $thr:ident) => {
-    <$crate::drv::timer::Timer<_> as ::drone_core::drv::Driver>::new(
-      $crate::drv::timer::SysTickRes {
+    unsafe {
+      $crate::drv::timer::Timer::new($crate::drv::timer::SysTickRes {
         sys_tick: $thr.sys_tick.to_attach(),
-        scb_icsr_pendstclr: $reg.scb_icsr.pendstclr,
+        scb_icsr_pendstclr: $reg.scb_icsr.pendstclr.acquire_copy(),
         scb_icsr_pendstset: $reg.scb_icsr.pendstset,
-        stk_ctrl: $reg.stk_ctrl,
+        stk_ctrl: $reg.stk_ctrl.acquire_copy(),
         stk_load: $reg.stk_load,
         stk_val: $reg.stk_val,
-      },
-    )
+      })
+    }
   };
 }
 
-impl<I: IntSysTick<Att>> Resource for SysTickRes<I, Crt> {
-  type Source = SysTickRes<I, Srt>;
-
-  #[inline(always)]
-  fn from_source(source: Self::Source) -> Self {
-    Self {
-      sys_tick: source.sys_tick,
-      scb_icsr_pendstclr: source.scb_icsr_pendstclr.to_copy(),
-      scb_icsr_pendstset: source.scb_icsr_pendstset,
-      stk_ctrl: source.stk_ctrl.to_copy(),
-      stk_load: source.stk_load,
-      stk_val: source.stk_val,
-    }
-  }
-}
-
-impl<I: IntSysTick<Att>> TimerRes for SysTickRes<I, Crt> {
+impl<I: IntSysTick<Att>> TimerRes for SysTickRes<I> {
   type Duration = u32;
   type CtrlVal = stk::ctrl::Val;
   type SleepFuture = FiberFuture<(), !>;
@@ -120,7 +103,7 @@ impl<I: IntSysTick<Att>> TimerRes for SysTickRes<I, Crt> {
   }
 }
 
-impl<I: IntSysTick<Att>> SysTickRes<I, Crt> {
+impl<I: IntSysTick<Att>> SysTickRes<I> {
   fn interval_stream<F, S>(
     &mut self,
     dur: u32,
@@ -142,7 +125,7 @@ impl<I: IntSysTick<Att>> SysTickRes<I, Crt> {
 }
 
 #[allow(missing_docs)]
-impl<I: IntSysTick<Att>> Timer<SysTickRes<I, Crt>> {
+impl<I: IntSysTick<Att>> Timer<SysTickRes<I>> {
   #[inline(always)]
   pub fn int(&self) -> I {
     self.0.sys_tick
@@ -164,7 +147,7 @@ impl<I: IntSysTick<Att>> Timer<SysTickRes<I, Crt>> {
   }
 }
 
-impl<I: IntSysTick<Att>> Timer<SysTickRes<I, Crt>> {
+impl<I: IntSysTick<Att>> Timer<SysTickRes<I>> {
   /// Change SysTick exception state to pending.
   #[inline]
   pub fn set_pending(&self) {

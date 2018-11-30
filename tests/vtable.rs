@@ -15,6 +15,7 @@ use drone_plat::prelude::*;
 use core::mem::{size_of, transmute_copy};
 use drone_core::heap;
 use drone_core::sv::SvService;
+use drone_plat::sv::sv_handler;
 
 heap! {
   struct Heap;
@@ -74,7 +75,7 @@ mod a {
     pub extern NMI;
     /// Test doc attribute
     #[doc = "test attribute"]
-    pub extern SV_CALL;
+    fn SV_CALL;
     /// Test doc attribute
     #[doc = "test attribute"]
     pub SYS_TICK;
@@ -131,7 +132,12 @@ fn new() {
   }
   unsafe extern "C" fn nmi() {}
   unsafe extern "C" fn rcc() {}
-  a::Vtable::new(a::Handlers { reset, nmi, rcc });
+  a::Vtable::new(a::Handlers {
+    reset,
+    nmi,
+    sv_call: sv_handler::<a::Sv>,
+    rcc,
+  });
   b::Vtable::new(b::Handlers { reset });
 }
 

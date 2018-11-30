@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use std::collections::HashSet;
 use syn::parse::{Parse, ParseStream, Result};
-use syn::{Attribute, Ident, LitInt, Visibility};
+use syn::{Attribute, ExprPath, Ident, LitInt, Visibility};
 
 struct Vtable {
   vtable: NewStruct,
@@ -92,10 +92,10 @@ impl Parse for Mode {
       Ok(Mode::Fn)
     } else {
       let vis = input.parse::<Visibility>()?;
-      if input.parse::<Option<Token![extern]>>()?.is_none() {
-        Ok(Mode::Thread(vis))
-      } else {
+      if input.parse::<Option<Token![extern]>>()?.is_some() {
         Ok(Mode::Extern(vis))
+      } else {
+        Ok(Mode::Thread(vis))
       }
     }
   }
@@ -129,7 +129,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         vis: array_vis,
         ident: array_ident,
       },
-    thr: ExternStruct { ident: thr_ident },
+    thr: ExternStruct { path: thr_path },
     excs,
     ints,
   } = parse_macro_input!(input as Vtable);
@@ -153,7 +153,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
   for exc in excs {
     let (field_ident, struct_ident) = gen_exc(
       &exc,
-      &thr_ident,
+      &thr_path,
       &rt,
       &mut thr_counter,
       &mut vtable_ctor_tokens,
@@ -178,7 +178,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
   for Int { num, exc } in ints {
     let (field_ident, struct_ident) = gen_exc(
       &exc,
-      &thr_ident,
+      &thr_path,
       &rt,
       &mut thr_counter,
       &mut vtable_ctor_tokens,
@@ -231,7 +231,6 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       pub use self::core::marker::PhantomData;
       pub use self::drone_core::thr::ThrTokens;
       pub use self::drone_plat::map::thr::*;
-      pub use self::drone_plat::sv::sv_handler;
       pub use self::drone_plat::thr::prelude::*;
       pub use self::drone_plat::thr::thr_handler;
       pub use self::drone_plat::thr::vtable::{
@@ -272,8 +271,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     }
 
     #(#array_attrs)*
-    #array_vis static mut #array_ident: [#thr_ident; #thr_counter] = [
-      #thr_ident::new(0),
+    #array_vis static mut #array_ident: [#thr_path; #thr_counter] = [
+      #thr_path::new(0),
       #(#array_tokens),*
     ];
 
@@ -300,7 +299,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     }
 
     /// Reset thread token.
-    pub type Reset<T> = #rt::Reset<T, &'static #thr_ident>;
+    pub type Reset<T> = #rt::Reset<T, &'static #thr_path>;
 
     #(#thr_tokens)*
   };
@@ -310,7 +309,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
 #[allow(clippy::too_many_arguments)]
 fn gen_exc(
   exc: &Exc,
-  thr_ident: &Ident,
+  thr_path: &ExprPath,
   rt: &Ident,
   thr_counter: &mut usize,
   vtable_ctor_tokens: &mut Vec<TokenStream2>,
@@ -327,14 +326,6 @@ fn gen_exc(
     ref ident,
   } = exc;
   let field_ident = ident.to_string().to_snake_case();
-  if let Mode::Extern(_) = *mode {
-    if field_ident == "sv_call" {
-      vtable_ctor_tokens.push(quote! {
-        sv_call: Some(#rt::sv_handler::<<#thr_ident as #rt::Thread>::Sv>)
-      });
-      return (Ident::new("sv_call", call_site), None);
-    }
-  }
   let field_ident = Ident::new(&field_ident, call_site);
   let struct_ident = Ident::new(&ident.to_string().to_pascal_case(), call_site);
   match *mode {
@@ -367,7 +358,7 @@ fn gen_exc(
         #field_ident: #rt::ThrToken::<#rt::Ctt>::new()
       });
       array_tokens.push(quote! {
-        #thr_ident::new(#index)
+        #thr_path::new(#index)
       });
       thr_tokens.push(quote! {
         #(#attrs)*
@@ -375,7 +366,7 @@ fn gen_exc(
         #vis struct #struct_ident<T: #rt::ThrTag>(#rt::PhantomData<T>);
 
         impl<T: #rt::ThrTag> #rt::ThrToken<T> for #struct_ident<T> {
-          type Thr = #thr_ident;
+          type Thr = #thr_path;
           type AThrToken = #struct_ident<#rt::Att>;
           type TThrToken = #struct_ident<#rt::Ttt>;
           type CThrToken = #struct_ident<#rt::Ctt>;

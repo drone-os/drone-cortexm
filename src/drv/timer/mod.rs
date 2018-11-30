@@ -5,7 +5,6 @@ mod sys_tick;
 pub use self::sys_tick::{SysTick, SysTickRes};
 
 use drone_core::bitfield::Bitfield;
-use drone_core::drv::Resource;
 use futures::prelude::*;
 
 /// Error returned from [`Timer::interval`](Timer::interval) on overflow.
@@ -14,12 +13,11 @@ use futures::prelude::*;
 pub struct TimerOverflow;
 
 /// Timer driver.
-#[derive(Driver)]
 pub struct Timer<T: TimerRes>(T);
 
 /// Timer resource.
 #[allow(missing_docs)]
-pub trait TimerRes: Resource {
+pub trait TimerRes: Sized + Send + 'static {
   type Duration;
   type CtrlVal: Bitfield;
   type SleepFuture: Future<Item = (), Error = !> + Send;
@@ -48,6 +46,22 @@ pub trait TimerRes: Resource {
 }
 
 impl<T: TimerRes> Timer<T> {
+  /// Creates a new `Timer`.
+  ///
+  /// # Safety
+  ///
+  /// `res` must be the only owner of its contained resources.
+  #[inline(always)]
+  pub unsafe fn new(res: T) -> Self {
+    Timer(res)
+  }
+
+  /// Releases the underlying resources.
+  #[inline(always)]
+  pub fn free(self) -> T {
+    self.0
+  }
+
   /// Returns a future that completes once `dur` ticks have elapsed.
   #[inline]
   pub fn sleep(
