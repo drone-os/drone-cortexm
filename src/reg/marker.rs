@@ -483,7 +483,6 @@ pub trait SRwRwRegFieldBitBand
 where
   Self: SRwRwRegFieldBit,
   Self: RRRegFieldBitBand<Srt>,
-  Self: WWRegFieldBitBand<Srt>,
   Self::Reg: SRwRegBitBand,
 {
 }
@@ -492,7 +491,6 @@ impl<R> SRwRwRegFieldBitBand for R
 where
   R: SRwRwRegFieldBit,
   R: RRRegFieldBitBand<Srt>,
-  R: WWRegFieldBitBand<Srt>,
   R::Reg: SRwRegBitBand,
 {
 }
@@ -504,7 +502,6 @@ where
 pub trait SWoRwRegFieldBitBand
 where
   Self: SWoRwRegFieldBit,
-  Self: WWRegFieldBitBand<Srt>,
   Self::Reg: SRwRegBitBand,
 {
 }
@@ -512,7 +509,6 @@ where
 impl<R> SWoRwRegFieldBitBand for R
 where
   R: SWoRwRegFieldBit,
-  R: WWRegFieldBitBand<Srt>,
   R::Reg: SRwRegBitBand,
 {
 }
@@ -585,7 +581,6 @@ pub trait CRwRwRegFieldBitBand
 where
   Self: CRwRwRegFieldBit,
   Self: RRRegFieldBitBand<Crt>,
-  Self: WWRegFieldBitBand<Crt>,
   Self::Reg: CRwRegBitBand,
 {
 }
@@ -594,7 +589,6 @@ impl<R> CRwRwRegFieldBitBand for R
 where
   R: CRwRwRegFieldBit,
   R: RRRegFieldBitBand<Crt>,
-  R: WWRegFieldBitBand<Crt>,
   R::Reg: CRwRegBitBand,
 {
 }
@@ -606,7 +600,6 @@ where
 pub trait CWoRwRegFieldBitBand
 where
   Self: CWoRwRegFieldBit,
-  Self: WWRegFieldBitBand<Crt>,
   Self::Reg: CRwRegBitBand,
 {
 }
@@ -614,7 +607,6 @@ where
 impl<R> CWoRwRegFieldBitBand for R
 where
   R: CWoRwRegFieldBit,
-  R: WWRegFieldBitBand<Crt>,
   R::Reg: CRwRegBitBand,
 {
 }

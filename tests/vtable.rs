@@ -19,26 +19,12 @@ use drone_plat::sv::sv_handler;
 
 heap! {
   struct Heap;
-  extern fn alloc_hook;
-  extern fn dealloc_hook;
   size = 0;
   pools = [];
 }
 
 #[global_allocator]
 static mut ALLOC: Heap = Heap::new();
-
-fn alloc_hook(
-  _layout: ::core::alloc::Layout,
-  _pool: &::drone_core::heap::Pool,
-) {
-}
-
-fn dealloc_hook(
-  _layout: ::core::alloc::Layout,
-  _pool: &::drone_core::heap::Pool,
-) {
-}
 
 struct FooService;
 

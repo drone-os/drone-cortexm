@@ -41,8 +41,8 @@ where
 /// Register field that can write bits through peripheral bit-band region.
 pub trait WWRegFieldBitBand<T: RegTag>
 where
-  Self: WWRegFieldBit<T>,
-  Self::Reg: RegBitBand<T> + WReg<T>,
+  Self: SafeWWRegFieldBitBand<T>,
+  Self::Reg: RegBitBand<T>,
 {
   /// Sets the bit through peripheral bit-band region.
   fn set_bit_band(&self);
@@ -52,6 +52,15 @@ where
 
   /// Returns an unsafe mutable pointer to the corresponding bit-band address.
   fn bit_band_mut_ptr(&self) -> *mut usize;
+}
+
+#[doc(hidden)]
+#[marker]
+pub unsafe trait SafeWWRegFieldBitBand<T: RegTag>
+where
+  Self: RegField<T>,
+  Self::Reg: RegBitBand<T>,
+{
 }
 
 impl<T, U> RRRegFieldBitBand<T> for U
@@ -74,8 +83,8 @@ where
 impl<T, U> WWRegFieldBitBand<T> for U
 where
   T: RegTag,
-  U: WWRegFieldBit<T>,
-  U::Reg: RegBitBand<T> + WReg<T>,
+  U: SafeWWRegFieldBitBand<T>,
+  U::Reg: RegBitBand<T>,
 {
   #[inline(always)]
   fn set_bit_band(&self) {
@@ -89,8 +98,23 @@ where
 
   #[inline(always)]
   fn bit_band_mut_ptr(&self) -> *mut usize {
-    unsafe { Self::Reg::bit_band_addr(Self::OFFSET) as *mut usize }
+    unsafe { U::Reg::bit_band_addr(U::OFFSET) as *mut usize }
   }
+}
+
+unsafe impl<T, U> SafeWWRegFieldBitBand<T> for U
+where
+  T: RegTag,
+  U: WoWoRegFieldBit<T>,
+  U::Reg: RegBitBand<T> + WoReg<T>,
+{
+}
+
+unsafe impl<T> SafeWWRegFieldBitBand<Urt> for T
+where
+  T: WWRegFieldBit<Urt>,
+  T::Reg: RegBitBand<Urt> + WReg<Urt>,
+{
 }
 
 #[cfg(test)]
