@@ -119,28 +119,25 @@ where
 
 #[cfg(test)]
 mod tests {
-  use self::test_block::*;
   use super::*;
-  use drone_core::reg::map;
+  use drone_core::reg;
 
-  map! {
-    pub mod TEST_BLOCK;
-
+  reg! {
     #[allow(dead_code)]
-    LOW_REG {
-      0x4000_0000 0x20 0x0000_0000 RegBitBand;
-      TEST_BIT { 0 1 }
-    }
-
-    #[allow(dead_code)]
-    HIGH_REG {
-      0x400F_FFFC 0x20 0x0000_0000 RegBitBand;
-      TEST_BIT { 0 1 }
-    }
+    mod TST LOW_REG;
+    0x4000_0000 0x20 0x0000_0000 RegBitBand;
+    TEST_BIT { 0 1 }
   }
 
-  type LocalLowReg = LowReg<Urt>;
-  type LocalHighReg = HighReg<Urt>;
+  reg! {
+    #[allow(dead_code)]
+    mod TST HIGH_REG;
+    0x400F_FFFC 0x20 0x0000_0000 RegBitBand;
+    TEST_BIT { 0 1 }
+  }
+
+  type LocalLowReg = tst_low_reg::Reg<Urt>;
+  type LocalHighReg = tst_high_reg::Reg<Urt>;
 
   #[test]
   fn reg_bit_band_addr() {

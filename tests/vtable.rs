@@ -5,8 +5,9 @@
 #![no_std]
 
 extern crate drone_core;
-extern crate drone_cortex_m as drone_plat;
+extern crate drone_cortex_m;
 extern crate test;
+use drone_cortex_m as drone_plat;
 
 #[prelude_import]
 #[allow(unused_imports)]

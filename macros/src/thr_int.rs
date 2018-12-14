@@ -1,6 +1,5 @@
 use inflector::Inflector;
 use proc_macro::TokenStream;
-use proc_macro2::Span;
 use syn::parse::{Parse, ParseStream, Result};
 use syn::{Attribute, Ident, LitInt, Visibility};
 
@@ -30,7 +29,6 @@ impl Parse for ThrInt {
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-  let call_site = Span::call_site();
   let ThrInt {
     attrs,
     vis,
@@ -38,8 +36,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     number,
   } = parse_macro_input!(input as ThrInt);
   let int_name = format!("INT_{}", ident);
-  let name_ident = Ident::new(&int_name.to_pascal_case(), call_site);
-  let number_ident = Ident::new(&format!("Int{}", number.value()), call_site);
+  let name_ident = new_ident!("{}", int_name.to_pascal_case());
+  let number_ident = new_ident!("Int{}", number.value());
 
   let expanded = quote! {
     #(#attrs)*

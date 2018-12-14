@@ -52,6 +52,60 @@ where
 }
 
 // }}}
+// {{{ RwRegBitBand
+/// Bit-band read-write register token.
+#[marker]
+pub trait RwRegBitBand<T: RegTag>
+where
+  Self: RwReg<T>,
+  Self: RegBitBand<T>,
+{
+}
+
+impl<R, T: RegTag> RwRegBitBand<T> for R
+where
+  R: RwReg<T>,
+  R: RegBitBand<T>,
+{
+}
+
+// }}}
+// {{{ RoRegBitBand
+/// Bit-band read-only register token.
+#[marker]
+pub trait RoRegBitBand<T: RegTag>
+where
+  Self: RoReg<T>,
+  Self: RegBitBand<T>,
+{
+}
+
+impl<R, T: RegTag> RoRegBitBand<T> for R
+where
+  R: RoReg<T>,
+  R: RegBitBand<T>,
+{
+}
+
+// }}}
+// {{{ WoRegBitBand
+/// Bit-band write-only register token.
+#[marker]
+pub trait WoRegBitBand<T: RegTag>
+where
+  Self: WoReg<T>,
+  Self: RegBitBand<T>,
+{
+}
+
+impl<R, T: RegTag> WoRegBitBand<T> for R
+where
+  R: WoReg<T>,
+  R: RegBitBand<T>,
+{
+}
+
+// }}}
 // {{{ URwRegBitBand
 /// Unsynchronized bit-band read-write register token.
 #[marker]
@@ -374,13 +428,110 @@ where
 }
 
 // }}}
+// {{{ RwRwRegFieldBitBand
+/// One-bit read-write field of read-write register token.
+#[marker]
+pub trait RwRwRegFieldBitBand<T: RegTag>
+where
+  Self: RwRwRegFieldBit<T>,
+  Self: RRRegFieldBitBand<T>,
+  Self::Reg: RwRegBitBand<T>,
+{
+}
+
+impl<R, T: RegTag> RwRwRegFieldBitBand<T> for R
+where
+  R: RwRwRegFieldBit<T>,
+  R: RRRegFieldBitBand<T>,
+  R::Reg: RwRegBitBand<T>,
+{
+}
+
+// }}}
+// {{{ WoRwRegFieldBitBand
+/// One-bit write-only field of read-write register token.
+#[marker]
+pub trait WoRwRegFieldBitBand<T: RegTag>
+where
+  Self: WoRwRegFieldBit<T>,
+  Self::Reg: RwRegBitBand<T>,
+{
+}
+
+impl<R, T: RegTag> WoRwRegFieldBitBand<T> for R
+where
+  R: WoRwRegFieldBit<T>,
+  R::Reg: RwRegBitBand<T>,
+{
+}
+
+// }}}
+// {{{ WoWoRegFieldBitBand
+/// One-bit write-only field of write-only register token.
+#[marker]
+pub trait WoWoRegFieldBitBand<T: RegTag>
+where
+  Self: WoWoRegFieldBit<T>,
+  Self: WWRegFieldBitBand<T>,
+  Self::Reg: WoRegBitBand<T>,
+{
+}
+
+impl<R, T: RegTag> WoWoRegFieldBitBand<T> for R
+where
+  R: WoWoRegFieldBit<T>,
+  R: WWRegFieldBitBand<T>,
+  R::Reg: WoRegBitBand<T>,
+{
+}
+
+// }}}
+// {{{ RoRwRegFieldBitBand
+/// One-bit read-only field of read-write register token.
+#[marker]
+pub trait RoRwRegFieldBitBand<T: RegTag>
+where
+  Self: RoRwRegFieldBit<T>,
+  Self: RRRegFieldBitBand<T>,
+  Self::Reg: RwRegBitBand<T>,
+{
+}
+
+impl<R, T: RegTag> RoRwRegFieldBitBand<T> for R
+where
+  R: RoRwRegFieldBit<T>,
+  R: RRRegFieldBitBand<T>,
+  R::Reg: RwRegBitBand<T>,
+{
+}
+
+// }}}
+// {{{ RoRoRegFieldBitBand
+/// One-bit read-only field of read-only register token.
+#[marker]
+pub trait RoRoRegFieldBitBand<T: RegTag>
+where
+  Self: RoRoRegFieldBit<T>,
+  Self: RRRegFieldBitBand<T>,
+  Self::Reg: RoRegBitBand<T>,
+{
+}
+
+impl<R, T: RegTag> RoRoRegFieldBitBand<T> for R
+where
+  R: RoRoRegFieldBit<T>,
+  R: RRRegFieldBitBand<T>,
+  R::Reg: RoRegBitBand<T>,
+{
+}
+
+// }}}
 // {{{ URwRwRegFieldBitBand
 /// Unsynchronized one-bit read-write field of read-write register token.
 #[marker]
 pub trait URwRwRegFieldBitBand
 where
-  Self: URwRwRegFieldBit,
-  Self: RRRegFieldBitBand<Urt>,
+  Self: RwRwRegFieldBitBand<Urt>,
   Self: WWRegFieldBitBand<Urt>,
   Self::Reg: URwRegBitBand,
 {
@@ -388,8 +539,7 @@ where
 
 impl<R> URwRwRegFieldBitBand for R
 where
-  R: URwRwRegFieldBit,
-  R: RRRegFieldBitBand<Urt>,
+  R: RwRwRegFieldBitBand<Urt>,
   R: WWRegFieldBitBand<Urt>,
   R::Reg: URwRegBitBand,
 {
@@ -401,7 +551,7 @@ where
 #[marker]
 pub trait UWoRwRegFieldBitBand
 where
-  Self: UWoRwRegFieldBit,
+  Self: WoRwRegFieldBitBand<Urt>,
   Self: WWRegFieldBitBand<Urt>,
   Self::Reg: URwRegBitBand,
 {
@@ -409,7 +559,7 @@ where
 
 impl<R> UWoRwRegFieldBitBand for R
 where
-  R: UWoRwRegFieldBit,
+  R: WoRwRegFieldBitBand<Urt>,
   R: WWRegFieldBitBand<Urt>,
   R::Reg: URwRegBitBand,
 {
@@ -421,16 +571,14 @@ where
 #[marker]
 pub trait UWoWoRegFieldBitBand
 where
-  Self: UWoWoRegFieldBit,
-  Self: WWRegFieldBitBand<Urt>,
+  Self: WoWoRegFieldBitBand<Urt>,
   Self::Reg: UWoRegBitBand,
 {
 }
 
 impl<R> UWoWoRegFieldBitBand for R
 where
-  R: UWoWoRegFieldBit,
-  R: WWRegFieldBitBand<Urt>,
+  R: WoWoRegFieldBitBand<Urt>,
   R::Reg: UWoRegBitBand,
 {
 }
@@ -441,16 +589,14 @@ where
 #[marker]
 pub trait URoRwRegFieldBitBand
 where
-  Self: URoRwRegFieldBit,
-  Self: RRRegFieldBitBand<Urt>,
+  Self: RoRwRegFieldBitBand<Urt>,
   Self::Reg: URwRegBitBand,
 {
 }
 
 impl<R> URoRwRegFieldBitBand for R
 where
-  R: URoRwRegFieldBit,
-  R: RRRegFieldBitBand<Urt>,
+  R: RoRwRegFieldBitBand<Urt>,
   R::Reg: URwRegBitBand,
 {
 }
@@ -461,16 +607,14 @@ where
 #[marker]
 pub trait URoRoRegFieldBitBand
 where
-  Self: URoRoRegFieldBit,
-  Self: RRRegFieldBitBand<Urt>,
+  Self: RoRoRegFieldBitBand<Urt>,
   Self::Reg: URoRegBitBand,
 {
 }
 
 impl<R> URoRoRegFieldBitBand for R
 where
-  R: URoRoRegFieldBit,
-  R: RRRegFieldBitBand<Urt>,
+  R: RoRoRegFieldBitBand<Urt>,
   R::Reg: URoRegBitBand,
 {
 }
@@ -481,16 +625,16 @@ where
 #[marker]
 pub trait SRwRwRegFieldBitBand
 where
-  Self: SRwRwRegFieldBit,
-  Self: RRRegFieldBitBand<Srt>,
+  Self: RwRwRegFieldBitBand<Srt>,
+  Self: WRwRegFieldBitAtomic<Srt>,
   Self::Reg: SRwRegBitBand,
 {
 }
 
 impl<R> SRwRwRegFieldBitBand for R
 where
-  R: SRwRwRegFieldBit,
-  R: RRRegFieldBitBand<Srt>,
+  R: RwRwRegFieldBitBand<Srt>,
+  R: WRwRegFieldBitAtomic<Srt>,
   R::Reg: SRwRegBitBand,
 {
 }
@@ -501,14 +645,16 @@ where
 #[marker]
 pub trait SWoRwRegFieldBitBand
 where
-  Self: SWoRwRegFieldBit,
+  Self: WoRwRegFieldBitBand<Srt>,
+  Self: WRwRegFieldBitAtomic<Srt>,
   Self::Reg: SRwRegBitBand,
 {
 }
 
 impl<R> SWoRwRegFieldBitBand for R
 where
-  R: SWoRwRegFieldBit,
+  R: WoRwRegFieldBitBand<Srt>,
+  R: WRwRegFieldBitAtomic<Srt>,
   R::Reg: SRwRegBitBand,
 {
 }
@@ -519,16 +665,14 @@ where
 #[marker]
 pub trait SWoWoRegFieldBitBand
 where
-  Self: SWoWoRegFieldBit,
-  Self: WWRegFieldBitBand<Srt>,
+  Self: WoWoRegFieldBitBand<Srt>,
   Self::Reg: SWoRegBitBand,
 {
 }
 
 impl<R> SWoWoRegFieldBitBand for R
 where
-  R: SWoWoRegFieldBit,
-  R: WWRegFieldBitBand<Srt>,
+  R: WoWoRegFieldBitBand<Srt>,
   R::Reg: SWoRegBitBand,
 {
 }
@@ -539,16 +683,14 @@ where
 #[marker]
 pub trait SRoRwRegFieldBitBand
 where
-  Self: SRoRwRegFieldBit,
-  Self: RRRegFieldBitBand<Srt>,
+  Self: RoRwRegFieldBitBand<Srt>,
   Self::Reg: SRwRegBitBand,
 {
 }
 
 impl<R> SRoRwRegFieldBitBand for R
 where
-  R: SRoRwRegFieldBit,
-  R: RRRegFieldBitBand<Srt>,
+  R: RoRwRegFieldBitBand<Srt>,
   R::Reg: SRwRegBitBand,
 {
 }
@@ -559,16 +701,14 @@ where
 #[marker]
 pub trait SRoRoRegFieldBitBand
 where
-  Self: SRoRoRegFieldBit,
-  Self: RRRegFieldBitBand<Srt>,
+  Self: RoRoRegFieldBitBand<Srt>,
   Self::Reg: SRoRegBitBand,
 {
 }
 
 impl<R> SRoRoRegFieldBitBand for R
 where
-  R: SRoRoRegFieldBit,
-  R: RRRegFieldBitBand<Srt>,
+  R: RoRoRegFieldBitBand<Srt>,
   R::Reg: SRoRegBitBand,
 {
 }
@@ -579,16 +719,18 @@ where
 #[marker]
 pub trait CRwRwRegFieldBitBand
 where
-  Self: CRwRwRegFieldBit,
-  Self: RRRegFieldBitBand<Crt>,
+  Self: RwRwRegFieldBitBand<Crt>,
+  Self: WRwRegFieldBitAtomic<Crt>,
+  Self: Copy,
   Self::Reg: CRwRegBitBand,
 {
 }
 
 impl<R> CRwRwRegFieldBitBand for R
 where
-  R: CRwRwRegFieldBit,
-  R: RRRegFieldBitBand<Crt>,
+  R: RwRwRegFieldBitBand<Crt>,
+  R: WRwRegFieldBitAtomic<Crt>,
+  R: Copy,
   R::Reg: CRwRegBitBand,
 {
 }
@@ -599,14 +741,18 @@ where
 #[marker]
 pub trait CWoRwRegFieldBitBand
 where
-  Self: CWoRwRegFieldBit,
+  Self: WoRwRegFieldBitBand<Crt>,
+  Self: WRwRegFieldBitAtomic<Crt>,
+  Self: Copy,
   Self::Reg: CRwRegBitBand,
 {
 }
 
 impl<R> CWoRwRegFieldBitBand for R
 where
-  R: CWoRwRegFieldBit,
+  R: WoRwRegFieldBitBand<Crt>,
+  R: WRwRegFieldBitAtomic<Crt>,
+  R: Copy,
   R::Reg: CRwRegBitBand,
 {
 }
@@ -617,16 +763,16 @@ where
 #[marker]
 pub trait CWoWoRegFieldBitBand
 where
-  Self: CWoWoRegFieldBit,
-  Self: WWRegFieldBitBand<Crt>,
+  Self: WoWoRegFieldBitBand<Crt>,
+  Self: Copy,
   Self::Reg: CWoRegBitBand,
 {
 }
 
 impl<R> CWoWoRegFieldBitBand for R
 where
-  R: CWoWoRegFieldBit,
-  R: WWRegFieldBitBand<Crt>,
+  R: WoWoRegFieldBitBand<Crt>,
+  R: Copy,
   R::Reg: CWoRegBitBand,
 {
 }
@@ -637,16 +783,16 @@ where
 #[marker]
 pub trait CRoRwRegFieldBitBand
 where
-  Self: CRoRwRegFieldBit,
-  Self: RRRegFieldBitBand<Crt>,
+  Self: RoRwRegFieldBitBand<Crt>,
+  Self: Copy,
   Self::Reg: CRwRegBitBand,
 {
 }
 
 impl<R> CRoRwRegFieldBitBand for R
 where
-  R: CRoRwRegFieldBit,
-  R: RRRegFieldBitBand<Crt>,
+  R: RoRwRegFieldBitBand<Crt>,
+  R: Copy,
   R::Reg: CRwRegBitBand,
 {
 }
@@ -657,16 +803,16 @@ where
 #[marker]
 pub trait CRoRoRegFieldBitBand
 where
-  Self: CRoRoRegFieldBit,
-  Self: RRRegFieldBitBand<Crt>,
+  Self: RoRoRegFieldBitBand<Crt>,
+  Self: Copy,
   Self::Reg: CRoRegBitBand,
 {
 }
 
 impl<R> CRoRoRegFieldBitBand for R
 where
-  R: CRoRoRegFieldBit,
-  R: RRRegFieldBitBand<Crt>,
+  R: RoRoRegFieldBitBand<Crt>,
+  R: Copy,
   R::Reg: CRoRegBitBand,
 {
 }

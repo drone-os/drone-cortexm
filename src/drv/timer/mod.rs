@@ -2,7 +2,7 @@
 
 mod sys_tick;
 
-pub use self::sys_tick::{SysTick, SysTickRes};
+pub use self::sys_tick::{SysTick, SysTickDiverged};
 
 use drone_core::bitfield::Bitfield;
 use futures::prelude::*;
@@ -13,11 +13,8 @@ use futures::prelude::*;
 pub struct TimerOverflow;
 
 /// Timer driver.
-pub struct Timer<T: TimerRes>(T);
-
-/// Timer resource.
 #[allow(missing_docs)]
-pub trait TimerRes: Sized + Send + 'static {
+pub trait Timer: Sized + Send + 'static {
   type Duration;
   type CtrlVal: Bitfield;
   type SleepFuture: Future<Item = (), Error = !> + Send;
@@ -43,58 +40,4 @@ pub trait TimerRes: Sized + Send + 'static {
   ) -> Self::IntervalSkipStream;
 
   fn stop(&mut self, ctrl_val: Self::CtrlVal);
-}
-
-impl<T: TimerRes> Timer<T> {
-  /// Creates a new `Timer`.
-  ///
-  /// # Safety
-  ///
-  /// `res` must be the only owner of its contained resources.
-  #[inline(always)]
-  pub unsafe fn new(res: T) -> Self {
-    Timer(res)
-  }
-
-  /// Releases the underlying resources.
-  #[inline(always)]
-  pub fn free(self) -> T {
-    self.0
-  }
-
-  /// Returns a future that completes once `dur` ticks have elapsed.
-  #[inline]
-  pub fn sleep(
-    &mut self,
-    dur: T::Duration,
-    ctrl_val: T::CtrlVal,
-  ) -> T::SleepFuture {
-    self.0.sleep(dur, ctrl_val)
-  }
-
-  /// Returns a stream that resolves every `dur` ticks.
-  #[inline]
-  pub fn interval(
-    &mut self,
-    dur: T::Duration,
-    ctrl_val: T::CtrlVal,
-  ) -> T::IntervalStream {
-    self.0.interval(dur, ctrl_val)
-  }
-
-  /// Returns a stream that resolves every `dur` ticks. Skips overflow.
-  #[inline]
-  pub fn interval_skip(
-    &mut self,
-    dur: T::Duration,
-    ctrl_val: T::CtrlVal,
-  ) -> T::IntervalSkipStream {
-    self.0.interval_skip(dur, ctrl_val)
-  }
-
-  /// Stops the timer.
-  #[inline]
-  pub fn stop(&mut self, ctrl_val: T::CtrlVal) {
-    self.0.stop(ctrl_val)
-  }
 }

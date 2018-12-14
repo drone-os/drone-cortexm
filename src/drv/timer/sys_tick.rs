@@ -1,20 +1,24 @@
-use super::{Timer, TimerOverflow, TimerRes};
+use super::{Timer, TimerOverflow};
 use core::ptr::write_volatile;
 use drone_core::bitfield::Bitfield;
 use fib::{self, FiberFuture, FiberStreamUnit};
 use futures::prelude::*;
 use map::reg::{scb, stk};
+use map::res::sys_tick::SysTickRes;
 use map::thr::IntSysTick;
 use reg::prelude::*;
 use thr::prelude::*;
 
 /// SysTick driver.
-pub type SysTick<I> = Timer<SysTickRes<I>>;
-
-/// SysTick resource.
 #[allow(missing_docs)]
-pub struct SysTickRes<I: IntSysTick<Att>> {
-  pub sys_tick: I,
+pub struct SysTick<I: IntSysTick<Att>> {
+  int: I,
+  reg: SysTickDiverged,
+}
+
+/// SysTick diverged resource.
+#[allow(missing_docs)]
+pub struct SysTickDiverged {
   pub scb_icsr_pendstclr: scb::icsr::Pendstclr<Crt>,
   pub scb_icsr_pendstset: scb::icsr::Pendstset<Srt>,
   pub stk_ctrl: stk::Ctrl<Crt>,
@@ -26,20 +30,14 @@ pub struct SysTickRes<I: IntSysTick<Att>> {
 #[macro_export]
 macro_rules! drv_sys_tick {
   ($reg:ident, $thr:ident) => {
-    unsafe {
-      $crate::drv::timer::Timer::new($crate::drv::timer::SysTickRes {
-        sys_tick: $thr.sys_tick.to_attach(),
-        scb_icsr_pendstclr: $reg.scb_icsr.pendstclr.acquire_copy(),
-        scb_icsr_pendstset: $reg.scb_icsr.pendstset,
-        stk_ctrl: $reg.stk_ctrl.acquire_copy(),
-        stk_load: $reg.stk_load,
-        stk_val: $reg.stk_val,
-      })
-    }
+    $crate::drv::timer::SysTick::new(
+      $thr.sys_tick.to_attach(),
+      res_sys_tick!($reg),
+    )
   };
 }
 
-impl<I: IntSysTick<Att>> TimerRes for SysTickRes<I> {
+impl<I: IntSysTick<Att>> Timer for SysTick<I> {
   type Duration = u32;
   type CtrlVal = stk::ctrl::Val;
   type SleepFuture = FiberFuture<(), !>;
@@ -52,18 +50,18 @@ impl<I: IntSysTick<Att>> TimerRes for SysTickRes<I> {
     dur: Self::Duration,
     mut ctrl_val: Self::CtrlVal,
   ) -> Self::SleepFuture {
-    ctrl_val = disable(&mut self.stk_ctrl.hold(ctrl_val)).val();
-    self.stk_ctrl.store_val(ctrl_val);
-    schedule(&self.stk_load, &self.stk_val, dur);
-    let ctrl = self.stk_ctrl;
-    let pendstclr = self.scb_icsr_pendstclr;
-    let fut = self.sys_tick.add_future(fib::new_fn(move || {
+    ctrl_val = disable(&mut self.reg.stk_ctrl.hold(ctrl_val)).val();
+    self.reg.stk_ctrl.store_val(ctrl_val);
+    schedule(&self.reg.stk_load, &self.reg.stk_val, dur);
+    let ctrl = self.reg.stk_ctrl;
+    let pendstclr = self.reg.scb_icsr_pendstclr;
+    let fut = self.int.add_future(fib::new_fn(move || {
       ctrl.store_val(ctrl_val);
       unsafe { set_bit(&pendstclr) };
       Ok(())
     }));
-    ctrl_val = enable(&mut self.stk_ctrl.hold(ctrl_val)).val();
-    self.stk_ctrl.store_val(ctrl_val);
+    ctrl_val = enable(&mut self.reg.stk_ctrl.hold(ctrl_val)).val();
+    self.reg.stk_ctrl.store_val(ctrl_val);
     fut
   }
 
@@ -98,12 +96,57 @@ impl<I: IntSysTick<Att>> TimerRes for SysTickRes<I> {
 
   #[inline]
   fn stop(&mut self, mut ctrl_val: Self::CtrlVal) {
-    ctrl_val = disable(&mut self.stk_ctrl.hold(ctrl_val)).val();
-    self.stk_ctrl.store_val(ctrl_val);
+    ctrl_val = disable(&mut self.reg.stk_ctrl.hold(ctrl_val)).val();
+    self.reg.stk_ctrl.store_val(ctrl_val);
   }
 }
 
-impl<I: IntSysTick<Att>> SysTickRes<I> {
+impl<I: IntSysTick<Att>> SysTick<I> {
+  /// Creates a new `SysTick`.
+  pub fn new(int: I, reg: SysTickRes) -> Self {
+    let reg = SysTickDiverged {
+      scb_icsr_pendstclr: reg.scb_icsr_pendstclr.to_copy(),
+      scb_icsr_pendstset: reg.scb_icsr_pendstset,
+      stk_ctrl: reg.stk_ctrl.to_copy(),
+      stk_load: reg.stk_load,
+      stk_val: reg.stk_val,
+    };
+    Self { int, reg }
+  }
+
+  /// Creates a new `SysTick`.
+  ///
+  /// # Safety
+  ///
+  /// The caller must ensure that no one of `Crt` register tokens is in use.
+  pub unsafe fn from_diverged(int: I, reg: SysTickDiverged) -> Self {
+    Self { int, reg }
+  }
+
+  /// Releases the underlying registers.
+  #[inline(always)]
+  pub fn free(self) -> SysTickDiverged {
+    self.reg
+  }
+
+  /// Change SysTick exception state to pending.
+  #[inline]
+  pub fn set_pending(&self) {
+    unsafe { set_bit(&self.reg.scb_icsr_pendstset) };
+  }
+
+  /// Returns `true` if SysTick exception is pending.
+  #[inline]
+  pub fn is_pending(&self) -> bool {
+    self.reg.scb_icsr_pendstset.read_bit()
+  }
+
+  /// Removes the pending state from the SysTick exception.
+  #[inline]
+  pub fn clear_pending(&self) {
+    unsafe { set_bit(&self.reg.scb_icsr_pendstclr) };
+  }
+
   fn interval_stream<F, S>(
     &mut self,
     dur: u32,
@@ -114,56 +157,36 @@ impl<I: IntSysTick<Att>> SysTickRes<I> {
     F: FnOnce(I) -> S,
     S: Stream,
   {
-    ctrl_val = disable(&mut self.stk_ctrl.hold(ctrl_val)).val();
-    self.stk_ctrl.store_val(ctrl_val);
-    schedule(&self.stk_load, &self.stk_val, dur);
-    let stream = f(self.sys_tick);
-    ctrl_val = enable(&mut self.stk_ctrl.hold(ctrl_val)).val();
-    self.stk_ctrl.store_val(ctrl_val);
+    ctrl_val = disable(&mut self.reg.stk_ctrl.hold(ctrl_val)).val();
+    self.reg.stk_ctrl.store_val(ctrl_val);
+    schedule(&self.reg.stk_load, &self.reg.stk_val, dur);
+    let stream = f(self.int);
+    ctrl_val = enable(&mut self.reg.stk_ctrl.hold(ctrl_val)).val();
+    self.reg.stk_ctrl.store_val(ctrl_val);
     stream
   }
 }
 
 #[allow(missing_docs)]
-impl<I: IntSysTick<Att>> Timer<SysTickRes<I>> {
+impl<I: IntSysTick<Att>> SysTick<I> {
   #[inline(always)]
   pub fn int(&self) -> I {
-    self.0.sys_tick
+    self.int
   }
 
   #[inline(always)]
   pub fn ctrl(&self) -> &stk::Ctrl<Srt> {
-    &self.0.stk_ctrl.as_sync()
+    &self.reg.stk_ctrl.as_sync()
   }
 
   #[inline(always)]
   pub fn load(&self) -> &stk::Load<Srt> {
-    &self.0.stk_load
+    &self.reg.stk_load
   }
 
   #[inline(always)]
   pub fn val(&self) -> &stk::Val<Srt> {
-    &self.0.stk_val
-  }
-}
-
-impl<I: IntSysTick<Att>> Timer<SysTickRes<I>> {
-  /// Change SysTick exception state to pending.
-  #[inline]
-  pub fn set_pending(&self) {
-    unsafe { set_bit(&self.0.scb_icsr_pendstset) };
-  }
-
-  /// Returns `true` if SysTick exception is pending.
-  #[inline]
-  pub fn is_pending(&self) -> bool {
-    self.0.scb_icsr_pendstset.read_bit()
-  }
-
-  /// Removes the pending state from the SysTick exception.
-  #[inline]
-  pub fn clear_pending(&self) {
-    unsafe { set_bit(&self.0.scb_icsr_pendstclr) };
+    &self.reg.stk_val
   }
 }
 

@@ -41,6 +41,7 @@
 #![feature(naked_functions)]
 #![feature(never_type)]
 #![feature(prelude_import)]
+#![feature(proc_macro_hygiene)]
 #![feature(range_contains)]
 #![feature(untagged_unions)]
 #![no_std]

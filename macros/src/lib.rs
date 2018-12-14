@@ -5,6 +5,7 @@
 #![allow(clippy::precedence)]
 #![recursion_limit = "256"]
 
+#[macro_use]
 extern crate drone_macros_core;
 extern crate inflector;
 extern crate proc_macro;

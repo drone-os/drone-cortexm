@@ -2,6 +2,8 @@
 
 use drone_core::thr::ThrTokens;
 use map::reg::{mpu, scb};
+use map::res::mpu::MpuRes;
+use map::res::thr::ThrRes;
 use reg::prelude::*;
 
 static MPU_RESET_TABLE: [u32; 16] = [
@@ -24,45 +26,31 @@ static MPU_RESET_TABLE: [u32; 16] = [
 ];
 
 /// `Thr` driver.
-pub struct Thr(ThrRes);
-
-/// `Thr` resource.
-#[allow(missing_docs)]
-pub struct ThrRes {
-  pub mpu_type: mpu::Type<Srt>,
-  pub mpu_ctrl: mpu::Ctrl<Srt>,
-  pub mpu_rnr: mpu::Rnr<Srt>,
-  pub mpu_rbar: mpu::Rbar<Srt>,
-  pub mpu_rasr: mpu::Rasr<Srt>,
-  pub scb_ccr: scb::Ccr<Srt>,
+pub struct Thr {
+  mpu: MpuRes,
+  thr: ThrRes,
 }
 
 /// Creates a new `Thr`.
 #[macro_export]
 macro_rules! drv_thr {
   ($reg:ident) => {
-    $crate::drv::thr::Thr::new($crate::drv::thr::ThrRes {
-      mpu_type: $reg.mpu_type,
-      mpu_ctrl: $reg.mpu_ctrl,
-      mpu_rnr: $reg.mpu_rnr,
-      mpu_rbar: $reg.mpu_rbar,
-      mpu_rasr: $reg.mpu_rasr,
-      scb_ccr: $reg.scb_ccr,
-    })
+    $crate::drv::thr::Thr::new(res_mpu!($reg), res_thr!($reg))
   };
 }
 
 impl Thr {
   /// Creates a new `Thr`.
   #[inline(always)]
-  pub fn new(res: ThrRes) -> Self {
-    Thr(res)
+  pub fn new(mpu: MpuRes, thr: ThrRes) -> Self {
+    Self { mpu, thr }
   }
 
-  /// Releases the underlying resources.
+  /// Releases the underlying registers.
   #[inline(always)]
-  pub fn free(self) -> ThrRes {
-    self.0
+  pub fn free(self) -> (MpuRes, ThrRes) {
+    let Self { mpu, thr } = self;
+    (mpu, thr)
   }
 
   /// Initialized the Drone threading system, and returns an instance of `T`.
@@ -74,7 +62,7 @@ impl Thr {
     ) -> &'b mut scb::ccr::Hold<'a, Srt>,
   ) -> T {
     self
-      .0
+      .thr
       .scb_ccr
       .store(|r| scb_ccr_init(r).set_stkalign().set_nonbasethrdena());
     unsafe {
@@ -85,10 +73,10 @@ impl Thr {
 
   #[inline]
   unsafe fn mpu_reset(&self) {
-    if self.0.mpu_type.load().dregion() == 0 {
+    if self.mpu.mpu_type.load().dregion() == 0 {
       return;
     }
-    self.0.mpu_ctrl.reset();
+    self.mpu.mpu_ctrl.reset();
     let mut _table_ptr = &MPU_RESET_TABLE;
     asm!("
       ldmia $0!, {r5-r12}

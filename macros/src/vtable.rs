@@ -1,17 +1,24 @@
-use drone_macros_core::{ExternStruct, NewStatic, NewStruct};
 use inflector::Inflector;
 use proc_macro::TokenStream;
-use proc_macro2::{Span, TokenStream as TokenStream2};
+use proc_macro2::TokenStream as TokenStream2;
 use std::collections::HashSet;
 use syn::parse::{Parse, ParseStream, Result};
 use syn::{Attribute, ExprPath, Ident, LitInt, Visibility};
 
 struct Vtable {
-  vtable: NewStruct,
-  handlers: NewStruct,
-  index: NewStruct,
-  array: NewStatic,
-  thr: ExternStruct,
+  vtable_attrs: Vec<Attribute>,
+  vtable_vis: Visibility,
+  vtable_ident: Ident,
+  handlers_attrs: Vec<Attribute>,
+  handlers_vis: Visibility,
+  handlers_ident: Ident,
+  index_attrs: Vec<Attribute>,
+  index_vis: Visibility,
+  index_ident: Ident,
+  array_attrs: Vec<Attribute>,
+  array_vis: Visibility,
+  array_ident: Ident,
+  thr: ExprPath,
   excs: Vec<Exc>,
   ints: Vec<Int>,
 }
@@ -35,11 +42,30 @@ enum Mode {
 
 impl Parse for Vtable {
   fn parse(input: ParseStream) -> Result<Self> {
-    let vtable = input.parse()?;
-    let handlers = input.parse()?;
-    let index = input.parse()?;
-    let array = input.parse()?;
+    let vtable_attrs = input.call(Attribute::parse_outer)?;
+    let vtable_vis = input.parse()?;
+    input.parse::<Token![struct]>()?;
+    let vtable_ident = input.parse()?;
+    input.parse::<Token![;]>()?;
+    let handlers_attrs = input.call(Attribute::parse_outer)?;
+    let handlers_vis = input.parse()?;
+    input.parse::<Token![struct]>()?;
+    let handlers_ident = input.parse()?;
+    input.parse::<Token![;]>()?;
+    let index_attrs = input.call(Attribute::parse_outer)?;
+    let index_vis = input.parse()?;
+    input.parse::<Token![struct]>()?;
+    let index_ident = input.parse()?;
+    input.parse::<Token![;]>()?;
+    let array_attrs = input.call(Attribute::parse_outer)?;
+    let array_vis = input.parse()?;
+    input.parse::<Token![static]>()?;
+    let array_ident = input.parse()?;
+    input.parse::<Token![;]>()?;
+    input.parse::<Token![extern]>()?;
+    input.parse::<Token![struct]>()?;
     let thr = input.parse()?;
+    input.parse::<Token![;]>()?;
     let mut excs = Vec::new();
     while input.fork().parse::<Exc>().is_ok() {
       excs.push(input.parse()?);
@@ -49,10 +75,18 @@ impl Parse for Vtable {
       ints.push(input.parse()?);
     }
     Ok(Self {
-      vtable,
-      handlers,
-      index,
-      array,
+      vtable_attrs,
+      vtable_vis,
+      vtable_ident,
+      handlers_attrs,
+      handlers_vis,
+      handlers_ident,
+      index_attrs,
+      index_vis,
+      index_ident,
+      array_attrs,
+      array_vis,
+      array_ident,
       thr,
       excs,
       ints,
@@ -103,33 +137,20 @@ impl Parse for Mode {
 
 #[allow(clippy::cyclomatic_complexity)]
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-  let (def_site, call_site) = (Span::def_site(), Span::call_site());
   let Vtable {
-    vtable:
-      NewStruct {
-        attrs: vtable_attrs,
-        vis: vtable_vis,
-        ident: vtable_ident,
-      },
-    handlers:
-      NewStruct {
-        attrs: handlers_attrs,
-        vis: handlers_vis,
-        ident: handlers_ident,
-      },
-    index:
-      NewStruct {
-        attrs: index_attrs,
-        vis: index_vis,
-        ident: index_ident,
-      },
-    array:
-      NewStatic {
-        attrs: array_attrs,
-        vis: array_vis,
-        ident: array_ident,
-      },
-    thr: ExternStruct { path: thr_path },
+    vtable_attrs,
+    vtable_vis,
+    vtable_ident,
+    handlers_attrs,
+    handlers_vis,
+    handlers_ident,
+    index_attrs,
+    index_vis,
+    index_ident,
+    array_attrs,
+    array_vis,
+    array_ident,
+    thr,
     excs,
     ints,
   } = parse_macro_input!(input as Vtable);
@@ -138,9 +159,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     .map(|int| int.num.value() as usize + 1)
     .max()
     .unwrap_or(0);
-  let rt = Ident::new("__vtable_rt", def_site);
-  let def_reserved0 = Ident::new("_reserved0", def_site);
-  let def_reserved1 = Ident::new("_reserved1", def_site);
+  let def_reserved0 = new_def_ident!("_reserved0");
+  let def_reserved1 = new_def_ident!("_reserved1");
   let mut exc_holes = exc_set();
   let mut vtable_tokens = vec![None; int_len];
   let mut vtable_ctor_tokens = Vec::new();
@@ -153,8 +173,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
   for exc in excs {
     let (field_ident, struct_ident) = gen_exc(
       &exc,
-      &thr_path,
-      &rt,
+      &thr,
       &mut thr_counter,
       &mut vtable_ctor_tokens,
       &mut handlers_tokens,
@@ -164,9 +183,9 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       &mut thr_tokens,
     );
     if let Some(struct_ident) = struct_ident {
-      let int_trait = Ident::new(&format!("Int{}", struct_ident), call_site);
+      let int_trait = new_ident!("Int{}", struct_ident);
       thr_tokens.push(quote! {
-        impl<T: #rt::ThrTag> #int_trait<T> for #struct_ident<T> {}
+        impl<T: ::drone_core::thr::ThrTag> #int_trait<T> for #struct_ident<T> {}
       });
     }
     assert!(
@@ -178,8 +197,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
   for Int { num, exc } in ints {
     let (field_ident, struct_ident) = gen_exc(
       &exc,
-      &thr_path,
-      &rt,
+      &thr,
       &mut thr_counter,
       &mut vtable_ctor_tokens,
       &mut handlers_tokens,
@@ -189,25 +207,27 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       &mut thr_tokens,
     );
     if let Some(struct_ident) = struct_ident {
-      let int_trait = Ident::new(&format!("Int{}", num.value()), call_site);
-      let bundle =
-        Ident::new(&format!("IntBundle{}", num.value() / 32), call_site);
+      let int_trait = new_ident!("Int{}", num.value());
+      let bundle = new_ident!("IntBundle{}", num.value() / 32);
       thr_tokens.push(quote! {
-        impl<T: #rt::ThrTag> #rt::IntToken<T> for #struct_ident<T> {
-          type Bundle = #rt::#bundle;
+        impl<T> ::drone_cortex_m::thr::IntToken<T> for #struct_ident<T>
+        where
+          T: ::drone_core::thr::ThrTag,
+        {
+          type Bundle = ::drone_cortex_m::map::thr::#bundle;
 
           const INT_NUM: usize = #num;
         }
 
-        impl<T: #rt::ThrTag> #int_trait<T> for #struct_ident<T> {}
+        impl<T: ::drone_core::thr::ThrTag> #int_trait<T> for #struct_ident<T> {}
       });
     }
     vtable_tokens[num.value() as usize] = Some(quote! {
-      #field_ident: Option<#rt::Handler>
+      #field_ident: Option<::drone_cortex_m::thr::vtable::Handler>
     });
   }
   for exc_ident in exc_holes {
-    let exc_ident = Ident::new(exc_ident, call_site);
+    let exc_ident = new_ident!("{}", exc_ident);
     vtable_ctor_tokens.push(quote!(#exc_ident: None));
   }
   let vtable_tokens = vtable_tokens
@@ -215,64 +235,49 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     .enumerate()
     .map(|(i, tokens)| {
       tokens.unwrap_or_else(|| {
-        let int_ident = Ident::new(&format!("_int{}", i), def_site);
+        let int_ident = new_def_ident!("_int{}", i);
         vtable_ctor_tokens.push(quote!(#int_ident: None));
-        quote!(#int_ident: Option<#rt::Handler>)
+        quote!(#int_ident: Option<::drone_cortex_m::thr::vtable::Handler>)
       })
     })
     .collect::<Vec<_>>();
 
   let expanded = quote! {
-    mod #rt {
-      extern crate core;
-      extern crate drone_core;
-      extern crate drone_cortex_m as drone_plat;
-
-      pub use self::core::marker::PhantomData;
-      pub use self::drone_core::thr::ThrTokens;
-      pub use self::drone_plat::map::thr::*;
-      pub use self::drone_plat::thr::prelude::*;
-      pub use self::drone_plat::thr::thr_handler;
-      pub use self::drone_plat::thr::vtable::{
-        Handler, Reserved, Reset, ResetHandler,
-      };
-    }
-
     #(#vtable_attrs)*
     #[allow(dead_code)]
     #vtable_vis struct #vtable_ident {
-      reset: #rt::ResetHandler,
-      nmi: Option<#rt::Handler>,
-      hard_fault: Option<#rt::Handler>,
-      mem_manage: Option<#rt::Handler>,
-      bus_fault: Option<#rt::Handler>,
-      usage_fault: Option<#rt::Handler>,
-      #def_reserved0: [#rt::Reserved; 4],
-      sv_call: Option<#rt::Handler>,
-      debug: Option<#rt::Handler>,
-      #def_reserved1: [#rt::Reserved; 1],
-      pend_sv: Option<#rt::Handler>,
-      sys_tick: Option<#rt::Handler>,
+      reset: ::drone_cortex_m::thr::vtable::ResetHandler,
+      nmi: Option<::drone_cortex_m::thr::vtable::Handler>,
+      hard_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
+      mem_manage: Option<::drone_cortex_m::thr::vtable::Handler>,
+      bus_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
+      usage_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
+      #def_reserved0: [::drone_cortex_m::thr::vtable::Reserved; 4],
+      sv_call: Option<::drone_cortex_m::thr::vtable::Handler>,
+      debug: Option<::drone_cortex_m::thr::vtable::Handler>,
+      #def_reserved1: [::drone_cortex_m::thr::vtable::Reserved; 1],
+      pend_sv: Option<::drone_cortex_m::thr::vtable::Handler>,
+      sys_tick: Option<::drone_cortex_m::thr::vtable::Handler>,
       #(#vtable_tokens),*
     }
 
     #(#handlers_attrs)*
     #handlers_vis struct #handlers_ident {
       /// Reset exception handler.
-      pub reset: #rt::ResetHandler,
+      pub reset: ::drone_cortex_m::thr::vtable::ResetHandler,
       #(#handlers_tokens),*
     }
 
     #(#index_attrs)*
     #index_vis struct #index_ident {
       /// Reset thread token.
-      pub reset: Reset<#rt::Ctt>,
+      pub reset: Reset<::drone_core::thr::Ctt>,
       #(#index_tokens),*
     }
 
     #(#array_attrs)*
-    #array_vis static mut #array_ident: [#thr_path; #thr_counter] = [
-      #thr_path::new(0),
+    #array_vis static mut #array_ident: [#thr; #thr_counter] = [
+      #thr::new(0),
       #(#array_tokens),*
     ];
 
@@ -281,25 +286,25 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       pub const fn new(handlers: #handlers_ident) -> Self {
         Self {
           reset: handlers.reset,
-          #def_reserved0: [#rt::Reserved::Vector; 4],
-          #def_reserved1: [#rt::Reserved::Vector; 1],
+          #def_reserved0: [::drone_cortex_m::thr::vtable::Reserved::Vector; 4],
+          #def_reserved1: [::drone_cortex_m::thr::vtable::Reserved::Vector; 1],
           #(#vtable_ctor_tokens),*
         }
       }
     }
 
-    impl #rt::ThrTokens for #index_ident {
+    impl ::drone_core::thr::ThrTokens for #index_ident {
       #[inline(always)]
       unsafe fn new() -> Self {
         Self {
-          reset: #rt::ThrToken::<#rt::Ctt>::new(),
+          reset: ::drone_core::thr::ThrToken::<::drone_core::thr::Ctt>::new(),
           #(#index_ctor_tokens),*
         }
       }
     }
 
     /// Reset thread token.
-    pub type Reset<T> = #rt::Reset<T, &'static #thr_path>;
+    pub type Reset<T> = ::drone_cortex_m::thr::vtable::Reset<T, &'static #thr>;
 
     #(#thr_tokens)*
   };
@@ -309,8 +314,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
 #[allow(clippy::too_many_arguments)]
 fn gen_exc(
   exc: &Exc,
-  thr_path: &ExprPath,
-  rt: &Ident,
+  thr: &ExprPath,
   thr_counter: &mut usize,
   vtable_ctor_tokens: &mut Vec<TokenStream2>,
   handlers_tokens: &mut Vec<TokenStream2>,
@@ -319,21 +323,21 @@ fn gen_exc(
   array_tokens: &mut Vec<TokenStream2>,
   thr_tokens: &mut Vec<TokenStream2>,
 ) -> (Ident, Option<Ident>) {
-  let call_site = Span::call_site();
   let &Exc {
     ref attrs,
     ref mode,
     ref ident,
   } = exc;
   let field_ident = ident.to_string().to_snake_case();
-  let field_ident = Ident::new(&field_ident, call_site);
-  let struct_ident = Ident::new(&ident.to_string().to_pascal_case(), call_site);
+  let field_ident = new_ident!("{}", field_ident);
+  let struct_ident = new_ident!("{}", ident.to_string().to_pascal_case());
   match *mode {
     Mode::Thread(_) => {
       vtable_ctor_tokens.push(quote! {
-        #field_ident: Some(
-          #rt::thr_handler::<#struct_ident<#rt::Att>, #rt::Att>,
-        )
+        #field_ident: Some(::drone_cortex_m::thr::thr_handler::<
+          #struct_ident<::drone_core::thr::Att>,
+          ::drone_core::thr::Att,
+        >)
       });
     }
     Mode::Extern(_) | Mode::Fn => {
@@ -342,7 +346,7 @@ fn gen_exc(
       });
       handlers_tokens.push(quote! {
         #(#attrs)*
-        pub #field_ident: #rt::Handler
+        pub #field_ident: ::drone_cortex_m::thr::vtable::Handler
       });
     }
   }
@@ -352,31 +356,38 @@ fn gen_exc(
       *thr_counter += 1;
       index_tokens.push(quote! {
         #(#attrs)*
-        #vis #field_ident: #struct_ident<#rt::Ctt>
+        #vis #field_ident: #struct_ident<::drone_core::thr::Ctt>
       });
       index_ctor_tokens.push(quote! {
-        #field_ident: #rt::ThrToken::<#rt::Ctt>::new()
+        #field_ident: ::drone_core::thr::ThrToken::<
+          ::drone_core::thr::Ctt,
+        >::new()
       });
       array_tokens.push(quote! {
-        #thr_path::new(#index)
+        #thr::new(#index)
       });
       thr_tokens.push(quote! {
         #(#attrs)*
         #[derive(Clone, Copy)]
-        #vis struct #struct_ident<T: #rt::ThrTag>(#rt::PhantomData<T>);
+        #vis struct #struct_ident<T: ::drone_core::thr::ThrTag>(
+          ::core::marker::PhantomData<T>,
+        );
 
-        impl<T: #rt::ThrTag> #rt::ThrToken<T> for #struct_ident<T> {
-          type Thr = #thr_path;
-          type AThrToken = #struct_ident<#rt::Att>;
-          type TThrToken = #struct_ident<#rt::Ttt>;
-          type CThrToken = #struct_ident<#rt::Ctt>;
-          type RThrToken = #struct_ident<#rt::Rtt>;
+        impl<T> ::drone_core::thr::ThrToken<T> for #struct_ident<T>
+        where
+          T: ::drone_core::thr::ThrTag,
+        {
+          type Thr = #thr;
+          type AThrToken = #struct_ident<::drone_core::thr::Att>;
+          type TThrToken = #struct_ident<::drone_core::thr::Ttt>;
+          type CThrToken = #struct_ident<::drone_core::thr::Ctt>;
+          type RThrToken = #struct_ident<::drone_core::thr::Rtt>;
 
           const THR_NUM: usize = #index;
 
           #[inline(always)]
           unsafe fn new() -> Self {
-            #struct_ident(#rt::PhantomData)
+            #struct_ident(::core::marker::PhantomData)
           }
         }
       });
