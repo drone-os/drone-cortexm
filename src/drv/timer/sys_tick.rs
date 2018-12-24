@@ -3,9 +3,11 @@ use core::ptr::write_volatile;
 use drone_core::bitfield::Bitfield;
 use fib::{self, FiberFuture, FiberStreamUnit};
 use futures::prelude::*;
-use map::reg::{scb, stk};
-use map::res::sys_tick::SysTickRes;
-use map::thr::IntSysTick;
+use map::{
+  reg::{scb, stk},
+  res::sys_tick::SysTickRes,
+  thr::IntSysTick,
+};
 use reg::prelude::*;
 use thr::prelude::*;
 

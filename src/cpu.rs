@@ -41,6 +41,7 @@ pub fn self_reset() -> ! {
 }
 
 /// Spins a specified amount of CPU cycles.
+#[allow(clippy::used_underscore_binding)]
 #[inline]
 pub fn spin(mut _cycles: u32) {
   unsafe {

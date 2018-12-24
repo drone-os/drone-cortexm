@@ -9,12 +9,7 @@ mod inner {
   mod stk;
   mod tpiu;
 
-  pub use self::fpu::*;
-  pub use self::itm::*;
-  pub use self::mpu::*;
-  pub use self::scb::*;
-  pub use self::stk::*;
-  pub use self::tpiu::*;
+  pub use self::{fpu::*, itm::*, mpu::*, scb::*, stk::*, tpiu::*};
 }
 
 use drone_core::reg;

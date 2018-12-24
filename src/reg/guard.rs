@@ -1,5 +1,4 @@
-use core::sync::atomic::AtomicUsize;
-use core::sync::atomic::Ordering::*;
+use core::sync::atomic::{AtomicUsize, Ordering::*};
 use reg::prelude::*;
 
 /// Defines [`RegGuardCnt`] structs.

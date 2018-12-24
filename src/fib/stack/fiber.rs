@@ -1,9 +1,11 @@
 use super::{Data, StackData, Yielder};
 use alloc::alloc;
-use core::alloc::Layout;
-use core::cmp::max;
-use core::marker::PhantomData;
-use core::mem::{align_of, size_of};
+use core::{
+  alloc::Layout,
+  cmp::max,
+  marker::PhantomData,
+  mem::{align_of, size_of},
+};
 use drone_core::bitfield::Bitfield;
 use fib::{Fiber, FiberRoot, FiberState};
 use map::reg::mpu;

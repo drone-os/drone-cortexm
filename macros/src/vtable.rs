@@ -1,9 +1,11 @@
 use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use std::collections::HashSet;
-use syn::parse::{Parse, ParseStream, Result};
-use syn::{Attribute, ExprPath, Ident, LitInt, Visibility};
+use std::{collections::HashSet, convert::TryFrom};
+use syn::{
+  parse::{Parse, ParseStream, Result},
+  Attribute, ExprPath, Ident, LitInt, Visibility,
+};
 
 struct Vtable {
   vtable_attrs: Vec<Attribute>,
@@ -156,7 +158,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
   } = parse_macro_input!(input as Vtable);
   let int_len = ints
     .iter()
-    .map(|int| int.num.value() as usize + 1)
+    .map(|int| usize::try_from(int.num.value()).unwrap() + 1)
     .max()
     .unwrap_or(0);
   let def_reserved0 = new_def_ident!("_reserved0");
@@ -222,7 +224,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         impl<T: ::drone_core::thr::ThrTag> #int_trait<T> for #struct_ident<T> {}
       });
     }
-    vtable_tokens[num.value() as usize] = Some(quote! {
+    vtable_tokens[usize::try_from(num.value()).unwrap()] = Some(quote! {
       #field_ident: Option<::drone_cortex_m::thr::vtable::Handler>
     });
   }

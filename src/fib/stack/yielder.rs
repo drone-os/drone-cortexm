@@ -1,6 +1,5 @@
 use super::{Data, StackData};
-use core::marker::PhantomData;
-use core::mem::forget;
+use core::{marker::PhantomData, mem::forget};
 use fib::FiberState;
 use sv::Switch;
 

@@ -1,6 +1,6 @@
-use core::alloc::Layout;
-use core::panic::PanicInfo;
-use {cpu, itm};
+use core::{alloc::Layout, panic::PanicInfo};
+use cpu;
+use itm;
 
 const ABORT_DELAY: u32 = 0x400;
 

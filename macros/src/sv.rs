@@ -1,7 +1,9 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-use syn::parse::{Parse, ParseStream, Result};
-use syn::{Attribute, Ident, IntSuffix, LitInt, Visibility};
+use syn::{
+  parse::{Parse, ParseStream, Result},
+  Attribute, Ident, IntSuffix, LitInt, Visibility,
+};
 
 struct Sv {
   sv_attrs: Vec<Attribute>,
@@ -63,7 +65,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     array_ident,
     services,
   } = parse_macro_input!(input as Sv);
-  let mut service_counter = 0usize;
+  let mut service_counter = 0_usize;
   let mut array_tokens = Vec::new();
   let mut service_tokens = Vec::new();
   for Service { ident } in services {

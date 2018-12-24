@@ -18,13 +18,13 @@ impl WakeTrunk {
 
   #[inline]
   pub(in thr) fn into_waker(self) -> Waker {
-    unsafe { Waker::new(ptr::null::<WakeTrunk>() as *const UnsafeWake) }
+    unsafe { Waker::new(ptr::null::<Self>() as *const UnsafeWake) }
   }
 }
 
 unsafe impl UnsafeWake for WakeTrunk {
   unsafe fn clone_raw(&self) -> Waker {
-    WakeTrunk::new().into_waker()
+    Self::new().into_waker()
   }
 
   unsafe fn drop_raw(&self) {}

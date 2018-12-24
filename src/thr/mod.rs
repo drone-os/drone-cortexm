@@ -47,11 +47,13 @@ mod request;
 mod stream;
 mod wake;
 
-pub use self::control::ThrControl;
-pub use self::future::FuturePlat;
-pub use self::int::{IntBundle, IntToken};
-pub use self::request::ThrRequest;
-pub use self::stream::{StreamPlat, StreamTrunkWait};
+pub use self::{
+  control::ThrControl,
+  future::FuturePlat,
+  int::{IntBundle, IntToken},
+  request::ThrRequest,
+  stream::{StreamPlat, StreamTrunkWait},
+};
 pub use drone_cortex_m_macros::thr_int as int;
 
 use drone_core::thr::{thread_resume, ThrTag, ThrToken};

@@ -2,8 +2,10 @@
 
 pub use self::port::Port;
 
-use core::alloc::Layout;
-use core::fmt::{self, Write};
+use core::{
+  alloc::Layout,
+  fmt::{self, Write},
+};
 use drone_core::heap::Pool;
 use map::reg::{itm, scb};
 use reg::prelude::*;
@@ -50,7 +52,7 @@ pub fn instrument_alloc(layout: Layout, pool: &Pool) {
   #[inline(never)]
   fn instrument(layout: Layout, pool: &Pool) {
     Port::new(HEAP_PORT)
-      .write(1u8)
+      .write(1_u8)
       .write(layout.size() as u32)
       .write(pool.size() as u32);
   }
@@ -65,7 +67,7 @@ pub fn instrument_dealloc(layout: Layout, pool: &Pool) {
   #[inline(never)]
   fn instrument(layout: Layout, pool: &Pool) {
     Port::new(HEAP_PORT)
-      .write(0u8)
+      .write(0_u8)
       .write((layout.size() as u32).to_be())
       .write((pool.size() as u32).to_be());
   }

@@ -1,7 +1,9 @@
 //! ITM stimulus ports functionality.
 
-use core::fmt::{self, Write};
-use core::slice;
+use core::{
+  fmt::{self, Write},
+  slice,
+};
 
 const ADDRESS_BASE: usize = 0xE000_0000;
 
@@ -22,7 +24,7 @@ impl Port {
   /// # Panics
   ///
   /// If `port` is greater or equals to `0x20`.
-  pub fn new(port: usize) -> Port {
+  pub fn new(port: usize) -> Self {
     assert!(port < 0x20);
     Port(ADDRESS_BASE + (port << 2))
   }
@@ -83,7 +85,7 @@ impl Transmit for u8 {
         cmpne r0, #1
         beq 0b
       " :
-        : "r"(self), "r"(address as *mut u8)
+        : "r"(self), "r"(address as *mut Self)
         : "r0", "cc"
         : "volatile");
     }
@@ -102,7 +104,7 @@ impl Transmit for u16 {
         cmpne r0, #1
         beq 0b
       " :
-        : "r"(self), "r"(address as *mut u16)
+        : "r"(self), "r"(address as *mut Self)
         : "r0", "cc"
         : "volatile");
     }
@@ -121,7 +123,7 @@ impl Transmit for u32 {
         cmpne r0, #1
         beq 0b
       " :
-        : "r"(self), "r"(address as *mut u32)
+        : "r"(self), "r"(address as *mut Self)
         : "r0", "cc"
         : "volatile");
     }

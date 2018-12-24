@@ -6,5 +6,5 @@ set -x
 
 cargo check \
   --package drone-cortex-m-macros
-xargo check --target $BUILD_TARGET --all "$@" \
+cargo check --target $BUILD_TARGET --all \
   --exclude drone-cortex-m-macros

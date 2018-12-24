@@ -7,6 +7,8 @@ mod atomic;
 mod bit_band;
 mod guard;
 
-pub use self::atomic::*;
-pub use self::bit_band::*;
-pub use self::guard::{RegGuard, RegGuardCnt, RegGuardRes};
+pub use self::{
+  atomic::*,
+  bit_band::*,
+  guard::{RegGuard, RegGuardCnt, RegGuardRes},
+};

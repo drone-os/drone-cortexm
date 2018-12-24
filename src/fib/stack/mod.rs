@@ -5,8 +5,7 @@ use thr::prelude::*;
 mod fiber;
 mod yielder;
 
-pub use self::fiber::FiberStack;
-pub use self::yielder::Yielder;
+pub use self::{fiber::FiberStack, yielder::Yielder};
 
 #[allow(unions_with_drop_fields)]
 pub union Data<I, O> {

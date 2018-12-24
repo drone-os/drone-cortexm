@@ -26,12 +26,12 @@ impl WakeInt {
 
 unsafe impl UnsafeWake for WakeIntWrapped {
   unsafe fn clone_raw(&self) -> Waker {
-    WakeInt::new(self as *const WakeIntWrapped as usize).into_waker()
+    WakeInt::new(self as *const Self as usize).into_waker()
   }
 
   unsafe fn drop_raw(&self) {}
 
   unsafe fn wake(&self) {
-    WakeInt::new(self as *const WakeIntWrapped as usize).wake()
+    WakeInt::new(self as *const Self as usize).wake()
   }
 }

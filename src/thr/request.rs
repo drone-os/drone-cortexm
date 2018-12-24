@@ -1,6 +1,5 @@
 use futures::prelude::*;
-use thr::prelude::*;
-use thr::wake::WakeInt;
+use thr::{prelude::*, wake::WakeInt};
 
 /// Thread execution requests.
 pub trait ThrRequest<T: ThrTrigger>: IntToken<T> {
@@ -28,7 +27,7 @@ impl<T: ThrTrigger, U: IntToken<T>> ThrRequest<T> for U {
   {
     let mut fut = f.into_future();
     self.add(move || loop {
-      match poll_future(&mut fut, U::INT_NUM) {
+      match poll_future(&mut fut, Self::INT_NUM) {
         Ok(Async::Pending) => {}
         Ok(Async::Ready(())) => break,
       }

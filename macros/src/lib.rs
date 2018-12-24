@@ -2,8 +2,9 @@
 //!
 //! See `drone-cortex-m` documentation for details.
 
-#![allow(clippy::precedence)]
+#![feature(try_from)]
 #![recursion_limit = "256"]
+#![warn(clippy::pedantic)]
 
 #[macro_use]
 extern crate drone_macros_core;

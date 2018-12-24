@@ -46,7 +46,17 @@
 #![feature(untagged_unions)]
 #![no_std]
 #![warn(missing_docs)]
-#![allow(clippy::precedence)]
+#![warn(clippy::pedantic)]
+#![allow(
+  clippy::cast_possible_truncation,
+  clippy::doc_markdown,
+  clippy::enum_glob_use,
+  clippy::inline_always,
+  clippy::precedence,
+  clippy::shadow_unrelated,
+  clippy::stutter,
+  clippy::use_self
+)]
 #![cfg_attr(test, feature(allocator_api, allocator_internals))]
 #![cfg_attr(test, default_lib_allocator)]
 

@@ -1,9 +1,10 @@
 //! Drone threading system resources.
 
 use drone_core::thr::ThrTokens;
-use map::reg::{mpu, scb};
-use map::res::mpu::MpuRes;
-use map::res::thr::ThrRes;
+use map::{
+  reg::{mpu, scb},
+  res::{mpu::MpuRes, thr::ThrRes},
+};
 use reg::prelude::*;
 
 static MPU_RESET_TABLE: [u32; 16] = [
@@ -71,6 +72,7 @@ impl Thr {
     }
   }
 
+  #[allow(clippy::used_underscore_binding)]
   #[inline]
   unsafe fn mpu_reset(&self) {
     if self.mpu.mpu_type.load().dregion() == 0 {

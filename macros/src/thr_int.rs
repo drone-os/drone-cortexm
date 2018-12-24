@@ -1,7 +1,9 @@
 use inflector::Inflector;
 use proc_macro::TokenStream;
-use syn::parse::{Parse, ParseStream, Result};
-use syn::{Attribute, Ident, LitInt, Visibility};
+use syn::{
+  parse::{Parse, ParseStream, Result},
+  Attribute, Ident, LitInt, Visibility,
+};
 
 struct ThrInt {
   attrs: Vec<Attribute>,

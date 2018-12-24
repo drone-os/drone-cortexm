@@ -98,7 +98,7 @@ where
 
   #[inline(always)]
   fn bit_band_mut_ptr(&self) -> *mut usize {
-    unsafe { U::Reg::bit_band_addr(U::OFFSET) as *mut usize }
+    unsafe { Self::Reg::bit_band_addr(Self::OFFSET) as *mut usize }
   }
 }
 

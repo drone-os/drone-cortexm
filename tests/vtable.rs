@@ -14,8 +14,7 @@ use drone_cortex_m as drone_plat;
 use drone_plat::prelude::*;
 
 use core::mem::{size_of, transmute_copy};
-use drone_core::heap;
-use drone_core::sv::SvService;
+use drone_core::{heap, sv::SvService};
 use drone_plat::sv::sv_handler;
 
 heap! {
@@ -42,9 +41,7 @@ impl SvService for BarService {
 mod a {
   use super::{BarService, FooService};
   use drone_core::thr;
-  use drone_plat::map::thr::*;
-  use drone_plat::thr::prelude::*;
-  use drone_plat::{sv, vtable};
+  use drone_plat::{map::thr::*, sv, thr::prelude::*, vtable};
 
   trait Int10<T: ThrTag>: IntToken<T> {}
   trait Int5<T: ThrTag>: IntToken<T> {}

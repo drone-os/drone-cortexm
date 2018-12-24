@@ -6,5 +6,5 @@ set -x
 
 cargo doc \
   --package drone-cortex-m-macros
-xargo doc --target $BUILD_TARGET --all "$@" \
+cargo doc --target $BUILD_TARGET --all "$@" \
   --exclude drone-cortex-m-macros
