@@ -31,7 +31,7 @@ impl<T: ThrTag, U: Thread> ThrToken<T> for Reset<T, &'static U> {
   const THR_NUM: usize = 0;
 
   #[inline(always)]
-  unsafe fn new() -> Self {
+  unsafe fn take() -> Self {
     Reset(PhantomData, PhantomData)
   }
 }

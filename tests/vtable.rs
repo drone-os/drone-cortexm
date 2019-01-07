@@ -50,7 +50,7 @@ mod a {
     pub struct Vtable;
     pub struct Handlers;
     #[allow(dead_code)]
-    pub struct ThrIdx;
+    pub struct Thrs;
     pub static THREADS;
     extern struct Thr;
 
@@ -96,7 +96,7 @@ mod b {
     pub struct Vtable;
     pub struct Handlers;
     #[allow(dead_code)]
-    pub struct ThrIdx;
+    pub struct Thrs;
     pub static THREADS;
     extern struct Thr;
   }

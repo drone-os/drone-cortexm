@@ -1,11 +1,11 @@
 //! Drone threading system resources.
 
-use drone_core::thr::ThrTokens;
 use map::{
   reg::{mpu, scb},
   res::{mpu::MpuRes, thr::ThrRes},
 };
 use reg::prelude::*;
+use thr::ThrTokens;
 
 static MPU_RESET_TABLE: [u32; 16] = [
   rbar_reset(0),
@@ -68,7 +68,7 @@ impl Thr {
       .store(|r| scb_ccr_init(r).set_stkalign().set_nonbasethrdena());
     unsafe {
       self.mpu_reset();
-      T::new()
+      T::take()
     }
   }
 

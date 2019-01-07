@@ -14,8 +14,13 @@ mod inner {
 
 use drone_core::reg;
 
-reg::index! {
-  pub macro cortex_m_reg_index;
+reg::unsafe_tokens! {
+  /// Defines an index of core ARM Cortex-M register tokens.
+  ///
+  /// # Safety
+  ///
+  /// See [`::drone_core::reg::unsafe_tokens!`].
+  pub macro unsafe_cortex_m_reg_tokens;
   super::inner; map::reg;
 
   /// Instrumentation trace macrocell.

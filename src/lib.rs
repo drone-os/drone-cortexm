@@ -52,9 +52,9 @@
   clippy::doc_markdown,
   clippy::enum_glob_use,
   clippy::inline_always,
+  clippy::module_name_repetitions,
   clippy::precedence,
   clippy::shadow_unrelated,
-  clippy::stutter,
   clippy::use_self
 )]
 #![cfg_attr(test, feature(allocator_api, allocator_internals))]

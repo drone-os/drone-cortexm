@@ -34,7 +34,7 @@ pub fn self_reset() -> ! {
       :
       : "volatile"
     );
-    scb::Aircr::<Urt>::new()
+    scb::Aircr::<Urt>::take()
       .store(|r| r.write_vectkey(0x05FA).set_sysresetreq());
     loop {}
   }

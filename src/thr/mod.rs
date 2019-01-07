@@ -56,7 +56,10 @@ pub use self::{
 };
 pub use drone_cortex_m_macros::thr_int as int;
 
-use drone_core::thr::{thread_resume, ThrTag, ThrToken};
+use drone_core::{
+  thr::{thread_resume, ThrTag, ThrToken},
+  token::Tokens,
+};
 
 /// A thread handler function, which should be passed to hardware.
 ///
@@ -66,3 +69,10 @@ use drone_core::thr::{thread_resume, ThrTag, ThrToken};
 pub unsafe extern "C" fn thr_handler<T: ThrToken<U>, U: ThrTag>() {
   thread_resume::<T, U>();
 }
+
+/// A set of thread tokens.
+///
+/// # Safety
+///
+/// Must contain only thread tokens.
+pub unsafe trait ThrTokens: Tokens {}

@@ -35,14 +35,14 @@ pub fn write_fmt(args: fmt::Arguments) {
 
 /// Waits until all pending packets will be transmitted.
 pub fn flush() {
-  let tcr = unsafe { itm::Tcr::<Urt>::new() };
+  let tcr = unsafe { itm::Tcr::<Urt>::take() };
   while tcr.load().busy() {}
 }
 
 /// Checks if a trace-probe is connected.
 #[inline(always)]
 pub fn is_enabled() -> bool {
-  let demcr = unsafe { scb::Demcr::<Urt>::new() };
+  let demcr = unsafe { scb::Demcr::<Urt>::take() };
   demcr.load().trcena()
 }
 

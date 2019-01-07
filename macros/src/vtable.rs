@@ -295,15 +295,17 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
       }
     }
 
-    impl ::drone_core::thr::ThrTokens for #index_ident {
+    unsafe impl ::drone_core::token::Tokens for #index_ident {
       #[inline(always)]
-      unsafe fn new() -> Self {
+      unsafe fn take() -> Self {
         Self {
-          reset: ::drone_core::thr::ThrToken::<::drone_core::thr::Ctt>::new(),
+          reset: ::drone_core::thr::ThrToken::<::drone_core::thr::Ctt>::take(),
           #(#index_ctor_tokens),*
         }
       }
     }
+
+    unsafe impl ::drone_cortex_m::thr::ThrTokens for #index_ident {}
 
     /// Reset thread token.
     pub type Reset<T> = ::drone_cortex_m::thr::vtable::Reset<T, &'static #thr>;
@@ -363,7 +365,7 @@ fn gen_exc(
       index_ctor_tokens.push(quote! {
         #field_ident: ::drone_core::thr::ThrToken::<
           ::drone_core::thr::Ctt,
-        >::new()
+        >::take()
       });
       array_tokens.push(quote! {
         #thr::new(#index)
@@ -388,7 +390,7 @@ fn gen_exc(
           const THR_NUM: usize = #index;
 
           #[inline(always)]
-          unsafe fn new() -> Self {
+          unsafe fn take() -> Self {
             #struct_ident(::core::marker::PhantomData)
           }
         }
