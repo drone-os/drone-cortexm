@@ -261,7 +261,7 @@ macro_rules! atomic_bits {
     impl AtomicBits for $type {
       #[inline(always)]
       unsafe fn load_excl(address: usize) -> Self {
-        let raw: $type;
+        let raw: Self;
         asm!($ldrex
              : "=r"(raw)
              : "r"(address)
@@ -272,7 +272,7 @@ macro_rules! atomic_bits {
 
       #[inline(always)]
       unsafe fn store_excl(self, address: usize) -> bool {
-        let status: $type;
+        let status: Self;
         asm!($strex
              : "=r"(status)
              : "r"(self), "r"(address)

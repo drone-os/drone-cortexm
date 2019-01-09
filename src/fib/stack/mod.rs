@@ -1,6 +1,4 @@
-use fib::FiberState;
-use sv::Switch;
-use thr::prelude::*;
+use crate::{fib::FiberState, sv::Switch, thr::prelude::*};
 
 mod fiber;
 mod yielder;

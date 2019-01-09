@@ -1,10 +1,12 @@
+use drone_macros_core::{new_def_ident, new_ident};
 use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
+use quote::quote;
 use std::{collections::HashSet, convert::TryFrom};
 use syn::{
   parse::{Parse, ParseStream, Result},
-  Attribute, ExprPath, Ident, LitInt, Visibility,
+  parse_macro_input, Attribute, ExprPath, Ident, LitInt, Token, Visibility,
 };
 
 struct Vtable {

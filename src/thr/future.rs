@@ -1,5 +1,5 @@
+use crate::thr::wake::WakeTrunk;
 use futures::prelude::*;
-use thr::wake::WakeTrunk;
 
 /// Platform future extensions.
 pub trait FuturePlat: Future {

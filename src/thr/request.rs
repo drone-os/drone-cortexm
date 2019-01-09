@@ -1,5 +1,5 @@
+use crate::thr::{prelude::*, wake::WakeInt};
 use futures::prelude::*;
-use thr::{prelude::*, wake::WakeInt};
 
 /// Thread execution requests.
 pub trait ThrRequest<T: ThrTrigger>: IntToken<T> {

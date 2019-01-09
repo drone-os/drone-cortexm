@@ -1,15 +1,17 @@
 use super::{Timer, TimerOverflow};
+use crate::{
+  fib::{self, FiberFuture, FiberStreamUnit},
+  map::{
+    reg::{scb, stk},
+    res::sys_tick::SysTickRes,
+    thr::IntSysTick,
+  },
+  reg::prelude::*,
+  thr::prelude::*,
+};
 use core::ptr::write_volatile;
 use drone_core::bitfield::Bitfield;
-use fib::{self, FiberFuture, FiberStreamUnit};
 use futures::prelude::*;
-use map::{
-  reg::{scb, stk},
-  res::sys_tick::SysTickRes,
-  thr::IntSysTick,
-};
-use reg::prelude::*;
-use thr::prelude::*;
 
 /// SysTick driver.
 #[allow(missing_docs)]
@@ -34,7 +36,7 @@ macro_rules! drv_sys_tick {
   ($reg:ident, $thr:ident) => {
     $crate::drv::timer::SysTick::new(
       $thr.sys_tick.to_attach(),
-      res_sys_tick!($reg),
+      $crate::res_sys_tick!($reg),
     )
   };
 }

@@ -1,5 +1,11 @@
 use super::{Data, StackData, Yielder};
-use alloc::alloc;
+use crate::{
+  fib::{Fiber, FiberRoot, FiberState},
+  map::reg::mpu,
+  reg::prelude::*,
+  sv::Switch,
+};
+use ::alloc::alloc;
 use core::{
   alloc::Layout,
   cmp::max,
@@ -7,10 +13,6 @@ use core::{
   mem::{align_of, size_of},
 };
 use drone_core::bitfield::Bitfield;
-use fib::{Fiber, FiberRoot, FiberState};
-use map::reg::mpu;
-use reg::prelude::*;
-use sv::Switch;
 
 const GUARD_SIZE: u32 = 5;
 

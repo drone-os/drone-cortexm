@@ -1,6 +1,6 @@
+use crate::thr::wake::WakeTrunk;
 use core::iter::FusedIterator;
 use futures::prelude::*;
-use thr::wake::WakeTrunk;
 
 /// A stream combinator which converts an asynchronous stream to a **blocking
 /// iterator**.

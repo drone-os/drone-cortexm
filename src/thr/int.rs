@@ -1,4 +1,4 @@
-use thr::prelude::*;
+use crate::thr::prelude::*;
 
 /// NVIC register bundle.
 pub trait IntBundle {

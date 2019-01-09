@@ -3,23 +3,23 @@ use futures::task::{UnsafeWake, Waker};
 
 const NVIC_STIR: usize = 0xE000_EF00;
 
-pub(in thr) struct WakeInt(usize);
+pub(in crate::thr) struct WakeInt(usize);
 
 struct WakeIntWrapped;
 
 impl WakeInt {
   #[inline(always)]
-  pub(in thr) fn new(int_num: usize) -> Self {
-    WakeInt(int_num)
+  pub(in crate::thr) fn new(int_num: usize) -> Self {
+    Self(int_num)
   }
 
   #[inline(always)]
-  pub(in thr) fn wake(&self) {
+  pub(in crate::thr) fn wake(&self) {
     unsafe { write_volatile(NVIC_STIR as *mut u32, self.0 as u32) };
   }
 
   #[inline]
-  pub(in thr) fn into_waker(self) -> Waker {
+  pub(in crate::thr) fn into_waker(self) -> Waker {
     unsafe { Waker::new(self.0 as *const WakeIntWrapped as *const UnsafeWake) }
   }
 }

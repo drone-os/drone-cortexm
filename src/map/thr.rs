@@ -1,6 +1,6 @@
 //! Core ARM Cortex-M interrupt mappings.
 
-use thr::{prelude::*, IntBundle};
+use crate::thr::{prelude::*, IntBundle};
 
 macro_rules! exception {
   ($doc:expr, $name:ident,) => {

@@ -1,4 +1,5 @@
-use reg::prelude::*;
+use crate::reg::prelude::*;
+use drone_core::reg;
 
 reg! {
   /// Coprocessor access control register.

@@ -1,5 +1,5 @@
+use crate::reg::prelude::*;
 use core::sync::atomic::{AtomicUsize, Ordering::*};
-use reg::prelude::*;
 
 /// Defines [`RegGuardCnt`] structs.
 #[macro_export]
@@ -76,7 +76,7 @@ where
     res.field().modify(|val| {
       res.up(val);
     });
-    RegGuard(res, U::default())
+    Self(res, U::default())
   }
 }
 
@@ -87,7 +87,7 @@ where
 {
   fn clone(&self) -> Self {
     U::atomic().fetch_add(1, Relaxed);
-    RegGuard(self.0.clone(), self.1.clone())
+    Self(self.0.clone(), self.1.clone())
   }
 }
 

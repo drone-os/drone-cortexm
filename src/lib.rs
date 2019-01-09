@@ -43,6 +43,7 @@
 #![feature(prelude_import)]
 #![feature(proc_macro_hygiene)]
 #![feature(range_contains)]
+#![feature(uniform_paths)]
 #![feature(untagged_unions)]
 #![no_std]
 #![warn(missing_docs)]
@@ -61,16 +62,6 @@
 #![cfg_attr(test, default_lib_allocator)]
 
 extern crate alloc;
-#[allow(unused_imports)]
-#[macro_use]
-extern crate drone_core;
-extern crate drone_cortex_m_macros;
-extern crate failure;
-#[macro_use]
-extern crate failure_derive;
-extern crate futures;
-#[cfg(test)]
-extern crate test;
 
 #[macro_use]
 pub mod itm;
@@ -91,13 +82,10 @@ pub use drone_cortex_m_macros::{sv, vtable};
 
 #[prelude_import]
 #[allow(unused_imports)]
-use prelude::*;
+use crate::prelude::*;
 
 #[cfg(test)]
-use drone_core::heap;
-
-#[cfg(test)]
-heap! {
+drone_core::heap! {
   struct Heap;
   size = 0x40000;
   pools = [

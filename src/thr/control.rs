@@ -1,8 +1,8 @@
+use crate::thr::{int::IntBundle, prelude::*};
 use core::{
   marker::PhantomData,
   ptr::{read_volatile, write_volatile},
 };
-use thr::{int::IntBundle, prelude::*};
 
 const NVIC_ISER: usize = 0xE000_E100;
 const NVIC_ICER: usize = 0xE000_E180;

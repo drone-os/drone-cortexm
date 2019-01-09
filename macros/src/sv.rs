@@ -1,8 +1,9 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
+use quote::quote;
 use syn::{
   parse::{Parse, ParseStream, Result},
-  Attribute, Ident, IntSuffix, LitInt, Visibility,
+  parse_macro_input, Attribute, Ident, IntSuffix, LitInt, Token, Visibility,
 };
 
 struct Sv {

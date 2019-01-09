@@ -1,7 +1,7 @@
 //! MPU resource.
 
+use crate::map;
 use drone_core::res;
-use map;
 
 res::one! {
   /// MPU resource.

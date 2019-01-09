@@ -26,7 +26,7 @@ impl Port {
   /// If `port` is greater or equals to `0x20`.
   pub fn new(port: usize) -> Self {
     assert!(port < 0x20);
-    Port(ADDRESS_BASE + (port << 2))
+    Self(ADDRESS_BASE + (port << 2))
   }
 
   /// Writes a buffer in most effective chunks, splitting it to 8- and 32-bit

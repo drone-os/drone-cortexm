@@ -1,11 +1,13 @@
 //! Drone threading system resources.
 
-use map::{
-  reg::{mpu, scb},
-  res::{mpu::MpuRes, thr::ThrRes},
+use crate::{
+  map::{
+    reg::{mpu, scb},
+    res::{mpu::MpuRes, thr::ThrRes},
+  },
+  reg::prelude::*,
+  thr::ThrTokens,
 };
-use reg::prelude::*;
-use thr::ThrTokens;
 
 static MPU_RESET_TABLE: [u32; 16] = [
   rbar_reset(0),
@@ -36,7 +38,7 @@ pub struct Thr {
 #[macro_export]
 macro_rules! drv_thr {
   ($reg:ident) => {
-    $crate::drv::thr::Thr::new(res_mpu!($reg), res_thr!($reg))
+    $crate::drv::thr::Thr::new($crate::res_mpu!($reg), $crate::res_thr!($reg))
   };
 }
 

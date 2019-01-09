@@ -1,8 +1,10 @@
+use drone_macros_core::new_ident;
 use inflector::Inflector;
 use proc_macro::TokenStream;
+use quote::quote;
 use syn::{
   parse::{Parse, ParseStream, Result},
-  Attribute, Ident, LitInt, Visibility,
+  parse_macro_input, Attribute, Ident, LitInt, Token, Visibility,
 };
 
 struct ThrInt {

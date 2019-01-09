@@ -1,4 +1,5 @@
-use reg::prelude::*;
+use crate::reg::prelude::*;
+use drone_core::reg;
 
 reg! {
   /// Provides identification information for the processor.

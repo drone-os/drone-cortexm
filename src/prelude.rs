@@ -9,15 +9,13 @@
 //! ```
 //! #![feature(prelude_import)]
 //!
-//! extern crate drone_cortex_m as drone_plat;
-//!
 //! #[prelude_import]
 //! #[allow(unused_imports)]
-//! use drone_plat::prelude::*;
+//! use drone_cortex_m::prelude::*;
 //! ```
 //!
 //! [`std::prelude`]: https://doc.rust-lang.org/std/prelude/
 
 pub use drone_core::prelude::*;
 
-pub use thr::{FuturePlat, StreamPlat};
+pub use crate::thr::{FuturePlat, StreamPlat};

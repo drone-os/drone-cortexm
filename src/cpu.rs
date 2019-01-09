@@ -1,7 +1,6 @@
 //! A module for working with CPU.
 
-use map::reg::scb;
-use reg::prelude::*;
+use crate::{map::reg::scb, reg::prelude::*};
 
 /// Wait for interrupt.
 #[inline(always)]

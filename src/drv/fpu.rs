@@ -1,7 +1,6 @@
 //! Floating point unit.
 
-use map::res::fpu::FpuRes;
-use reg::prelude::*;
+use crate::{map::res::fpu::FpuRes, reg::prelude::*};
 
 /// FPU driver.
 pub struct Fpu(FpuRes);
@@ -10,7 +9,7 @@ pub struct Fpu(FpuRes);
 #[macro_export]
 macro_rules! drv_fpu {
   ($reg:ident) => {
-    $crate::drv::fpu::Fpu::new(res_fpu!($reg))
+    $crate::drv::fpu::Fpu::new($crate::res_fpu!($reg))
   };
 }
 
@@ -18,7 +17,7 @@ impl Fpu {
   /// Creates a new `Fpu`.
   #[inline(always)]
   pub fn new(fpu: FpuRes) -> Self {
-    Fpu(fpu)
+    Self(fpu)
   }
 
   /// Releases the underlying registers.

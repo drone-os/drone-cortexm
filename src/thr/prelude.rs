@@ -3,4 +3,4 @@
 pub use drone_core::thr::prelude::*;
 
 pub use super::{int::IntToken, ThrControl, ThrRequest};
-pub use fib::ThrFiberStack;
+pub use crate::fib::ThrFiberStack;

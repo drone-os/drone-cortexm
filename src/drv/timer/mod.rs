@@ -5,6 +5,7 @@ mod sys_tick;
 pub use self::sys_tick::{SysTick, SysTickDiverged};
 
 use drone_core::bitfield::Bitfield;
+use failure::Fail;
 use futures::prelude::*;
 
 /// Error returned from [`Timer::interval`](Timer::interval) on overflow.

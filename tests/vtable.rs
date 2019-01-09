@@ -2,20 +2,16 @@
 #![feature(allocator_internals)]
 #![feature(const_fn)]
 #![feature(prelude_import)]
+#![feature(uniform_paths)]
 #![no_std]
-
-extern crate drone_core;
-extern crate drone_cortex_m;
-extern crate test;
-use drone_cortex_m as drone_plat;
 
 #[prelude_import]
 #[allow(unused_imports)]
-use drone_plat::prelude::*;
+use drone_cortex_m::prelude::*;
 
 use core::mem::{size_of, transmute_copy};
 use drone_core::{heap, sv::SvService};
-use drone_plat::sv::sv_handler;
+use drone_cortex_m::sv::sv_handler;
 
 heap! {
   struct Heap;
@@ -41,7 +37,7 @@ impl SvService for BarService {
 mod a {
   use super::{BarService, FooService};
   use drone_core::thr;
-  use drone_plat::{map::thr::*, sv, thr::prelude::*, vtable};
+  use drone_cortex_m::{map::thr::*, sv, thr::prelude::*, vtable};
 
   trait Int10<T: ThrTag>: IntToken<T> {}
   trait Int5<T: ThrTag>: IntToken<T> {}
@@ -90,7 +86,7 @@ mod a {
 
 mod b {
   use drone_core::thr;
-  use drone_plat::vtable;
+  use drone_cortex_m::vtable;
 
   vtable! {
     pub struct Vtable;

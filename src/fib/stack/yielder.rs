@@ -1,7 +1,6 @@
 use super::{Data, StackData};
+use crate::{fib::FiberState, sv::Switch};
 use core::{marker::PhantomData, mem::forget};
-use fib::FiberState;
-use sv::Switch;
 
 /// A communication channel for [`FiberStack`](FiberStack).
 pub struct Yielder<Sv, I, Y, R>
@@ -17,7 +16,6 @@ where
   _return: PhantomData<*const R>,
 }
 
-#[allow(clippy::new_without_default_derive)]
 impl<Sv, I, Y, R> Yielder<Sv, I, Y, R>
 where
   Sv: Switch<StackData<I, Y, R>>,

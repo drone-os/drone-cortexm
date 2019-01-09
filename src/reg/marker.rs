@@ -13,8 +13,8 @@ pub use drone_core::reg::marker::{
   WoRwRegFieldBits,
 };
 
+use crate::reg::prelude::*;
 use drone_core::reg::marker;
-use reg::prelude::*;
 
 // {{{ SRwReg
 /// Synchronized read-write register token.

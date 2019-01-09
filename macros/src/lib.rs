@@ -3,18 +3,11 @@
 //! See `drone-cortex-m` documentation for details.
 
 #![feature(try_from)]
+#![feature(uniform_paths)]
 #![recursion_limit = "256"]
 #![warn(clippy::pedantic)]
 
-#[macro_use]
-extern crate drone_macros_core;
-extern crate inflector;
 extern crate proc_macro;
-extern crate proc_macro2;
-#[macro_use]
-extern crate quote;
-#[macro_use]
-extern crate syn;
 
 mod sv;
 mod thr_int;

@@ -2,13 +2,15 @@
 
 pub use self::port::Port;
 
+use crate::{
+  map::reg::{itm, scb},
+  reg::prelude::*,
+};
 use core::{
   alloc::Layout,
   fmt::{self, Write},
 };
 use drone_core::heap::Pool;
-use map::reg::{itm, scb};
-use reg::prelude::*;
 
 pub mod port;
 #[macro_use]

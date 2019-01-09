@@ -3,10 +3,12 @@
 
 pub use drone_core::stack_adapter::*;
 
+use crate::{
+  fib::{self, Fiber, FiberState},
+  sv::{SwitchBackService, SwitchContextService},
+};
 use core::sync::atomic::Ordering::*;
 use drone_core::sv::SvCall;
-use fib::{self, Fiber, FiberState};
-use sv::{SwitchBackService, SwitchContextService};
 
 /// A stack storage for the adapter `A`.
 pub struct FiberStack<Sv, A>(AdapterFiber<Sv, A>)
@@ -93,7 +95,7 @@ where
         panic!("instance already exists");
       }
     }
-    FiberStack(f(A::STACK_SIZE, Self::cmd_loop))
+    Self(f(A::STACK_SIZE, Self::cmd_loop))
   }
 }
 
@@ -132,7 +134,7 @@ where
   A: Adapter<Stack = FiberStack<Sv, A>, Context = Self>,
 {
   unsafe fn new() -> Self {
-    Yielder(fib::Yielder::new())
+    Self(fib::Yielder::new())
   }
 
   fn req(&self, req: A::Req) -> A::ReqRes {

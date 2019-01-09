@@ -1,7 +1,7 @@
 //! The vector table support.
 
+use crate::thr::prelude::*;
 use core::marker::PhantomData;
-use thr::prelude::*;
 
 /// Pointer to an exception handler.
 pub type Handler = unsafe extern "C" fn();
@@ -32,6 +32,6 @@ impl<T: ThrTag, U: Thread> ThrToken<T> for Reset<T, &'static U> {
 
   #[inline(always)]
   unsafe fn take() -> Self {
-    Reset(PhantomData, PhantomData)
+    Self(PhantomData, PhantomData)
   }
 }
