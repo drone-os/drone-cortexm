@@ -9,8 +9,9 @@ use ::alloc::alloc;
 use core::{
   alloc::Layout,
   cmp::max,
-  marker::PhantomData,
+  marker::{PhantomData, Unpin},
   mem::{align_of, size_of},
+  pin::Pin,
 };
 use drone_core::bitfield::Bitfield;
 
@@ -196,7 +197,7 @@ where
     Sv::switch_back(&mut data_ptr);
   }
 
-  unsafe fn data_ptr(&self) -> *mut StackData<I, Y, R> {
+  unsafe fn data_ptr(&mut self) -> *mut StackData<I, Y, R> {
     let data_size = size_of::<StackData<I, Y, R>>();
     self.stack_bottom.add(self.stack_size - data_size) as _
   }
@@ -229,7 +230,7 @@ where
   type Yield = Y;
   type Return = R;
 
-  fn resume(&mut self, input: I) -> FiberState<Y, R> {
+  fn resume(mut self: Pin<&mut Self>, input: I) -> FiberState<Y, R> {
     unsafe {
       let data_ptr = self.data_ptr();
       data_ptr.write(Data { input });
@@ -245,7 +246,7 @@ where
   F: FnMut((), Yielder<Sv, (), (), ()>) -> (),
   F: Send + 'static,
 {
-  fn advance(&mut self) -> bool {
+  fn advance(self: Pin<&mut Self>) -> bool {
     match self.resume(()) {
       FiberState::Yielded(()) => true,
       FiberState::Complete(()) => false,
@@ -254,6 +255,17 @@ where
 }
 
 unsafe impl<Sv, I, Y, R, F> Send for FiberStack<Sv, I, Y, R, F>
+where
+  Sv: Switch<StackData<I, Y, R>>,
+  F: FnMut(I, Yielder<Sv, I, Y, R>) -> R,
+  F: Send + 'static,
+  I: Send + 'static,
+  Y: Send + 'static,
+  R: Send + 'static,
+{
+}
+
+impl<Sv, I, Y, R, F> Unpin for FiberStack<Sv, I, Y, R, F>
 where
   Sv: Switch<StackData<I, Y, R>>,
   F: FnMut(I, Yielder<Sv, I, Y, R>) -> R,

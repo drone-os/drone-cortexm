@@ -18,4 +18,4 @@
 
 pub use drone_core::prelude::*;
 
-pub use crate::thr::{FuturePlat, StreamPlat};
+pub use crate::thr::{FutureExt, StreamExt};

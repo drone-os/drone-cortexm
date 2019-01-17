@@ -1,37 +1,52 @@
-use core::ptr::write_volatile;
-use futures::task::{UnsafeWake, Waker};
+use core::{
+  mem::align_of,
+  ptr::{write_volatile, NonNull},
+  task::{LocalWaker, UnsafeWake, Waker},
+};
 
 const NVIC_STIR: usize = 0xE000_EF00;
 
-pub(in crate::thr) struct WakeInt(usize);
+pub struct WakeInt(usize);
 
 struct WakeIntWrapped;
 
 impl WakeInt {
   #[inline(always)]
-  pub(in crate::thr) fn new(int_num: usize) -> Self {
-    Self(int_num)
+  pub fn new(int_num: usize) -> Self {
+    Self(int_num + align_of::<WakeIntWrapped>())
   }
 
   #[inline(always)]
-  pub(in crate::thr) fn wake(&self) {
-    unsafe { write_volatile(NVIC_STIR as *mut u32, self.0 as u32) };
+  pub fn wake(&self) {
+    unsafe {
+      write_volatile(
+        NVIC_STIR as *mut usize,
+        self.0 - align_of::<WakeIntWrapped>(),
+      );
+    }
   }
 
   #[inline]
-  pub(in crate::thr) fn into_waker(self) -> Waker {
-    unsafe { Waker::new(self.0 as *const WakeIntWrapped as *const UnsafeWake) }
+  pub fn into_local_waker(self) -> LocalWaker {
+    unsafe {
+      LocalWaker::new(NonNull::new_unchecked(self.0 as *mut WakeIntWrapped))
+    }
   }
 }
 
 unsafe impl UnsafeWake for WakeIntWrapped {
+  #[inline]
   unsafe fn clone_raw(&self) -> Waker {
-    WakeInt::new(self as *const Self as usize).into_waker()
+    WakeInt::new(self as *const _ as usize)
+      .into_local_waker()
+      .into_waker()
   }
 
+  #[inline]
   unsafe fn drop_raw(&self) {}
 
+  #[inline]
   unsafe fn wake(&self) {
-    WakeInt::new(self as *const Self as usize).wake()
+    WakeInt::new(self as *const _ as usize).wake()
   }
 }

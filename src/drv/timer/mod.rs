@@ -4,9 +4,10 @@ mod sys_tick;
 
 pub use self::sys_tick::{SysTick, SysTickDiverged};
 
+use core::future::Future;
 use drone_core::bitfield::Bitfield;
 use failure::Fail;
-use futures::prelude::*;
+use futures::stream::Stream;
 
 /// Error returned from [`Timer::interval`](Timer::interval) on overflow.
 #[derive(Debug, Fail)]
@@ -18,9 +19,9 @@ pub struct TimerOverflow;
 pub trait Timer: Sized + Send + 'static {
   type Duration;
   type CtrlVal: Bitfield;
-  type SleepFuture: Future<Item = (), Error = !> + Send;
-  type IntervalStream: Stream<Item = (), Error = TimerOverflow> + Send;
-  type IntervalSkipStream: Stream<Item = (), Error = !> + Send;
+  type SleepFuture: Future<Output = ()> + Send;
+  type IntervalStream: Stream<Item = Result<(), TimerOverflow>> + Send;
+  type IntervalSkipStream: Stream<Item = ()> + Send;
 
   fn sleep(
     &mut self,

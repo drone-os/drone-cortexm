@@ -1,6 +1,6 @@
 use super::{Timer, TimerOverflow};
 use crate::{
-  fib::{self, FiberFuture, FiberStreamUnit},
+  fib::{self, FiberFuture, FiberStreamUnit, TryFiberStreamUnit},
   map::{
     reg::{scb, stk},
     res::sys_tick::SysTickRes,
@@ -11,7 +11,7 @@ use crate::{
 };
 use core::ptr::write_volatile;
 use drone_core::bitfield::Bitfield;
-use futures::prelude::*;
+use futures::stream::Stream;
 
 /// SysTick driver.
 #[allow(missing_docs)]
@@ -44,9 +44,9 @@ macro_rules! drv_sys_tick {
 impl<I: IntSysTick<Att>> Timer for SysTick<I> {
   type Duration = u32;
   type CtrlVal = stk::ctrl::Val;
-  type SleepFuture = FiberFuture<(), !>;
-  type IntervalStream = FiberStreamUnit<TimerOverflow>;
-  type IntervalSkipStream = FiberStreamUnit<!>;
+  type SleepFuture = FiberFuture<()>;
+  type IntervalStream = TryFiberStreamUnit<TimerOverflow>;
+  type IntervalSkipStream = FiberStreamUnit;
 
   #[inline]
   fn sleep(
@@ -62,7 +62,6 @@ impl<I: IntSysTick<Att>> Timer for SysTick<I> {
     let fut = self.int.add_future(fib::new_fn(move || {
       ctrl.store_val(ctrl_val);
       unsafe { set_bit(&pendstclr) };
-      Ok(())
     }));
     ctrl_val = enable(&mut self.reg.stk_ctrl.hold(ctrl_val)).val();
     self.reg.stk_ctrl.store_val(ctrl_val);

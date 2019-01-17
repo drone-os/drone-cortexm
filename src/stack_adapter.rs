@@ -7,7 +7,7 @@ use crate::{
   fib::{self, Fiber, FiberState},
   sv::{SwitchBackService, SwitchContextService},
 };
-use core::sync::atomic::Ordering::*;
+use core::{pin::Pin, sync::atomic::Ordering::*};
 use drone_core::sv::SvCall;
 
 /// A stack storage for the adapter `A`.
@@ -121,7 +121,7 @@ where
   A: Adapter<Stack = Self, Context = Yielder<Sv, A>>,
 {
   fn resume(&mut self, input: In<A::Cmd, A::ReqRes>) -> Out<A::Req, A::CmdRes> {
-    match self.0.resume(input) {
+    match Pin::new(&mut self.0).resume(input) {
       FiberState::Yielded(output) => output,
     }
   }

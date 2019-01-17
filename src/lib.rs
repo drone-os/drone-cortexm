@@ -33,6 +33,7 @@
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
 #![feature(exhaustive_patterns)]
+#![feature(futures_api)]
 #![feature(generators)]
 #![feature(generator_trait)]
 #![feature(lang_items)]
@@ -43,9 +44,9 @@
 #![feature(prelude_import)]
 #![feature(proc_macro_hygiene)]
 #![feature(range_contains)]
-#![feature(uniform_paths)]
 #![feature(untagged_unions)]
 #![no_std]
+#![deny(bare_trait_objects)]
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
 #![allow(

@@ -3,8 +3,8 @@
 //! See `drone-cortex-m` documentation for details.
 
 #![feature(try_from)]
-#![feature(uniform_paths)]
 #![recursion_limit = "256"]
+#![deny(bare_trait_objects)]
 #![warn(clippy::pedantic)]
 
 extern crate proc_macro;

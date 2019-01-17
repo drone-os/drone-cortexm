@@ -49,10 +49,10 @@ mod wake;
 
 pub use self::{
   control::ThrControl,
-  future::FuturePlat,
+  future::FutureExt,
   int::{IntBundle, IntToken},
   request::ThrRequest,
-  stream::{StreamPlat, StreamTrunkWait},
+  stream::{StreamExt, StreamTrunkWait},
 };
 pub use drone_cortex_m_macros::thr_int as int;
 

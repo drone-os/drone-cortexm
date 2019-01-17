@@ -1,5 +1,5 @@
 use crate::thr::{prelude::*, wake::WakeInt};
-use futures::prelude::*;
+use core::{future::Future, pin::Pin, task::Poll};
 
 /// Thread execution requests.
 pub trait ThrRequest<T: ThrTrigger>: IntToken<T> {
@@ -7,8 +7,7 @@ pub trait ThrRequest<T: ThrTrigger>: IntToken<T> {
   fn exec<F>(self, f: F)
   where
     T: ThrAttach,
-    F: IntoFuture<Item = (), Error = !>,
-    F::Future: Send + 'static;
+    F: Future<Output = ()> + Send + 'static;
 
   /// Requests the interrupt.
   #[inline]
@@ -19,30 +18,21 @@ pub trait ThrRequest<T: ThrTrigger>: IntToken<T> {
 
 impl<T: ThrTrigger, U: IntToken<T>> ThrRequest<T> for U {
   #[allow(clippy::while_let_loop)]
-  fn exec<F>(self, f: F)
+  fn exec<F>(self, mut fut: F)
   where
     T: ThrAttach,
-    F: IntoFuture<Item = (), Error = !>,
-    F::Future: Send + 'static,
+    F: Future<Output = ()> + Send + 'static,
   {
-    let mut fut = f.into_future();
+    fn poll<F: Future>(fut: Pin<&mut F>, int_num: usize) -> Poll<F::Output> {
+      let lw = WakeInt::new(int_num).into_local_waker();
+      fut.poll(&lw)
+    }
     self.add(move || loop {
-      match poll_future(&mut fut, Self::INT_NUM) {
-        Ok(Async::Pending) => {}
-        Ok(Async::Ready(())) => break,
+      match poll(unsafe { Pin::new_unchecked(&mut fut) }, Self::INT_NUM) {
+        Poll::Pending => yield,
+        Poll::Ready(()) => break,
       }
-      yield;
     });
     self.trigger();
   }
-}
-
-fn poll_future<F>(fut: &mut F, int_num: usize) -> Poll<(), !>
-where
-  F: Future<Item = (), Error = !>,
-{
-  let waker = WakeInt::new(int_num).into_waker();
-  let mut map = task::LocalMap::new();
-  let mut cx = task::Context::without_spawn(&mut map, &waker);
-  fut.poll(&mut cx)
 }

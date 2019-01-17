@@ -2,7 +2,6 @@
 #![feature(allocator_internals)]
 #![feature(const_fn)]
 #![feature(prelude_import)]
-#![feature(uniform_paths)]
 #![no_std]
 
 #[prelude_import]
