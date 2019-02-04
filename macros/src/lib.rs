@@ -5,6 +5,7 @@
 #![feature(try_from)]
 #![recursion_limit = "256"]
 #![deny(bare_trait_objects)]
+#![deny(elided_lifetimes_in_paths)]
 #![warn(clippy::pedantic)]
 
 extern crate proc_macro;

@@ -21,7 +21,7 @@ struct Service {
 }
 
 impl Parse for Sv {
-  fn parse(input: ParseStream) -> Result<Self> {
+  fn parse(input: ParseStream<'_>) -> Result<Self> {
     let sv_attrs = input.call(Attribute::parse_outer)?;
     let sv_vis = input.parse()?;
     input.parse::<Token![struct]>()?;
@@ -49,7 +49,7 @@ impl Parse for Sv {
 }
 
 impl Parse for Service {
-  fn parse(input: ParseStream) -> Result<Self> {
+  fn parse(input: ParseStream<'_>) -> Result<Self> {
     let ident = input.parse()?;
     input.parse::<Token![;]>()?;
     Ok(Self { ident })

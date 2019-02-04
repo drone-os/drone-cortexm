@@ -15,7 +15,7 @@ struct ThrInt {
 }
 
 impl Parse for ThrInt {
-  fn parse(input: ParseStream) -> Result<Self> {
+  fn parse(input: ParseStream<'_>) -> Result<Self> {
     let attrs = input.call(Attribute::parse_outer)?;
     let vis = input.parse()?;
     input.parse::<Token![trait]>()?;

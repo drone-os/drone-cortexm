@@ -13,33 +13,34 @@ struct WakeIntWrapped;
 impl WakeInt {
   #[inline(always)]
   pub fn new(int_num: usize) -> Self {
-    Self(int_num + align_of::<WakeIntWrapped>())
+    Self(int_num)
+  }
+
+  #[inline(always)]
+  fn from_wrapped(wrapped: *const WakeIntWrapped) -> WakeInt {
+    Self(wrapped as usize - align_of::<WakeIntWrapped>())
+  }
+
+  #[inline(always)]
+  fn into_wrapped(self) -> *mut WakeIntWrapped {
+    (self.0 + align_of::<WakeIntWrapped>()) as _
   }
 
   #[inline(always)]
   pub fn wake(&self) {
-    unsafe {
-      write_volatile(
-        NVIC_STIR as *mut usize,
-        self.0 - align_of::<WakeIntWrapped>(),
-      );
-    }
+    unsafe { write_volatile(NVIC_STIR as *mut usize, self.0) };
   }
 
   #[inline]
   pub fn into_local_waker(self) -> LocalWaker {
-    unsafe {
-      LocalWaker::new(NonNull::new_unchecked(self.0 as *mut WakeIntWrapped))
-    }
+    unsafe { LocalWaker::new(NonNull::new_unchecked(self.into_wrapped())) }
   }
 }
 
 unsafe impl UnsafeWake for WakeIntWrapped {
   #[inline]
   unsafe fn clone_raw(&self) -> Waker {
-    WakeInt::new(self as *const _ as usize)
-      .into_local_waker()
-      .into_waker()
+    Waker::new(NonNull::new_unchecked(self as *const Self as *mut Self))
   }
 
   #[inline]
@@ -47,6 +48,6 @@ unsafe impl UnsafeWake for WakeIntWrapped {
 
   #[inline]
   unsafe fn wake(&self) {
-    WakeInt::new(self as *const _ as usize).wake()
+    WakeInt::from_wrapped(self).wake()
   }
 }

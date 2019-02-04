@@ -2,8 +2,8 @@
 
 use crate::{
   map::{
+    periph::{mpu::MpuPeriph, thr::ThrPeriph},
     reg::{mpu, scb},
-    res::{mpu::MpuRes, thr::ThrRes},
   },
   reg::prelude::*,
   thr::ThrTokens,
@@ -28,30 +28,33 @@ static MPU_RESET_TABLE: [u32; 16] = [
   0,
 ];
 
-/// `Thr` driver.
+/// Threading support driver.
 pub struct Thr {
-  mpu: MpuRes,
-  thr: ThrRes,
+  mpu: MpuPeriph,
+  thr: ThrPeriph,
 }
 
-/// Creates a new `Thr`.
+/// Acquires [`Thr`].
 #[macro_export]
 macro_rules! drv_thr {
   ($reg:ident) => {
-    $crate::drv::thr::Thr::new($crate::res_mpu!($reg), $crate::res_thr!($reg))
+    $crate::drv::thr::Thr::new(
+      $crate::periph_mpu!($reg),
+      $crate::periph_thr!($reg),
+    )
   };
 }
 
 impl Thr {
-  /// Creates a new `Thr`.
+  /// Creates a new [`Thr`].
   #[inline(always)]
-  pub fn new(mpu: MpuRes, thr: ThrRes) -> Self {
+  pub fn new(mpu: MpuPeriph, thr: ThrPeriph) -> Self {
     Self { mpu, thr }
   }
 
-  /// Releases the underlying registers.
+  /// Releases the peripherals.
   #[inline(always)]
-  pub fn free(self) -> (MpuRes, ThrRes) {
+  pub fn free(self) -> (MpuPeriph, ThrPeriph) {
     let Self { mpu, thr } = self;
     (mpu, thr)
   }

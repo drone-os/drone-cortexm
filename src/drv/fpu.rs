@@ -1,29 +1,31 @@
 //! Floating point unit.
 
-use crate::{map::res::fpu::FpuRes, reg::prelude::*};
+use crate::{map::periph::fpu::FpuPeriph, reg::prelude::*};
 
 /// FPU driver.
-pub struct Fpu(FpuRes);
+pub struct Fpu {
+  periph: FpuPeriph,
+}
 
-/// Creates a new `Fpu`.
+/// Acquires [`Fpu`].
 #[macro_export]
 macro_rules! drv_fpu {
   ($reg:ident) => {
-    $crate::drv::fpu::Fpu::new($crate::res_fpu!($reg))
+    $crate::drv::fpu::Fpu::new($crate::periph_fpu!($reg))
   };
 }
 
 impl Fpu {
-  /// Creates a new `Fpu`.
+  /// Creates a new [`Fpu`].
   #[inline(always)]
-  pub fn new(fpu: FpuRes) -> Self {
-    Self(fpu)
+  pub fn new(periph: FpuPeriph) -> Self {
+    Self { periph }
   }
 
-  /// Releases the underlying registers.
+  /// Releases the peripheral.
   #[inline(always)]
-  pub fn free(self) -> FpuRes {
-    self.0
+  pub fn free(self) -> FpuPeriph {
+    self.periph
   }
 }
 
@@ -31,7 +33,7 @@ impl Fpu {
   /// Enables the FPU.
   pub fn enable(&self) {
     self
-      .0
+      .periph
       .fpu_cpacr
       .store(|r| r.write_cp10(0b11).write_cp11(0b11));
     unsafe {

@@ -1,4 +1,4 @@
-//! Core ARM Cortex-M resources.
+//! Core ARM Cortex-M peripherals.
 
 pub mod fpu;
 pub mod mpu;

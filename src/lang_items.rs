@@ -5,7 +5,7 @@ const ABORT_DELAY: u32 = 0x400;
 
 #[linkage = "weak"]
 #[panic_handler]
-fn begin_panic(pi: &PanicInfo) -> ! {
+fn begin_panic(pi: &PanicInfo<'_>) -> ! {
   println!("{}", pi);
   abort()
 }

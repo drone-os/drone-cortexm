@@ -9,6 +9,12 @@ pub trait ThrRequest<T: ThrTrigger>: IntToken<T> {
     T: ThrAttach,
     F: Future<Output = ()> + Send + 'static;
 
+  /// Add an executor for the future `f` within the thread.
+  fn add_exec<F>(self, f: F)
+  where
+    T: ThrAttach,
+    F: Future<Output = ()> + Send + 'static;
+
   /// Requests the interrupt.
   #[inline]
   fn trigger(self) {
@@ -17,8 +23,17 @@ pub trait ThrRequest<T: ThrTrigger>: IntToken<T> {
 }
 
 impl<T: ThrTrigger, U: IntToken<T>> ThrRequest<T> for U {
+  fn exec<F>(self, fut: F)
+  where
+    T: ThrAttach,
+    F: Future<Output = ()> + Send + 'static,
+  {
+    self.add_exec(fut);
+    self.trigger();
+  }
+
   #[allow(clippy::while_let_loop)]
-  fn exec<F>(self, mut fut: F)
+  fn add_exec<F>(self, mut fut: F)
   where
     T: ThrAttach,
     F: Future<Output = ()> + Send + 'static,
@@ -33,6 +48,5 @@ impl<T: ThrTrigger, U: IntToken<T>> ThrRequest<T> for U {
         Poll::Ready(()) => break,
       }
     });
-    self.trigger();
   }
 }

@@ -31,7 +31,7 @@ pub fn write_str(string: &str) {
 ///
 /// See [`print!`](print!) and [`println!`](println!) macros.
 #[inline(never)]
-pub fn write_fmt(args: fmt::Arguments) {
+pub fn write_fmt(args: fmt::Arguments<'_>) {
   Port::new(TEXT_PORT).write_fmt(args).unwrap();
 }
 

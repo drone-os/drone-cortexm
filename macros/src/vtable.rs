@@ -45,7 +45,7 @@ enum Mode {
 }
 
 impl Parse for Vtable {
-  fn parse(input: ParseStream) -> Result<Self> {
+  fn parse(input: ParseStream<'_>) -> Result<Self> {
     let vtable_attrs = input.call(Attribute::parse_outer)?;
     let vtable_vis = input.parse()?;
     input.parse::<Token![struct]>()?;
@@ -99,7 +99,7 @@ impl Parse for Vtable {
 }
 
 impl Parse for Exc {
-  fn parse(input: ParseStream) -> Result<Self> {
+  fn parse(input: ParseStream<'_>) -> Result<Self> {
     let attrs = input.call(Attribute::parse_outer)?;
     let mode = input.parse()?;
     let ident = input.parse()?;
@@ -109,7 +109,7 @@ impl Parse for Exc {
 }
 
 impl Parse for Int {
-  fn parse(input: ParseStream) -> Result<Self> {
+  fn parse(input: ParseStream<'_>) -> Result<Self> {
     let attrs = input.call(Attribute::parse_outer)?;
     let mode = input.parse()?;
     let num = input.parse()?;
@@ -124,7 +124,7 @@ impl Parse for Int {
 }
 
 impl Parse for Mode {
-  fn parse(input: ParseStream) -> Result<Self> {
+  fn parse(input: ParseStream<'_>) -> Result<Self> {
     if input.peek(Token![fn]) {
       input.parse::<Token![fn]>()?;
       Ok(Mode::Fn)
