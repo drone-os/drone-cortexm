@@ -2,5 +2,7 @@
 
 #[cfg(target_feature = "vfp2")]
 pub mod fpu;
+pub mod sys_tick;
 pub mod thr;
-pub mod timer;
+
+pub use drone_core::drv::*;

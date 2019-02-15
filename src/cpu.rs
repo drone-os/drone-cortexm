@@ -3,19 +3,19 @@
 use crate::{map::reg::scb, reg::prelude::*};
 
 /// Wait for interrupt.
-#[inline(always)]
+#[inline]
 pub fn wait_for_int() {
   unsafe { asm!("wfi" :::: "volatile") };
 }
 
 /// Wait for event.
-#[inline(always)]
+#[inline]
 pub fn wait_for_event() {
   unsafe { asm!("wfe" :::: "volatile") };
 }
 
 /// Send event.
-#[inline(always)]
+#[inline]
 pub fn send_event() {
   unsafe { asm!("sev" :::: "volatile") };
 }
@@ -41,7 +41,7 @@ pub fn self_reset() -> ! {
 
 /// Spins a specified amount of CPU cycles.
 #[allow(clippy::used_underscore_binding)]
-#[inline]
+#[inline(always)]
 pub fn spin(mut _cycles: u32) {
   unsafe {
     asm!("

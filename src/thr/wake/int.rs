@@ -11,22 +11,22 @@ pub struct WakeInt(usize);
 struct WakeIntWrapped;
 
 impl WakeInt {
-  #[inline(always)]
+  #[inline]
   pub fn new(int_num: usize) -> Self {
     Self(int_num)
   }
 
-  #[inline(always)]
+  #[inline]
   fn from_wrapped(wrapped: *const WakeIntWrapped) -> WakeInt {
     Self(wrapped as usize - align_of::<WakeIntWrapped>())
   }
 
-  #[inline(always)]
+  #[inline]
   fn into_wrapped(self) -> *mut WakeIntWrapped {
     (self.0 + align_of::<WakeIntWrapped>()) as _
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn wake(&self) {
     unsafe { write_volatile(NVIC_STIR as *mut usize, self.0) };
   }

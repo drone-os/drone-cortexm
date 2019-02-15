@@ -138,14 +138,21 @@ where
 
   #[allow(clippy::cast_ptr_alignment)]
   unsafe fn mpu_config(mut guard_ptr: *mut u8) -> u32 {
-    let rbar = mpu::Rbar::<Srt>::take();
-    let rasr = mpu::Rasr::<Srt>::take();
     let rbar_bits = |region, addr| {
-      rbar
+      mpu::Rbar::<Srt>::take()
         .default()
         .write_addr(addr >> 5)
         .set_valid()
         .write_region(region)
+        .val()
+        .bits()
+    };
+    let rasr_bits = || {
+      mpu::Rasr::<Srt>::take()
+        .default()
+        .write_ap(0b000)
+        .write_size(GUARD_SIZE)
+        .set_enable()
         .val()
         .bits()
     };
@@ -158,15 +165,7 @@ where
     let mut table_ptr = guard_ptr as *mut u32;
     table_ptr.write(rbar_bits(0, guard_ptr as u32));
     table_ptr = table_ptr.add(1);
-    table_ptr.write(
-      rasr
-        .default()
-        .write_ap(0b000)
-        .write_size(GUARD_SIZE)
-        .set_enable()
-        .val()
-        .bits(),
-    );
+    table_ptr.write(rasr_bits());
     table_ptr = table_ptr.add(1);
     for i in 1..8 {
       table_ptr.write(rbar_bits(i, 0));

@@ -275,7 +275,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     #(#index_attrs)*
     #index_vis struct #index_ident {
       /// Reset thread token.
-      pub reset: Reset<::drone_core::thr::Ctt>,
+      pub reset: Reset<::drone_core::thr::Ptt>,
       #(#index_tokens),*
     }
 
@@ -298,10 +298,10 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     }
 
     unsafe impl ::drone_core::token::Tokens for #index_ident {
-      #[inline(always)]
+      #[inline]
       unsafe fn take() -> Self {
         Self {
-          reset: ::drone_core::thr::ThrToken::<::drone_core::thr::Ctt>::take(),
+          reset: ::drone_core::thr::ThrToken::<::drone_core::thr::Ptt>::take(),
           #(#index_ctor_tokens),*
         }
       }
@@ -362,11 +362,11 @@ fn gen_exc(
       *thr_counter += 1;
       index_tokens.push(quote! {
         #(#attrs)*
-        #vis #field_ident: #struct_ident<::drone_core::thr::Ctt>
+        #vis #field_ident: #struct_ident<::drone_core::thr::Ptt>
       });
       index_ctor_tokens.push(quote! {
         #field_ident: ::drone_core::thr::ThrToken::<
-          ::drone_core::thr::Ctt,
+          ::drone_core::thr::Ptt,
         >::take()
       });
       array_tokens.push(quote! {
@@ -384,14 +384,13 @@ fn gen_exc(
           T: ::drone_core::thr::ThrTag,
         {
           type Thr = #thr;
-          type AThrToken = #struct_ident<::drone_core::thr::Att>;
           type TThrToken = #struct_ident<::drone_core::thr::Ttt>;
-          type CThrToken = #struct_ident<::drone_core::thr::Ctt>;
-          type RThrToken = #struct_ident<::drone_core::thr::Rtt>;
+          type AThrToken = #struct_ident<::drone_core::thr::Att>;
+          type PThrToken = #struct_ident<::drone_core::thr::Ptt>;
 
           const THR_NUM: usize = #index;
 
-          #[inline(always)]
+          #[inline]
           unsafe fn take() -> Self {
             #struct_ident(::core::marker::PhantomData)
           }

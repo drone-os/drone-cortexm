@@ -74,7 +74,7 @@ pub mod fib;
 pub mod map;
 pub mod prelude;
 pub mod reg;
-pub mod stack_adapter;
+pub mod stack_loop;
 pub mod sv;
 pub mod thr;
 

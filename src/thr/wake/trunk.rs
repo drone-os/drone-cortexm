@@ -7,12 +7,12 @@ use core::{
 pub struct WakeTrunk(());
 
 impl WakeTrunk {
-  #[inline(always)]
+  #[inline]
   pub fn new() -> Self {
     Self(())
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn wait() {
     cpu::wait_for_event();
   }

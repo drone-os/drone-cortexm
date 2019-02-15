@@ -40,7 +40,7 @@
 pub mod prelude;
 pub mod vtable;
 
-mod control;
+mod config;
 mod future;
 mod int;
 mod request;
@@ -48,10 +48,10 @@ mod stream;
 mod wake;
 
 pub use self::{
-  control::ThrControl,
+  config::ThrConfig,
   future::FutureExt,
   int::{IntBundle, IntToken},
-  request::ThrRequest,
+  request::{ExecOutput, ThrRequest},
   stream::{StreamExt, StreamTrunkWait},
 };
 pub use drone_cortex_m_macros::thr_int as int;

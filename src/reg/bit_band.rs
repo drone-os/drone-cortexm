@@ -1,5 +1,5 @@
+use super::*;
 use core::ptr::{read_volatile, write_volatile};
-use drone_core::reg::prelude::*;
 
 /// Peripheral bit-band alias start.
 pub const BIT_BAND_BASE: usize = 0x4200_0000;
@@ -15,7 +15,7 @@ pub trait RegBitBand<T: RegTag>: Reg<T> {
   ///
   /// `offset` must be greater than or equals to the platform's word size in
   /// bits.
-  #[inline(always)]
+  #[inline]
   unsafe fn bit_band_addr(offset: usize) -> usize {
     BIT_BAND_BASE
       + (((Self::ADDRESS + (offset >> 3))
@@ -69,12 +69,12 @@ where
   U: RRRegFieldBit<T>,
   U::Reg: RegBitBand<T> + RReg<T>,
 {
-  #[inline(always)]
+  #[inline]
   fn read_bit_band(&self) -> bool {
     unsafe { read_volatile(self.bit_band_ptr()) != 0 }
   }
 
-  #[inline(always)]
+  #[inline]
   fn bit_band_ptr(&self) -> *const usize {
     unsafe { Self::Reg::bit_band_addr(Self::OFFSET) as *const usize }
   }
@@ -86,17 +86,17 @@ where
   U: SafeWWRegFieldBitBand<T>,
   U::Reg: RegBitBand<T>,
 {
-  #[inline(always)]
+  #[inline]
   fn set_bit_band(&self) {
     unsafe { write_volatile(self.bit_band_mut_ptr(), 1) };
   }
 
-  #[inline(always)]
+  #[inline]
   fn clear_bit_band(&self) {
     unsafe { write_volatile(self.bit_band_mut_ptr(), 0) };
   }
 
-  #[inline(always)]
+  #[inline]
   fn bit_band_mut_ptr(&self) -> *mut usize {
     unsafe { Self::Reg::bit_band_addr(Self::OFFSET) as *mut usize }
   }

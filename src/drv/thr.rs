@@ -47,20 +47,20 @@ macro_rules! drv_thr {
 
 impl Thr {
   /// Creates a new [`Thr`].
-  #[inline(always)]
+  #[inline]
   pub fn new(mpu: MpuPeriph, thr: ThrPeriph) -> Self {
     Self { mpu, thr }
   }
 
   /// Releases the peripherals.
-  #[inline(always)]
+  #[inline]
   pub fn free(self) -> (MpuPeriph, ThrPeriph) {
     let Self { mpu, thr } = self;
     (mpu, thr)
   }
 
   /// Initialized the Drone threading system, and returns an instance of `T`.
-  #[inline(always)]
+  #[inline]
   pub fn init<T: ThrTokens>(
     self,
     scb_ccr_init: impl for<'a, 'b> FnOnce(

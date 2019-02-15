@@ -2,18 +2,21 @@
 
 pub use drone_core::reg::marker::{
   CRoReg, CRoRoRegFieldBit, CRoRoRegFieldBits, CRoRwRegFieldBit,
-  CRoRwRegFieldBits, CWoReg, CWoWoRegFieldBit, CWoWoRegFieldBits,
+  CRoRwRegFieldBits, CWoReg, CWoWoRegFieldBit, CWoWoRegFieldBits, RoReg,
   RoRoRegFieldBit, RoRoRegFieldBits, RoRwRegFieldBit, RoRwRegFieldBits, RwReg,
   RwRwRegFieldBit, RwRwRegFieldBits, SRoReg, SRoRoRegFieldBit,
   SRoRoRegFieldBits, SRoRwRegFieldBit, SRoRwRegFieldBits, SWoReg,
   SWoWoRegFieldBit, SWoWoRegFieldBits, URoReg, URoRoRegFieldBit,
   URoRoRegFieldBits, URoRwRegFieldBit, URoRwRegFieldBits, URwReg,
   URwRwRegFieldBit, URwRwRegFieldBits, UWoReg, UWoRwRegFieldBit,
-  UWoRwRegFieldBits, UWoWoRegFieldBit, UWoWoRegFieldBits, WoRwRegFieldBit,
-  WoRwRegFieldBits,
+  UWoRwRegFieldBits, UWoWoRegFieldBit, UWoWoRegFieldBits, WoReg,
+  WoRwRegFieldBit, WoRwRegFieldBits, WoWoRegFieldBit, WoWoRegFieldBits,
 };
 
-use crate::reg::prelude::*;
+use crate::reg::{
+  Crt, RRRegFieldBitBand, RegBitBand, RegTag, RwRegAtomicRef, Srt, Urt,
+  WRwRegFieldBitAtomic, WRwRegFieldBitsAtomic, WWRegFieldBitBand,
+};
 use drone_core::reg::marker;
 
 // {{{ SRwReg

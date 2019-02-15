@@ -1,15 +1,17 @@
-use super::{Timer, TimerOverflow};
+//! SysTick timer.
+
 use crate::{
-  fib::{self, FiberFuture, FiberStreamUnit, TryFiberStreamUnit},
+  drv::timer::{Timer, TimerInterval, TimerOverflow, TimerSleep, TimerStop},
+  fib::{self, Fiber},
   map::{
     periph::sys_tick::SysTickPeriph,
     reg::{scb, stk},
     thr::IntSysTick,
   },
-  reg::prelude::*,
+  reg::{prelude::*, WWRegFieldBit},
   thr::prelude::*,
 };
-use core::ptr::write_volatile;
+use core::{pin::Pin, ptr::write_volatile};
 use drone_core::bitfield::Bitfield;
 use futures::stream::Stream;
 
@@ -34,81 +36,62 @@ pub struct SysTickDiverged {
 #[macro_export]
 macro_rules! drv_sys_tick {
   ($reg:ident, $int:expr) => {
-    $crate::drv::timer::SysTick::new($crate::periph_sys_tick!($reg), $int)
+    $crate::drv::sys_tick::SysTick::new($crate::periph_sys_tick!($reg), $int)
   };
 }
 
 impl<I: IntSysTick<Att>> Timer for SysTick<I> {
-  type Duration = u32;
-  type CtrlVal = stk::ctrl::Val;
-  type SleepFuture = FiberFuture<()>;
-  type IntervalStream = TryFiberStreamUnit<TimerOverflow>;
-  type IntervalSkipStream = FiberStreamUnit;
+  type Stop = Self;
 
-  #[inline]
-  fn sleep(
-    &mut self,
-    dur: Self::Duration,
-    mut ctrl_val: Self::CtrlVal,
-  ) -> Self::SleepFuture {
-    ctrl_val = disable(&mut self.periph.stk_ctrl.hold(ctrl_val)).val();
-    self.periph.stk_ctrl.store_val(ctrl_val);
-    schedule(&self.periph.stk_load, &self.periph.stk_val, dur);
+  fn sleep(&mut self, duration: usize) -> TimerSleep<'_, Self> {
     let ctrl = self.periph.stk_ctrl;
     let pendstclr = self.periph.scb_icsr_pendstclr;
-    let fut = self.int.add_future(fib::new_fn(move || {
-      ctrl.store_val(ctrl_val);
-      unsafe { set_bit(&pendstclr) };
-    }));
-    ctrl_val = enable(&mut self.periph.stk_ctrl.hold(ctrl_val)).val();
-    self.periph.stk_ctrl.store_val(ctrl_val);
-    fut
+    let fut = Box::pin(self.int.add_future(fib::new(move || loop {
+      let mut ctrl_val = ctrl.load();
+      if ctrl_val.countflag() {
+        ctrl.store_val(disable(&mut ctrl_val).val());
+        unsafe { set_bit(&pendstclr) };
+        break;
+      }
+      yield;
+    })));
+    schedule(&self.periph.stk_load, &self.periph.stk_val, duration);
+    let mut ctrl_val = self.periph.stk_ctrl.load();
+    self.periph.stk_ctrl.store_val(enable(&mut ctrl_val).val());
+    TimerSleep::new(self, fut)
   }
 
-  #[inline]
   fn interval(
     &mut self,
-    dur: Self::Duration,
-    ctrl_val: Self::CtrlVal,
-  ) -> Self::IntervalStream {
-    self.interval_stream(dur, ctrl_val, |int| {
-      int.add_stream(
-        || Err(TimerOverflow),
-        fib::new(|| loop {
-          yield Some(());
-        }),
-      )
+    duration: usize,
+  ) -> TimerInterval<'_, Self, Result<(), TimerOverflow>> {
+    self.interval_stream(duration, |int, ctrl| {
+      Box::pin(int.add_stream(|| Err(TimerOverflow), Self::interval_fib(ctrl)))
     })
   }
 
-  #[inline]
-  fn interval_skip(
-    &mut self,
-    dur: Self::Duration,
-    ctrl_val: Self::CtrlVal,
-  ) -> Self::IntervalSkipStream {
-    self.interval_stream(dur, ctrl_val, |int| {
-      int.add_stream_skip(fib::new(|| loop {
-        yield Some(());
-      }))
+  fn interval_skip(&mut self, duration: usize) -> TimerInterval<'_, Self, ()> {
+    self.interval_stream(duration, |int, ctrl| {
+      Box::pin(int.add_stream_skip(Self::interval_fib(ctrl)))
     })
   }
+}
 
-  #[inline]
-  fn stop(&mut self, mut ctrl_val: Self::CtrlVal) {
-    ctrl_val = disable(&mut self.periph.stk_ctrl.hold(ctrl_val)).val();
-    self.periph.stk_ctrl.store_val(ctrl_val);
+impl<I: IntSysTick<Att>> TimerStop for SysTick<I> {
+  fn stop(&mut self) {
+    let mut ctrl_val = self.periph.stk_ctrl.load();
+    self.periph.stk_ctrl.store_val(disable(&mut ctrl_val).val());
   }
 }
 
 impl<I: IntSysTick<Att>> SysTick<I> {
   /// Creates a new [`SysTick`].
-  #[inline(always)]
+  #[inline]
   pub fn new(periph: SysTickPeriph, int: I) -> Self {
     let periph = SysTickDiverged {
-      scb_icsr_pendstclr: periph.scb_icsr_pendstclr.to_copy(),
+      scb_icsr_pendstclr: periph.scb_icsr_pendstclr.into_copy(),
       scb_icsr_pendstset: periph.scb_icsr_pendstset,
-      stk_ctrl: periph.stk_ctrl.to_copy(),
+      stk_ctrl: periph.stk_ctrl.into_copy(),
       stk_load: periph.stk_load,
       stk_val: periph.stk_val,
     };
@@ -120,13 +103,13 @@ impl<I: IntSysTick<Att>> SysTick<I> {
   /// # Safety
   ///
   /// Some of the `Crt` register tokens can be still in use.
-  #[inline(always)]
+  #[inline]
   pub unsafe fn from_diverged(periph: SysTickDiverged, int: I) -> Self {
     Self { periph, int }
   }
 
   /// Releases the peripheral.
-  #[inline(always)]
+  #[inline]
   pub fn free(self) -> SysTickDiverged {
     self.periph
   }
@@ -149,52 +132,63 @@ impl<I: IntSysTick<Att>> SysTick<I> {
     unsafe { set_bit(&self.periph.scb_icsr_pendstclr) };
   }
 
-  fn interval_stream<F, S>(
-    &mut self,
-    dur: u32,
-    mut ctrl_val: stk::ctrl::Val,
-    f: F,
-  ) -> S
-  where
-    F: FnOnce(I) -> S,
-    S: Stream,
-  {
-    ctrl_val = disable(&mut self.periph.stk_ctrl.hold(ctrl_val)).val();
-    self.periph.stk_ctrl.store_val(ctrl_val);
-    schedule(&self.periph.stk_load, &self.periph.stk_val, dur);
-    let stream = f(self.int);
-    ctrl_val = enable(&mut self.periph.stk_ctrl.hold(ctrl_val)).val();
-    self.periph.stk_ctrl.store_val(ctrl_val);
-    stream
+  #[inline]
+  fn interval_stream<'a, T: 'a>(
+    &'a mut self,
+    duration: usize,
+    f: impl FnOnce(I, stk::Ctrl<Crt>) -> Pin<Box<dyn Stream<Item = T> + Send + 'a>>,
+  ) -> TimerInterval<'a, Self, T> {
+    let stream = f(self.int, self.periph.stk_ctrl);
+    schedule(&self.periph.stk_load, &self.periph.stk_val, duration);
+    let mut ctrl_val = self.periph.stk_ctrl.load();
+    self.periph.stk_ctrl.store_val(enable(&mut ctrl_val).val());
+    TimerInterval::new(self, stream)
+  }
+
+  #[inline]
+  fn interval_fib<T>(
+    ctrl: stk::Ctrl<Crt>,
+  ) -> impl Fiber<Input = (), Yield = Option<()>, Return = T> {
+    fib::new(move || loop {
+      yield if ctrl.load().countflag() {
+        Some(())
+      } else {
+        None
+      };
+    })
   }
 }
 
 #[allow(missing_docs)]
 impl<I: IntSysTick<Att>> SysTick<I> {
-  #[inline(always)]
+  #[inline]
   pub fn int(&self) -> I {
     self.int
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn ctrl(&self) -> &stk::Ctrl<Srt> {
     &self.periph.stk_ctrl.as_sync()
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn load(&self) -> &stk::Load<Srt> {
     &self.periph.stk_load
   }
 
-  #[inline(always)]
+  #[inline]
   pub fn val(&self) -> &stk::Val<Srt> {
     &self.periph.stk_val
   }
 }
 
 #[inline]
-fn schedule(stk_load: &stk::Load<Srt>, stk_val: &stk::Val<Srt>, dur: u32) {
-  stk_load.store(|r| r.write_reload(dur));
+fn schedule(
+  stk_load: &stk::Load<Srt>,
+  stk_val: &stk::Val<Srt>,
+  duration: usize,
+) {
+  stk_load.store(|r| r.write_reload(duration as u32));
   stk_val.store(|r| r.write_current(0));
 }
 
@@ -212,7 +206,7 @@ fn disable<'a, 'b>(
   ctrl.clear_enable().clear_tickint()
 }
 
-#[inline(always)]
+#[inline]
 unsafe fn set_bit<F, T>(field: &F)
 where
   F: WWRegFieldBit<T>,

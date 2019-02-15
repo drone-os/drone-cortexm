@@ -23,14 +23,13 @@ pub struct Reset<T: ThrTag, U>(PhantomData<T>, PhantomData<U>);
 
 impl<T: ThrTag, U: Thread> ThrToken<T> for Reset<T, &'static U> {
   type Thr = U;
-  type AThrToken = Reset<Att, &'static U>;
   type TThrToken = Reset<Ttt, &'static U>;
-  type CThrToken = Reset<Ctt, &'static U>;
-  type RThrToken = Reset<Rtt, &'static U>;
+  type AThrToken = Reset<Att, &'static U>;
+  type PThrToken = Reset<Ptt, &'static U>;
 
   const THR_NUM: usize = 0;
 
-  #[inline(always)]
+  #[inline]
   unsafe fn take() -> Self {
     Self(PhantomData, PhantomData)
   }

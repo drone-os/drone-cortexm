@@ -29,7 +29,7 @@ where
   /// # Safety
   ///
   /// `I` and `O` types must match the enclosing fiber.
-  #[inline(always)]
+  #[inline]
   pub unsafe fn new() -> Self {
     Self {
       _sv: PhantomData,

@@ -20,7 +20,7 @@ pub trait StreamExt<'a>: Stream {
 }
 
 impl<'a, T: Stream> StreamExt<'a> for T {
-  #[inline(always)]
+  #[inline]
   fn trunk_wait(self) -> StreamTrunkWait<'a, Self>
   where
     Self: Sized,

@@ -17,13 +17,13 @@ macro_rules! drv_fpu {
 
 impl Fpu {
   /// Creates a new [`Fpu`].
-  #[inline(always)]
+  #[inline]
   pub fn new(periph: FpuPeriph) -> Self {
     Self { periph }
   }
 
   /// Releases the peripheral.
-  #[inline(always)]
+  #[inline]
   pub fn free(self) -> FpuPeriph {
     self.periph
   }

@@ -1,5 +1,6 @@
+use super::*;
 use core::ops::{Deref, DerefMut};
-use drone_core::{bitfield::Bitfield, reg::prelude::*};
+use drone_core::bitfield::Bitfield;
 
 /// A wrapper for a value loaded with `ldrex` instruction.
 pub struct RegExcl<T> {
@@ -96,7 +97,7 @@ where
   U: RReg<T> + WReg<T>,
   <U::Val as Bitfield>::Bits: AtomicBits,
 {
-  #[inline(always)]
+  #[inline]
   fn load_excl<'a>(&'a self) -> RegExcl<<Self as RegRef<'a, T>>::Hold>
   where
     Self: RegRef<'a, T>,
@@ -108,7 +109,7 @@ where
     }
   }
 
-  #[inline(always)]
+  #[inline]
   fn store_excl(&self, val: RegExcl<Self::Val>) -> bool {
     unsafe { val.into_inner().bits().store_excl(Self::ADDRESS) }
   }
@@ -120,7 +121,7 @@ where
   U: RReg<T> + WRegAtomic<'a, T> + RegRef<'a, T>,
   <U::Val as Bitfield>::Bits: AtomicBits,
 {
-  #[inline(always)]
+  #[inline]
   fn modify<F>(&'a self, f: F)
   where
     F: for<'b> Fn(
@@ -144,7 +145,7 @@ where
   U::Reg: RwRegAtomic<T>,
   <<U::Reg as Reg<T>>::Val as Bitfield>::Bits: AtomicBits,
 {
-  #[inline(always)]
+  #[inline]
   fn load_excl(&self) -> RegExcl<<Self::Reg as Reg<T>>::Val> {
     unsafe {
       RegExcl::new(<Self::Reg as Reg<T>>::Val::from_bits(<<Self::Reg as Reg<
@@ -155,12 +156,12 @@ where
     }
   }
 
-  #[inline(always)]
+  #[inline]
   fn store_excl(&self, val: RegExcl<<Self::Reg as Reg<T>>::Val>) -> bool {
     unsafe { val.into_inner().bits().store_excl(Self::Reg::ADDRESS) }
   }
 
-  #[inline(always)]
+  #[inline]
   fn modify<F>(&self, f: F)
   where
     F: Fn(&mut <Self::Reg as Reg<T>>::Val),
@@ -181,21 +182,21 @@ where
   U: WRwRegFieldAtomic<T> + RegFieldBit<T>,
   U::Reg: RwRegAtomic<T>,
 {
-  #[inline(always)]
+  #[inline]
   fn set_bit(&self) {
     self.modify(|val| {
       self.set(val);
     });
   }
 
-  #[inline(always)]
+  #[inline]
   fn clear_bit(&self) {
     self.modify(|val| {
       self.clear(val);
     });
   }
 
-  #[inline(always)]
+  #[inline]
   fn toggle_bit(&self) {
     self.modify(|val| {
       self.toggle(val);
@@ -209,7 +210,7 @@ where
   U: WRwRegFieldAtomic<T> + RegFieldBits<T>,
   U::Reg: RwRegAtomic<T>,
 {
-  #[inline(always)]
+  #[inline]
   fn write_bits(&self, bits: <<Self::Reg as Reg<T>>::Val as Bitfield>::Bits) {
     self.modify(|val| {
       self.write(val, bits);
@@ -220,26 +221,26 @@ where
 impl<T> Deref for RegExcl<T> {
   type Target = T;
 
-  #[inline(always)]
+  #[inline]
   fn deref(&self) -> &T {
     &self.inner
   }
 }
 
 impl<T> DerefMut for RegExcl<T> {
-  #[inline(always)]
+  #[inline]
   fn deref_mut(&mut self) -> &mut T {
     &mut self.inner
   }
 }
 
 impl<T> RegExcl<T> {
-  #[inline(always)]
+  #[inline]
   fn new(inner: T) -> Self {
     Self { inner }
   }
 
-  #[inline(always)]
+  #[inline]
   fn into_inner(self) -> T {
     self.inner
   }
@@ -259,7 +260,7 @@ where
 macro_rules! atomic_bits {
   ($type:ty, $ldrex:expr, $strex:expr) => {
     impl AtomicBits for $type {
-      #[inline(always)]
+      #[inline]
       unsafe fn load_excl(address: usize) -> Self {
         let raw: Self;
         asm!($ldrex
@@ -270,7 +271,7 @@ macro_rules! atomic_bits {
         raw
       }
 
-      #[inline(always)]
+      #[inline]
       unsafe fn store_excl(self, address: usize) -> bool {
         let status: Self;
         asm!($strex

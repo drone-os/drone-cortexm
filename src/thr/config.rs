@@ -33,7 +33,7 @@ macro_rules! nvic_methods {
   ) => {
     $(
       #[doc = $name_store_doc]
-      #[inline(always)]
+      #[inline]
       fn $name_store<F>(&self, f: F)
       where
         F: FnOnce(&mut $bundle<Self::Bundle>),
@@ -42,13 +42,13 @@ macro_rules! nvic_methods {
       }
 
       #[doc = $name_write_doc]
-      #[inline(always)]
+      #[inline]
       fn $name_write(&self, bundle: &mut $bundle<Self::Bundle>) {
         bundle.write::<Self>();
       }
 
       #[doc = $name_write_one_doc]
-      #[inline(always)]
+      #[inline]
       fn $name_write_one(&self) {
         self.$name_store(|r| {
           self.$name_write(r);
@@ -58,19 +58,19 @@ macro_rules! nvic_methods {
 
     $(
       #[doc = $name_load_doc]
-      #[inline(always)]
+      #[inline]
       fn $name_load(&self) -> $bundle<Self::Bundle> {
         $bundle::load()
       }
 
       #[doc = $name_read_doc]
-      #[inline(always)]
+      #[inline]
       fn $name_read(&self, bundle: &$bundle<Self::Bundle>) -> bool {
         bundle.read::<Self>()
       }
 
       #[doc = $name_load_one_doc]
-      #[inline(always)]
+      #[inline]
       fn $name_load_one(&self) -> bool {
         self.$name_read(&self.$name_load())
       }
@@ -78,8 +78,8 @@ macro_rules! nvic_methods {
   }
 }
 
-/// NVIC thread control.
-pub trait ThrControl: IntToken<Ctt> {
+/// NVIC thread configuration.
+pub trait ThrConfig: IntToken<Ptt> {
   nvic_methods! {
     NvicIser,
     {
@@ -160,13 +160,13 @@ pub trait ThrControl: IntToken<Ctt> {
   }
 
   /// Returns the interrupt priority.
-  #[inline(always)]
+  #[inline]
   fn priority(&self) -> u8 {
     unsafe { read_volatile((NVIC_IPR as *const u8).add(Self::INT_NUM)) }
   }
 
   /// Sets the interrupt priority.
-  #[inline(always)]
+  #[inline]
   fn set_priority(&self, priority: u8) {
     unsafe {
       write_volatile((NVIC_IPR as *mut u8).add(Self::INT_NUM), priority);
@@ -174,7 +174,7 @@ pub trait ThrControl: IntToken<Ctt> {
   }
 }
 
-impl<T: IntToken<Ctt>> ThrControl for T {}
+impl<T: IntToken<Ptt>> ThrConfig for T {}
 
 trait NvicBundle<T: IntBundle>: Sized {
   const BASE: usize;
@@ -185,14 +185,14 @@ trait NvicBundle<T: IntBundle>: Sized {
 
   fn inner_mut(&mut self) -> &mut u32;
 
-  #[inline(always)]
+  #[inline]
   fn load() -> Self {
     Self::new(unsafe {
       read_volatile((Self::BASE as *const u32).add(T::BUNDLE_NUM))
     })
   }
 
-  #[inline(always)]
+  #[inline]
   fn store<F>(f: F)
   where
     F: FnOnce(&mut Self),
@@ -207,19 +207,18 @@ trait NvicBundle<T: IntBundle>: Sized {
     }
   }
 
-  #[inline(always)]
-  fn read<U: IntToken<Ctt>>(&self) -> bool {
+  #[inline]
+  fn read<U: IntToken<Ptt>>(&self) -> bool {
     self.inner() & 1 << bundle_offset::<U>() != 0
   }
 
-  #[inline(always)]
-  fn write<U: IntToken<Ctt>>(&mut self) {
+  #[inline]
+  fn write<U: IntToken<Ptt>>(&mut self) {
     *self.inner_mut() |= 1 << bundle_offset::<U>();
   }
 }
 
-#[inline(always)]
-const fn bundle_offset<T: IntToken<Ctt>>() -> usize {
+const fn bundle_offset<T: IntToken<Ptt>>() -> usize {
   T::INT_NUM & 0b11_111
 }
 
@@ -234,7 +233,7 @@ macro_rules! bundle {
     impl<T: IntBundle> NvicBundle<T> for $name<T> {
       const BASE: usize = $base;
 
-      #[inline(always)]
+      #[inline]
       fn new(inner: u32) -> Self {
         Self {
           _bundle: PhantomData,
@@ -242,12 +241,12 @@ macro_rules! bundle {
         }
       }
 
-      #[inline(always)]
+      #[inline]
       fn inner(&self) -> u32 {
         self.inner
       }
 
-      #[inline(always)]
+      #[inline]
       fn inner_mut(&mut self) -> &mut u32 {
         &mut self.inner
       }
