@@ -9,9 +9,9 @@ pub trait FutureExt: Future {
 
 impl<T: Future> FutureExt for T {
   fn trunk_wait(mut self) -> Self::Output {
-    let lw = WakeTrunk::new().into_local_waker();
+    let waker = WakeTrunk::new().to_waker();
     loop {
-      match unsafe { Pin::new_unchecked(&mut self) }.poll(&lw) {
+      match unsafe { Pin::new_unchecked(&mut self) }.poll(&waker) {
         Poll::Pending => WakeTrunk::wait(),
         Poll::Ready(value) => break value,
       }

@@ -1,4 +1,4 @@
 mod int;
 mod trunk;
 
-pub(in crate::thr) use self::{int::WakeInt, trunk::WakeTrunk};
+pub(crate) use self::{int::WakeInt, trunk::WakeTrunk};

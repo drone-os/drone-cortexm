@@ -1,14 +1,13 @@
 use core::{
-  mem::align_of,
-  ptr::{write_volatile, NonNull},
-  task::{LocalWaker, UnsafeWake, Waker},
+  ptr::write_volatile,
+  task::{RawWaker, RawWakerVTable, Waker},
 };
 
 const NVIC_STIR: usize = 0xE000_EF00;
 
-pub struct WakeInt(usize);
+static VTABLE: RawWakerVTable = RawWakerVTable { clone, wake, drop };
 
-struct WakeIntWrapped;
+pub struct WakeInt(usize);
 
 impl WakeInt {
   #[inline]
@@ -17,37 +16,24 @@ impl WakeInt {
   }
 
   #[inline]
-  fn from_wrapped(wrapped: *const WakeIntWrapped) -> WakeInt {
-    Self(wrapped as usize - align_of::<WakeIntWrapped>())
-  }
-
-  #[inline]
-  fn into_wrapped(self) -> *mut WakeIntWrapped {
-    (self.0 + align_of::<WakeIntWrapped>()) as _
-  }
-
-  #[inline]
   pub fn wake(&self) {
     unsafe { write_volatile(NVIC_STIR as *mut usize, self.0) };
   }
 
   #[inline]
-  pub fn into_local_waker(self) -> LocalWaker {
-    unsafe { LocalWaker::new(NonNull::new_unchecked(self.into_wrapped())) }
+  pub fn to_waker(&self) -> Waker {
+    unsafe { Waker::new_unchecked(self.to_raw_waker()) }
+  }
+
+  fn to_raw_waker(&self) -> RawWaker {
+    RawWaker::new(self.0 as *const (), &VTABLE)
   }
 }
 
-unsafe impl UnsafeWake for WakeIntWrapped {
-  #[inline]
-  unsafe fn clone_raw(&self) -> Waker {
-    Waker::new(NonNull::new_unchecked(self as *const Self as *mut Self))
-  }
+unsafe fn clone(data: *const ()) -> RawWaker {
+  WakeInt::new(data as usize).to_raw_waker()
+}
 
-  #[inline]
-  unsafe fn drop_raw(&self) {}
-
-  #[inline]
-  unsafe fn wake(&self) {
-    WakeInt::from_wrapped(self).wake()
-  }
+unsafe fn wake(data: *const ()) {
+  WakeInt::new(data as usize).wake();
 }

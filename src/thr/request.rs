@@ -48,8 +48,8 @@ impl<T: ThrTag, U: IntToken<T>> ThrRequest<T> for U {
     F: Future<Output = O> + Send + 'static,
   {
     fn poll<F: Future>(fut: Pin<&mut F>, int_num: usize) -> Poll<F::Output> {
-      let lw = WakeInt::new(int_num).into_local_waker();
-      fut.poll(&lw)
+      let waker = WakeInt::new(int_num).to_waker();
+      fut.poll(&waker)
     }
     self.add(move || loop {
       match poll(unsafe { Pin::new_unchecked(&mut fut) }, Self::INT_NUM) {

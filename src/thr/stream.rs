@@ -40,9 +40,9 @@ impl<'a, T: Stream> Iterator for StreamTrunkWait<'a, T> {
     if self.exhausted {
       return None;
     }
-    let lw = WakeTrunk::new().into_local_waker();
+    let waker = WakeTrunk::new().to_waker();
     loop {
-      match unsafe { Pin::new_unchecked(&mut self.stream) }.poll_next(&lw) {
+      match unsafe { Pin::new_unchecked(&mut self.stream) }.poll_next(&waker) {
         Poll::Pending => WakeTrunk::wait(),
         Poll::Ready(Some(item)) => break Some(item),
         Poll::Ready(None) => {
