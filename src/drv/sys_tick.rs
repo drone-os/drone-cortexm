@@ -46,14 +46,16 @@ impl<I: IntSysTick<Att>> Timer for SysTick<I> {
   fn sleep(&mut self, duration: usize) -> TimerSleep<'_, Self> {
     let ctrl = self.periph.stk_ctrl;
     let pendstclr = self.periph.scb_icsr_pendstclr;
-    let fut = Box::pin(self.int.add_future(fib::new(move || loop {
-      let mut ctrl_val = ctrl.load();
-      if ctrl_val.countflag() {
-        ctrl.store_val(disable(&mut ctrl_val).val());
-        unsafe { set_bit(&pendstclr) };
-        break;
+    let fut = Box::pin(self.int.add_future(fib::new(move || {
+      loop {
+        let mut ctrl_val = ctrl.load();
+        if ctrl_val.countflag() {
+          ctrl.store_val(disable(&mut ctrl_val).val());
+          unsafe { set_bit(&pendstclr) };
+          break;
+        }
+        yield;
       }
-      yield;
     })));
     schedule(&self.periph.stk_load, &self.periph.stk_val, duration);
     let mut ctrl_val = self.periph.stk_ctrl.load();
@@ -149,12 +151,14 @@ impl<I: IntSysTick<Att>> SysTick<I> {
   fn interval_fib<T>(
     ctrl: stk::Ctrl<Crt>,
   ) -> impl Fiber<Input = (), Yield = Option<()>, Return = T> {
-    fib::new(move || loop {
-      yield if ctrl.load().countflag() {
-        Some(())
-      } else {
-        None
-      };
+    fib::new(move || {
+      loop {
+        yield if ctrl.load().countflag() {
+          Some(())
+        } else {
+          None
+        };
+      }
     })
   }
 }

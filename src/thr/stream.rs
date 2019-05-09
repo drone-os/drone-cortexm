@@ -1,5 +1,10 @@
 use crate::thr::wake::WakeTrunk;
-use core::{iter::FusedIterator, marker::PhantomData, pin::Pin, task::Poll};
+use core::{
+  iter::FusedIterator,
+  marker::PhantomData,
+  pin::Pin,
+  task::{Context, Poll},
+};
 use futures::stream::Stream;
 
 /// A stream combinator which converts an asynchronous stream to a **blocking
@@ -41,8 +46,9 @@ impl<'a, T: Stream> Iterator for StreamTrunkWait<'a, T> {
       return None;
     }
     let waker = WakeTrunk::new().to_waker();
+    let mut cx = Context::from_waker(&waker);
     loop {
-      match unsafe { Pin::new_unchecked(&mut self.stream) }.poll_next(&waker) {
+      match unsafe { Pin::new_unchecked(&mut self.stream) }.poll_next(&mut cx) {
         Poll::Pending => WakeTrunk::wait(),
         Poll::Ready(Some(item)) => break Some(item),
         Poll::Ready(None) => {

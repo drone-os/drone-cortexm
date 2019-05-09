@@ -27,13 +27,11 @@
 //! [OpenOCD]: http://openocd.org/
 //! [rules.d]: https://github.com/texane/stlink/tree/master/etc/udev/rules.d
 
-#![feature(alloc)]
 #![feature(asm)]
 #![feature(associated_type_defaults)]
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
 #![feature(exhaustive_patterns)]
-#![feature(futures_api)]
 #![feature(generators)]
 #![feature(generator_trait)]
 #![feature(lang_items)]
@@ -43,7 +41,6 @@
 #![feature(never_type)]
 #![feature(prelude_import)]
 #![feature(proc_macro_hygiene)]
-#![feature(range_contains)]
 #![feature(untagged_unions)]
 #![no_std]
 #![deny(bare_trait_objects)]

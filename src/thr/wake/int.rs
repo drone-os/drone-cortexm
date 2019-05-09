@@ -5,7 +5,7 @@ use core::{
 
 const NVIC_STIR: usize = 0xE000_EF00;
 
-static VTABLE: RawWakerVTable = RawWakerVTable { clone, wake, drop };
+static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake, drop);
 
 pub struct WakeInt(usize);
 
@@ -22,7 +22,7 @@ impl WakeInt {
 
   #[inline]
   pub fn to_waker(&self) -> Waker {
-    unsafe { Waker::new_unchecked(self.to_raw_waker()) }
+    unsafe { Waker::from_raw(self.to_raw_waker()) }
   }
 
   fn to_raw_waker(&self) -> RawWaker {

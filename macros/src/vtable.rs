@@ -139,7 +139,7 @@ impl Parse for Mode {
   }
 }
 
-#[allow(clippy::cyclomatic_complexity)]
+#[allow(clippy::cognitive_complexity)]
 pub fn proc_macro(input: TokenStream) -> TokenStream {
   let Vtable {
     vtable_attrs,

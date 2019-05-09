@@ -1,5 +1,10 @@
 use crate::thr::{prelude::*, wake::WakeInt};
-use core::{fmt::Display, future::Future, pin::Pin, task::Poll};
+use core::{
+  fmt::Display,
+  future::Future,
+  pin::Pin,
+  task::{Context, Poll},
+};
 
 /// Thread execution requests.
 pub trait ThrRequest<T: ThrTag>: IntToken<T> {
@@ -49,16 +54,19 @@ impl<T: ThrTag, U: IntToken<T>> ThrRequest<T> for U {
   {
     fn poll<F: Future>(fut: Pin<&mut F>, int_num: usize) -> Poll<F::Output> {
       let waker = WakeInt::new(int_num).to_waker();
-      fut.poll(&waker)
+      let mut cx = Context::from_waker(&waker);
+      fut.poll(&mut cx)
     }
-    self.add(move || loop {
-      match poll(unsafe { Pin::new_unchecked(&mut fut) }, Self::INT_NUM) {
-        Poll::Pending => {
-          yield;
-        }
-        Poll::Ready(output) => {
-          output.terminate();
-          break;
+    self.add(move || {
+      loop {
+        match poll(unsafe { Pin::new_unchecked(&mut fut) }, Self::INT_NUM) {
+          Poll::Pending => {
+            yield;
+          }
+          Poll::Ready(output) => {
+            output.terminate();
+            break;
+          }
         }
       }
     });

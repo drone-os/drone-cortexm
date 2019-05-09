@@ -4,7 +4,7 @@ use core::{
   task::{RawWaker, RawWakerVTable, Waker},
 };
 
-static VTABLE: RawWakerVTable = RawWakerVTable { clone, wake, drop };
+static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake, drop);
 
 pub struct WakeTrunk(());
 
@@ -21,7 +21,7 @@ impl WakeTrunk {
 
   #[inline]
   pub fn to_waker(&self) -> Waker {
-    unsafe { Waker::new_unchecked(raw_waker()) }
+    unsafe { Waker::from_raw(raw_waker()) }
   }
 }
 
