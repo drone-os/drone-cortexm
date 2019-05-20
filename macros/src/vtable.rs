@@ -1,4 +1,4 @@
-use drone_macros_core::{new_def_ident, new_ident};
+use drone_macros_core::new_ident;
 use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
@@ -163,8 +163,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     .map(|int| usize::try_from(int.num.value()).unwrap() + 1)
     .max()
     .unwrap_or(0);
-  let def_reserved0 = new_def_ident!("_reserved0");
-  let def_reserved1 = new_def_ident!("_reserved1");
+  let def_reserved0 = new_ident!("_reserved0");
+  let def_reserved1 = new_ident!("_reserved1");
   let mut exc_holes = exc_set();
   let mut vtable_tokens = vec![None; int_len];
   let mut vtable_ctor_tokens = Vec::new();
@@ -239,7 +239,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     .enumerate()
     .map(|(i, tokens)| {
       tokens.unwrap_or_else(|| {
-        let int_ident = new_def_ident!("_int{}", i);
+        let int_ident = new_ident!("_int{}", i);
         vtable_ctor_tokens.push(quote!(#int_ident: None));
         quote!(#int_ident: Option<::drone_cortex_m::thr::vtable::Handler>)
       })

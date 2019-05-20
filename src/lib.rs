@@ -41,6 +41,7 @@
 #![feature(never_type)]
 #![feature(prelude_import)]
 #![feature(proc_macro_hygiene)]
+#![feature(todo_macro)]
 #![feature(untagged_unions)]
 #![no_std]
 #![deny(bare_trait_objects)]
