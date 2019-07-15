@@ -2,6 +2,7 @@
 
 #[path = "."]
 mod inner {
+  mod dwt;
   mod fpu;
   mod itm;
   mod mpu;
@@ -9,7 +10,7 @@ mod inner {
   mod stk;
   mod tpiu;
 
-  pub use self::{fpu::*, itm::*, mpu::*, scb::*, stk::*, tpiu::*};
+  pub use self::{dwt::*, fpu::*, itm::*, mpu::*, scb::*, stk::*, tpiu::*};
 }
 
 use drone_core::reg;
@@ -22,6 +23,11 @@ reg::unsafe_tokens! {
   /// See [`::drone_core::reg::unsafe_tokens!`].
   pub macro unsafe_cortex_m_reg_tokens;
   super::inner; map::reg;
+
+  /// Data watchpoint and trace.
+  pub mod DWT {
+    CYCCNT;
+  }
 
   /// Instrumentation trace macrocell.
   pub mod ITM {
@@ -51,6 +57,6 @@ reg::unsafe_tokens! {
 
   /// Trace port interface unit.
   pub mod TPIU {
-    SPPR; FFCR;
+    ACPR; SPPR; FFCR;
   }
 }

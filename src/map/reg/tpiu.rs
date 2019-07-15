@@ -2,6 +2,15 @@ use crate::reg::prelude::*;
 use drone_core::reg;
 
 reg! {
+  /// Asynchronous Clock Prescaler Register.
+  pub mod TPIU ACPR;
+  0xE004_0010 0x20 0x0000_0000
+  RReg WReg;
+  /// SWO baud rate prescaler value.
+  SWOSCALER { 0 16 RRRegField WWRegField }
+}
+
+reg! {
   /// Selected Pin Protocol Register.
   pub mod TPIU SPPR;
   0xE004_00F0 0x20 0x0000_0001
