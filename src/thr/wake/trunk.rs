@@ -1,7 +1,7 @@
 use crate::cpu;
 use core::{
-  ptr,
-  task::{RawWaker, RawWakerVTable, Waker},
+    ptr,
+    task::{RawWaker, RawWakerVTable, Waker},
 };
 
 static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake, drop);
@@ -9,30 +9,30 @@ static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake, drop);
 pub struct WakeTrunk(());
 
 impl WakeTrunk {
-  #[inline]
-  pub fn new() -> Self {
-    Self(())
-  }
+    #[inline]
+    pub fn new() -> Self {
+        Self(())
+    }
 
-  #[inline]
-  pub fn wait() {
-    cpu::wait_for_event();
-  }
+    #[inline]
+    pub fn wait() {
+        cpu::wait_for_event();
+    }
 
-  #[inline]
-  pub fn to_waker(&self) -> Waker {
-    unsafe { Waker::from_raw(raw_waker()) }
-  }
+    #[inline]
+    pub fn to_waker(&self) -> Waker {
+        unsafe { Waker::from_raw(raw_waker()) }
+    }
 }
 
 fn raw_waker() -> RawWaker {
-  RawWaker::new(ptr::null(), &VTABLE)
+    RawWaker::new(ptr::null(), &VTABLE)
 }
 
 unsafe fn clone(_data: *const ()) -> RawWaker {
-  raw_waker()
+    raw_waker()
 }
 
 unsafe fn wake(_data: *const ()) {
-  cpu::send_event();
+    cpu::send_event();
 }

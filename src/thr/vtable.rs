@@ -13,8 +13,8 @@ pub type ResetHandler = unsafe extern "C" fn() -> !;
 #[derive(Clone, Copy)]
 #[repr(usize)]
 pub enum Reserved {
-  /// The only allowed zero-value.
-  Vector = 0,
+    /// The only allowed zero-value.
+    Vector = 0,
 }
 
 /// Reset thread token.
@@ -22,15 +22,15 @@ pub enum Reserved {
 pub struct Reset<T: ThrTag, U>(PhantomData<T>, PhantomData<U>);
 
 impl<T: ThrTag, U: Thread> ThrToken<T> for Reset<T, &'static U> {
-  type Thr = U;
-  type TThrToken = Reset<Ttt, &'static U>;
-  type AThrToken = Reset<Att, &'static U>;
-  type PThrToken = Reset<Ptt, &'static U>;
+    type Thr = U;
+    type TThrToken = Reset<Ttt, &'static U>;
+    type AThrToken = Reset<Att, &'static U>;
+    type PThrToken = Reset<Ptt, &'static U>;
 
-  const THR_NUM: usize = 0;
+    const THR_NUM: usize = 0;
 
-  #[inline]
-  unsafe fn take() -> Self {
-    Self(PhantomData, PhantomData)
-  }
+    #[inline]
+    unsafe fn take() -> Self {
+        Self(PhantomData, PhantomData)
+    }
 }

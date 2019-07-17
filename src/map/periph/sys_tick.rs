@@ -4,24 +4,24 @@ use crate::map;
 use drone_core::periph;
 
 periph::one! {
-  /// Acquires SysTick.
-  pub macro periph_sys_tick;
+    /// Acquires SysTick.
+    pub macro periph_sys_tick;
 
-  /// SysTick.
-  pub struct SysTickPeriph;
+    /// SysTick.
+    pub struct SysTickPeriph;
 
-  map::reg; map::periph::sys_tick;
+    map::reg; map::periph::sys_tick;
 
-  SCB {
-    ICSR {
-      PENDSTCLR;
-      PENDSTSET;
+    SCB {
+        ICSR {
+            PENDSTCLR;
+            PENDSTSET;
+        }
     }
-  }
 
-  STK {
-    CTRL;
-    LOAD;
-    VAL;
-  }
+    STK {
+        CTRL;
+        LOAD;
+        VAL;
+    }
 }

@@ -49,14 +49,14 @@
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
 #![allow(
-  clippy::cast_possible_truncation,
-  clippy::doc_markdown,
-  clippy::enum_glob_use,
-  clippy::inline_always,
-  clippy::module_name_repetitions,
-  clippy::precedence,
-  clippy::shadow_unrelated,
-  clippy::use_self
+    clippy::cast_possible_truncation,
+    clippy::doc_markdown,
+    clippy::enum_glob_use,
+    clippy::inline_always,
+    clippy::module_name_repetitions,
+    clippy::precedence,
+    clippy::shadow_unrelated,
+    clippy::use_self
 )]
 #![cfg_attr(test, feature(allocator_api, allocator_internals))]
 #![cfg_attr(test, default_lib_allocator)]
@@ -86,14 +86,14 @@ use crate::prelude::*;
 
 #[cfg(test)]
 drone_core::heap! {
-  struct Heap;
-  size = 0x40000;
-  pools = [
-    [0x4; 0x4000],
-    [0x20; 0x800],
-    [0x100; 0x100],
-    [0x800; 0x20],
-  ];
+    struct Heap;
+    size = 0x40000;
+    pools = [
+        [0x4; 0x4000],
+        [0x20; 0x800],
+        [0x100; 0x100],
+        [0x800; 0x20],
+    ];
 }
 
 #[cfg(test)]

@@ -5,52 +5,52 @@ use crate::{map::reg::scb, reg::prelude::*};
 /// Wait for interrupt.
 #[inline]
 pub fn wait_for_int() {
-  unsafe { asm!("wfi" :::: "volatile") };
+    unsafe { asm!("wfi" :::: "volatile") };
 }
 
 /// Wait for event.
 #[inline]
 pub fn wait_for_event() {
-  unsafe { asm!("wfe" :::: "volatile") };
+    unsafe { asm!("wfe" :::: "volatile") };
 }
 
 /// Send event.
 #[inline]
 pub fn send_event() {
-  unsafe { asm!("sev" :::: "volatile") };
+    unsafe { asm!("sev" :::: "volatile") };
 }
 
 /// Makes a system reset request.
 #[allow(clippy::empty_loop)]
 #[inline]
 pub fn self_reset() -> ! {
-  unsafe {
-    asm!("
-      dmb
-      cpsid f
-    " :
-      :
-      :
-      : "volatile"
-    );
-    scb::Aircr::<Urt>::take()
-      .store(|r| r.write_vectkey(0x05FA).set_sysresetreq());
-    loop {}
-  }
+    unsafe {
+        asm!("
+            dmb
+            cpsid f
+        "   :
+            :
+            :
+            : "volatile"
+        );
+        scb::Aircr::<Urt>::take().store(|r| r.write_vectkey(0x05FA).set_sysresetreq());
+        loop {}
+    }
 }
 
 /// Spins a specified amount of CPU cycles.
 #[allow(clippy::used_underscore_binding)]
 #[inline(always)]
 pub fn spin(mut _cycles: u32) {
-  unsafe {
-    asm!("
-      0:
-        subs $0, $0, #2
-        bhi 0b
-    " : "+r"(_cycles)
-      :
-      : "cc"
-      : "volatile");
-  }
+    unsafe {
+        asm!("
+        0:
+            subs $0, $0, #2
+            bhi 0b
+        "   : "+r"(_cycles)
+            :
+            : "cc"
+            : "volatile"
+        );
+    }
 }

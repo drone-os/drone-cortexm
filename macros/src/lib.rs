@@ -17,15 +17,15 @@ use proc_macro::TokenStream;
 
 #[proc_macro]
 pub fn sv(input: TokenStream) -> TokenStream {
-  sv::proc_macro(input)
+    sv::proc_macro(input)
 }
 
 #[proc_macro]
 pub fn thr_int(input: TokenStream) -> TokenStream {
-  thr_int::proc_macro(input)
+    thr_int::proc_macro(input)
 }
 
 #[proc_macro]
 pub fn vtable(input: TokenStream) -> TokenStream {
-  vtable::proc_macro(input)
+    vtable::proc_macro(input)
 }
