@@ -3,14 +3,15 @@
 use crate::map;
 use drone_core::periph;
 
-periph::one! {
+periph::singular! {
     /// Acquires MPU.
     pub macro periph_mpu;
 
     /// MPU.
     pub struct MpuPeriph;
 
-    map::reg; map::periph::mpu;
+    map::reg;
+    crate::map::periph::mpu;
 
     MPU {
         TYPE;

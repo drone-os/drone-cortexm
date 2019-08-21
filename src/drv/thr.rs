@@ -3,7 +3,7 @@
 use crate::{
     map::{
         periph::{mpu::MpuPeriph, thr::ThrPeriph},
-        reg::{mpu, scb},
+        reg::scb,
     },
     reg::prelude::*,
     thr::ThrTokens,
@@ -73,24 +73,31 @@ impl Thr {
         }
     }
 
-    #[allow(clippy::used_underscore_binding)]
+    #[cfg_attr(feature = "std", allow(unused_mut))]
+    #[allow(unused_assignments, unused_variables)]
     #[inline]
     unsafe fn mpu_reset(&self) {
-        if self.mpu.mpu_type.load().dregion() == 0 {
-            return;
+        let mut table_ptr = &MPU_RESET_TABLE;
+        #[cfg(feature = "std")]
+        unimplemented!();
+        #[cfg(not(feature = "std"))]
+        {
+            use crate::map::reg::mpu;
+            if self.mpu.mpu_type.load().dregion() == 0 {
+                return;
+            }
+            self.mpu.mpu_ctrl.reset();
+            asm!("
+                ldmia $0!, {r5-r12}
+                stmia $1, {r5-r12}
+                ldmia $0!, {r5-r12}
+                stmia $1, {r5-r12}
+            "   : "+&rm"(table_ptr)
+                : "r"(mpu::Rbar::<Srt>::ADDRESS)
+                : "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12"
+                : "volatile"
+            );
         }
-        self.mpu.mpu_ctrl.reset();
-        let mut _table_ptr = &MPU_RESET_TABLE;
-        asm!("
-            ldmia $0!, {r5-r12}
-            stmia $1, {r5-r12}
-            ldmia $0!, {r5-r12}
-            stmia $1, {r5-r12}
-        "   : "+&rm"(_table_ptr)
-            : "r"(mpu::Rbar::<Srt>::ADDRESS)
-            : "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12"
-            : "volatile"
-        );
     }
 }
 

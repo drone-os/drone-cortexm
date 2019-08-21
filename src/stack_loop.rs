@@ -1,62 +1,62 @@
 //! Machinery for wrapping stackful synchronous code into stackless asynchronous
 //! command loop.
 
-pub use drone_core::stack_loop::{Context, In, Out, Stack, StackLoopSess};
+pub use drone_core::stack_loop::{Context, In, Out, StackLoop, StackLoopSess};
 
 use crate::{
     fib::{self, Fiber, FiberState},
-    sv::{SwitchBackService, SwitchContextService},
+    sv::{SvCall, SwitchBackService, SwitchContextService},
 };
 use core::pin::Pin;
-use drone_core::sv::SvCall;
 
-type CmdLoop<Sv, T> = fn(In<<T as Stack>::Cmd, <T as Stack>::ReqRes>, InnerYielder<Sv, T>) -> !;
+type CmdLoop<Sv, T> =
+    fn(In<<T as StackLoop>::Cmd, <T as StackLoop>::ReqRes>, InnerYielder<Sv, T>) -> !;
 
 type InnerYielder<Sv, T> = fib::Yielder<Sv, InnerIn<T>, InnerOut<T>, !>;
 
 type InnerFiber<Sv, T> = fib::FiberStack<Sv, InnerIn<T>, InnerOut<T>, !, CmdLoop<Sv, T>>;
 
-type InnerIn<T> = In<<T as Stack>::Cmd, <T as Stack>::ReqRes>;
+type InnerIn<T> = In<<T as StackLoop>::Cmd, <T as StackLoop>::ReqRes>;
 
-type InnerOut<T> = Out<<T as Stack>::Req, <T as Stack>::CmdRes>;
+type InnerOut<T> = Out<<T as StackLoop>::Req, <T as StackLoop>::CmdRes>;
 
 /// A stackful fiber that runs the command loop.
-pub struct StackLoop<Sv, T>(InnerFiber<Sv, T>)
+pub struct StackLoopFiber<Sv, T>(InnerFiber<Sv, T>)
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: Stack<Context = Yielder<Sv, T>>;
+    T: StackLoop<Context = Yielder<Sv, T>>;
 
-/// A yielder from [`StackLoop`].
+/// A yielder from [`StackLoopFiber`].
 pub struct Yielder<Sv, T>(InnerYielder<Sv, T>)
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: Stack<Context = Self>;
+    T: StackLoop<Context = Self>;
 
 #[allow(clippy::new_without_default)]
-impl<Sv, T> StackLoop<Sv, T>
+impl<Sv, T> StackLoopFiber<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: Stack<Context = Yielder<Sv, T>>,
+    T: StackLoop<Context = Yielder<Sv, T>>,
 {
-    /// Creates a new [`StackLoop`].
+    /// Creates a new [`StackLoopFiber`].
     ///
     /// # Panics
     ///
     /// * If MPU not present.
-    /// * If the adapter is singleton, and a `StackLoop` instance already
+    /// * If the adapter is singleton, and a `StackLoopFiber` instance already
     ///   exists.
     pub fn new() -> Self {
         unsafe { Self::new_with(fib::new_stack) }
     }
 
-    /// Creates a new [`StackLoop`].
+    /// Creates a new [`StackLoopFiber`].
     ///
     /// # Panics
     ///
-    /// * If the adapter is singleton, and a `StackLoop` instance already
+    /// * If the adapter is singleton, and a `StackLoopFiber` instance already
     ///   exists.
     ///
     /// # Safety
@@ -67,12 +67,12 @@ where
     }
 
     unsafe fn new_with(f: unsafe fn(usize, CmdLoop<Sv, T>) -> InnerFiber<Sv, T>) -> Self {
-        T::before_create();
+        T::on_create();
         Self(f(T::STACK_SIZE, Self::cmd_loop))
     }
 
     fn cmd_loop(mut input: In<T::Cmd, T::ReqRes>, yielder: InnerYielder<Sv, T>) -> ! {
-        T::begin();
+        T::on_enter();
         loop {
             input = yielder.stack_yield(Out::CmdRes(T::run_cmd(
                 unsafe { input.into_cmd() },
@@ -82,23 +82,22 @@ where
     }
 }
 
-impl<Sv, T> Drop for StackLoop<Sv, T>
+impl<Sv, T> Drop for StackLoopFiber<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: Stack<Context = Yielder<Sv, T>>,
+    T: StackLoop<Context = Yielder<Sv, T>>,
 {
     fn drop(&mut self) {
-        T::end();
-        T::after_destroy();
+        T::on_drop();
     }
 }
 
-impl<Sv, T> Fiber for StackLoop<Sv, T>
+impl<Sv, T> Fiber for StackLoopFiber<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: Stack<Context = Yielder<Sv, T>>,
+    T: StackLoop<Context = Yielder<Sv, T>>,
 {
     type Input = InnerIn<T>;
     type Yield = InnerOut<T>;
@@ -114,7 +113,7 @@ impl<Sv, T> Context<T::Req, T::ReqRes> for Yielder<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: Stack<Context = Self>,
+    T: StackLoop<Context = Self>,
 {
     #[inline]
     unsafe fn new() -> Self {

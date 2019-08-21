@@ -4,8 +4,34 @@ mod switch;
 
 pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
 
-use core::{intrinsics::unreachable, mem::size_of};
-use drone_core::sv::{Supervisor, SvService};
+use core::mem::size_of;
+
+/// A supervisor interface.
+pub trait Supervisor: Sized + 'static {
+    /// Returns a pointer to the first service.
+    fn first() -> *const Self;
+}
+
+/// A supervisor call.
+pub trait SvCall<T: SvService>: Supervisor {
+    /// Call the system service.
+    ///
+    /// # Safety
+    ///
+    /// Directly calling supervisor services is unsafe in general. User code
+    /// should use wrappers instead.
+    unsafe fn call(service: &mut T);
+}
+
+/// A supervisor service.
+pub trait SvService: Sized + Send + 'static {
+    /// A system service handler.
+    ///
+    /// # Safety
+    ///
+    /// Must be called only by supervisor.
+    unsafe extern "C" fn handler(&mut self);
+}
 
 /// Calls `SVC num` instruction.
 ///
@@ -13,24 +39,30 @@ use drone_core::sv::{Supervisor, SvService};
 ///
 /// Directly calling supervisor services is unsafe in general. User code should
 /// use wrappers instead.
+#[cfg_attr(feature = "std", allow(unused_variables))]
 #[inline(always)]
 pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
-    if size_of::<T>() == 0 {
-        asm!("
-            svc $0
-        "   :
-            : "i"(num)
-            :
-            : "volatile"
-        );
-    } else {
-        asm!("
-            svc $0
-        "   :
-            : "i"(num), "{r12}"(service)
-            :
-            : "volatile"
-        );
+    #[cfg(feature = "std")]
+    unimplemented!();
+    #[cfg(not(feature = "std"))]
+    {
+        if size_of::<T>() == 0 {
+            asm!("
+                svc $0
+            "   :
+                : "i"(num)
+                :
+                : "volatile"
+            );
+        } else {
+            asm!("
+                svc $0
+            "   :
+                : "i"(num), "{r12}"(service)
+                :
+                : "volatile"
+            );
+        }
     }
 }
 
@@ -58,18 +90,24 @@ where
 /// Must be called only by hardware.
 #[naked]
 pub unsafe extern "C" fn sv_handler<T: Supervisor>() {
-    asm!("
-        tst lr, #4
-        ite eq
-        mrseq r0, msp
-        mrsne r0, psp
-        ldr r1, [r0, #24]
-        ldrb r1, [r1, #-2]
-        ldr pc, [r2, r1, lsl #2]
-    "   :
-        : "{r2}"(T::first())
-        : "r0", "r1", "cc"
-        : "volatile"
-    );
-    unreachable();
+    #[cfg(feature = "std")]
+    unimplemented!();
+    #[cfg(not(feature = "std"))]
+    {
+        use core::intrinsics::unreachable;
+        asm!("
+            tst lr, #4
+            ite eq
+            mrseq r0, msp
+            mrsne r0, psp
+            ldr r1, [r0, #24]
+            ldrb r1, [r1, #-2]
+            ldr pc, [r2, r1, lsl #2]
+        "   :
+            : "{r2}"(T::first())
+            : "r0", "r1", "cc"
+            : "volatile"
+        );
+        unreachable();
+    }
 }

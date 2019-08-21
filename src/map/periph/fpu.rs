@@ -3,14 +3,15 @@
 use crate::map;
 use drone_core::periph;
 
-periph::one! {
+periph::singular! {
     /// Acquires FPU.
     pub macro periph_fpu;
 
     /// FPU.
     pub struct FpuPeriph;
 
-    map::reg; map::periph::fpu;
+    map::reg;
+    crate::map::periph::fpu;
 
     FPU {
         CPACR;

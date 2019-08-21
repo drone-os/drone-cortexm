@@ -8,16 +8,16 @@ use crate::{
         reg::{scb, stk},
         thr::IntSysTick,
     },
-    reg::{prelude::*, WWRegFieldBit},
+    reg::{field::WWRegFieldBit, prelude::*},
     thr::prelude::*,
 };
-use core::{pin::Pin, ptr::write_volatile};
-use drone_core::bitfield::Bitfield;
+use core::{num::NonZeroUsize, pin::Pin, ptr::write_volatile};
+use drone_core::{bitfield::Bitfield, token::Token};
 use futures::stream::Stream;
 
 /// SysTick driver.
 #[allow(missing_docs)]
-pub struct SysTick<I: IntSysTick<Att>> {
+pub struct SysTick<I: IntSysTick> {
     periph: SysTickDiverged,
     int: I,
 }
@@ -40,7 +40,7 @@ macro_rules! drv_sys_tick {
     };
 }
 
-impl<I: IntSysTick<Att>> Timer for SysTick<I> {
+impl<I: IntSysTick> Timer for SysTick<I> {
     type Stop = Self;
 
     fn sleep(&mut self, duration: usize) -> TimerSleep<'_, Self> {
@@ -63,27 +63,30 @@ impl<I: IntSysTick<Att>> Timer for SysTick<I> {
         TimerSleep::new(self, fut)
     }
 
-    fn interval(&mut self, duration: usize) -> TimerInterval<'_, Self, Result<(), TimerOverflow>> {
+    fn interval(
+        &mut self,
+        duration: usize,
+    ) -> TimerInterval<'_, Self, Result<NonZeroUsize, TimerOverflow>> {
         self.interval_stream(duration, |int, ctrl| {
-            Box::pin(int.add_stream(|| Err(TimerOverflow), Self::interval_fib(ctrl)))
+            Box::pin(int.add_stream_pulse(|| Err(TimerOverflow), Self::interval_fib(ctrl)))
         })
     }
 
-    fn interval_skip(&mut self, duration: usize) -> TimerInterval<'_, Self, ()> {
+    fn interval_skip(&mut self, duration: usize) -> TimerInterval<'_, Self, NonZeroUsize> {
         self.interval_stream(duration, |int, ctrl| {
-            Box::pin(int.add_stream_skip(Self::interval_fib(ctrl)))
+            Box::pin(int.add_stream_pulse_skip(Self::interval_fib(ctrl)))
         })
     }
 }
 
-impl<I: IntSysTick<Att>> TimerStop for SysTick<I> {
+impl<I: IntSysTick> TimerStop for SysTick<I> {
     fn stop(&mut self) {
         let mut ctrl_val = self.periph.stk_ctrl.load();
         self.periph.stk_ctrl.store_val(disable(&mut ctrl_val).val());
     }
 }
 
-impl<I: IntSysTick<Att>> SysTick<I> {
+impl<I: IntSysTick> SysTick<I> {
     /// Creates a new [`SysTick`].
     #[inline]
     pub fn new(periph: SysTickPeriph, int: I) -> Self {
@@ -147,11 +150,11 @@ impl<I: IntSysTick<Att>> SysTick<I> {
     #[inline]
     fn interval_fib<T>(
         ctrl: stk::Ctrl<Crt>,
-    ) -> impl Fiber<Input = (), Yield = Option<()>, Return = T> {
+    ) -> impl Fiber<Input = (), Yield = Option<usize>, Return = T> {
         fib::new(move || {
             loop {
                 yield if ctrl.load().countflag() {
-                    Some(())
+                    Some(1)
                 } else {
                     None
                 };
@@ -161,7 +164,7 @@ impl<I: IntSysTick<Att>> SysTick<I> {
 }
 
 #[allow(missing_docs)]
-impl<I: IntSysTick<Att>> SysTick<I> {
+impl<I: IntSysTick> SysTick<I> {
     #[inline]
     pub fn int(&self) -> I {
         self.int
@@ -206,7 +209,7 @@ where
     F::Reg: WReg<T>,
     T: RegTag,
 {
-    let mut val = <F::Reg as Reg<T>>::Val::default();
+    let mut val = F::Reg::take().default_val();
     field.set(&mut val);
     write_volatile(
         F::Reg::ADDRESS as *mut <<F::Reg as Reg<T>>::Val as Bitfield>::Bits,

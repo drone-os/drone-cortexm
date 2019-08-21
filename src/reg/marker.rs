@@ -12,8 +12,9 @@ pub use drone_core::reg::marker::{
 };
 
 use crate::reg::{
-    Crt, RRRegFieldBitBand, RegBitBand, RegTag, RwRegAtomicRef, Srt, Urt, WRwRegFieldBitAtomic,
-    WRwRegFieldBitsAtomic, WWRegFieldBitBand,
+    field::{RRRegFieldBitBand, WRwRegFieldBitAtomic, WRwRegFieldBitsAtomic, WWRegFieldBitBand},
+    tag::{Crt, RegTag, Srt, Urt},
+    RegBitBand, RwRegAtomicRef,
 };
 use drone_core::reg::marker;
 

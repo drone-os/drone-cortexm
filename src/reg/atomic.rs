@@ -1,4 +1,8 @@
-use super::*;
+use crate::reg::{
+    field::{RegFieldBit, RegFieldBits, WWRegField, WWRegFieldBit, WWRegFieldBits},
+    tag::RegAtomic,
+    RReg, Reg, RegHold, RegRef, WReg, WRegAtomic,
+};
 use core::ops::{Deref, DerefMut};
 use drone_core::bitfield::Bitfield;
 
@@ -103,9 +107,11 @@ where
         Self: RegRef<'a, T>,
     {
         unsafe {
-            RegExcl::new(self.hold(Self::Val::from_bits(
-                <Self::Val as Bitfield>::Bits::load_excl(Self::ADDRESS),
-            )))
+            RegExcl::new(
+                self.hold(Self::val(<Self::Val as Bitfield>::Bits::load_excl(
+                    Self::ADDRESS,
+                ))),
+            )
         }
     }
 
@@ -148,11 +154,9 @@ where
     #[inline]
     fn load_excl(&self) -> RegExcl<<Self::Reg as Reg<T>>::Val> {
         unsafe {
-            RegExcl::new(<Self::Reg as Reg<T>>::Val::from_bits(<<Self::Reg as Reg<
-                T,
-            >>::Val as Bitfield>::Bits::load_excl(
-                Self::Reg::ADDRESS
-            )))
+            RegExcl::new(Self::Reg::val(
+                <<Self::Reg as Reg<T>>::Val as Bitfield>::Bits::load_excl(Self::Reg::ADDRESS),
+            ))
         }
     }
 
@@ -260,28 +264,40 @@ where
 macro_rules! atomic_bits {
     ($type:ty, $ldrex:expr, $strex:expr) => {
         impl AtomicBits for $type {
+            #[cfg_attr(feature = "std", allow(unused_variables))]
             #[inline]
             unsafe fn load_excl(address: usize) -> Self {
-                let raw: Self;
-                asm!($ldrex
-                    : "=r"(raw)
-                    : "r"(address)
-                    :
-                    : "volatile"
-                );
-                raw
+                #[cfg(feature = "std")]
+                unimplemented!();
+                #[cfg(not(feature = "std"))]
+                {
+                    let raw: Self;
+                    asm!($ldrex
+                        : "=r"(raw)
+                        : "r"(address)
+                        :
+                        : "volatile"
+                    );
+                    raw
+                }
             }
 
+            #[cfg_attr(feature = "std", allow(unused_variables))]
             #[inline]
             unsafe fn store_excl(self, address: usize) -> bool {
-                let status: Self;
-                asm!($strex
-                    : "=r"(status)
-                    : "r"(self), "r"(address)
-                    :
-                    : "volatile"
-                );
-                status == 0
+                #[cfg(feature = "std")]
+                unimplemented!();
+                #[cfg(not(feature = "std"))]
+                {
+                    let status: Self;
+                    asm!($strex
+                        : "=r"(status)
+                        : "r"(self), "r"(address)
+                        :
+                        : "volatile"
+                    );
+                    status == 0
+                }
             }
         }
     };

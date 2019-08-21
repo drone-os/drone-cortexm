@@ -22,7 +22,8 @@ reg::unsafe_tokens! {
     ///
     /// See [`::drone_core::reg::unsafe_tokens!`].
     pub macro unsafe_cortex_m_reg_tokens;
-    super::inner; map::reg;
+    super::inner;
+    crate::map::reg;
 
     /// Data watchpoint and trace.
     pub mod DWT {

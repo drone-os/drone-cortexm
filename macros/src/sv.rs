@@ -76,7 +76,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             #sv_ident(::drone_cortex_m::sv::service_handler::<#ident>)
         });
         service_tokens.push(quote! {
-            impl ::drone_core::sv::SvCall<#ident> for #sv_ident {
+            impl ::drone_cortex_m::sv::SvCall<#ident> for #sv_ident {
                 #[inline]
                 unsafe fn call(service: &mut #ident) {
                     ::drone_cortex_m::sv::sv_call(service, #index);
@@ -89,7 +89,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         #(#sv_attrs)*
         #sv_vis struct #sv_ident(unsafe extern "C" fn(*mut *mut u8));
 
-        impl ::drone_core::sv::Supervisor for #sv_ident {
+        impl ::drone_cortex_m::sv::Supervisor for #sv_ident {
             #[inline]
             fn first() -> *const Self {
                 #array_ident.as_ptr()

@@ -10,6 +10,8 @@ use syn::{
 };
 
 struct Vtable {
+    thr: ExprPath,
+    sv: Option<ExprPath>,
     vtable_attrs: Vec<Attribute>,
     vtable_vis: Visibility,
     vtable_ident: Ident,
@@ -22,7 +24,6 @@ struct Vtable {
     array_attrs: Vec<Attribute>,
     array_vis: Visibility,
     array_ident: Ident,
-    thr: ExprPath,
     excs: Vec<Exc>,
     ints: Vec<Int>,
 }
@@ -46,6 +47,17 @@ enum Mode {
 
 impl Parse for Vtable {
     fn parse(input: ParseStream<'_>) -> Result<Self> {
+        input.parse::<Token![use]>()?;
+        let thr = input.parse()?;
+        input.parse::<Token![;]>()?;
+        let sv = if input.peek(Token![use]) {
+            input.parse::<Token![use]>()?;
+            let sv = input.parse()?;
+            input.parse::<Token![;]>()?;
+            Some(sv)
+        } else {
+            None
+        };
         let vtable_attrs = input.call(Attribute::parse_outer)?;
         let vtable_vis = input.parse()?;
         input.parse::<Token![struct]>()?;
@@ -66,10 +78,6 @@ impl Parse for Vtable {
         input.parse::<Token![static]>()?;
         let array_ident = input.parse()?;
         input.parse::<Token![;]>()?;
-        input.parse::<Token![extern]>()?;
-        input.parse::<Token![struct]>()?;
-        let thr = input.parse()?;
-        input.parse::<Token![;]>()?;
         let mut excs = Vec::new();
         while input.fork().parse::<Exc>().is_ok() {
             excs.push(input.parse()?);
@@ -79,6 +87,8 @@ impl Parse for Vtable {
             ints.push(input.parse()?);
         }
         Ok(Self {
+            thr,
+            sv,
             vtable_attrs,
             vtable_vis,
             vtable_ident,
@@ -91,7 +101,6 @@ impl Parse for Vtable {
             array_attrs,
             array_vis,
             array_ident,
-            thr,
             excs,
             ints,
         })
@@ -127,13 +136,13 @@ impl Parse for Mode {
     fn parse(input: ParseStream<'_>) -> Result<Self> {
         if input.peek(Token![fn]) {
             input.parse::<Token![fn]>()?;
-            Ok(Mode::Fn)
+            Ok(Self::Fn)
         } else {
             let vis = input.parse::<Visibility>()?;
             if input.parse::<Option<Token![extern]>>()?.is_some() {
-                Ok(Mode::Extern(vis))
+                Ok(Self::Extern(vis))
             } else {
-                Ok(Mode::Thread(vis))
+                Ok(Self::Thread(vis))
             }
         }
     }
@@ -142,6 +151,8 @@ impl Parse for Mode {
 #[allow(clippy::cognitive_complexity)]
 pub fn proc_macro(input: TokenStream) -> TokenStream {
     let Vtable {
+        thr,
+        sv,
         vtable_attrs,
         vtable_vis,
         vtable_ident,
@@ -154,7 +165,6 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         array_attrs,
         array_vis,
         array_ident,
-        thr,
         excs,
         ints,
     } = parse_macro_input!(input as Vtable);
@@ -163,8 +173,6 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         .map(|int| usize::try_from(int.num.value()).unwrap() + 1)
         .max()
         .unwrap_or(0);
-    let def_reserved0 = new_ident!("_reserved0");
-    let def_reserved1 = new_ident!("_reserved1");
     let mut exc_holes = exc_set();
     let mut vtable_tokens = vec![None; int_len];
     let mut vtable_ctor_tokens = Vec::new();
@@ -178,6 +186,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         let (field_ident, struct_ident) = gen_exc(
             &exc,
             &thr,
+            sv.as_ref(),
             &mut thr_counter,
             &mut vtable_ctor_tokens,
             &mut handlers_tokens,
@@ -189,7 +198,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         if let Some(struct_ident) = struct_ident {
             let int_trait = new_ident!("Int{}", struct_ident);
             thr_tokens.push(quote! {
-                impl<T: ::drone_core::thr::ThrTag> #int_trait<T> for #struct_ident<T> {}
+                impl #int_trait for #struct_ident {}
             });
         }
         assert!(
@@ -202,6 +211,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         let (field_ident, struct_ident) = gen_exc(
             &exc,
             &thr,
+            sv.as_ref(),
             &mut thr_counter,
             &mut vtable_ctor_tokens,
             &mut handlers_tokens,
@@ -214,16 +224,13 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             let int_trait = new_ident!("Int{}", num.value());
             let bundle = new_ident!("IntBundle{}", num.value() / 32);
             thr_tokens.push(quote! {
-                impl<T> ::drone_cortex_m::thr::IntToken<T> for #struct_ident<T>
-                where
-                    T: ::drone_core::thr::ThrTag,
-                {
+                impl ::drone_cortex_m::thr::IntToken for #struct_ident {
                     type Bundle = ::drone_cortex_m::map::thr::#bundle;
 
                     const INT_NUM: usize = #num;
                 }
 
-                impl<T: ::drone_core::thr::ThrTag> #int_trait<T> for #struct_ident<T> {}
+                impl #int_trait for #struct_ident {}
             });
         }
         vtable_tokens[usize::try_from(num.value()).unwrap()] = Some(quote! {
@@ -246,6 +253,31 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         })
         .collect::<Vec<_>>();
 
+    thr_tokens.push(quote! {
+        /// Reset thread token.
+        #[derive(Clone, Copy)]
+        pub struct Reset(());
+
+        unsafe impl ::drone_core::token::Token for Reset {
+            #[inline]
+            unsafe fn take() -> Self {
+                Reset(())
+            }
+        }
+
+        unsafe impl ::drone_core::thr::ThrToken for Reset {
+            type Thr = #thr;
+
+            const THR_NUM: usize = 0;
+        }
+    });
+    if let Some(sv) = sv {
+        thr_tokens.push(quote! {
+            impl ::drone_cortex_m::thr::ThrSv for Reset {
+                type Sv = #sv;
+            }
+        });
+    }
     let expanded = quote! {
         #(#vtable_attrs)*
         #[allow(dead_code)]
@@ -256,10 +288,10 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             mem_manage: Option<::drone_cortex_m::thr::vtable::Handler>,
             bus_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
             usage_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
-            #def_reserved0: [::drone_cortex_m::thr::vtable::Reserved; 4],
+            _reserved0: [::drone_cortex_m::thr::vtable::Reserved; 4],
             sv_call: Option<::drone_cortex_m::thr::vtable::Handler>,
             debug: Option<::drone_cortex_m::thr::vtable::Handler>,
-            #def_reserved1: [::drone_cortex_m::thr::vtable::Reserved; 1],
+            _reserved1: [::drone_cortex_m::thr::vtable::Reserved; 1],
             pend_sv: Option<::drone_cortex_m::thr::vtable::Handler>,
             sys_tick: Option<::drone_cortex_m::thr::vtable::Handler>,
             #(#vtable_tokens),*
@@ -275,7 +307,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         #(#index_attrs)*
         #index_vis struct #index_ident {
             /// Reset thread token.
-            pub reset: Reset<::drone_core::thr::Ptt>,
+            pub reset: Reset,
             #(#index_tokens),*
         }
 
@@ -290,27 +322,24 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             pub const fn new(handlers: #handlers_ident) -> Self {
                 Self {
                     reset: handlers.reset,
-                    #def_reserved0: [::drone_cortex_m::thr::vtable::Reserved::Vector; 4],
-                    #def_reserved1: [::drone_cortex_m::thr::vtable::Reserved::Vector; 1],
+                    _reserved0: [::drone_cortex_m::thr::vtable::Reserved::Vector; 4],
+                    _reserved1: [::drone_cortex_m::thr::vtable::Reserved::Vector; 1],
                     #(#vtable_ctor_tokens),*
                 }
             }
         }
 
-        unsafe impl ::drone_core::token::Tokens for #index_ident {
+        unsafe impl ::drone_core::token::Token for #index_ident {
             #[inline]
             unsafe fn take() -> Self {
                 Self {
-                    reset: ::drone_core::thr::ThrToken::<::drone_core::thr::Ptt>::take(),
+                    reset: ::drone_core::token::Token::take(),
                     #(#index_ctor_tokens),*
                 }
             }
         }
 
         unsafe impl ::drone_cortex_m::thr::ThrTokens for #index_ident {}
-
-        /// Reset thread token.
-        pub type Reset<T> = ::drone_cortex_m::thr::vtable::Reset<T, &'static #thr>;
 
         #(#thr_tokens)*
     };
@@ -321,6 +350,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
 fn gen_exc(
     exc: &Exc,
     thr: &ExprPath,
+    sv: Option<&ExprPath>,
     thr_counter: &mut usize,
     vtable_ctor_tokens: &mut Vec<TokenStream2>,
     handlers_tokens: &mut Vec<TokenStream2>,
@@ -340,10 +370,7 @@ fn gen_exc(
     match *mode {
         Mode::Thread(_) => {
             vtable_ctor_tokens.push(quote! {
-                #field_ident: Some(::drone_cortex_m::thr::thr_handler::<
-                    #struct_ident<::drone_core::thr::Att>,
-                    ::drone_core::thr::Att,
-                >)
+                #field_ident: Some(::drone_cortex_m::thr::thr_handler::<#struct_ident>)
             });
         }
         Mode::Extern(_) | Mode::Fn => {
@@ -362,10 +389,10 @@ fn gen_exc(
             *thr_counter += 1;
             index_tokens.push(quote! {
                 #(#attrs)*
-                #vis #field_ident: #struct_ident<::drone_core::thr::Ptt>
+                #vis #field_ident: #struct_ident
             });
             index_ctor_tokens.push(quote! {
-                #field_ident: ::drone_core::thr::ThrToken::<::drone_core::thr::Ptt>::take()
+                #field_ident: ::drone_core::token::Token::take()
             });
             array_tokens.push(quote! {
                 #thr::new(#index)
@@ -373,27 +400,28 @@ fn gen_exc(
             thr_tokens.push(quote! {
                 #(#attrs)*
                 #[derive(Clone, Copy)]
-                #vis struct #struct_ident<T: ::drone_core::thr::ThrTag>(
-                    ::core::marker::PhantomData<T>,
-                );
+                #vis struct #struct_ident(());
 
-                impl<T> ::drone_core::thr::ThrToken<T> for #struct_ident<T>
-                where
-                    T: ::drone_core::thr::ThrTag,
-                {
-                    type Thr = #thr;
-                    type TThrToken = #struct_ident<::drone_core::thr::Ttt>;
-                    type AThrToken = #struct_ident<::drone_core::thr::Att>;
-                    type PThrToken = #struct_ident<::drone_core::thr::Ptt>;
-
-                    const THR_NUM: usize = #index;
-
+                unsafe impl ::drone_core::token::Token for #struct_ident {
                     #[inline]
                     unsafe fn take() -> Self {
-                        #struct_ident(::core::marker::PhantomData)
+                        #struct_ident(())
                     }
                 }
+
+                unsafe impl ::drone_core::thr::ThrToken for #struct_ident {
+                    type Thr = #thr;
+
+                    const THR_NUM: usize = #index;
+                }
             });
+            if let Some(sv) = sv {
+                thr_tokens.push(quote! {
+                    impl ::drone_cortex_m::thr::ThrSv for #struct_ident {
+                        type Sv = #sv;
+                    }
+                });
+            }
             (field_ident, Some(struct_ident))
         }
         Mode::Fn => (field_ident, None),

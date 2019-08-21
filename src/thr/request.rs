@@ -7,17 +7,15 @@ use core::{
 };
 
 /// Thread execution requests.
-pub trait ThrRequest<T: ThrTag>: IntToken<T> {
+pub trait ThrRequest: IntToken {
     /// Executes the future `f` within the thread.
     fn exec<F, O: ExecOutput>(self, f: F)
     where
-        T: ThrAttach,
         F: Future<Output = O> + Send + 'static;
 
     /// Add an executor for the future `f` within the thread.
     fn add_exec<F, O: ExecOutput>(self, f: F)
     where
-        T: ThrAttach,
         F: Future<Output = O> + Send + 'static;
 
     /// Requests the interrupt.
@@ -38,10 +36,9 @@ pub trait ExecOutput: Sized + Send {
     fn terminate(self) -> Self::Terminate;
 }
 
-impl<T: ThrTag, U: IntToken<T>> ThrRequest<T> for U {
+impl<T: IntToken> ThrRequest for T {
     fn exec<F, O: ExecOutput>(self, fut: F)
     where
-        T: ThrAttach,
         F: Future<Output = O> + Send + 'static,
     {
         self.add_exec(fut);
@@ -50,7 +47,6 @@ impl<T: ThrTag, U: IntToken<T>> ThrRequest<T> for U {
 
     fn add_exec<F, O: ExecOutput>(self, mut fut: F)
     where
-        T: ThrAttach,
         F: Future<Output = O> + Send + 'static,
     {
         fn poll<F: Future>(fut: Pin<&mut F>, int_num: usize) -> Poll<F::Output> {

@@ -79,7 +79,7 @@ macro_rules! nvic_methods {
 }
 
 /// NVIC thread configuration.
-pub trait ThrConfig: IntToken<Ptt> {
+pub trait ThrConfig: IntToken {
     nvic_methods! {
         NvicIser,
         {
@@ -174,7 +174,7 @@ pub trait ThrConfig: IntToken<Ptt> {
     }
 }
 
-impl<T: IntToken<Ptt>> ThrConfig for T {}
+impl<T: IntToken> ThrConfig for T {}
 
 trait NvicBundle<T: IntBundle>: Sized {
     const BASE: usize;
@@ -203,17 +203,17 @@ trait NvicBundle<T: IntBundle>: Sized {
     }
 
     #[inline]
-    fn read<U: IntToken<Ptt>>(&self) -> bool {
+    fn read<U: IntToken>(&self) -> bool {
         self.inner() & 1 << bundle_offset::<U>() != 0
     }
 
     #[inline]
-    fn write<U: IntToken<Ptt>>(&mut self) {
+    fn write<U: IntToken>(&mut self) {
         *self.inner_mut() |= 1 << bundle_offset::<U>();
     }
 }
 
-const fn bundle_offset<T: IntToken<Ptt>>() -> usize {
+const fn bundle_offset<T: IntToken>() -> usize {
     T::INT_NUM & 0b11_111
 }
 

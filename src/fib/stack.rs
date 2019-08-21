@@ -1,9 +1,9 @@
-use crate::{fib::FiberState, sv::Switch, thr::prelude::*};
-
 mod fiber;
 mod yielder;
 
 pub use self::{fiber::FiberStack, yielder::Yielder};
+
+use crate::{fib::FiberState, sv::Switch, thr::ThrSv};
 
 #[allow(unions_with_drop_fields)]
 pub union Data<I, O> {
@@ -99,7 +99,7 @@ where
 }
 
 /// Stackful fiber extension to the thread token.
-pub trait ThrFiberStack<T: ThrAttach>: ThrToken<T> {
+pub trait ThrFiberStack: ThrSv {
     /// Adds a new stackful fiber.
     ///
     /// # Panics
@@ -108,9 +108,9 @@ pub trait ThrFiberStack<T: ThrAttach>: ThrToken<T> {
     /// * If MPU not present.
     fn add_stack<F>(self, stack_size: usize, mut f: F)
     where
-        F: FnMut(Yielder<<Self::Thr as Thread>::Sv, (), (), ()>),
+        F: FnMut(Yielder<Self::Sv, (), (), ()>),
         F: Send + 'static,
-        <Self::Thr as Thread>::Sv: Switch<StackData<(), (), ()>>,
+        Self::Sv: Switch<StackData<(), (), ()>>,
     {
         self.add_fib(new_stack(stack_size, move |(), yielder| f(yielder)))
     }
@@ -126,9 +126,9 @@ pub trait ThrFiberStack<T: ThrAttach>: ThrToken<T> {
     /// * If `stack_size` is insufficient to store an initial frame.
     unsafe fn add_stack_unchecked<F>(self, stack_size: usize, mut f: F)
     where
-        F: FnMut(Yielder<<Self::Thr as Thread>::Sv, (), (), ()>),
+        F: FnMut(Yielder<Self::Sv, (), (), ()>),
         F: Send + 'static,
-        <Self::Thr as Thread>::Sv: Switch<StackData<(), (), ()>>,
+        Self::Sv: Switch<StackData<(), (), ()>>,
     {
         self.add_fib(new_stack_unchecked(stack_size, move |(), yielder| {
             f(yielder)
@@ -143,9 +143,9 @@ pub trait ThrFiberStack<T: ThrAttach>: ThrToken<T> {
     /// * If MPU not present.
     fn add_stack_unprivileged<F>(self, stack_size: usize, mut f: F)
     where
-        F: FnMut(Yielder<<Self::Thr as Thread>::Sv, (), (), ()>),
+        F: FnMut(Yielder<Self::Sv, (), (), ()>),
         F: Send + 'static,
-        <Self::Thr as Thread>::Sv: Switch<StackData<(), (), ()>>,
+        Self::Sv: Switch<StackData<(), (), ()>>,
     {
         self.add_fib(new_stack_unprivileged(stack_size, move |(), yielder| {
             f(yielder)
@@ -163,9 +163,9 @@ pub trait ThrFiberStack<T: ThrAttach>: ThrToken<T> {
     /// * If `stack_size` is insufficient to store an initial frame.
     unsafe fn add_stack_unprivileged_unchecked<F>(self, stack_size: usize, mut f: F)
     where
-        F: FnMut(Yielder<<Self::Thr as Thread>::Sv, (), (), ()>),
+        F: FnMut(Yielder<Self::Sv, (), (), ()>),
         F: Send + 'static,
-        <Self::Thr as Thread>::Sv: Switch<StackData<(), (), ()>>,
+        Self::Sv: Switch<StackData<(), (), ()>>,
     {
         self.add_fib(new_stack_unprivileged_unchecked(
             stack_size,
@@ -173,3 +173,5 @@ pub trait ThrFiberStack<T: ThrAttach>: ThrToken<T> {
         ))
     }
 }
+
+impl<T: ThrSv> ThrFiberStack for T {}

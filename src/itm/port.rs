@@ -72,7 +72,11 @@ impl Write for Port {
 }
 
 impl Transmit for u8 {
+    #[cfg_attr(feature = "std", allow(unused_variables))]
     fn transmit(self, address: usize) {
+        #[cfg(feature = "std")]
+        unimplemented!();
+        #[cfg(not(feature = "std"))]
         unsafe {
             asm!("
             0:
@@ -92,7 +96,11 @@ impl Transmit for u8 {
 }
 
 impl Transmit for u16 {
+    #[cfg_attr(feature = "std", allow(unused_variables))]
     fn transmit(self, address: usize) {
+        #[cfg(feature = "std")]
+        unimplemented!();
+        #[cfg(not(feature = "std"))]
         unsafe {
             asm!("
             0:
@@ -112,7 +120,11 @@ impl Transmit for u16 {
 }
 
 impl Transmit for u32 {
+    #[cfg_attr(feature = "std", allow(unused_variables))]
     fn transmit(self, address: usize) {
+        #[cfg(feature = "std")]
+        unimplemented!();
+        #[cfg(not(feature = "std"))]
         unsafe {
             asm!("
             0:

@@ -7,7 +7,7 @@ pub trait IntBundle {
 }
 
 /// An interrupt.
-pub trait IntToken<T: ThrTag>: ThrToken<T> {
+pub trait IntToken: ThrToken {
     /// A number of NVIC register.
     type Bundle: IntBundle;
 

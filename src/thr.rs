@@ -4,7 +4,7 @@
 //!
 //! The vector table is configured by [`vtable!`] macro.
 //!
-//! ```rust
+//! ```plain
 //! vtable! {
 //!   /// The vector table.
 //!   pub struct Vtable;
@@ -54,11 +54,13 @@ pub use self::{
     request::{ExecOutput, ThrRequest},
     stream::{StreamExt, StreamTrunkWait},
 };
+pub use drone_core::thr::*;
 pub use drone_cortex_m_macros::thr_int as int;
 
+use crate::sv::Supervisor;
 use drone_core::{
-    thr::{thread_resume, ThrTag, ThrToken},
-    token::Tokens,
+    thr::{thread_resume, ThrToken},
+    token::Token,
 };
 
 /// A thread handler function, which should be passed to hardware.
@@ -66,8 +68,8 @@ use drone_core::{
 /// # Safety
 ///
 /// Must be called only by hardware.
-pub unsafe extern "C" fn thr_handler<T: ThrToken<U>, U: ThrTag>() {
-    thread_resume::<T, U>();
+pub unsafe extern "C" fn thr_handler<T: ThrToken>() {
+    thread_resume::<T>();
 }
 
 /// A set of thread tokens.
@@ -75,4 +77,10 @@ pub unsafe extern "C" fn thr_handler<T: ThrToken<U>, U: ThrTag>() {
 /// # Safety
 ///
 /// Must contain only thread tokens.
-pub unsafe trait ThrTokens: Tokens {}
+pub unsafe trait ThrTokens: Token {}
+
+/// TODO docs
+pub trait ThrSv: ThrToken {
+    /// TODO docs
+    type Sv: Supervisor;
+}

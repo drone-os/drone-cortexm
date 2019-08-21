@@ -13,7 +13,7 @@ use core::{
     mem::{align_of, size_of},
     pin::Pin,
 };
-use drone_core::bitfield::Bitfield;
+use drone_core::{bitfield::Bitfield, token::Token};
 
 const GUARD_SIZE: u32 = 5;
 

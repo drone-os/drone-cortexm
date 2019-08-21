@@ -1,22 +1,33 @@
 build_target := 'thumbv7em-none-eabihf'
-test_target := 'thumbv7em-linux-eabihf'
+features := 'fpu'
 
-# Check with clippy.
-clippy:
+# Check for mistakes
+lint:
+	rustup target add {{build_target}}
+	rustup component add clippy
 	cargo clippy --package drone-cortex-m-macros
-	cargo clippy --target {{build_target}} --all --exclude drone-cortex-m-macros
+	cargo clippy --target {{build_target}} --features "{{features}}" --package drone-cortex-m
 
-# Generate documentation.
+# Reformat the code
+fmt:
+	rustup component add rustfmt
+	cargo fmt
+
+# Generate the docs
 doc:
+	rustup target add {{build_target}}
 	cargo doc --package drone-cortex-m-macros
-	cargo doc --target {{build_target}} --all --exclude drone-cortex-m-macros
+	cargo doc --target {{build_target}} --features "{{features}}" --package drone-cortex-m
 
-# Generate README.md from src/lib.rs.
+# Open the docs in a browser
+doc_open: doc
+	cargo doc --target {{build_target}} --features "{{features}}" --package drone-cortex-m --open
+
+# Update README.md
 readme:
 	cargo readme -o README.md
 
-# Run tests.
+# Run the tests
 test:
 	cargo test --package drone-cortex-m-macros
-	RUST_TARGET_PATH=$(pwd) CROSS_COMPILE=arm-none-eabi- \
-		xargo test --target {{test_target}} --package drone-cortex-m
+	cargo test --features "{{features}} std" --package drone-cortex-m

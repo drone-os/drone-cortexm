@@ -1,25 +1,12 @@
-#![feature(allocator_api)]
-#![feature(allocator_internals)]
 #![feature(const_fn)]
 #![feature(prelude_import)]
-#![no_std]
 
 #[prelude_import]
 #[allow(unused_imports)]
 use drone_cortex_m::prelude::*;
 
-use core::mem::{size_of, transmute_copy};
-use drone_core::{heap, sv::SvService};
-use drone_cortex_m::sv::sv_handler;
-
-heap! {
-    struct Heap;
-    size = 0;
-    pools = [];
-}
-
-#[global_allocator]
-static mut ALLOC: Heap = Heap::new();
+use core::mem::size_of;
+use drone_cortex_m::sv::{sv_handler, SvService};
 
 struct FooService;
 
@@ -38,16 +25,17 @@ mod a {
     use drone_core::thr;
     use drone_cortex_m::{map::thr::*, sv, thr::prelude::*, vtable};
 
-    trait Int10<T: ThrTag>: IntToken<T> {}
-    trait Int5<T: ThrTag>: IntToken<T> {}
+    trait Int10: IntToken {}
+    trait Int5: IntToken {}
 
     vtable! {
+        use Thr;
+        use Sv;
         pub struct Vtable;
         pub struct Handlers;
         #[allow(dead_code)]
         pub struct Thrs;
         pub static THREADS;
-        extern struct Thr;
 
         /// Test doc attribute
         #[doc = "test attribute"]
@@ -67,11 +55,10 @@ mod a {
     }
 
     thr! {
-        pub struct Thr;
+        use THREADS;
+        pub struct Thr {}
         #[allow(dead_code)]
-        pub struct ThrLocal;
-        extern struct Sv;
-        extern static THREADS;
+        pub struct ThrLocal {}
     }
 
     sv! {
@@ -88,19 +75,19 @@ mod b {
     use drone_cortex_m::vtable;
 
     vtable! {
+        use Thr;
         pub struct Vtable;
         pub struct Handlers;
         #[allow(dead_code)]
         pub struct Thrs;
         pub static THREADS;
-        extern struct Thr;
     }
 
     thr! {
-        pub struct Thr;
+        use THREADS;
+        pub struct Thr {}
         #[allow(dead_code)]
-        pub struct ThrLocal;
-        extern static THREADS;
+        pub struct ThrLocal {}
     }
 }
 
@@ -124,12 +111,9 @@ fn new() {
 fn size() {
     assert_eq!(unsafe { a::THREADS.len() }, 4);
     assert_eq!(unsafe { b::THREADS.len() }, 1);
-    assert_eq!((size_of::<a::Vtable>() - size_of::<b::Vtable>()) / 4, 11);
+    assert_eq!(
+        (size_of::<a::Vtable>() - size_of::<b::Vtable>()) / size_of::<usize>(),
+        11
+    );
     assert_eq!(a::SERVICES.len(), 2);
-}
-
-#[test]
-fn sv() {
-    assert!(unsafe { transmute_copy::<a::Sv, usize>(&a::SERVICES[0]) } & 1 != 0);
-    assert!(unsafe { transmute_copy::<a::Sv, usize>(&a::SERVICES[1]) } & 1 != 0);
 }

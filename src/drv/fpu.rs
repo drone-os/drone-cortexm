@@ -35,6 +35,9 @@ impl Fpu {
         self.periph
             .fpu_cpacr
             .store(|r| r.write_cp10(0b11).write_cp11(0b11));
+        #[cfg(feature = "std")]
+        unimplemented!();
+        #[cfg(not(feature = "std"))]
         unsafe {
             asm!("
                 dsb

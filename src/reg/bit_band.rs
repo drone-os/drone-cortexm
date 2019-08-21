@@ -1,4 +1,8 @@
-use super::*;
+use crate::reg::{
+    field::{RRRegFieldBit, RegField, WWRegFieldBit, WoWoRegFieldBit},
+    tag::{RegTag, Urt},
+    RReg, Reg, WReg, WoReg,
+};
 use core::ptr::{read_volatile, write_volatile};
 
 /// Peripheral bit-band alias start.

@@ -8,8 +8,13 @@ authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 edition = "2018"
 description = "Drone for ARM Cortex-M."
 readme = "README.md"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/drone-os/drone-cortex-m"
+
+[features]
+default = []
+std = ["drone-core/std", "futures-preview/std"]
+fpu = []
 
 [dependencies]
 futures-preview = { version = "0.3.0-alpha", default-features = false }
@@ -22,7 +27,3 @@ path = "macros"
 version = "0.9.0"
 git = "https://github.com/drone-os/drone-core"
 # path = "../drone-core"
-
-[dev-dependencies.test]
-version = "0.2"
-git = "https://github.com/drone-os/drone-test"

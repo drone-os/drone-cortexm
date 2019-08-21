@@ -3,7 +3,6 @@
 //! See `drone-cortex-m` documentation for details.
 
 #![recursion_limit = "256"]
-#![deny(bare_trait_objects)]
 #![deny(elided_lifetimes_in_paths)]
 #![warn(clippy::pedantic)]
 

@@ -6,7 +6,7 @@ macro_rules! exception {
     ($name:ident, $doc:expr) => {
         #[doc = $doc]
         #[marker]
-        pub trait $name<T: ThrTag>: ThrToken<T> {}
+        pub trait $name: ThrToken {}
     };
 }
 

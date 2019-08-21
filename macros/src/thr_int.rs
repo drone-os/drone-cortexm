@@ -46,7 +46,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         #(#attrs)*
         #[marker]
-        #vis trait #number_ident<T: ThrTag>: IntToken<T> {}
+        #vis trait #number_ident: IntToken {}
 
         #[allow(unused_imports)]
         #vis use self::#number_ident as #name_ident;

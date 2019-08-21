@@ -43,8 +43,6 @@
 #![feature(proc_macro_hygiene)]
 #![feature(todo_macro)]
 #![feature(untagged_unions)]
-#![no_std]
-#![deny(bare_trait_objects)]
 #![deny(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
@@ -56,19 +54,17 @@
     clippy::module_name_repetitions,
     clippy::precedence,
     clippy::shadow_unrelated,
+    clippy::type_repetition_in_bounds,
     clippy::use_self
 )]
-#![cfg_attr(test, feature(allocator_api, allocator_internals))]
-#![cfg_attr(test, default_lib_allocator)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
-
-#[macro_use]
-pub mod itm;
 
 pub mod cpu;
 pub mod drv;
 pub mod fib;
+pub mod itm;
 pub mod map;
 pub mod prelude;
 pub mod reg;
@@ -76,6 +72,7 @@ pub mod stack_loop;
 pub mod sv;
 pub mod thr;
 
+#[cfg(not(feature = "std"))]
 mod lang_items;
 
 pub use drone_cortex_m_macros::{sv, vtable};
@@ -83,19 +80,3 @@ pub use drone_cortex_m_macros::{sv, vtable};
 #[prelude_import]
 #[allow(unused_imports)]
 use crate::prelude::*;
-
-#[cfg(test)]
-drone_core::heap! {
-    struct Heap;
-    size = 0x40000;
-    pools = [
-        [0x4; 0x4000],
-        [0x20; 0x800],
-        [0x100; 0x100],
-        [0x800; 0x20],
-    ];
-}
-
-#[cfg(test)]
-#[global_allocator]
-static mut GLOBAL: Heap = Heap::new();

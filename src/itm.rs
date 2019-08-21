@@ -1,5 +1,8 @@
 //! Instrumentation Trace Macrocell.
 
+pub mod macros;
+pub mod port;
+
 pub use self::port::Port;
 
 use crate::{
@@ -11,14 +14,12 @@ use core::{
     alloc::Layout,
     fmt::{self, Write},
 };
-use drone_core::heap::Pool;
-
-pub mod port;
-#[macro_use]
-pub mod macros;
+use drone_core::{heap::Pool, token::Token};
 
 const TEXT_PORT: usize = 0;
-const HEAP_PORT: usize = 31;
+#[cfg(not(feature = "std"))]
+const HEAP_TRACE_PORT: usize = 31;
+#[cfg(not(feature = "std"))]
 const HEAP_TRACE_KEY: u32 = 0xC5AC_CE55;
 
 /// Prints `str` to the ITM port #0.
@@ -75,13 +76,18 @@ pub fn sync() {
 /// Logs the allocation to the ITM port #31.
 #[inline(always)]
 pub fn trace_alloc(layout: Layout, _pool: &Pool) {
+    #[cfg(not(feature = "std"))]
     #[inline(never)]
     fn instrument(layout: Layout) {
         unsafe { asm!("cpsid i" :::: "volatile") };
-        Port::new(HEAP_PORT)
+        Port::new(HEAP_TRACE_PORT)
             .write(0xCDAB_u16)
             .write((layout.size() as u32) ^ HEAP_TRACE_KEY);
         unsafe { asm!("cpsie i" :::: "volatile") };
+    }
+    #[cfg(feature = "std")]
+    fn instrument(_layout: Layout) {
+        unimplemented!();
     }
     if is_enabled() {
         instrument(layout);
@@ -91,13 +97,18 @@ pub fn trace_alloc(layout: Layout, _pool: &Pool) {
 /// Logs the deallocation to the ITM port #31.
 #[inline(always)]
 pub fn trace_dealloc(layout: Layout, _pool: &Pool) {
+    #[cfg(not(feature = "std"))]
     #[inline(never)]
     fn instrument(layout: Layout) {
         unsafe { asm!("cpsid i" :::: "volatile") };
-        Port::new(HEAP_PORT)
+        Port::new(HEAP_TRACE_PORT)
             .write(0xBADC_u16)
             .write((layout.size() as u32) ^ HEAP_TRACE_KEY);
         unsafe { asm!("cpsie i" :::: "volatile") };
+    }
+    #[cfg(feature = "std")]
+    fn instrument(_layout: Layout) {
+        unimplemented!();
     }
     if is_enabled() {
         instrument(layout);
@@ -107,14 +118,19 @@ pub fn trace_dealloc(layout: Layout, _pool: &Pool) {
 /// Logs the reallocation to the ITM port #31.
 #[inline(always)]
 pub fn trace_grow_in_place(layout: Layout, new_size: usize) {
+    #[cfg(not(feature = "std"))]
     #[inline(never)]
     fn instrument(layout: Layout, new_size: usize) {
         unsafe { asm!("cpsid i" :::: "volatile") };
-        Port::new(HEAP_PORT)
+        Port::new(HEAP_TRACE_PORT)
             .write(0xDEBC_u16)
             .write((layout.size() as u32) ^ HEAP_TRACE_KEY)
             .write((new_size as u32) ^ HEAP_TRACE_KEY);
         unsafe { asm!("cpsie i" :::: "volatile") };
+    }
+    #[cfg(feature = "std")]
+    fn instrument(_layout: Layout, _new_size: usize) {
+        unimplemented!();
     }
     if is_enabled() {
         instrument(layout, new_size);
@@ -124,14 +140,19 @@ pub fn trace_grow_in_place(layout: Layout, new_size: usize) {
 /// Logs the reallocation to the ITM port #31.
 #[inline(always)]
 pub fn trace_shrink_in_place(layout: Layout, new_size: usize) {
+    #[cfg(not(feature = "std"))]
     #[inline(never)]
     fn instrument(layout: Layout, new_size: usize) {
         unsafe { asm!("cpsid i" :::: "volatile") };
-        Port::new(HEAP_PORT)
+        Port::new(HEAP_TRACE_PORT)
             .write(0xCBED_u16)
             .write((layout.size() as u32) ^ HEAP_TRACE_KEY)
             .write((new_size as u32) ^ HEAP_TRACE_KEY);
         unsafe { asm!("cpsie i" :::: "volatile") };
+    }
+    #[cfg(feature = "std")]
+    fn instrument(_layout: Layout, _new_size: usize) {
+        unimplemented!();
     }
     if is_enabled() {
         instrument(layout, new_size);
