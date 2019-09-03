@@ -1,6 +1,6 @@
-//! Drone for ARM Cortex-M. Procedural macros.
+//! Procedural macros for [drone-cortex-m].
 //!
-//! See `drone-cortex-m` documentation for details.
+//! [drone-cortex-m]: https://github.com/drone-os/drone-cortex-m
 
 #![recursion_limit = "256"]
 #![deny(elided_lifetimes_in_paths)]
@@ -8,8 +8,8 @@
 
 extern crate proc_macro;
 
+mod int;
 mod sv;
-mod thr_int;
 mod vtable;
 
 use proc_macro::TokenStream;
@@ -20,8 +20,8 @@ pub fn sv(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-pub fn thr_int(input: TokenStream) -> TokenStream {
-    thr_int::proc_macro(input)
+pub fn int(input: TokenStream) -> TokenStream {
+    int::proc_macro(input)
 }
 
 #[proc_macro]

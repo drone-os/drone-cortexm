@@ -1,4 +1,4 @@
-//! Core ARM Cortex-M peripherals.
+//! Core ARM Cortex-M peripheral mappings.
 
 pub mod fpu;
 pub mod mpu;

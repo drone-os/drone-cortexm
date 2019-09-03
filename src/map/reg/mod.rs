@@ -1,6 +1,6 @@
 //! Core ARM Cortex-M register mappings.
 
-#[path = "reg"]
+#[path = "."]
 mod inner {
     mod dwt;
     mod fpu;
@@ -15,13 +15,9 @@ mod inner {
 
 use drone_core::reg;
 
-reg::unsafe_tokens! {
-    /// Defines an index of core ARM Cortex-M register tokens.
-    ///
-    /// # Safety
-    ///
-    /// See [`::drone_core::reg::unsafe_tokens!`].
-    pub macro unsafe_cortex_m_reg_tokens;
+reg::tokens! {
+    #[doc(hidden)]
+    pub macro cortex_m_reg_tokens_inner;
     super::inner;
     crate::map::reg;
 
@@ -60,4 +56,15 @@ reg::unsafe_tokens! {
     pub mod TPIU {
         ACPR; SPPR; FFCR;
     }
+}
+
+// Workaround the `macro_expanded_macro_exports_accessed_by_absolute_paths`
+// error.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! cortex_m_reg_tokens {
+    ($($tt:tt)*) => {
+        use $crate::cortex_m_reg_tokens_inner;
+        cortex_m_reg_tokens_inner!($($tt)*);
+    };
 }

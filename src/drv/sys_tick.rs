@@ -16,7 +16,6 @@ use drone_core::{bitfield::Bitfield, token::Token};
 use futures::stream::Stream;
 
 /// SysTick driver.
-#[allow(missing_docs)]
 pub struct SysTick<I: IntSysTick> {
     periph: SysTickDiverged,
     int: I,
@@ -30,14 +29,6 @@ pub struct SysTickDiverged {
     pub stk_ctrl: stk::Ctrl<Crt>,
     pub stk_load: stk::Load<Srt>,
     pub stk_val: stk::Val<Srt>,
-}
-
-/// Acquires [`SysTick`].
-#[macro_export]
-macro_rules! drv_sys_tick {
-    ($reg:ident, $int:expr) => {
-        $crate::drv::sys_tick::SysTick::new($crate::periph_sys_tick!($reg), $int)
-    };
 }
 
 impl<I: IntSysTick> Timer for SysTick<I> {
@@ -87,7 +78,7 @@ impl<I: IntSysTick> TimerStop for SysTick<I> {
 }
 
 impl<I: IntSysTick> SysTick<I> {
-    /// Creates a new [`SysTick`].
+    /// Creates a new driver from the peripheral.
     #[inline]
     pub fn new(periph: SysTickPeriph, int: I) -> Self {
         let periph = SysTickDiverged {
@@ -100,7 +91,7 @@ impl<I: IntSysTick> SysTick<I> {
         Self { periph, int }
     }
 
-    /// Creates a new [`SysTick`].
+    /// Creates a new driver from the diverged peripheral.
     ///
     /// # Safety
     ///
@@ -134,7 +125,6 @@ impl<I: IntSysTick> SysTick<I> {
         unsafe { set_bit(&self.periph.scb_icsr_pendstclr) };
     }
 
-    #[inline]
     fn interval_stream<'a, T: 'a>(
         &'a mut self,
         duration: usize,
@@ -147,7 +137,6 @@ impl<I: IntSysTick> SysTick<I> {
         TimerInterval::new(self, stream)
     }
 
-    #[inline]
     fn interval_fib<T>(
         ctrl: stk::Ctrl<Crt>,
     ) -> impl Fiber<Input = (), Yield = Option<usize>, Return = T> {
@@ -186,23 +175,19 @@ impl<I: IntSysTick> SysTick<I> {
     }
 }
 
-#[inline]
 fn schedule(stk_load: &stk::Load<Srt>, stk_val: &stk::Val<Srt>, duration: usize) {
     stk_load.store(|r| r.write_reload(duration as u32));
     stk_val.store(|r| r.write_current(0));
 }
 
-#[inline]
 fn enable<'a, 'b>(ctrl: &'a mut stk::ctrl::Hold<'b, Crt>) -> &'a mut stk::ctrl::Hold<'b, Crt> {
     ctrl.set_enable().set_tickint()
 }
 
-#[inline]
 fn disable<'a, 'b>(ctrl: &'a mut stk::ctrl::Hold<'b, Crt>) -> &'a mut stk::ctrl::Hold<'b, Crt> {
     ctrl.clear_enable().clear_tickint()
 }
 
-#[inline]
 unsafe fn set_bit<F, T>(field: &F)
 where
     F: WWRegFieldBit<T>,

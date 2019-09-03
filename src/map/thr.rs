@@ -1,4 +1,4 @@
-//! Core ARM Cortex-M interrupt mappings.
+//! Core ARM Cortex-M exception mappings.
 
 use crate::thr::{prelude::*, IntBundle};
 
@@ -7,17 +7,6 @@ macro_rules! exception {
         #[doc = $doc]
         #[marker]
         pub trait $name: ThrToken {}
-    };
-}
-
-macro_rules! int_bundle {
-    ($name:ident, $number:expr, $doc:expr) => {
-        #[doc = $doc]
-        pub struct $name;
-
-        impl IntBundle for $name {
-            const BUNDLE_NUM: usize = $number;
-        }
     };
 }
 
@@ -30,6 +19,17 @@ exception!(IntSvCall, "System service call via SWI instruction.");
 exception!(IntDebug, "Monitor.");
 exception!(IntPendSv, "Pendable request for system service.");
 exception!(IntSysTick, "System tick timer.");
+
+macro_rules! int_bundle {
+    ($name:ident, $number:expr, $doc:expr) => {
+        #[doc = $doc]
+        pub struct $name;
+
+        impl IntBundle for $name {
+            const BUNDLE_NUM: usize = $number;
+        }
+    };
+}
 
 int_bundle!(IntBundle0, 0, "NVIC register bundle 0.");
 int_bundle!(IntBundle1, 1, "NVIC register bundle 1.");

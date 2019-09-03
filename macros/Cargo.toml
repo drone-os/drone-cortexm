@@ -3,20 +3,21 @@ name = "drone-cortex-m-macros"
 version = "0.9.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 edition = "2018"
-description = "Drone for ARM Cortex-M. Procedural macros."
-license = "MIT OR Apache-2.0"
 repository = "https://github.com/drone-os/drone-cortex-m"
+license = "MIT OR Apache-2.0"
+description = """
+Procedural macros for drone-cortex-m.
+"""
 
 [lib]
 proc-macro = true
+
+[dependencies.drone-macros-core]
+version = "0.9.0"
+path = "../../drone-core/macros-core"
 
 [dependencies]
 Inflector = "0.11"
 proc-macro2 = { version = "0.4", features = ["nightly"] }
 quote = "0.6"
 syn = "0.15"
-
-[dependencies.drone-macros-core]
-version = "0.9.0"
-git = "https://github.com/drone-os/drone-core"
-# path = "../../drone-core/macros-core"

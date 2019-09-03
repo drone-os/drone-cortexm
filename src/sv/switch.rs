@@ -1,21 +1,27 @@
+#![cfg_attr(feature = "std", allow(unused_variables))]
+
 use crate::sv::{SvCall, SvService};
 use core::mem::size_of;
 
-/// Service to switch to a process stack. See
-/// [`Switch::switch_context`](Switch::switch_context).
+/// A service to switch to a process stack.
+///
+/// See [`Switch::switch_context`] for details.
 pub struct SwitchContextService {
     stack_ptr: *mut *const u8,
     data_ptr: *mut u8,
 }
 
-/// Service to switch back from a process stack. See
-/// [`Switch::switch_back`](Switch::switch_back).
+/// A service to switch back from a process stack.
+///
+/// See [`Switch::switch_back`] for details.
 pub struct SwitchBackService {
     data_ptr: *mut *mut u8,
     data_size: usize,
 }
 
-/// Context switching.
+/// Extends [`Supervisor`](crate::sv::Supervisor) types with
+/// [`switch_context`](Switch::switch_context) and
+/// [`switch_back`](Switch::switch_back) methods.
 pub trait Switch<T>
 where
     Self: SvCall<SwitchContextService>,
@@ -34,7 +40,7 @@ where
     /// # Safety
     ///
     /// * Must be called only from Process Stack.
-    /// * `T` must match with paired [`switch_context`](Switch::switch_context).
+    /// * `T` must match the previous [`switch_context`](Switch::switch_context).
     /// * `*data` must be word-aligned.
     unsafe fn switch_back(data: *mut *mut T);
 }
@@ -43,7 +49,6 @@ unsafe impl Send for SwitchContextService {}
 unsafe impl Send for SwitchBackService {}
 
 impl SvService for SwitchContextService {
-    #[cfg_attr(feature = "std", allow(unused_variables))]
     unsafe extern "C" fn handler(&mut self) {
         let Self {
             stack_ptr,
@@ -145,7 +150,6 @@ impl SvService for SwitchContextService {
 }
 
 impl SvService for SwitchBackService {
-    #[cfg_attr(feature = "std", allow(unused_variables))]
     unsafe extern "C" fn handler(&mut self) {
         let Self {
             data_ptr,

@@ -1,4 +1,4 @@
-//! Timers.
+//! Generic timer.
 
 use core::{
     fmt,
@@ -18,18 +18,18 @@ pub trait Timer: Send {
     /// Timer stop handler.
     type Stop: TimerStop;
 
-    /// Returns a future which resolves when `duration` time elapsed.
+    /// Returns a future that resolves when `duration` time is elapsed.
     fn sleep(&mut self, duration: usize) -> TimerSleep<'_, Self::Stop>;
 
-    /// Returns a unit stream for timer tick events of `duration` interval.
-    /// Returns [`TimerOverflow`] on overflow.
+    /// Returns a stream of pulses that are generated on each `duration`
+    /// interval. Fails on overflow.
     fn interval(
         &mut self,
         duration: usize,
     ) -> TimerInterval<'_, Self::Stop, Result<NonZeroUsize, TimerOverflow>>;
 
-    /// Returns a unit stream for timer tick events of `duration` interval.
-    /// Overflows are suppressed.
+    /// Returns a stream of pulses that are generated on each `duration`
+    /// interval. Overflows are ignored.
     fn interval_skip(&mut self, duration: usize) -> TimerInterval<'_, Self::Stop, NonZeroUsize>;
 }
 

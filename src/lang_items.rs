@@ -1,16 +1,12 @@
-use crate::{cpu, itm};
+use crate::{itm, processor};
 use core::{alloc::Layout, panic::PanicInfo};
 
-const ABORT_DELAY: u32 = 0x400;
-
-#[linkage = "weak"]
 #[panic_handler]
 fn begin_panic(pi: &PanicInfo<'_>) -> ! {
     println!("{}", pi);
     abort()
 }
 
-#[linkage = "weak"]
 #[lang = "oom"]
 fn oom(layout: Layout) -> ! {
     println!(
@@ -22,6 +18,5 @@ fn oom(layout: Layout) -> ! {
 
 fn abort() -> ! {
     itm::flush();
-    cpu::spin(ABORT_DELAY);
-    cpu::self_reset()
+    processor::self_reset()
 }

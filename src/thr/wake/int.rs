@@ -10,17 +10,14 @@ static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake, drop);
 pub struct WakeInt(usize);
 
 impl WakeInt {
-    #[inline]
     pub fn new(int_num: usize) -> Self {
         Self(int_num)
     }
 
-    #[inline]
     pub fn wake(&self) {
         unsafe { write_volatile(NVIC_STIR as *mut usize, self.0) };
     }
 
-    #[inline]
     pub fn to_waker(&self) -> Waker {
         unsafe { Waker::from_raw(self.to_raw_waker()) }
     }

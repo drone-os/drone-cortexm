@@ -6,37 +6,42 @@ use core::{
     task::{Context, Poll},
 };
 
-/// Thread execution requests.
-pub trait ThrRequest: IntToken {
-    /// Executes the future `f` within the thread.
-    fn exec<F, O: ExecOutput>(self, f: F)
+/// Execution methods for interrupt tokens.
+pub trait ThrExec: IntToken {
+    /// Adds an executor for the future `fut` to the fiber chain and triggers
+    /// the thread immediately.
+    fn exec<F, O: ExecOutput>(self, fut: F)
     where
         F: Future<Output = O> + Send + 'static;
 
-    /// Add an executor for the future `f` within the thread.
-    fn add_exec<F, O: ExecOutput>(self, f: F)
+    /// Adds an executor for the future `fut` to the fiber chain.
+    ///
+    /// The future `fut` will start polling on the next thread wake-up.
+    fn add_exec<F, O: ExecOutput>(self, fut: F)
     where
         F: Future<Output = O> + Send + 'static;
 
-    /// Requests the interrupt.
-    #[inline]
-    fn trigger(self) {
-        WakeInt::new(Self::INT_NUM).wake();
-    }
+    /// Generates the interrupt.
+    ///
+    /// This method will wake-up the thread.
+    fn trigger(self);
 }
 
-/// A trait for implementing arbitrary output types for the futures passed to
-/// [`ThrRequest::exec`] and [`ThrRequest::add_exec`].
+/// A trait for implementing arbitrary output types for futures passed to
+/// [`ThrExec::exec`] and [`ThrExec::add_exec`].
 pub trait ExecOutput: Sized + Send {
-    /// A return type of [`ExecOutput::terminate`]. Should be either `()` or
+    /// The return type of [`ExecOutput::terminate`]. Should be either `()` or
     /// `!`.
     type Terminate;
 
-    /// The output handler.
+    /// A result handler for an executor. The returned value will not be used,
+    /// so the only useful types are `()` and `!`. The handler may choose to
+    /// panic on an erroneous value.
     fn terminate(self) -> Self::Terminate;
 }
 
-impl<T: IntToken> ThrRequest for T {
+impl<T: IntToken> ThrExec for T {
+    #[inline]
     fn exec<F, O: ExecOutput>(self, fut: F)
     where
         F: Future<Output = O> + Send + 'static,
@@ -67,6 +72,11 @@ impl<T: IntToken> ThrRequest for T {
                 }
             }
         });
+    }
+
+    #[inline]
+    fn trigger(self) {
+        WakeInt::new(Self::INT_NUM).wake();
     }
 }
 
@@ -109,5 +119,5 @@ impl<E: Send + Display> ExecOutput for Result<!, E> {
 }
 
 fn terminate_err<E: Display>(err: E) -> ! {
-    panic!("Root future exited with error: {}", err);
+    panic!("root future error: {}", err);
 }

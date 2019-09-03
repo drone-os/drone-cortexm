@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "std", allow(unused_variables, unused_mut, dead_code))]
+
 use super::{Data, StackData, Yielder};
 use crate::{
     fib::{Fiber, FiberRoot, FiberState},
@@ -17,7 +19,12 @@ use drone_core::{bitfield::Bitfield, token::Token};
 
 const GUARD_SIZE: u32 = 5;
 
-/// A stackful fiber.
+/// Stackful fiber for [`FnMut`] closure.
+///
+/// Can be created with [`fib::new_stack`](crate::fib::new_stack),
+/// [`fib::new_stack_unchecked`](crate::fib::new_stack_unchecked),
+/// [`fib::new_stack_unprivileged`](crate::fib::new_stack_unprivileged),
+/// [`fib::new_stack_unprivileged_unchecked`](crate::fib::new_stack_unprivileged_unchecked).
 pub struct FiberStack<Sv, I, Y, R, F>
 where
     Sv: Switch<StackData<I, Y, R>>,
@@ -47,7 +54,7 @@ where
     R: Send + 'static,
 {
     pub(super) unsafe fn new(stack_size: usize, unprivileged: bool, unchecked: bool, f: F) -> Self {
-        if !unchecked && mpu::Type::<Srt>::take().load().dregion() == 0 {
+        if !unchecked && !mpu_check() {
             panic!("MPU not present");
         }
         let stack_bottom = alloc::alloc(layout(stack_size));
@@ -219,6 +226,9 @@ where
     type Return = R;
 
     fn resume(mut self: Pin<&mut Self>, input: I) -> FiberState<Y, R> {
+        #[cfg(feature = "std")]
+        unimplemented!();
+        #[cfg(not(feature = "std"))]
         unsafe {
             let data_ptr = self.data_ptr();
             data_ptr.write(Data { input });
@@ -262,6 +272,15 @@ where
     Y: Send + 'static,
     R: Send + 'static,
 {
+}
+
+fn mpu_check() -> bool {
+    #[cfg(not(feature = "std"))]
+    unsafe {
+        mpu::Type::<Srt>::take().load().dregion() != 0
+    }
+    #[cfg(feature = "std")]
+    true
 }
 
 unsafe fn layout(stack_size: usize) -> Layout {

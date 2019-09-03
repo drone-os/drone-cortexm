@@ -1,49 +1,21 @@
+#![cfg_attr(feature = "std", allow(unused_variables))]
+
 use crate::reg::{
     field::{RegFieldBit, RegFieldBits, WWRegField, WWRegFieldBit, WWRegFieldBits},
     tag::RegAtomic,
     RReg, Reg, RegHold, RegRef, WReg, WRegAtomic,
 };
-use core::ops::{Deref, DerefMut};
 use drone_core::bitfield::Bitfield;
 
-/// A wrapper for a value loaded with `ldrex` instruction.
-pub struct RegExcl<T> {
-    inner: T,
-}
-
-/// `RegExl` for `RegHold`.
-pub trait RegHoldExcl<T: RegAtomic, U: Reg<T>>: Sized {
-    /// Downgrades to the underlying value.
-    fn val(self) -> RegExcl<U::Val>;
-}
-
-/// Raw shared register value type.
-pub trait AtomicBits: Sized {
-    /// Loads the value with `ldrex` instruction.
-    unsafe fn load_excl(address: usize) -> Self;
-
-    /// Stores the value with `strex` instruction.
-    unsafe fn store_excl(self, address: usize) -> bool;
-}
-
-/// Register that can read and write its value in a multi-threaded context.
-pub trait RwRegAtomic<T: RegAtomic>: RReg<T> + WReg<T> {
-    /// Loads the value with `ldrex` instruction.
-    fn load_excl<'a>(&'a self) -> RegExcl<<Self as RegRef<'a, T>>::Hold>
-    where
-        Self: RegRef<'a, T>;
-
-    /// Stores `val` with `strex` instruction.
-    fn store_excl(&self, val: RegExcl<Self::Val>) -> bool;
-}
-
-/// Register that can update its value in a multi-threaded context.
+/// Atomic operations for read-write register.
 // FIXME https://github.com/rust-lang/rust/issues/46397
-pub trait RwRegAtomicRef<'a, T: RegAtomic>
-where
-    Self: RwRegAtomic<T> + WRegAtomic<'a, T> + RegRef<'a, T>,
-{
-    /// Atomically updates the register's value.
+pub trait RwRegAtomic<'a, T: RegAtomic>: RReg<T> + WRegAtomic<'a, T> + RegRef<'a, T> {
+    /// Reads the value from the register memory, then passes the value to the
+    /// closure `f`, then writes the result of the closure back to the register
+    /// memory.
+    ///
+    /// This operation is atomic, it repeats itself in case it was interrupted
+    /// in the middle. Thus the closure `f` may be called multiple times.
     fn modify<F>(&'a self, f: F)
     where
         F: for<'b> Fn(
@@ -51,81 +23,64 @@ where
         ) -> &'b mut <Self as RegRef<'a, T>>::Hold;
 }
 
-/// Write field of shared read-write register.
+/// Atomic operations for writable field of read-write register.
 pub trait WRwRegFieldAtomic<T: RegAtomic>
 where
     Self: WWRegField<T>,
-    Self::Reg: RwRegAtomic<T>,
+    Self::Reg: RReg<T> + WReg<T>,
 {
-    /// Loads the value with `ldrex` instruction.
-    fn load_excl(&self) -> RegExcl<<Self::Reg as Reg<T>>::Val>;
-
-    /// Stores `val` with `strex` instruction.
-    fn store_excl(&self, val: RegExcl<<Self::Reg as Reg<T>>::Val>) -> bool;
-
-    /// Atomically updates a register's value.
+    /// Reads the value from the register memory, then passes the value to the
+    /// closure `f`, then writes the modified value back to the register memory.
+    ///
+    /// This operation is atomic, it repeats itself in case it was interrupted
+    /// in the middle. Thus the closure `f` may be called multiple times.
     fn modify<F>(&self, f: F)
     where
         F: Fn(&mut <Self::Reg as Reg<T>>::Val);
 }
 
-/// Single-bit write field of shared read-write register.
+/// Atomic operations for writable single-bit field of read-write register.
 pub trait WRwRegFieldBitAtomic<T: RegAtomic>
 where
     Self: WRwRegFieldAtomic<T> + RegFieldBit<T>,
-    Self::Reg: RwRegAtomic<T>,
+    Self::Reg: RReg<T> + WReg<T>,
 {
-    /// Sets the bit in memory.
+    /// Reads the value from the register memory, sets the bit, writes the value
+    /// back to the register memory, repeat if interrupted.
     fn set_bit(&self);
 
-    /// Clears the bit in memory.
+    /// Reads the value from the register memory, clears the bit, writes the
+    /// value back to the register memory, repeat if interrupted.
     fn clear_bit(&self);
 
-    /// Toggles the bit in memory.
+    /// Reads the value from the register memory, toggles the bit, writes the
+    /// value back to the register memory, repeat if interrupted.
     fn toggle_bit(&self);
 }
 
-/// Multiple-bits write field of shared read-write register.
+/// Atomic operations for writable multiple-bit field of read-write register.
 pub trait WRwRegFieldBitsAtomic<T: RegAtomic>
 where
     Self: WRwRegFieldAtomic<T> + RegFieldBits<T>,
-    Self::Reg: RwRegAtomic<T>,
+    Self::Reg: RReg<T> + WReg<T>,
 {
-    /// Sets the bit in memory.
+    /// Reads the value from the register memory, replaces the field bits by
+    /// `bits`, writes the value back to the register memory, repeat if
+    /// interrupted.
     fn write_bits(&self, bits: <<Self::Reg as Reg<T>>::Val as Bitfield>::Bits);
 }
 
-impl<T, U> RwRegAtomic<T> for U
-where
-    T: RegAtomic,
-    U: RReg<T> + WReg<T>,
-    <U::Val as Bitfield>::Bits: AtomicBits,
-{
-    #[inline]
-    fn load_excl<'a>(&'a self) -> RegExcl<<Self as RegRef<'a, T>>::Hold>
-    where
-        Self: RegRef<'a, T>,
-    {
-        unsafe {
-            RegExcl::new(
-                self.hold(Self::val(<Self::Val as Bitfield>::Bits::load_excl(
-                    Self::ADDRESS,
-                ))),
-            )
-        }
-    }
+pub trait AtomicBits: Sized {
+    unsafe fn load_excl(address: usize) -> Self;
 
-    #[inline]
-    fn store_excl(&self, val: RegExcl<Self::Val>) -> bool {
-        unsafe { val.into_inner().bits().store_excl(Self::ADDRESS) }
-    }
+    unsafe fn store_excl(self, address: usize) -> bool;
 }
 
-impl<'a, T, U> RwRegAtomicRef<'a, T> for U
+impl<'a, T, R> RwRegAtomic<'a, T> for R
 where
     T: RegAtomic,
-    U: RReg<T> + WRegAtomic<'a, T> + RegRef<'a, T>,
-    <U::Val as Bitfield>::Bits: AtomicBits,
+    R: RReg<T> + WRegAtomic<'a, T> + RegRef<'a, T>,
+    <R::Val as Bitfield>::Bits: AtomicBits,
 {
     #[inline]
     fn modify<F>(&'a self, f: F)
@@ -135,56 +90,42 @@ where
         ) -> &'b mut <Self as RegRef<'a, T>>::Hold,
     {
         loop {
-            let mut val = self.load_excl();
+            let mut val = unsafe { self.hold(load_excl::<T, R>()) };
             f(&mut val);
-            if self.store_excl(val.val()) {
+            if unsafe { store_excl::<T, R>(val.val()) } {
                 break;
             }
         }
     }
 }
 
-impl<T, U> WRwRegFieldAtomic<T> for U
+impl<T, R> WRwRegFieldAtomic<T> for R
 where
     T: RegAtomic,
-    U: WWRegField<T>,
-    U::Reg: RwRegAtomic<T>,
-    <<U::Reg as Reg<T>>::Val as Bitfield>::Bits: AtomicBits,
+    R: WWRegField<T>,
+    R::Reg: RReg<T> + WReg<T>,
+    <<R::Reg as Reg<T>>::Val as Bitfield>::Bits: AtomicBits,
 {
-    #[inline]
-    fn load_excl(&self) -> RegExcl<<Self::Reg as Reg<T>>::Val> {
-        unsafe {
-            RegExcl::new(Self::Reg::val(
-                <<Self::Reg as Reg<T>>::Val as Bitfield>::Bits::load_excl(Self::Reg::ADDRESS),
-            ))
-        }
-    }
-
-    #[inline]
-    fn store_excl(&self, val: RegExcl<<Self::Reg as Reg<T>>::Val>) -> bool {
-        unsafe { val.into_inner().bits().store_excl(Self::Reg::ADDRESS) }
-    }
-
     #[inline]
     fn modify<F>(&self, f: F)
     where
         F: Fn(&mut <Self::Reg as Reg<T>>::Val),
     {
         loop {
-            let mut val = self.load_excl();
+            let mut val = unsafe { load_excl::<T, R::Reg>() };
             f(&mut val);
-            if self.store_excl(val) {
+            if unsafe { store_excl::<T, R::Reg>(val) } {
                 break;
             }
         }
     }
 }
 
-impl<T, U> WRwRegFieldBitAtomic<T> for U
+impl<T, R> WRwRegFieldBitAtomic<T> for R
 where
     T: RegAtomic,
-    U: WRwRegFieldAtomic<T> + RegFieldBit<T>,
-    U::Reg: RwRegAtomic<T>,
+    R: WRwRegFieldAtomic<T> + RegFieldBit<T>,
+    R::Reg: RReg<T> + WReg<T>,
 {
     #[inline]
     fn set_bit(&self) {
@@ -208,11 +149,11 @@ where
     }
 }
 
-impl<T, U> WRwRegFieldBitsAtomic<T> for U
+impl<T, R> WRwRegFieldBitsAtomic<T> for R
 where
     T: RegAtomic,
-    U: WRwRegFieldAtomic<T> + RegFieldBits<T>,
-    U::Reg: RwRegAtomic<T>,
+    R: WRwRegFieldAtomic<T> + RegFieldBits<T>,
+    R::Reg: RReg<T> + WReg<T>,
 {
     #[inline]
     fn write_bits(&self, bits: <<Self::Reg as Reg<T>>::Val as Bitfield>::Bits) {
@@ -222,50 +163,27 @@ where
     }
 }
 
-impl<T> Deref for RegExcl<T> {
-    type Target = T;
-
-    #[inline]
-    fn deref(&self) -> &T {
-        &self.inner
-    }
-}
-
-impl<T> DerefMut for RegExcl<T> {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut T {
-        &mut self.inner
-    }
-}
-
-impl<T> RegExcl<T> {
-    #[inline]
-    fn new(inner: T) -> Self {
-        Self { inner }
-    }
-
-    #[inline]
-    fn into_inner(self) -> T {
-        self.inner
-    }
-}
-
-impl<'a, T, U, V> RegHoldExcl<T, U> for RegExcl<V>
+unsafe fn load_excl<T, R>() -> R::Val
 where
     T: RegAtomic,
-    U: Reg<T>,
-    V: RegHold<'a, T, U>,
+    R: Reg<T>,
+    <R::Val as Bitfield>::Bits: AtomicBits,
 {
-    fn val(self) -> RegExcl<U::Val> {
-        RegExcl::new(self.into_inner().val())
-    }
+    R::val_from(<R::Val as Bitfield>::Bits::load_excl(R::ADDRESS))
+}
+
+unsafe fn store_excl<T, R>(val: R::Val) -> bool
+where
+    T: RegAtomic,
+    R: Reg<T>,
+    <R::Val as Bitfield>::Bits: AtomicBits,
+{
+    val.bits().store_excl(R::ADDRESS)
 }
 
 macro_rules! atomic_bits {
     ($type:ty, $ldrex:expr, $strex:expr) => {
         impl AtomicBits for $type {
-            #[cfg_attr(feature = "std", allow(unused_variables))]
-            #[inline]
             unsafe fn load_excl(address: usize) -> Self {
                 #[cfg(feature = "std")]
                 unimplemented!();
@@ -282,8 +200,6 @@ macro_rules! atomic_bits {
                 }
             }
 
-            #[cfg_attr(feature = "std", allow(unused_variables))]
-            #[inline]
             unsafe fn store_excl(self, address: usize) -> bool {
                 #[cfg(feature = "std")]
                 unimplemented!();

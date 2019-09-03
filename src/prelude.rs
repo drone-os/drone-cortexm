@@ -1,9 +1,7 @@
 //! The Drone Cortex-M Prelude.
 //!
-//! This module re-exports:
-//! * Contents of [`drone_core::prelude`].
-//! * [`print`] and [`println`] macros.
-//! * Future and Stream extensions.
+//! **NOTE** This module documentation should be viewed as a continuation of
+//! [the `drone_core` documentation](drone_core::prelude).
 //!
 //! By default Rust automatically injects libcore prelude imports into every
 //! module. To inject the Drone prelude instead, place the following code to the
@@ -17,12 +15,13 @@
 //! use drone_cortex_m::prelude::*;
 //! ```
 
+#[doc(no_inline)]
 pub use drone_core::prelude::*;
 
-pub use crate::thr::{FutureExt as _, StreamExt as _};
-
 #[cfg(not(feature = "std"))]
-pub use crate::{print, println};
+#[doc(no_inline)]
+pub use crate::{dbg, eprint, eprintln, print, println};
 
 #[cfg(feature = "std")]
-pub use std::{print, println};
+#[doc(no_inline)]
+pub use std::{dbg, eprint, eprintln, print, println};

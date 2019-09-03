@@ -1,10 +1,10 @@
-//! The vector table support.
-
-/// Pointer to an exception handler.
-pub type Handler = unsafe extern "C" fn();
+//! The Vector Table types.
 
 /// Pointer to a reset handler.
 pub type ResetHandler = unsafe extern "C" fn() -> !;
+
+/// Pointer to an exception handler.
+pub type Handler = unsafe extern "C" fn();
 
 /// Reserved pointer in a vector table.
 #[derive(Clone, Copy)]

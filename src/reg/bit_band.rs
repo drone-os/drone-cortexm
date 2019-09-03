@@ -1,124 +1,122 @@
 use crate::reg::{
-    field::{RRRegFieldBit, RegField, WWRegFieldBit, WoWoRegFieldBit},
+    field::{RRRegFieldBit, WWRegFieldBit, WoWoRegFieldBit},
     tag::{RegTag, Urt},
     RReg, Reg, WReg, WoReg,
 };
 use core::ptr::{read_volatile, write_volatile};
 
-/// Peripheral bit-band alias start.
+/// The peripheral bit-band alias start.
 pub const BIT_BAND_BASE: usize = 0x4200_0000;
 
-/// Peripheral bit-band region width.
+/// The peripheral bit-band region width.
 pub const BIT_BAND_WIDTH: usize = 5;
 
-/// Register that falls into peripheral bit-band region.
-pub trait RegBitBand<T: RegTag>: Reg<T> {
-    /// Calculates bit-band address.
-    ///
-    /// # Safety
-    ///
-    /// `offset` must be greater than or equals to the platform's word size in
-    /// bits.
-    #[inline]
-    unsafe fn bit_band_addr(offset: usize) -> usize {
-        BIT_BAND_BASE
-            + (((Self::ADDRESS + (offset >> 3)) & ((0b1 << (BIT_BAND_WIDTH << 2)) - 1))
-                << BIT_BAND_WIDTH)
-            + ((offset & (8 - 1)) << 2)
-    }
-}
+/// Register located in the peripheral bit-band region.
+pub trait RegBitBand<T: RegTag>: Reg<T> {}
 
-/// Register field that can read bits through peripheral bit-band region.
+/// Readable single-bit field of readable register located in the peripheral
+/// bit-band region.
 pub trait RRRegFieldBitBand<T: RegTag>
 where
     Self: RRRegFieldBit<T>,
     Self::Reg: RegBitBand<T> + RReg<T>,
 {
-    /// Reads the state of the bit through peripheral bit-band region.
+    /// Reads the value of this bit through the peripheral bit-band region
+    /// alias.
     fn read_bit_band(&self) -> bool;
 
-    /// Returns an unsafe constant pointer to the corresponding bit-band
-    /// address.
-    fn bit_band_ptr(&self) -> *const usize;
+    /// Returns a raw pointer to the bit-band alias address of this field.
+    ///
+    /// See also [`WWRegFieldBitBand::to_bit_band_mut_ptr`].
+    fn to_bit_band_ptr(&self) -> *const usize;
 }
 
-/// Register field that can write bits through peripheral bit-band region.
+/// Writable single-bit field of writable register located in the peripheral
+/// bit-band region.
 pub trait WWRegFieldBitBand<T: RegTag>
 where
-    Self: SafeWWRegFieldBitBand<T>,
-    Self::Reg: RegBitBand<T>,
+    Self: WWRegFieldBitBandMarker<T>,
+    Self::Reg: RegBitBand<T> + WReg<T>,
 {
-    /// Sets the bit through peripheral bit-band region.
+    /// Sets this bit through the peripheral bit-band region alias.
     fn set_bit_band(&self);
 
-    /// Clears the bit through peripheral bit-band region.
+    /// Clears this bit through the peripheral bit-band region alias.
     fn clear_bit_band(&self);
 
-    /// Returns an unsafe mutable pointer to the corresponding bit-band address.
-    fn bit_band_mut_ptr(&self) -> *mut usize;
+    /// Returns a mutable raw pointer to the bit-band alias address of this
+    /// field.
+    ///
+    /// See also [`RRRegFieldBitBand::to_bit_band_ptr`].
+    fn to_bit_band_mut_ptr(&self) -> *mut usize;
 }
 
-#[doc(hidden)]
 #[marker]
-pub unsafe trait SafeWWRegFieldBitBand<T: RegTag>
+pub trait WWRegFieldBitBandMarker<T: RegTag>
 where
-    Self: RegField<T>,
-    Self::Reg: RegBitBand<T>,
+    Self: WWRegFieldBit<T>,
+    Self::Reg: RegBitBand<T> + WReg<T>,
 {
 }
 
-impl<T, U> RRRegFieldBitBand<T> for U
+impl<T, R> RRRegFieldBitBand<T> for R
 where
     T: RegTag,
-    U: RRRegFieldBit<T>,
-    U::Reg: RegBitBand<T> + RReg<T>,
+    R: RRRegFieldBit<T>,
+    R::Reg: RegBitBand<T> + RReg<T>,
 {
     #[inline]
     fn read_bit_band(&self) -> bool {
-        unsafe { read_volatile(self.bit_band_ptr()) != 0 }
+        unsafe { read_volatile(self.to_bit_band_ptr()) != 0 }
     }
 
     #[inline]
-    fn bit_band_ptr(&self) -> *const usize {
-        unsafe { Self::Reg::bit_band_addr(Self::OFFSET) as *const usize }
+    fn to_bit_band_ptr(&self) -> *const usize {
+        bit_band_addr::<T, Self::Reg>(Self::OFFSET) as *const usize
     }
 }
 
-impl<T, U> WWRegFieldBitBand<T> for U
+impl<T, R> WWRegFieldBitBand<T> for R
 where
     T: RegTag,
-    U: SafeWWRegFieldBitBand<T>,
-    U::Reg: RegBitBand<T>,
+    R: WWRegFieldBitBandMarker<T>,
+    R::Reg: RegBitBand<T> + WReg<T>,
 {
     #[inline]
     fn set_bit_band(&self) {
-        unsafe { write_volatile(self.bit_band_mut_ptr(), 1) };
+        unsafe { write_volatile(self.to_bit_band_mut_ptr(), 1) };
     }
 
     #[inline]
     fn clear_bit_band(&self) {
-        unsafe { write_volatile(self.bit_band_mut_ptr(), 0) };
+        unsafe { write_volatile(self.to_bit_band_mut_ptr(), 0) };
     }
 
     #[inline]
-    fn bit_band_mut_ptr(&self) -> *mut usize {
-        unsafe { Self::Reg::bit_band_addr(Self::OFFSET) as *mut usize }
+    fn to_bit_band_mut_ptr(&self) -> *mut usize {
+        bit_band_addr::<T, R::Reg>(Self::OFFSET) as *mut usize
     }
 }
 
-unsafe impl<T, U> SafeWWRegFieldBitBand<T> for U
+impl<T, R> WWRegFieldBitBandMarker<T> for R
 where
     T: RegTag,
-    U: WoWoRegFieldBit<T>,
-    U::Reg: RegBitBand<T> + WoReg<T>,
+    R: WoWoRegFieldBit<T>,
+    R::Reg: RegBitBand<T> + WoReg<T>,
 {
 }
 
-unsafe impl<T> SafeWWRegFieldBitBand<Urt> for T
+impl<R> WWRegFieldBitBandMarker<Urt> for R
 where
-    T: WWRegFieldBit<Urt>,
-    T::Reg: RegBitBand<Urt> + WReg<Urt>,
+    R: WWRegFieldBit<Urt>,
+    R::Reg: RegBitBand<Urt> + WReg<Urt>,
 {
+}
+
+fn bit_band_addr<T: RegTag, R: RegBitBand<T>>(offset: usize) -> usize {
+    BIT_BAND_BASE
+        + (((R::ADDRESS + (offset >> 3)) & ((0b1 << (BIT_BAND_WIDTH << 2)) - 1)) << BIT_BAND_WIDTH)
+        + ((offset & (8 - 1)) << 2)
 }
 
 #[cfg(test)]
@@ -128,29 +126,24 @@ mod tests {
 
     reg! {
         #[allow(dead_code)]
-        mod TST LOW_REG;
+        mod R LOW;
         0x4000_0000 0x20 0x0000_0000 RegBitBand;
         TEST_BIT { 0 1 }
     }
 
     reg! {
         #[allow(dead_code)]
-        mod TST HIGH_REG;
+        mod R HIGH;
         0x400F_FFFC 0x20 0x0000_0000 RegBitBand;
         TEST_BIT { 0 1 }
     }
 
-    type LocalLowReg = tst_low_reg::Reg<Urt>;
-    type LocalHighReg = tst_high_reg::Reg<Urt>;
-
     #[test]
     fn reg_bit_band_addr() {
-        unsafe {
-            assert_eq!(LocalLowReg::bit_band_addr(0), 0x4200_0000);
-            assert_eq!(LocalLowReg::bit_band_addr(7), 0x4200_001C);
-            assert_eq!(LocalLowReg::bit_band_addr(31), 0x4200_007C);
-            assert_eq!(LocalHighReg::bit_band_addr(24), 0x43FF_FFE0);
-            assert_eq!(LocalHighReg::bit_band_addr(31), 0x43FF_FFFC);
-        }
+        assert_eq!(bit_band_addr::<Urt, r_low::Reg<Urt>>(0), 0x4200_0000);
+        assert_eq!(bit_band_addr::<Urt, r_low::Reg<Urt>>(7), 0x4200_001C);
+        assert_eq!(bit_band_addr::<Urt, r_low::Reg<Urt>>(31), 0x4200_007C);
+        assert_eq!(bit_band_addr::<Urt, r_high::Reg<Urt>>(24), 0x43FF_FFE0);
+        assert_eq!(bit_band_addr::<Urt, r_high::Reg<Urt>>(31), 0x43FF_FFFC);
     }
 }

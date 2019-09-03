@@ -1,41 +1,30 @@
-//! [Drone] implementation for ARM Cortex-M microcontrollers.
+//! ARM® Cortex®-M platform crate for Drone, an Embedded Operating System.
 //!
-//! # Installation
+//! Supported cores:
 //!
-//! Instructions will be given for Debian-based Linux systems.
+//! | Architecture | Core name             | Cargo features                      | Rust target             |
+//! |--------------|-----------------------|-------------------------------------|-------------------------|
+//! | ARMv7-M      | ARM® Cortex®-M3 r0p0  | `cortex_m3_r0p0`                    | `thumbv7m-none-eabi`    |
+//! | ARMv7-M      | ARM® Cortex®-M3 r1p0  | `cortex_m3_r1p0`                    | `thumbv7m-none-eabi`    |
+//! | ARMv7-M      | ARM® Cortex®-M3 r1p1  | `cortex_m3_r1p1`                    | `thumbv7m-none-eabi`    |
+//! | ARMv7-M      | ARM® Cortex®-M3 r2p0  | `cortex_m3_r2p0`                    | `thumbv7m-none-eabi`    |
+//! | ARMv7-M      | ARM® Cortex®-M3 r2p1  | `cortex_m3_r2p1`                    | `thumbv7m-none-eabi`    |
+//! | ARMv7E-M     | ARM® Cortex®-M4 r0p0  | `cortex_m4_r0p0`                    | `thumbv7em-none-eabi`   |
+//! | ARMv7E-M     | ARM® Cortex®-M4 r0p1  | `cortex_m4_r0p1`                    | `thumbv7em-none-eabi`   |
+//! | ARMv7E-M     | ARM® Cortex®-M4F r0p0 | `cortex_m4f_r0p0`, `fpu` (optional) | `thumbv7em-none-eabihf` |
+//! | ARMv7E-M     | ARM® Cortex®-M4F r0p1 | `cortex_m4f_r0p1`, `fpu` (optional) | `thumbv7em-none-eabihf` |
 //!
-//! Install the following packages:
-//!
-//! ```sh
-//! $ sudo apt-get install build-essential cmake libusb-1.0-0 libusb-1.0-0-dev \
-//!   pandoc gcc-arm-none-eabi gdb-arm-none-eabi qemu-system-arm qemu-user
-//! ```
-//!
-//! Copy [udev rules][rules.d] for ST-Link programmer to the
-//! `/etc/udev/rules.d/`, and run the following commands:
-//!
-//! ```sh
-//! $ sudo udevadm control --reload-rules
-//! $ sudo udevadm trigger
-//! ```
-//!
-//! [OpenOCD] is required. It is recommended to install it from the source,
-//! because repository package is outdated and doesn't contain configuration for
-//! newer chips and boards.
-//!
-//! [Drone]: https://github.com/drone-os/drone
-//! [OpenOCD]: http://openocd.org/
-//! [rules.d]: https://github.com/texane/stlink/tree/master/etc/udev/rules.d
+//! **NOTE** Cargo features for `drone-cortex-m` dependency and target triple
+//! for the resulting binary should be selected for a particular core according
+//! this table.
 
 #![feature(asm)]
-#![feature(associated_type_defaults)]
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
 #![feature(exhaustive_patterns)]
 #![feature(generators)]
 #![feature(generator_trait)]
 #![feature(lang_items)]
-#![feature(linkage)]
 #![feature(marker_trait_attr)]
 #![feature(naked_functions)]
 #![feature(never_type)]
@@ -61,12 +50,12 @@
 
 extern crate alloc;
 
-pub mod cpu;
 pub mod drv;
 pub mod fib;
 pub mod itm;
 pub mod map;
 pub mod prelude;
+pub mod processor;
 pub mod reg;
 pub mod stack_loop;
 pub mod sv;
@@ -75,7 +64,17 @@ pub mod thr;
 #[cfg(not(feature = "std"))]
 mod lang_items;
 
-pub use drone_cortex_m_macros::{sv, vtable};
+mod drone_core_macro_reexport {
+    pub use drone_core::{reg, thr};
+}
+
+pub use drone_core_macro_reexport::*;
+
+/// Defines the supervisor type.
+///
+/// See [the module level documentation](sv) for details.
+#[doc(inline)]
+pub use drone_cortex_m_macros::sv;
 
 #[prelude_import]
 #[allow(unused_imports)]

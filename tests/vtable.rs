@@ -22,13 +22,14 @@ impl SvService for BarService {
 
 mod a {
     use super::{BarService, FooService};
-    use drone_core::thr;
-    use drone_cortex_m::{map::thr::*, sv, thr::prelude::*, vtable};
+    use drone_cortex_m::{map::thr::*, sv, thr::prelude::*};
+
+    use drone_cortex_m::thr;
 
     trait Int10: IntToken {}
     trait Int5: IntToken {}
 
-    vtable! {
+    thr::vtable! {
         use Thr;
         use Sv;
         pub struct Vtable;
@@ -71,10 +72,9 @@ mod a {
 }
 
 mod b {
-    use drone_core::thr;
-    use drone_cortex_m::vtable;
+    use drone_cortex_m::thr;
 
-    vtable! {
+    thr::vtable! {
         use Thr;
         pub struct Vtable;
         pub struct Handlers;

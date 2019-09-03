@@ -2,7 +2,8 @@ use super::{Data, StackData};
 use crate::{fib::FiberState, sv::Switch};
 use core::{marker::PhantomData, mem::forget};
 
-/// A communication channel for [`FiberStack`](FiberStack).
+/// A zero-sized token that provides [`stack_yield`](Yielder::stack_yield)
+/// method to yield from [`FiberStack`](crate::fib::FiberStack).
 pub struct Yielder<Sv, I, Y, R>
 where
     Sv: Switch<StackData<I, Y, R>>,
@@ -23,12 +24,14 @@ where
     Y: Send + 'static,
     R: Send + 'static,
 {
-    /// Creates a new `Yielder`. Normally one should use the yielder provided to
-    /// fiber as argument.
+    /// Creates a new yielder token.
     ///
     /// # Safety
     ///
-    /// `I` and `O` types must match the enclosing fiber.
+    /// The token must be created only in a closure provided to a
+    /// [`FiberStack`](crate::fib::FiberStack). The type parameters for the
+    /// [`Yielder`] must be equal to the type parameters for the
+    /// [`FiberStack`](crate::fib::FiberStack).
     #[inline]
     pub unsafe fn new() -> Self {
         Self {
@@ -39,9 +42,11 @@ where
         }
     }
 
-    /// Yields from the enclosing stackful fiber.
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn stack_yield(&self, output: Y) -> I {
+    /// Yields from the [`FiberStack`](crate::fib::FiberStack).
+    ///
+    /// This method blocks, the stack is saved, and the fiber is suspended.
+    #[inline]
+    pub fn stack_yield(self, output: Y) -> I {
         unsafe {
             let output = FiberState::Yielded(output);
             let mut data = Data { output };

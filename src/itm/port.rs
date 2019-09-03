@@ -1,4 +1,4 @@
-//! ITM stimulus ports functionality.
+#![cfg_attr(feature = "std", allow(unused_variables))]
 
 use core::{
     fmt::{self, Write},
@@ -7,73 +7,78 @@ use core::{
 
 const ADDRESS_BASE: usize = 0xE000_0000;
 
-/// ITM stimulus port pointer.
-pub struct Port(usize);
+/// ITM stimulus port handler.
+#[derive(Clone, Copy)]
+pub struct Port {
+    address: usize,
+}
 
-/// Types that can be transmitted through ITM stimulus port.
-pub trait Transmit: Copy {
-    /// Writes its value to provided address of a stimulus port register.
-    ///
-    /// It retries on buffer overflow.
-    fn transmit(self, address: usize);
+pub trait Integer: Copy {
+    fn write(self, address: usize);
 }
 
 impl Port {
-    /// Constructs a new `Port`.
+    /// Creates a new ITM stimulus port handler.
     ///
     /// # Panics
     ///
-    /// If `port` is greater or equals to `0x20`.
-    pub fn new(port: usize) -> Self {
-        assert!(port < 0x20);
-        Self(ADDRESS_BASE + (port << 2))
+    /// If `port` is out of bounds.
+    pub fn new(address: usize) -> Self {
+        assert!(address < 0x20);
+        Self {
+            address: ADDRESS_BASE + (address << 2),
+        }
     }
 
-    /// Writes a buffer in most effective chunks, splitting it to 8- and 32-bit
-    /// slices.
-    pub fn write_stream(&self, buffer: &[u8]) {
-        let mut end = buffer.len();
-        if end < 4 {
-            return self.write_all(buffer);
+    /// Writes `bytes` to the stimulus port.
+    pub fn write_bytes(self, bytes: &[u8]) {
+        fn write_slice<T: Integer>(port: Port, slice: &[T]) {
+            for item in slice {
+                port.write(*item);
+            }
         }
-        let mut start = buffer.as_ptr() as usize;
+        let mut end = bytes.len();
+        if end < 4 {
+            return write_slice(self, bytes);
+        }
+        let mut start = bytes.as_ptr() as usize;
         let mut rem = start & 0b11;
         end += start;
         if rem != 0 {
             rem = 0b100 - rem;
-            self.write_all(unsafe { slice::from_raw_parts(start as *const u8, rem) });
+            write_slice(self, unsafe {
+                slice::from_raw_parts(start as *const u8, rem)
+            });
             start += rem;
         }
         rem = end & 0b11;
         end -= rem;
-        self.write_all(unsafe { slice::from_raw_parts(start as *const u32, end - start >> 2) });
-        self.write_all(unsafe { slice::from_raw_parts(end as *const u8, rem) });
+        write_slice(self, unsafe {
+            slice::from_raw_parts(start as *const u32, end - start >> 2)
+        });
+        write_slice(self, unsafe {
+            slice::from_raw_parts(end as *const u8, rem)
+        });
     }
 
-    /// Writes an entire buffer in chunks of `size_of::<T>() * 8` bits.
-    pub fn write_all<T: Transmit>(&self, buffer: &[T]) {
-        for item in buffer {
-            self.write(*item);
-        }
-    }
-
-    /// Writes a value into a port.
-    pub fn write<T: Transmit>(&self, value: T) -> &Self {
-        value.transmit(self.0);
+    /// Writes `value` of type `u8`, `u16` or `u32` to the stimulus port.
+    ///
+    /// This method could be chained.
+    pub fn write<T: Integer>(self, value: T) -> Self {
+        value.write(self.address);
         self
     }
 }
 
 impl Write for Port {
     fn write_str(&mut self, string: &str) -> fmt::Result {
-        self.write_stream(string.as_bytes());
+        self.write_bytes(string.as_bytes());
         Ok(())
     }
 }
 
-impl Transmit for u8 {
-    #[cfg_attr(feature = "std", allow(unused_variables))]
-    fn transmit(self, address: usize) {
+impl Integer for u8 {
+    fn write(self, address: usize) {
         #[cfg(feature = "std")]
         unimplemented!();
         #[cfg(not(feature = "std"))]
@@ -95,9 +100,8 @@ impl Transmit for u8 {
     }
 }
 
-impl Transmit for u16 {
-    #[cfg_attr(feature = "std", allow(unused_variables))]
-    fn transmit(self, address: usize) {
+impl Integer for u16 {
+    fn write(self, address: usize) {
         #[cfg(feature = "std")]
         unimplemented!();
         #[cfg(not(feature = "std"))]
@@ -119,9 +123,8 @@ impl Transmit for u16 {
     }
 }
 
-impl Transmit for u32 {
-    #[cfg_attr(feature = "std", allow(unused_variables))]
-    fn transmit(self, address: usize) {
+impl Integer for u32 {
+    fn write(self, address: usize) {
         #[cfg(feature = "std")]
         unimplemented!();
         #[cfg(not(feature = "std"))]

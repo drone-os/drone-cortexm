@@ -14,12 +14,19 @@ pub union Data<I, O> {
 
 type StackData<I, Y, R> = Data<I, FiberState<Y, R>>;
 
-/// Creates a new stackful fiber.
+/// Creates a stackful fiber from the closure `f`.
+///
+/// The first argument to the closure is
+/// [`Fiber::Input`](crate::fib::Fiber::Input).
+///
+/// This type of fiber yields on each [`stack_yield`](Yielder::stack_yield) call
+/// on the second [`Yielder`] argument.
 ///
 /// # Panics
 ///
-/// * If `stack_size` is insufficient to store an initial frame.
 /// * If MPU not present.
+/// * If `stack_size` is insufficient to store the initial frame.
+#[inline]
 pub fn new_stack<Sv, I, Y, R, F>(stack_size: usize, f: F) -> FiberStack<Sv, I, Y, R, F>
 where
     Sv: Switch<StackData<I, Y, R>>,
@@ -32,15 +39,22 @@ where
     unsafe { FiberStack::new(stack_size, false, false, f) }
 }
 
-/// Creates a new stackful fiber.
+/// Creates a stackful fiber from the closure `f`, without memory protection.
+///
+/// The first argument to the closure is
+/// [`Fiber::Input`](crate::fib::Fiber::Input).
+///
+/// This type of fiber yields on each [`stack_yield`](Yielder::stack_yield) call
+/// on the second [`Yielder`] argument.
 ///
 /// # Safety
 ///
-/// Unprotected from stack overflow.
+/// Stack overflow is unchecked.
 ///
 /// # Panics
 ///
-/// * If `stack_size` is insufficient to store an initial frame.
+/// * If `stack_size` is insufficient to store the initial frame.
+#[inline]
 pub unsafe fn new_stack_unchecked<Sv, I, Y, R, F>(
     stack_size: usize,
     f: F,
@@ -56,12 +70,20 @@ where
     FiberStack::new(stack_size, false, true, f)
 }
 
-/// Creates a new stackful fiber.
+/// Creates a stackful fiber from the closure `f`, which will run in
+/// unprivileged mode.
+///
+/// The first argument to the closure is
+/// [`Fiber::Input`](crate::fib::Fiber::Input).
+///
+/// This type of fiber yields on each [`stack_yield`](Yielder::stack_yield) call
+/// on the second [`Yielder`] argument.
 ///
 /// # Panics
 ///
-/// * If `stack_size` is insufficient to store an initial frame.
 /// * If MPU not present.
+/// * If `stack_size` is insufficient to store the initial frame.
+#[inline]
 pub fn new_stack_unprivileged<Sv, I, Y, R, F>(stack_size: usize, f: F) -> FiberStack<Sv, I, Y, R, F>
 where
     Sv: Switch<StackData<I, Y, R>>,
@@ -74,15 +96,23 @@ where
     unsafe { FiberStack::new(stack_size, true, false, f) }
 }
 
-/// Creates a new stackful fiber.
+/// Creates a stackful fiber from the closure `f`, which will run in
+/// unprivileged mode, without memory protection.
+///
+/// The first argument to the closure is
+/// [`Fiber::Input`](crate::fib::Fiber::Input).
+///
+/// This type of fiber yields on each [`stack_yield`](Yielder::stack_yield) call
+/// on the second [`Yielder`] argument.
 ///
 /// # Safety
 ///
-/// Unprotected from stack overflow.
+/// Stack overflow is unchecked.
 ///
 /// # Panics
 ///
-/// * If `stack_size` is insufficient to store an initial frame.
+/// * If `stack_size` is insufficient to store the initial frame.
+#[inline]
 pub unsafe fn new_stack_unprivileged_unchecked<Sv, I, Y, R, F>(
     stack_size: usize,
     f: F,
@@ -98,14 +128,15 @@ where
     FiberStack::new(stack_size, true, true, f)
 }
 
-/// Stackful fiber extension to the thread token.
+/// Extends [`ThrToken`](crate::thr::ThrToken) types with `add_stack` methods.
 pub trait ThrFiberStack: ThrSv {
-    /// Adds a new stackful fiber.
+    /// Adds a stackful fiber for the closure `f` to the fiber chain.
     ///
     /// # Panics
     ///
-    /// * If `stack_size` is insufficient to store an initial frame.
     /// * If MPU not present.
+    /// * If `stack_size` is insufficient to store the initial frame.
+    #[inline]
     fn add_stack<F>(self, stack_size: usize, mut f: F)
     where
         F: FnMut(Yielder<Self::Sv, (), (), ()>),
@@ -115,15 +146,17 @@ pub trait ThrFiberStack: ThrSv {
         self.add_fib(new_stack(stack_size, move |(), yielder| f(yielder)))
     }
 
-    /// Adds a new stackful fiber.
+    /// Adds a stackful fiber for the closure `f` to the fiber chain, without
+    /// memory protection.
     ///
     /// # Safety
     ///
-    /// Unprotected from stack overflow.
+    /// Stack overflow is unchecked.
     ///
     /// # Panics
     ///
-    /// * If `stack_size` is insufficient to store an initial frame.
+    /// * If `stack_size` is insufficient to store the initial frame.
+    #[inline]
     unsafe fn add_stack_unchecked<F>(self, stack_size: usize, mut f: F)
     where
         F: FnMut(Yielder<Self::Sv, (), (), ()>),
@@ -135,12 +168,14 @@ pub trait ThrFiberStack: ThrSv {
         }))
     }
 
-    /// Adds a new stackful fiber.
+    /// Adds a stackful fiber for the closure `f` to the fiber chain, which will
+    /// run in unprivileged mode.
     ///
     /// # Panics
     ///
-    /// * If `stack_size` is insufficient to store an initial frame.
     /// * If MPU not present.
+    /// * If `stack_size` is insufficient to store the initial frame.
+    #[inline]
     fn add_stack_unprivileged<F>(self, stack_size: usize, mut f: F)
     where
         F: FnMut(Yielder<Self::Sv, (), (), ()>),
@@ -152,15 +187,17 @@ pub trait ThrFiberStack: ThrSv {
         }))
     }
 
-    /// Adds a new stackful fiber.
+    /// Adds a stackful fiber for the closure `f` to the fiber chain, which will
+    /// run in unprivileged mode, without memory protection.
     ///
     /// # Safety
     ///
-    /// Unprotected from stack overflow.
+    /// Stack overflow is unchecked.
     ///
     /// # Panics
     ///
-    /// * If `stack_size` is insufficient to store an initial frame.
+    /// * If `stack_size` is insufficient to store the initial frame.
+    #[inline]
     unsafe fn add_stack_unprivileged_unchecked<F>(self, stack_size: usize, mut f: F)
     where
         F: FnMut(Yielder<Self::Sv, (), (), ()>),

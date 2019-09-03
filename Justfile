@@ -1,33 +1,41 @@
 build_target := 'thumbv7em-none-eabihf'
-features := 'fpu'
+features := 'cortex_m4_r0p1 fpu'
+
+# Install dependencies
+deps:
+	rustup component add clippy
+	rustup component add rustfmt
+	rustup component add rls rust-analysis rust-src
+	type cargo-readme >/dev/null || cargo +stable install cargo-readme
+
+# Reformat the source code
+fmt:
+	cargo fmt
 
 # Check for mistakes
 lint:
-	rustup target add {{build_target}}
-	rustup component add clippy
 	cargo clippy --package drone-cortex-m-macros
 	cargo clippy --target {{build_target}} --features "{{features}}" --package drone-cortex-m
 
-# Reformat the code
-fmt:
-	rustup component add rustfmt
-	cargo fmt
-
 # Generate the docs
 doc:
-	rustup target add {{build_target}}
 	cargo doc --package drone-cortex-m-macros
 	cargo doc --target {{build_target}} --features "{{features}}" --package drone-cortex-m
 
 # Open the docs in a browser
-doc_open: doc
+doc-open: doc
 	cargo doc --target {{build_target}} --features "{{features}}" --package drone-cortex-m --open
-
-# Update README.md
-readme:
-	cargo readme -o README.md
 
 # Run the tests
 test:
 	cargo test --package drone-cortex-m-macros
 	cargo test --features "{{features}} std" --package drone-cortex-m
+
+# Update README.md
+readme:
+	cargo readme -o README.md
+
+# Publish to crates.io
+publish:
+	cd macros && cargo publish
+	cargo publish --target {{build_target}} --features "{{features}}"

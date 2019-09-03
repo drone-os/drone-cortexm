@@ -1,16 +1,15 @@
 //! Floating Point Unit.
 
-use crate::map;
 use drone_core::periph;
 
 periph::singular! {
-    /// Acquires FPU.
-    pub macro periph_fpu;
+    #[doc(hidden)]
+    pub macro periph_fpu_inner;
 
-    /// FPU.
+    /// FPU peripheral.
     pub struct FpuPeriph;
 
-    map::reg;
+    crate::map::reg;
     crate::map::periph::fpu;
 
     FPU {
@@ -20,3 +19,17 @@ periph::singular! {
         FPDSCR;
     }
 }
+
+// Workaround the `macro_expanded_macro_exports_accessed_by_absolute_paths`
+// error.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! periph_fpu {
+    ($($tt:tt)*) => {
+        $crate::periph_fpu_inner!($($tt)*);
+    };
+}
+
+/// Extracts FPU register tokens.
+#[doc(inline)]
+pub use crate::periph_fpu;

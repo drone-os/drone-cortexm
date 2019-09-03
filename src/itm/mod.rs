@@ -1,13 +1,17 @@
-//! Instrumentation Trace Macrocell.
+//! The Instrumentation Trace Macrocell.
+//!
+//! This module provides interface to transmit log data through the SWO pin.
+//!
+//! ITM ports #0 and #1 are reserved for STDOUT and STDERR respectively.
 
-pub mod macros;
-pub mod port;
+mod macros;
+mod port;
 
 pub use self::port::Port;
 
 use crate::{
-    cpu,
-    map::reg::{dwt, itm, scb, tpiu},
+    map::reg::{dwt, itm, tpiu},
+    processor,
     reg::prelude::*,
 };
 use core::{
@@ -16,29 +20,76 @@ use core::{
 };
 use drone_core::{heap::Pool, token::Token};
 
-const TEXT_PORT: usize = 0;
-#[cfg(not(feature = "std"))]
-const HEAP_TRACE_PORT: usize = 31;
-#[cfg(not(feature = "std"))]
-const HEAP_TRACE_KEY: u32 = 0xC5AC_CE55;
+/// Port number of the standard output stream.
+pub const STDOUT_PORT: usize = 0;
 
-/// Prints `str` to the ITM port #0.
-///
-/// See [`print!`](print!) and [`println!`](println!) macros.
-#[inline(never)]
-pub fn write_str(string: &str) {
-    Port::new(TEXT_PORT).write_str(string).unwrap();
+/// Port number of the standard error stream.
+pub const STDERR_PORT: usize = 1;
+
+/// Port number of the heap trace stream.
+pub const HEAP_TRACE_PORT: usize = 31;
+
+/// XOR pattern for heap trace output.
+pub const HEAP_TRACE_KEY: u32 = 0xC5AC_CE55;
+
+/// Returns `true` if a debug probe is connected and listening to ITM output.
+#[inline(always)]
+pub fn is_enabled() -> bool {
+    #[cfg(not(feature = "std"))]
+    {
+        use crate::map::reg::scb;
+        let demcr = unsafe { scb::Demcr::<Urt>::take() };
+        demcr.load().trcena()
+    }
+    #[cfg(feature = "std")]
+    false
 }
 
-/// Prints `core::fmt::Arguments` to the ITM port #0.
+/// Writes `string` to the stimulus port number `address`.
 ///
-/// See [`print!`](print!) and [`println!`](println!) macros.
+/// The presence of a debug probe is not checked, so it is recommended to use it
+/// together with [`is_enabled`].
+///
+/// # Examples
+///
+/// ```
+/// use drone_cortex_m::itm;
+///
+/// if itm::is_enabled() {
+///     itm::write_str(11, "hello there!\n");
+/// }
+/// ```
 #[inline(never)]
-pub fn write_fmt(args: fmt::Arguments<'_>) {
-    Port::new(TEXT_PORT).write_fmt(args).unwrap();
+pub fn write_str(address: usize, string: &str) {
+    // Can never be `Err(_)`
+    Port::new(address).write_str(string).unwrap_or(())
 }
 
-/// Waits until all pending packets transmitted.
+/// Writes `args` to the stimulus port number `address`.
+///
+/// The presence of a debug probe is not checked, so it is recommended to use it
+/// together with [`is_enabled`].
+///
+/// # Examples
+///
+/// ```
+/// use drone_cortex_m::itm;
+///
+/// let a = 0;
+///
+/// if itm::is_enabled() {
+///     itm::write_fmt(11, format_args!("a = {}\n", a));
+/// }
+/// ```
+#[inline(never)]
+pub fn write_fmt(address: usize, args: fmt::Arguments<'_>) {
+    // Can never be `Err(_)`
+    Port::new(address).write_fmt(args).unwrap_or(())
+}
+
+/// Blocks until all pending packets are transmitted.
+///
+/// This function is a no-op if no debug probe is connected and listening.
 #[inline(always)]
 pub fn flush() {
     #[inline(never)]
@@ -46,34 +97,34 @@ pub fn flush() {
         let tcr = unsafe { itm::Tcr::<Urt>::take() };
         while tcr.load().busy() {}
         let acpr = unsafe { tpiu::Acpr::<Urt>::take() };
-        cpu::spin(acpr.load().swoscaler());
+        processor::spin(acpr.load().swoscaler() * 32);
     }
     if is_enabled() {
         flush();
     }
 }
 
-/// Checks if a trace-probe is connected.
-#[inline(always)]
-pub fn is_enabled() -> bool {
-    let demcr = unsafe { scb::Demcr::<Urt>::take() };
-    demcr.load().trcena()
-}
-
-/// Sets a new rate of SWO output.
-pub fn update_rate(swoscaler: usize) {
-    let mut acpr = unsafe { tpiu::Acpr::<Urt>::take() };
-    acpr.store(|r| r.write_swoscaler(swoscaler as u32));
-    sync();
-}
-
-/// Sends ITM synchronization packet.
+/// Generates an ITM synchronization packet.
+#[inline]
 pub fn sync() {
     let mut cyccnt = unsafe { dwt::Cyccnt::<Urt>::take() };
     cyccnt.store(|r| r.write_cyccnt(0xFFFF_FFFF));
 }
 
-/// Logs the allocation to the ITM port #31.
+/// Updates the SWO prescaler register.
+#[inline]
+pub fn update_prescaler(hclk: usize, baud_rate: usize) {
+    fn set_tpiu_acpr(swoscaler: u32) {
+        let mut acpr = unsafe { tpiu::Acpr::<Urt>::take() };
+        acpr.store(|r| r.write_swoscaler(swoscaler));
+    }
+    set_tpiu_acpr(hclk as u32 / baud_rate as u32 - 1);
+    sync();
+}
+
+/// Logs an allocation to the ITM port #31.
+///
+/// This function is a no-op if no debug probe is connected and listening.
 #[inline(always)]
 pub fn trace_alloc(layout: Layout, _pool: &Pool) {
     #[cfg(not(feature = "std"))]
@@ -94,7 +145,9 @@ pub fn trace_alloc(layout: Layout, _pool: &Pool) {
     }
 }
 
-/// Logs the deallocation to the ITM port #31.
+/// Logs a deallocation to the ITM port #31.
+///
+/// This function is a no-op if no debug probe is connected and listening.
 #[inline(always)]
 pub fn trace_dealloc(layout: Layout, _pool: &Pool) {
     #[cfg(not(feature = "std"))]
@@ -115,7 +168,9 @@ pub fn trace_dealloc(layout: Layout, _pool: &Pool) {
     }
 }
 
-/// Logs the reallocation to the ITM port #31.
+/// Logs growing in place to the ITM port #31.
+///
+/// This function is a no-op if no debug probe is connected and listening.
 #[inline(always)]
 pub fn trace_grow_in_place(layout: Layout, new_size: usize) {
     #[cfg(not(feature = "std"))]
@@ -137,7 +192,9 @@ pub fn trace_grow_in_place(layout: Layout, new_size: usize) {
     }
 }
 
-/// Logs the reallocation to the ITM port #31.
+/// Logs shrinking in place to the ITM port #31.
+///
+/// This function is a no-op if no debug probe is connected and listening.
 #[inline(always)]
 pub fn trace_shrink_in_place(layout: Layout, new_size: usize) {
     #[cfg(not(feature = "std"))]

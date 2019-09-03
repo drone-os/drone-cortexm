@@ -1,4 +1,4 @@
-//! Floating point unit.
+//! Floating Point Unit.
 
 use crate::{map::periph::fpu::FpuPeriph, reg::prelude::*};
 
@@ -7,16 +7,8 @@ pub struct Fpu {
     periph: FpuPeriph,
 }
 
-/// Acquires [`Fpu`].
-#[macro_export]
-macro_rules! drv_fpu {
-    ($reg:ident) => {
-        $crate::drv::fpu::Fpu::new($crate::periph_fpu!($reg))
-    };
-}
-
 impl Fpu {
-    /// Creates a new [`Fpu`].
+    /// Creates a new driver from the peripheral.
     #[inline]
     pub fn new(periph: FpuPeriph) -> Self {
         Self { periph }
