@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "std", allow(unused_variables))]
+#![cfg_attr(feature = "std", allow(unreachable_code, unused_variables))]
 
 use crate::reg::{
     field::{RegFieldBit, RegFieldBits, WWRegField, WWRegFieldBit, WWRegFieldBits},
@@ -90,9 +90,9 @@ where
         ) -> &'b mut <Self as RegRef<'a, T>>::Hold,
     {
         loop {
-            let mut val = unsafe { self.hold(load_excl::<T, R>()) };
+            let mut val = unsafe { self.hold(load_excl::<T, Self>()) };
             f(&mut val);
-            if unsafe { store_excl::<T, R>(val.val()) } {
+            if unsafe { store_excl::<T, Self>(val.val()) } {
                 break;
             }
         }
@@ -112,9 +112,9 @@ where
         F: Fn(&mut <Self::Reg as Reg<T>>::Val),
     {
         loop {
-            let mut val = unsafe { load_excl::<T, R::Reg>() };
+            let mut val = unsafe { load_excl::<T, Self::Reg>() };
             f(&mut val);
-            if unsafe { store_excl::<T, R::Reg>(val) } {
+            if unsafe { store_excl::<T, Self::Reg>(val) } {
                 break;
             }
         }
@@ -186,34 +186,28 @@ macro_rules! atomic_bits {
         impl AtomicBits for $type {
             unsafe fn load_excl(address: usize) -> Self {
                 #[cfg(feature = "std")]
-                unimplemented!();
-                #[cfg(not(feature = "std"))]
-                {
-                    let raw: Self;
-                    asm!($ldrex
-                        : "=r"(raw)
-                        : "r"(address)
-                        :
-                        : "volatile"
-                    );
-                    raw
-                }
+                return unimplemented!();
+                let raw: Self;
+                asm!($ldrex
+                     : "=r"(raw)
+                     : "r"(address)
+                     :
+                     : "volatile"
+                );
+                raw
             }
 
             unsafe fn store_excl(self, address: usize) -> bool {
                 #[cfg(feature = "std")]
-                unimplemented!();
-                #[cfg(not(feature = "std"))]
-                {
-                    let status: Self;
-                    asm!($strex
-                        : "=r"(status)
-                        : "r"(self), "r"(address)
-                        :
-                        : "volatile"
-                    );
-                    status == 0
-                }
+                return unimplemented!();
+                let status: Self;
+                asm!($strex
+                     : "=r"(status)
+                     : "r"(self), "r"(address)
+                     :
+                     : "volatile"
+                );
+                status == 0
             }
         }
     };

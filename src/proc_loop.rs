@@ -2,7 +2,7 @@
 //! asynchronous command loop.
 //!
 //! **NOTE** This module documentation should be viewed as a continuation of
-//! [the `drone_core` documentation](drone_core::stack_loop).
+//! [the `drone_core` documentation](drone_core::proc_loop).
 //!
 //! To provide an example, imagine a C library for FAT32 file system. Here is
 //! how it could be wrapped:
@@ -12,7 +12,7 @@
 //! use core::{future::Future, pin::Pin, slice};
 //! use drone_core::ffi::{c_char, CString};
 //! use drone_cortex_m::{
-//!     stack_loop::{self, Context as _, Sess as _, StackLoop},
+//!     proc_loop::{self, Context as _, ProcLoop, Sess as _},
 //!     sv,
 //! };
 //! use futures::prelude::*;
@@ -40,7 +40,7 @@
 //! #[no_mangle]
 //! pub extern "C" fn disk_read(buf: *mut u8, sector: u32, count: u32) -> u32 {
 //!     // We need to recreate the Yielder with correct type parameters.
-//!     let yielder = unsafe { stack_loop::Yielder::<Sv, FatfsRes>::new() };
+//!     let yielder = unsafe { proc_loop::Yielder::<Sv, FatfsRes>::new() };
 //!     // Redirect the request to the command loop. This call is blocking.
 //!     let req_res = yielder.req(Req::DiskRead { buf, sector, count });
 //!     // The result variant must correspond to the request variant.
@@ -49,7 +49,7 @@
 //!
 //! #[no_mangle]
 //! pub extern "C" fn disk_write(buf: *const u8, sector: u32, count: u32) -> u32 {
-//!     let yielder = unsafe { stack_loop::Yielder::<Sv, FatfsRes>::new() };
+//!     let yielder = unsafe { proc_loop::Yielder::<Sv, FatfsRes>::new() };
 //!     let req_res = yielder.req(Req::DiskWrite { buf, sector, count });
 //!     // The result variant must correspond to the request variant.
 //!     unsafe { req_res.disk_write }
@@ -106,14 +106,14 @@
 //! unsafe impl Send for Req {}
 //!
 //! // This type will never be instantiated. It is used only to define associated
-//! // items with `StackLoop` trait.
+//! // items with `ProcLoop` trait.
 //! pub struct FatfsRes;
 //!
 //! // This is the type that implements the high-level API of our library.
-//! pub struct FatfsSess<'sess>(&'sess mut stack_loop::Fiber<Sv, FatfsRes>);
+//! pub struct FatfsSess<'sess>(&'sess mut proc_loop::Fiber<Sv, FatfsRes>);
 //!
-//! impl StackLoop for FatfsRes {
-//!     type Context = stack_loop::Yielder<Sv, FatfsRes>;
+//! impl ProcLoop for FatfsRes {
+//!     type Context = proc_loop::Yielder<Sv, FatfsRes>;
 //!     type Cmd = Cmd;
 //!     type CmdRes = CmdRes;
 //!     type Req = Req;
@@ -155,9 +155,9 @@
 //!     }
 //! }
 //!
-//! impl stack_loop::Sess for FatfsSess<'_> {
-//!     type StackLoop = FatfsRes;
-//!     type Fiber = stack_loop::Fiber<Sv, FatfsRes>;
+//! impl proc_loop::Sess for FatfsSess<'_> {
+//!     type ProcLoop = FatfsRes;
+//!     type Fiber = proc_loop::Fiber<Sv, FatfsRes>;
 //!     type Error = !;
 //!
 //!     fn fib(&mut self) -> Pin<&mut Self::Fiber> {
@@ -166,10 +166,10 @@
 //!
 //!     fn run_req(
 //!         &mut self,
-//!         req: <Self::StackLoop as StackLoop>::Req,
+//!         req: <Self::ProcLoop as ProcLoop>::Req,
 //!     ) -> Pin<
 //!         Box<
-//!             dyn Future<Output = Result<<Self::StackLoop as StackLoop>::ReqRes, Self::Error>>
+//!             dyn Future<Output = Result<<Self::ProcLoop as ProcLoop>::ReqRes, Self::Error>>
 //!                 + Send
 //!                 + '_,
 //!         >,
@@ -211,8 +211,8 @@
 //! // Here is how we use the defined command loop in asynchronous context.
 //! # fn main() {
 //! async {
-//!     let mut fatfs_stack = stack_loop::Fiber::<Sv, FatfsRes>::new();
-//!     let mut fatfs_sess = FatfsSess(&mut fatfs_stack);
+//!     let mut fatfs_proc = proc_loop::Fiber::<Sv, FatfsRes>::new();
+//!     let mut fatfs_sess = FatfsSess(&mut fatfs_proc);
 //!     let mut buf = [0; 10];
 //!     fatfs_sess.read("file1.txt", &mut buf).await?;
 //!     fatfs_sess.write("file2.txt", b"hello there!\n").await?;
@@ -222,7 +222,7 @@
 //! ```
 
 #[doc(no_inline)]
-pub use drone_core::stack_loop::*;
+pub use drone_core::proc_loop::*;
 
 use crate::{
     fib::{self, FiberState},
@@ -231,32 +231,32 @@ use crate::{
 use core::pin::Pin;
 
 type InnerYielder<Sv, T> = fib::Yielder<Sv, InnerIn<T>, InnerOut<T>, !>;
-type InnerFiber<Sv, T> = fib::FiberStack<Sv, InnerIn<T>, InnerOut<T>, !, CmdLoop<Sv, T>>;
-type InnerIn<T> = In<<T as StackLoop>::Cmd, <T as StackLoop>::ReqRes>;
-type InnerOut<T> = Out<<T as StackLoop>::Req, <T as StackLoop>::CmdRes>;
+type InnerFiber<Sv, T> = fib::FiberProc<Sv, InnerIn<T>, InnerOut<T>, !, CmdLoop<Sv, T>>;
+type InnerIn<T> = In<<T as ProcLoop>::Cmd, <T as ProcLoop>::ReqRes>;
+type InnerOut<T> = Out<<T as ProcLoop>::Req, <T as ProcLoop>::CmdRes>;
 type CmdLoop<Sv, T> =
-    fn(In<<T as StackLoop>::Cmd, <T as StackLoop>::ReqRes>, InnerYielder<Sv, T>) -> !;
+    fn(In<<T as ProcLoop>::Cmd, <T as ProcLoop>::ReqRes>, InnerYielder<Sv, T>) -> !;
 
-/// A wrapper for [`fib::FiberStack`] that runs the command loop `T`.
+/// A wrapper for [`fib::FiberProc`] that runs the command loop `T`.
 pub struct Fiber<Sv, T>(InnerFiber<Sv, T>)
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: StackLoop<Context = Yielder<Sv, T>>;
+    T: ProcLoop<Context = Yielder<Sv, T>>;
 
-/// Yielder for [`Fiber`]'s [`fib::FiberStack`].
+/// Yielder for [`Fiber`]'s [`fib::FiberProc`].
 pub struct Yielder<Sv, T>(InnerYielder<Sv, T>)
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: StackLoop<Context = Self>;
+    T: ProcLoop<Context = Self>;
 
 #[allow(clippy::new_without_default)]
 impl<Sv, T> Fiber<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: StackLoop<Context = Yielder<Sv, T>>,
+    T: ProcLoop<Context = Yielder<Sv, T>>,
 {
     /// Creates a new command loop for `T`.
     ///
@@ -264,7 +264,7 @@ where
     ///
     /// If MPU is not present.
     pub fn new() -> Self {
-        unsafe { Self::new_with(fib::new_stack) }
+        unsafe { Self::new_with(fib::new_proc) }
     }
 
     /// Creates a new command loop for `T`, without MPU.
@@ -273,7 +273,7 @@ where
     ///
     /// Unprotected from stack overflow.
     pub unsafe fn new_unchecked() -> Self {
-        Self::new_with(fib::new_stack_unchecked)
+        Self::new_with(fib::new_proc_unchecked)
     }
 
     unsafe fn new_with(f: unsafe fn(usize, CmdLoop<Sv, T>) -> InnerFiber<Sv, T>) -> Self {
@@ -284,7 +284,7 @@ where
     fn cmd_loop(mut input: In<T::Cmd, T::ReqRes>, yielder: InnerYielder<Sv, T>) -> ! {
         T::on_enter();
         loop {
-            input = yielder.stack_yield(Out::CmdRes(T::run_cmd(
+            input = yielder.proc_yield(Out::CmdRes(T::run_cmd(
                 unsafe { input.into_cmd() },
                 Yielder(yielder),
             )));
@@ -296,7 +296,7 @@ impl<Sv, T> Drop for Fiber<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: StackLoop<Context = Yielder<Sv, T>>,
+    T: ProcLoop<Context = Yielder<Sv, T>>,
 {
     fn drop(&mut self) {
         T::on_drop();
@@ -307,7 +307,7 @@ impl<Sv, T> fib::Fiber for Fiber<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: StackLoop<Context = Yielder<Sv, T>>,
+    T: ProcLoop<Context = Yielder<Sv, T>>,
 {
     type Input = InnerIn<T>;
     type Yield = InnerOut<T>;
@@ -323,7 +323,7 @@ impl<Sv, T> Context<T::Req, T::ReqRes> for Yielder<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: StackLoop<Context = Self>,
+    T: ProcLoop<Context = Self>,
 {
     #[inline]
     unsafe fn new() -> Self {
@@ -332,7 +332,7 @@ where
 
     #[inline]
     fn req(self, req: T::Req) -> T::ReqRes {
-        unsafe { self.0.stack_yield(Out::Req(req)).into_req_res() }
+        unsafe { self.0.proc_yield(Out::Req(req)).into_req_res() }
     }
 }
 
@@ -340,7 +340,7 @@ impl<Sv, T> Clone for Yielder<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: StackLoop<Context = Self>,
+    T: ProcLoop<Context = Self>,
 {
     fn clone(&self) -> Self {
         unsafe { Self::new() }
@@ -351,6 +351,6 @@ impl<Sv, T> Copy for Yielder<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
-    T: StackLoop<Context = Self>,
+    T: ProcLoop<Context = Self>,
 {
 }

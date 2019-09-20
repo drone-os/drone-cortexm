@@ -3,13 +3,13 @@ use core::{alloc::Layout, panic::PanicInfo};
 
 #[panic_handler]
 fn begin_panic(pi: &PanicInfo<'_>) -> ! {
-    println!("{}", pi);
+    eprintln!("{}", pi);
     abort()
 }
 
 #[lang = "oom"]
 fn oom(layout: Layout) -> ! {
-    println!(
+    eprintln!(
         "Couldn't allocate memory of size {}. Aborting!",
         layout.size()
     );

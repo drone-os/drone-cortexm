@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "std", allow(unused_variables))]
+#![cfg_attr(feature = "std", allow(unreachable_code, unused_variables))]
 
 use core::{
     fmt::{self, Write},
@@ -80,8 +80,7 @@ impl Write for Port {
 impl Integer for u8 {
     fn write(self, address: usize) {
         #[cfg(feature = "std")]
-        unimplemented!();
-        #[cfg(not(feature = "std"))]
+        return unimplemented!();
         unsafe {
             asm!("
             0:
@@ -103,8 +102,7 @@ impl Integer for u8 {
 impl Integer for u16 {
     fn write(self, address: usize) {
         #[cfg(feature = "std")]
-        unimplemented!();
-        #[cfg(not(feature = "std"))]
+        return unimplemented!();
         unsafe {
             asm!("
             0:
@@ -126,8 +124,7 @@ impl Integer for u16 {
 impl Integer for u32 {
     fn write(self, address: usize) {
         #[cfg(feature = "std")]
-        unimplemented!();
-        #[cfg(not(feature = "std"))]
+        return unimplemented!();
         unsafe {
             asm!("
             0:

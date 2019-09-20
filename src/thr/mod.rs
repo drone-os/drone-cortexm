@@ -120,7 +120,7 @@ pub mod vtable;
 mod exec;
 mod init;
 mod nvic;
-mod trunk;
+mod root;
 mod wake;
 
 #[doc(no_inline)]
@@ -171,7 +171,7 @@ pub use self::{
     exec::{ExecOutput, ThrExec},
     init::{init, ThrInitPeriph},
     nvic::{NvicIabr, NvicIcer, NvicIcpr, NvicIser, NvicIspr, ThrNvic},
-    trunk::{FutureTrunkExt, StreamTrunkExt, StreamTrunkWait},
+    root::{FutureRootExt, StreamRootExt, StreamRootWait},
 };
 
 use crate::sv::Supervisor;

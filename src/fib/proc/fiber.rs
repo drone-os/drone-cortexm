@@ -1,6 +1,6 @@
-#![cfg_attr(feature = "std", allow(unused_variables, unused_mut, dead_code))]
+#![cfg_attr(feature = "std", allow(unreachable_code, unused_variables, unused_mut))]
 
-use super::{Data, StackData, Yielder};
+use super::{Data, ProcData, Yielder};
 use crate::{
     fib::{Fiber, FiberRoot, FiberState},
     map::reg::mpu,
@@ -21,13 +21,13 @@ const GUARD_SIZE: u32 = 5;
 
 /// Stackful fiber for [`FnMut`] closure.
 ///
-/// Can be created with [`fib::new_stack`](crate::fib::new_stack),
-/// [`fib::new_stack_unchecked`](crate::fib::new_stack_unchecked),
-/// [`fib::new_stack_unprivileged`](crate::fib::new_stack_unprivileged),
-/// [`fib::new_stack_unprivileged_unchecked`](crate::fib::new_stack_unprivileged_unchecked).
-pub struct FiberStack<Sv, I, Y, R, F>
+/// Can be created with [`fib::new_proc`](crate::fib::new_proc),
+/// [`fib::new_proc_unchecked`](crate::fib::new_proc_unchecked),
+/// [`fib::new_proc_unprivileged`](crate::fib::new_proc_unprivileged),
+/// [`fib::new_proc_unprivileged_unchecked`](crate::fib::new_proc_unprivileged_unchecked).
+pub struct FiberProc<Sv, I, Y, R, F>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     F: FnMut(I, Yielder<Sv, I, Y, R>) -> R,
     F: Send + 'static,
     I: Send + 'static,
@@ -44,9 +44,9 @@ where
     _return: PhantomData<*const R>,
 }
 
-impl<Sv, I, Y, R, F> FiberStack<Sv, I, Y, R, F>
+impl<Sv, I, Y, R, F> FiberProc<Sv, I, Y, R, F>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     F: FnMut(I, Yielder<Sv, I, Y, R>) -> R,
     F: Send + 'static,
     I: Send + 'static,
@@ -58,6 +58,9 @@ where
             panic!("MPU not present");
         }
         let stack_bottom = alloc::alloc(layout(stack_size));
+        if stack_bottom.is_null() {
+            panic!("Stack allocation failure");
+        }
         let stack_ptr = Self::stack_init(stack_bottom, stack_size, unprivileged, unchecked, f);
         Self {
             stack_bottom,
@@ -80,8 +83,8 @@ where
     ) -> *const u8 {
         assert!(
             stack_size
-                >= size_of::<StackData<I, Y, R>>()
-                    + (align_of::<StackData<I, Y, R>>() - 1)
+                >= size_of::<ProcData<I, Y, R>>()
+                    + (align_of::<ProcData<I, Y, R>>() - 1)
                     + size_of::<F>()
                     + (align_of::<F>() - 1)
                     + 4
@@ -95,7 +98,7 @@ where
             "insufficient stack size",
         );
         let stack_ptr = stack_bottom.add(stack_size);
-        let data_ptr = Self::stack_reserve::<StackData<I, Y, R>>(stack_ptr);
+        let data_ptr = Self::stack_reserve::<ProcData<I, Y, R>>(stack_ptr);
         let fn_ptr = Self::stack_reserve::<F>(data_ptr) as *mut F;
         fn_ptr.write(f);
         let mut stack_ptr = fn_ptr as *mut u32;
@@ -184,7 +187,7 @@ where
         stack_ptr
     }
 
-    unsafe extern "C" fn handler(fn_ptr: *mut F, mut data_ptr: *mut StackData<I, Y, R>) {
+    unsafe extern "C" fn handler(fn_ptr: *mut F, mut data_ptr: *mut ProcData<I, Y, R>) {
         let input = data_ptr.read().input;
         let yielder = Yielder::new();
         let output = FiberState::Complete((*fn_ptr)(input, yielder));
@@ -192,15 +195,15 @@ where
         Sv::switch_back(&mut data_ptr);
     }
 
-    unsafe fn data_ptr(&mut self) -> *mut StackData<I, Y, R> {
-        let data_size = size_of::<StackData<I, Y, R>>();
+    unsafe fn data_ptr(&mut self) -> *mut ProcData<I, Y, R> {
+        let data_size = size_of::<ProcData<I, Y, R>>();
         self.stack_bottom.add(self.stack_size - data_size) as _
     }
 }
 
-impl<Sv, I, Y, R, F> Drop for FiberStack<Sv, I, Y, R, F>
+impl<Sv, I, Y, R, F> Drop for FiberProc<Sv, I, Y, R, F>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     F: FnMut(I, Yielder<Sv, I, Y, R>) -> R,
     F: Send + 'static,
     I: Send + 'static,
@@ -212,9 +215,9 @@ where
     }
 }
 
-impl<Sv, I, Y, R, F> Fiber for FiberStack<Sv, I, Y, R, F>
+impl<Sv, I, Y, R, F> Fiber for FiberProc<Sv, I, Y, R, F>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     F: FnMut(I, Yielder<Sv, I, Y, R>) -> R,
     F: Send + 'static,
     I: Send + 'static,
@@ -227,8 +230,7 @@ where
 
     fn resume(mut self: Pin<&mut Self>, input: I) -> FiberState<Y, R> {
         #[cfg(feature = "std")]
-        unimplemented!();
-        #[cfg(not(feature = "std"))]
+        return unimplemented!();
         unsafe {
             let data_ptr = self.data_ptr();
             data_ptr.write(Data { input });
@@ -238,9 +240,9 @@ where
     }
 }
 
-impl<Sv, F> FiberRoot for FiberStack<Sv, (), (), (), F>
+impl<Sv, F> FiberRoot for FiberProc<Sv, (), (), (), F>
 where
-    Sv: Switch<StackData<(), (), ()>>,
+    Sv: Switch<ProcData<(), (), ()>>,
     F: FnMut((), Yielder<Sv, (), (), ()>) -> (),
     F: Send + 'static,
 {
@@ -252,9 +254,9 @@ where
     }
 }
 
-unsafe impl<Sv, I, Y, R, F> Send for FiberStack<Sv, I, Y, R, F>
+unsafe impl<Sv, I, Y, R, F> Send for FiberProc<Sv, I, Y, R, F>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     F: FnMut(I, Yielder<Sv, I, Y, R>) -> R,
     F: Send + 'static,
     I: Send + 'static,
@@ -263,9 +265,9 @@ where
 {
 }
 
-impl<Sv, I, Y, R, F> Unpin for FiberStack<Sv, I, Y, R, F>
+impl<Sv, I, Y, R, F> Unpin for FiberProc<Sv, I, Y, R, F>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     F: FnMut(I, Yielder<Sv, I, Y, R>) -> R,
     F: Send + 'static,
     I: Send + 'static,
@@ -275,12 +277,9 @@ where
 }
 
 fn mpu_check() -> bool {
-    #[cfg(not(feature = "std"))]
-    unsafe {
-        mpu::Type::<Srt>::take().load().dregion() != 0
-    }
     #[cfg(feature = "std")]
-    true
+    return true;
+    unsafe { mpu::Type::<Srt>::take().load().dregion() != 0 }
 }
 
 unsafe fn layout(stack_size: usize) -> Layout {

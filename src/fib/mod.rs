@@ -8,10 +8,10 @@
 //! This module implements stackful fibers that are similar to native threads in
 //! the Rust stdlib. They can run synchronous code inside and yield with a
 //! blocking call. A stackful fiber can be created with
-//! [`fib::new_stack`](crate::fib::new_stack),
-//! [`fib::new_stack_unchecked`](crate::fib::new_stack_unchecked),
-//! [`fib::new_stack_unprivileged`](crate::fib::new_stack_unprivileged),
-//! [`fib::new_stack_unprivileged_unchecked`](crate::fib::new_stack_unprivileged_unchecked):
+//! [`fib::new_proc`](crate::fib::new_proc),
+//! [`fib::new_proc_unchecked`](crate::fib::new_proc_unchecked),
+//! [`fib::new_proc_unprivileged`](crate::fib::new_proc_unprivileged),
+//! [`fib::new_proc_unprivileged_unchecked`](crate::fib::new_proc_unprivileged_unchecked):
 //!
 //! ```
 //! use drone_cortex_m::{fib, sv};
@@ -30,11 +30,11 @@
 //!
 //! # fn main() {
 //! // This is `impl Fiber<Input = bool, Yield = i32, Return = usize>`
-//! let a = fib::new_stack::<Sv, bool, i32, usize, _>(0x800, |input, yielder| {
+//! let a = fib::new_proc::<Sv, bool, i32, usize, _>(0x800, |input, yielder| {
 //!     // do some work and yield
-//!     yielder.stack_yield(1);
+//!     yielder.proc_yield(1);
 //!     // do some work and yield
-//!     yielder.stack_yield(2);
+//!     yielder.proc_yield(2);
 //!     // do some work and return
 //!     3
 //! });
@@ -42,10 +42,10 @@
 //! ```
 //!
 //! A stackful fiber can be attached to a thread with
-//! [`token.add_stack(...)`](fib::ThrFiberStack::add_stack),
-//! [`token.add_stack_unchecked(...)`](fib::ThrFiberStack::add_stack_unchecked),
-//! [`token.add_stack_unprivileged(...)`](fib::ThrFiberStack::add_stack_unprivileged),
-//! [`token.add_stack_unprivileged_unchecked(...)`](fib::ThrFiberStack::add_stack_unprivileged_unchecked).
+//! [`token.add_proc(...)`](fib::ThrFiberProc::add_proc),
+//! [`token.add_proc_unchecked(...)`](fib::ThrFiberProc::add_proc_unchecked),
+//! [`token.add_proc_unprivileged(...)`](fib::ThrFiberProc::add_proc_unprivileged),
+//! [`token.add_proc_unprivileged_unchecked(...)`](fib::ThrFiberProc::add_proc_unprivileged_unchecked).
 //! Note that fibers that are directly attached to threads can't have input,
 //! yield and return values other than `()`.
 //!
@@ -76,22 +76,22 @@
 //! use drone_cortex_m::thr::prelude::*;
 //!
 //! // this is `impl Fiber<Input = (), Yield = (), Return = ()>`
-//! thr.sys_tick.add_stack(0x800, |yielder| {
+//! thr.sys_tick.add_proc(0x800, |yielder| {
 //!     // do some work and yield
-//!     yielder.stack_yield(());
+//!     yielder.proc_yield(());
 //!     // do some work and yield
-//!     yielder.stack_yield(());
+//!     yielder.proc_yield(());
 //!     // do some work and return
 //! });
 //! # }
 //! ```
 
-mod stack;
+mod proc;
 
 #[doc(no_inline)]
 pub use drone_core::fib::*;
 
-pub use self::stack::{
-    new_stack, new_stack_unchecked, new_stack_unprivileged, new_stack_unprivileged_unchecked,
-    FiberStack, ThrFiberStack, Yielder,
+pub use self::proc::{
+    new_proc, new_proc_unchecked, new_proc_unprivileged, new_proc_unprivileged_unchecked,
+    FiberProc, ThrFiberProc, Yielder,
 };

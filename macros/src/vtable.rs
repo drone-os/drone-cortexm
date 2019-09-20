@@ -148,7 +148,7 @@ impl Parse for Mode {
     }
 }
 
-#[allow(clippy::cognitive_complexity)]
+#[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
 pub fn proc_macro(input: TokenStream) -> TokenStream {
     let Vtable {
         thr,

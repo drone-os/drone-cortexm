@@ -1,6 +1,6 @@
 //! Common utility functions for working with ARM Cortex-M processors.
 
-#![cfg_attr(feature = "std", allow(unused_mut))]
+#![cfg_attr(feature = "std", allow(unreachable_code, unused_mut))]
 
 /// Wait for interrupt.
 ///
@@ -10,11 +10,8 @@
 #[inline]
 pub fn wait_for_int() {
     #[cfg(feature = "std")]
-    unimplemented!();
-    #[cfg(not(feature = "std"))]
-    unsafe {
-        asm!("wfi" :::: "volatile");
-    }
+    return unimplemented!();
+    unsafe { asm!("wfi" :::: "volatile") };
 }
 
 /// Wait for event.
@@ -28,11 +25,8 @@ pub fn wait_for_int() {
 #[inline]
 pub fn wait_for_event() {
     #[cfg(feature = "std")]
-    unimplemented!();
-    #[cfg(not(feature = "std"))]
-    unsafe {
-        asm!("wfe" :::: "volatile");
-    }
+    return unimplemented!();
+    unsafe { asm!("wfe" :::: "volatile") };
 }
 
 /// Send event.
@@ -44,11 +38,8 @@ pub fn wait_for_event() {
 #[inline]
 pub fn send_event() {
     #[cfg(feature = "std")]
-    unimplemented!();
-    #[cfg(not(feature = "std"))]
-    unsafe {
-        asm!("sev" :::: "volatile");
-    }
+    return unimplemented!();
+    unsafe { asm!("sev" :::: "volatile") };
 }
 
 /// Requests system reset.
@@ -62,8 +53,7 @@ pub fn send_event() {
 #[inline]
 pub fn self_reset() -> ! {
     #[cfg(feature = "std")]
-    unimplemented!();
-    #[cfg(not(feature = "std"))]
+    return unimplemented!();
     unsafe {
         use crate::{map::reg::scb, reg::prelude::*};
         use drone_core::token::Token;
@@ -85,8 +75,7 @@ pub fn self_reset() -> ! {
 #[inline(always)]
 pub fn spin(mut cycles: u32) {
     #[cfg(feature = "std")]
-    unimplemented!();
-    #[cfg(not(feature = "std"))]
+    return unimplemented!();
     unsafe {
         asm!("
         0:

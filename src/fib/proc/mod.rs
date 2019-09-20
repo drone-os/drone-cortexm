@@ -1,7 +1,7 @@
 mod fiber;
 mod yielder;
 
-pub use self::{fiber::FiberStack, yielder::Yielder};
+pub use self::{fiber::FiberProc, yielder::Yielder};
 
 use crate::{fib::FiberState, sv::Switch, thr::ThrSv};
 
@@ -12,14 +12,14 @@ pub union Data<I, O> {
     _align: [u32; 0],
 }
 
-type StackData<I, Y, R> = Data<I, FiberState<Y, R>>;
+type ProcData<I, Y, R> = Data<I, FiberState<Y, R>>;
 
 /// Creates a stackful fiber from the closure `f`.
 ///
 /// The first argument to the closure is
 /// [`Fiber::Input`](crate::fib::Fiber::Input).
 ///
-/// This type of fiber yields on each [`stack_yield`](Yielder::stack_yield) call
+/// This type of fiber yields on each [`proc_yield`](Yielder::proc_yield) call
 /// on the second [`Yielder`] argument.
 ///
 /// # Panics
@@ -27,16 +27,16 @@ type StackData<I, Y, R> = Data<I, FiberState<Y, R>>;
 /// * If MPU not present.
 /// * If `stack_size` is insufficient to store the initial frame.
 #[inline]
-pub fn new_stack<Sv, I, Y, R, F>(stack_size: usize, f: F) -> FiberStack<Sv, I, Y, R, F>
+pub fn new_proc<Sv, I, Y, R, F>(stack_size: usize, f: F) -> FiberProc<Sv, I, Y, R, F>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     F: FnMut(I, Yielder<Sv, I, Y, R>) -> R,
     F: Send + 'static,
     I: Send + 'static,
     Y: Send + 'static,
     R: Send + 'static,
 {
-    unsafe { FiberStack::new(stack_size, false, false, f) }
+    unsafe { FiberProc::new(stack_size, false, false, f) }
 }
 
 /// Creates a stackful fiber from the closure `f`, without memory protection.
@@ -44,7 +44,7 @@ where
 /// The first argument to the closure is
 /// [`Fiber::Input`](crate::fib::Fiber::Input).
 ///
-/// This type of fiber yields on each [`stack_yield`](Yielder::stack_yield) call
+/// This type of fiber yields on each [`proc_yield`](Yielder::proc_yield) call
 /// on the second [`Yielder`] argument.
 ///
 /// # Safety
@@ -55,19 +55,19 @@ where
 ///
 /// * If `stack_size` is insufficient to store the initial frame.
 #[inline]
-pub unsafe fn new_stack_unchecked<Sv, I, Y, R, F>(
+pub unsafe fn new_proc_unchecked<Sv, I, Y, R, F>(
     stack_size: usize,
     f: F,
-) -> FiberStack<Sv, I, Y, R, F>
+) -> FiberProc<Sv, I, Y, R, F>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     F: FnMut(I, Yielder<Sv, I, Y, R>) -> R,
     F: Send + 'static,
     I: Send + 'static,
     Y: Send + 'static,
     R: Send + 'static,
 {
-    FiberStack::new(stack_size, false, true, f)
+    FiberProc::new(stack_size, false, true, f)
 }
 
 /// Creates a stackful fiber from the closure `f`, which will run in
@@ -76,7 +76,7 @@ where
 /// The first argument to the closure is
 /// [`Fiber::Input`](crate::fib::Fiber::Input).
 ///
-/// This type of fiber yields on each [`stack_yield`](Yielder::stack_yield) call
+/// This type of fiber yields on each [`proc_yield`](Yielder::proc_yield) call
 /// on the second [`Yielder`] argument.
 ///
 /// # Panics
@@ -84,16 +84,16 @@ where
 /// * If MPU not present.
 /// * If `stack_size` is insufficient to store the initial frame.
 #[inline]
-pub fn new_stack_unprivileged<Sv, I, Y, R, F>(stack_size: usize, f: F) -> FiberStack<Sv, I, Y, R, F>
+pub fn new_proc_unprivileged<Sv, I, Y, R, F>(stack_size: usize, f: F) -> FiberProc<Sv, I, Y, R, F>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     F: FnMut(I, Yielder<Sv, I, Y, R>) -> R,
     F: Send + 'static,
     I: Send + 'static,
     Y: Send + 'static,
     R: Send + 'static,
 {
-    unsafe { FiberStack::new(stack_size, true, false, f) }
+    unsafe { FiberProc::new(stack_size, true, false, f) }
 }
 
 /// Creates a stackful fiber from the closure `f`, which will run in
@@ -102,7 +102,7 @@ where
 /// The first argument to the closure is
 /// [`Fiber::Input`](crate::fib::Fiber::Input).
 ///
-/// This type of fiber yields on each [`stack_yield`](Yielder::stack_yield) call
+/// This type of fiber yields on each [`proc_yield`](Yielder::proc_yield) call
 /// on the second [`Yielder`] argument.
 ///
 /// # Safety
@@ -113,23 +113,23 @@ where
 ///
 /// * If `stack_size` is insufficient to store the initial frame.
 #[inline]
-pub unsafe fn new_stack_unprivileged_unchecked<Sv, I, Y, R, F>(
+pub unsafe fn new_proc_unprivileged_unchecked<Sv, I, Y, R, F>(
     stack_size: usize,
     f: F,
-) -> FiberStack<Sv, I, Y, R, F>
+) -> FiberProc<Sv, I, Y, R, F>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     F: FnMut(I, Yielder<Sv, I, Y, R>) -> R,
     F: Send + 'static,
     I: Send + 'static,
     Y: Send + 'static,
     R: Send + 'static,
 {
-    FiberStack::new(stack_size, true, true, f)
+    FiberProc::new(stack_size, true, true, f)
 }
 
-/// Extends [`ThrToken`](crate::thr::ThrToken) types with `add_stack` methods.
-pub trait ThrFiberStack: ThrSv {
+/// Extends [`ThrToken`](crate::thr::ThrToken) types with `add_proc` methods.
+pub trait ThrFiberProc: ThrSv {
     /// Adds a stackful fiber for the closure `f` to the fiber chain.
     ///
     /// # Panics
@@ -137,13 +137,13 @@ pub trait ThrFiberStack: ThrSv {
     /// * If MPU not present.
     /// * If `stack_size` is insufficient to store the initial frame.
     #[inline]
-    fn add_stack<F>(self, stack_size: usize, mut f: F)
+    fn add_proc<F>(self, stack_size: usize, mut f: F)
     where
         F: FnMut(Yielder<Self::Sv, (), (), ()>),
         F: Send + 'static,
-        Self::Sv: Switch<StackData<(), (), ()>>,
+        Self::Sv: Switch<ProcData<(), (), ()>>,
     {
-        self.add_fib(new_stack(stack_size, move |(), yielder| f(yielder)))
+        self.add_fib(new_proc(stack_size, move |(), yielder| f(yielder)))
     }
 
     /// Adds a stackful fiber for the closure `f` to the fiber chain, without
@@ -157,13 +157,13 @@ pub trait ThrFiberStack: ThrSv {
     ///
     /// * If `stack_size` is insufficient to store the initial frame.
     #[inline]
-    unsafe fn add_stack_unchecked<F>(self, stack_size: usize, mut f: F)
+    unsafe fn add_proc_unchecked<F>(self, stack_size: usize, mut f: F)
     where
         F: FnMut(Yielder<Self::Sv, (), (), ()>),
         F: Send + 'static,
-        Self::Sv: Switch<StackData<(), (), ()>>,
+        Self::Sv: Switch<ProcData<(), (), ()>>,
     {
-        self.add_fib(new_stack_unchecked(stack_size, move |(), yielder| {
+        self.add_fib(new_proc_unchecked(stack_size, move |(), yielder| {
             f(yielder)
         }))
     }
@@ -176,13 +176,13 @@ pub trait ThrFiberStack: ThrSv {
     /// * If MPU not present.
     /// * If `stack_size` is insufficient to store the initial frame.
     #[inline]
-    fn add_stack_unprivileged<F>(self, stack_size: usize, mut f: F)
+    fn add_proc_unprivileged<F>(self, stack_size: usize, mut f: F)
     where
         F: FnMut(Yielder<Self::Sv, (), (), ()>),
         F: Send + 'static,
-        Self::Sv: Switch<StackData<(), (), ()>>,
+        Self::Sv: Switch<ProcData<(), (), ()>>,
     {
-        self.add_fib(new_stack_unprivileged(stack_size, move |(), yielder| {
+        self.add_fib(new_proc_unprivileged(stack_size, move |(), yielder| {
             f(yielder)
         }))
     }
@@ -198,17 +198,17 @@ pub trait ThrFiberStack: ThrSv {
     ///
     /// * If `stack_size` is insufficient to store the initial frame.
     #[inline]
-    unsafe fn add_stack_unprivileged_unchecked<F>(self, stack_size: usize, mut f: F)
+    unsafe fn add_proc_unprivileged_unchecked<F>(self, stack_size: usize, mut f: F)
     where
         F: FnMut(Yielder<Self::Sv, (), (), ()>),
         F: Send + 'static,
-        Self::Sv: Switch<StackData<(), (), ()>>,
+        Self::Sv: Switch<ProcData<(), (), ()>>,
     {
-        self.add_fib(new_stack_unprivileged_unchecked(
+        self.add_fib(new_proc_unprivileged_unchecked(
             stack_size,
             move |(), yielder| f(yielder),
         ))
     }
 }
 
-impl<T: ThrSv> ThrFiberStack for T {}
+impl<T: ThrSv> ThrFiberProc for T {}

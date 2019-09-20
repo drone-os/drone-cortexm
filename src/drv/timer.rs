@@ -19,18 +19,18 @@ pub trait Timer: Send {
     type Stop: TimerStop;
 
     /// Returns a future that resolves when `duration` time is elapsed.
-    fn sleep(&mut self, duration: usize) -> TimerSleep<'_, Self::Stop>;
+    fn sleep(&mut self, duration: u32) -> TimerSleep<'_, Self::Stop>;
 
     /// Returns a stream of pulses that are generated on each `duration`
     /// interval. Fails on overflow.
     fn interval(
         &mut self,
-        duration: usize,
+        duration: u32,
     ) -> TimerInterval<'_, Self::Stop, Result<NonZeroUsize, TimerOverflow>>;
 
     /// Returns a stream of pulses that are generated on each `duration`
     /// interval. Overflows are ignored.
-    fn interval_skip(&mut self, duration: usize) -> TimerInterval<'_, Self::Stop, NonZeroUsize>;
+    fn interval_skip(&mut self, duration: u32) -> TimerInterval<'_, Self::Stop, NonZeroUsize>;
 }
 
 /// Timer stop handler.

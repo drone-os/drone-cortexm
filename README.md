@@ -1,10 +1,12 @@
-[![Crates.io](https://img.shields.io/crates/v/drone-cortex-m.svg)](https://crates.io/crates/drone-cortex-m)
+[![crates.io](https://img.shields.io/crates/v/drone-cortex-m.svg)](https://crates.io/crates/drone-cortex-m)
+[![docs.rs](https://docs.rs/drone-cortex-m/badge.svg)](https://docs.rs/drone-cortex-m)
+![maintenance](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)
 
 # drone-cortex-m
 
 ARM® Cortex®-M platform crate for Drone, an Embedded Operating System.
 
-Supported cores:
+## Supported Cores
 
 | Architecture | Core name             | Cargo features                      | Rust target             |
 |--------------|-----------------------|-------------------------------------|-------------------------|
@@ -21,6 +23,20 @@ Supported cores:
 **NOTE** Cargo features for `drone-cortex-m` dependency and target triple
 for the resulting binary should be selected for a particular core according
 this table.
+
+## Documentation
+
+- [Drone Book](https://book.drone-os.com/)
+- [API documentation](https://docs.rs/drone-cortex-m/0.10.0)
+
+## Usage
+
+Place the following to the Cargo.toml:
+
+```toml
+[dependencies]
+drone-cortex-m = { version = "0.10.0", features = [...] }
+```
 
 ## License
 

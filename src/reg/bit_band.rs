@@ -94,7 +94,7 @@ where
 
     #[inline]
     fn to_bit_band_mut_ptr(&self) -> *mut usize {
-        bit_band_addr::<T, R::Reg>(Self::OFFSET) as *mut usize
+        bit_band_addr::<T, Self::Reg>(Self::OFFSET) as *mut usize
     }
 }
 

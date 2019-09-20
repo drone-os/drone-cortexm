@@ -32,12 +32,12 @@
 #[macro_export]
 macro_rules! print {
     ($str:expr) => {
-        if $crate::itm::is_enabled() {
+        if $crate::itm::is_port_enabled($crate::itm::STDOUT_PORT) {
             $crate::itm::write_str($crate::itm::STDOUT_PORT, $str);
         }
     };
     ($($arg:tt)*) => {
-        if $crate::itm::is_enabled() {
+        if $crate::itm::is_port_enabled($crate::itm::STDOUT_PORT) {
             $crate::itm::write_fmt($crate::itm::STDOUT_PORT, format_args!($($arg)*));
         }
     };
@@ -89,12 +89,12 @@ macro_rules! println {
 #[macro_export]
 macro_rules! eprint {
     ($str:expr) => {
-        if $crate::itm::is_enabled() {
+        if $crate::itm::is_port_enabled($crate::itm::STDERR_PORT) {
             $crate::itm::write_str($crate::itm::STDERR_PORT, $str);
         }
     };
     ($($arg:tt)*) => {
-        if $crate::itm::is_enabled() {
+        if $crate::itm::is_port_enabled($crate::itm::STDERR_PORT) {
             $crate::itm::write_fmt($crate::itm::STDERR_PORT, format_args!($($arg)*));
         }
     };

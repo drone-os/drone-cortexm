@@ -1,4 +1,4 @@
-use crate::thr::wake::WakeTrunk;
+use crate::thr::wake::WakeRoot;
 use core::{
     future::Future,
     iter::FusedIterator,
@@ -9,30 +9,30 @@ use core::{
 use futures::stream::Stream;
 
 /// An extension trait for [`Future`] that provides
-/// [`trunk_wait`](FutureTrunkExt::trunk_wait) method.
-pub trait FutureTrunkExt: Future {
+/// [`root_wait`](FutureRootExt::root_wait) method.
+pub trait FutureRootExt: Future {
     /// Runs a future to completion on the lowest priority thread.
     ///
     /// This method will block the caller until the given future has completed.
     ///
     /// **WARNING** This method will block currently preempted threads. It is
     /// recommended to use this method only on the lowest priority thread.
-    fn trunk_wait(self) -> Self::Output;
+    fn root_wait(self) -> Self::Output;
 }
 
 /// An extension trait for [`Stream`] that provides
-/// [`trunk_wait`](StreamTrunkExt::trunk_wait) method.
-pub trait StreamTrunkExt<'a>: Stream {
+/// [`root_wait`](StreamRootExt::root_wait) method.
+pub trait StreamRootExt<'a>: Stream {
     /// Turn a stream into a blocking iterator.
     ///
-    /// When `next` is called on the resulting [`StreamTrunkWait`], the caller
+    /// When `next` is called on the resulting [`StreamRootWait`], the caller
     /// will be blocked until the next element of the `Stream` becomes
     /// available.
     ///
-    /// **WARNING** The resulting [`StreamTrunkWait`] will be blocking preempted
+    /// **WARNING** The resulting [`StreamRootWait`] will be blocking preempted
     /// threads. It is recommended to use this method only on the lowest
     /// priority thread.
-    fn trunk_wait(self) -> StreamTrunkWait<'a, Self>
+    fn root_wait(self) -> StreamRootWait<'a, Self>
     where
         Self: Sized;
 }
@@ -41,32 +41,32 @@ pub trait StreamTrunkExt<'a>: Stream {
 ///
 /// **WARNING** The `next` method will be blocking preempted threads. It is
 /// recommended to use this iterator only on the lowest priority thread.
-pub struct StreamTrunkWait<'a, T: Stream> {
+pub struct StreamRootWait<'a, T: Stream> {
     stream: T,
     exhausted: bool,
     _marker: PhantomData<&'a &'a mut ()>,
 }
 
-impl<T: Future> FutureTrunkExt for T {
-    fn trunk_wait(mut self) -> Self::Output {
-        let waker = WakeTrunk::new().to_waker();
+impl<T: Future> FutureRootExt for T {
+    fn root_wait(mut self) -> Self::Output {
+        let waker = WakeRoot::new().to_waker();
         let mut cx = Context::from_waker(&waker);
         loop {
             match unsafe { Pin::new_unchecked(&mut self) }.poll(&mut cx) {
-                Poll::Pending => WakeTrunk::wait(),
+                Poll::Pending => WakeRoot::wait(),
                 Poll::Ready(value) => break value,
             }
         }
     }
 }
 
-impl<'a, T: Stream> StreamTrunkExt<'a> for T {
+impl<'a, T: Stream> StreamRootExt<'a> for T {
     #[inline]
-    fn trunk_wait(self) -> StreamTrunkWait<'a, Self>
+    fn root_wait(self) -> StreamRootWait<'a, Self>
     where
         Self: Sized,
     {
-        StreamTrunkWait {
+        StreamRootWait {
             stream: self,
             exhausted: false,
             _marker: PhantomData,
@@ -74,18 +74,18 @@ impl<'a, T: Stream> StreamTrunkExt<'a> for T {
     }
 }
 
-impl<'a, T: Stream> Iterator for StreamTrunkWait<'a, T> {
+impl<'a, T: Stream> Iterator for StreamRootWait<'a, T> {
     type Item = T::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.exhausted {
             return None;
         }
-        let waker = WakeTrunk::new().to_waker();
+        let waker = WakeRoot::new().to_waker();
         let mut cx = Context::from_waker(&waker);
         loop {
             match unsafe { Pin::new_unchecked(&mut self.stream) }.poll_next(&mut cx) {
-                Poll::Pending => WakeTrunk::wait(),
+                Poll::Pending => WakeRoot::wait(),
                 Poll::Ready(Some(item)) => break Some(item),
                 Poll::Ready(None) => {
                     self.exhausted = true;
@@ -96,4 +96,4 @@ impl<'a, T: Stream> Iterator for StreamTrunkWait<'a, T> {
     }
 }
 
-impl<'a, T: Stream> FusedIterator for StreamTrunkWait<'a, T> {}
+impl<'a, T: Stream> FusedIterator for StreamRootWait<'a, T> {}

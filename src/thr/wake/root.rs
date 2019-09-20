@@ -6,9 +6,9 @@ use core::{
 
 static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake, drop);
 
-pub struct WakeTrunk(());
+pub struct WakeRoot(());
 
-impl WakeTrunk {
+impl WakeRoot {
     pub fn new() -> Self {
         Self(())
     }

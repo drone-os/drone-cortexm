@@ -1,6 +1,6 @@
 //! ARM® Cortex®-M platform crate for Drone, an Embedded Operating System.
 //!
-//! Supported cores:
+//! # Supported Cores
 //!
 //! | Architecture | Core name             | Cargo features                      | Rust target             |
 //! |--------------|-----------------------|-------------------------------------|-------------------------|
@@ -17,13 +17,25 @@
 //! **NOTE** Cargo features for `drone-cortex-m` dependency and target triple
 //! for the resulting binary should be selected for a particular core according
 //! this table.
+//!
+//! # Documentation
+//!
+//! - [Drone Book](https://book.drone-os.com/)
+//! - [API documentation](https://docs.rs/drone-cortex-m/0.10.0)
+//!
+//! # Usage
+//!
+//! Place the following to the Cargo.toml:
+//!
+//! ```toml
+//! [dependencies]
+//! drone-cortex-m = { version = "0.10.0", features = [...] }
+//! ```
 
 #![feature(asm)]
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
 #![feature(exhaustive_patterns)]
-#![feature(generators)]
-#![feature(generator_trait)]
 #![feature(lang_items)]
 #![feature(marker_trait_attr)]
 #![feature(naked_functions)]
@@ -38,13 +50,11 @@
 #![allow(
     clippy::cast_possible_truncation,
     clippy::doc_markdown,
-    clippy::enum_glob_use,
     clippy::inline_always,
     clippy::module_name_repetitions,
     clippy::precedence,
     clippy::shadow_unrelated,
-    clippy::type_repetition_in_bounds,
-    clippy::use_self
+    clippy::type_repetition_in_bounds
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -55,9 +65,9 @@ pub mod fib;
 pub mod itm;
 pub mod map;
 pub mod prelude;
+pub mod proc_loop;
 pub mod processor;
 pub mod reg;
-pub mod stack_loop;
 pub mod sv;
 pub mod thr;
 

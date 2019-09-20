@@ -1,5 +1,7 @@
 //! Floating Point Unit.
 
+#![cfg_attr(feature = "std", allow(unreachable_code))]
+
 use crate::{map::periph::fpu::FpuPeriph, reg::prelude::*};
 
 /// FPU driver.
@@ -28,8 +30,7 @@ impl Fpu {
             .fpu_cpacr
             .store(|r| r.write_cp10(0b11).write_cp11(0b11));
         #[cfg(feature = "std")]
-        unimplemented!();
-        #[cfg(not(feature = "std"))]
+        return unimplemented!();
         unsafe {
             asm!("
                 dsb

@@ -1,4 +1,4 @@
 mod int;
-mod trunk;
+mod root;
 
-pub use self::{int::WakeInt, trunk::WakeTrunk};
+pub use self::{int::WakeInt, root::WakeRoot};

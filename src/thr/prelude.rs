@@ -17,6 +17,6 @@ pub use crate::thr::IntToken;
 
 #[doc(no_inline)]
 pub use crate::{
-    fib::ThrFiberStack as _,
-    thr::{FutureTrunkExt as _, StreamTrunkExt as _, ThrExec as _, ThrNvic as _},
+    fib::ThrFiberProc as _,
+    thr::{FutureRootExt as _, StreamRootExt as _, ThrExec as _, ThrNvic as _},
 };

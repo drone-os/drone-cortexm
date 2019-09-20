@@ -4,6 +4,8 @@
 //!
 //! ITM ports #0 and #1 are reserved for STDOUT and STDERR respectively.
 
+#![cfg_attr(feature = "std", allow(unreachable_code, unused_variables))]
+
 mod macros;
 mod port;
 
@@ -17,6 +19,7 @@ use crate::{
 use core::{
     alloc::Layout,
     fmt::{self, Write},
+    ptr::read_volatile,
 };
 use drone_core::{heap::Pool, token::Token};
 
@@ -32,30 +35,38 @@ pub const HEAP_TRACE_PORT: usize = 31;
 /// XOR pattern for heap trace output.
 pub const HEAP_TRACE_KEY: u32 = 0xC5AC_CE55;
 
-/// Returns `true` if a debug probe is connected and listening to ITM output.
-#[inline(always)]
+const ITM_TER: usize = 0xE000_0E00;
+const ITM_TCR: usize = 0xE000_0E80;
+
+/// Returns `true` if a debug probe is connected and listening to the ITM
+/// output.
+#[inline]
 pub fn is_enabled() -> bool {
-    #[cfg(not(feature = "std"))]
-    {
-        use crate::map::reg::scb;
-        let demcr = unsafe { scb::Demcr::<Urt>::take() };
-        demcr.load().trcena()
-    }
     #[cfg(feature = "std")]
-    false
+    return false;
+    unsafe { read_volatile(ITM_TCR as *const u32) & 1 != 0 }
+}
+
+/// Returns `true` if a debug probe is connected and listening to the ITM port
+/// `port` output.
+#[inline]
+pub fn is_port_enabled(port: usize) -> bool {
+    #[cfg(feature = "std")]
+    return false;
+    unsafe { read_volatile(ITM_TER as *const u32) & 1 << port != 0 }
 }
 
 /// Writes `string` to the stimulus port number `address`.
 ///
 /// The presence of a debug probe is not checked, so it is recommended to use it
-/// together with [`is_enabled`].
+/// together with [`is_port_enabled`].
 ///
 /// # Examples
 ///
 /// ```
 /// use drone_cortex_m::itm;
 ///
-/// if itm::is_enabled() {
+/// if itm::is_port_enabled(11) {
 ///     itm::write_str(11, "hello there!\n");
 /// }
 /// ```
@@ -68,7 +79,7 @@ pub fn write_str(address: usize, string: &str) {
 /// Writes `args` to the stimulus port number `address`.
 ///
 /// The presence of a debug probe is not checked, so it is recommended to use it
-/// together with [`is_enabled`].
+/// together with [`is_port_enabled`].
 ///
 /// # Examples
 ///
@@ -77,7 +88,7 @@ pub fn write_str(address: usize, string: &str) {
 ///
 /// let a = 0;
 ///
-/// if itm::is_enabled() {
+/// if itm::is_port_enabled(11) {
 ///     itm::write_fmt(11, format_args!("a = {}\n", a));
 /// }
 /// ```
@@ -97,7 +108,7 @@ pub fn flush() {
         let tcr = unsafe { itm::Tcr::<Urt>::take() };
         while tcr.load().busy() {}
         let acpr = unsafe { tpiu::Acpr::<Urt>::take() };
-        processor::spin(acpr.load().swoscaler() * 32);
+        processor::spin(acpr.load().swoscaler() * 64);
     }
     if is_enabled() {
         flush();
@@ -113,12 +124,13 @@ pub fn sync() {
 
 /// Updates the SWO prescaler register.
 #[inline]
-pub fn update_prescaler(hclk: usize, baud_rate: usize) {
+pub fn update_prescaler(hclk: u32, baud_rate: u32) {
+    #[inline]
     fn set_tpiu_acpr(swoscaler: u32) {
         let mut acpr = unsafe { tpiu::Acpr::<Urt>::take() };
         acpr.store(|r| r.write_swoscaler(swoscaler));
     }
-    set_tpiu_acpr(hclk as u32 / baud_rate as u32 - 1);
+    set_tpiu_acpr(hclk / baud_rate - 1);
     sync();
 }
 
@@ -127,20 +139,17 @@ pub fn update_prescaler(hclk: usize, baud_rate: usize) {
 /// This function is a no-op if no debug probe is connected and listening.
 #[inline(always)]
 pub fn trace_alloc(layout: Layout, _pool: &Pool) {
-    #[cfg(not(feature = "std"))]
     #[inline(never)]
     fn instrument(layout: Layout) {
+        #[cfg(feature = "std")]
+        return unimplemented!();
         unsafe { asm!("cpsid i" :::: "volatile") };
         Port::new(HEAP_TRACE_PORT)
             .write(0xCDAB_u16)
             .write((layout.size() as u32) ^ HEAP_TRACE_KEY);
         unsafe { asm!("cpsie i" :::: "volatile") };
     }
-    #[cfg(feature = "std")]
-    fn instrument(_layout: Layout) {
-        unimplemented!();
-    }
-    if is_enabled() {
+    if is_port_enabled(HEAP_TRACE_PORT) {
         instrument(layout);
     }
 }
@@ -150,20 +159,17 @@ pub fn trace_alloc(layout: Layout, _pool: &Pool) {
 /// This function is a no-op if no debug probe is connected and listening.
 #[inline(always)]
 pub fn trace_dealloc(layout: Layout, _pool: &Pool) {
-    #[cfg(not(feature = "std"))]
     #[inline(never)]
     fn instrument(layout: Layout) {
+        #[cfg(feature = "std")]
+        return unimplemented!();
         unsafe { asm!("cpsid i" :::: "volatile") };
         Port::new(HEAP_TRACE_PORT)
             .write(0xBADC_u16)
             .write((layout.size() as u32) ^ HEAP_TRACE_KEY);
         unsafe { asm!("cpsie i" :::: "volatile") };
     }
-    #[cfg(feature = "std")]
-    fn instrument(_layout: Layout) {
-        unimplemented!();
-    }
-    if is_enabled() {
+    if is_port_enabled(HEAP_TRACE_PORT) {
         instrument(layout);
     }
 }
@@ -173,9 +179,10 @@ pub fn trace_dealloc(layout: Layout, _pool: &Pool) {
 /// This function is a no-op if no debug probe is connected and listening.
 #[inline(always)]
 pub fn trace_grow_in_place(layout: Layout, new_size: usize) {
-    #[cfg(not(feature = "std"))]
     #[inline(never)]
     fn instrument(layout: Layout, new_size: usize) {
+        #[cfg(feature = "std")]
+        return unimplemented!();
         unsafe { asm!("cpsid i" :::: "volatile") };
         Port::new(HEAP_TRACE_PORT)
             .write(0xDEBC_u16)
@@ -183,11 +190,7 @@ pub fn trace_grow_in_place(layout: Layout, new_size: usize) {
             .write((new_size as u32) ^ HEAP_TRACE_KEY);
         unsafe { asm!("cpsie i" :::: "volatile") };
     }
-    #[cfg(feature = "std")]
-    fn instrument(_layout: Layout, _new_size: usize) {
-        unimplemented!();
-    }
-    if is_enabled() {
+    if is_port_enabled(HEAP_TRACE_PORT) {
         instrument(layout, new_size);
     }
 }
@@ -197,9 +200,10 @@ pub fn trace_grow_in_place(layout: Layout, new_size: usize) {
 /// This function is a no-op if no debug probe is connected and listening.
 #[inline(always)]
 pub fn trace_shrink_in_place(layout: Layout, new_size: usize) {
-    #[cfg(not(feature = "std"))]
     #[inline(never)]
     fn instrument(layout: Layout, new_size: usize) {
+        #[cfg(feature = "std")]
+        return unimplemented!();
         unsafe { asm!("cpsid i" :::: "volatile") };
         Port::new(HEAP_TRACE_PORT)
             .write(0xCBED_u16)
@@ -207,11 +211,7 @@ pub fn trace_shrink_in_place(layout: Layout, new_size: usize) {
             .write((new_size as u32) ^ HEAP_TRACE_KEY);
         unsafe { asm!("cpsie i" :::: "volatile") };
     }
-    #[cfg(feature = "std")]
-    fn instrument(_layout: Layout, _new_size: usize) {
-        unimplemented!();
-    }
-    if is_enabled() {
+    if is_port_enabled(HEAP_TRACE_PORT) {
         instrument(layout, new_size);
     }
 }

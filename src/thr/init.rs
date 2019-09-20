@@ -1,9 +1,9 @@
-#![cfg_attr(feature = "std", allow(unused_mut))]
+#![cfg_attr(feature = "std", allow(unreachable_code, unused_mut))]
 
 use crate::{
     map::{
         periph::{mpu::MpuPeriph, thr::ThrPeriph},
-        reg::scb,
+        reg::{mpu, scb},
     },
     reg::prelude::*,
     thr::ThrTokens,
@@ -77,27 +77,23 @@ pub fn init<T: ThrTokens>(mpu: MpuPeriph, thr: ThrPeriph) -> (T, ThrInitPeriph) 
 
 #[allow(unused_assignments, unused_variables)]
 unsafe fn mpu_reset(mpu: &MpuPeriph) {
-    let mut table_ptr = &MPU_RESET_TABLE;
     #[cfg(feature = "std")]
-    unimplemented!();
-    #[cfg(not(feature = "std"))]
-    {
-        use crate::map::reg::mpu;
-        if mpu.mpu_type.load().dregion() == 0 {
-            return;
-        }
-        mpu.mpu_ctrl.reset();
-        asm!("
-                ldmia $0!, {r5-r12}
-                stmia $1, {r5-r12}
-                ldmia $0!, {r5-r12}
-                stmia $1, {r5-r12}
-            "   : "+&rm"(table_ptr)
-            : "r"(mpu::Rbar::<Srt>::ADDRESS)
-            : "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12"
-            : "volatile"
-        );
+    return unimplemented!();
+    let mut table_ptr = &MPU_RESET_TABLE;
+    if mpu.mpu_type.load().dregion() == 0 {
+        return;
     }
+    mpu.mpu_ctrl.reset();
+    asm!("
+        ldmia $0!, {r5-r12}
+        stmia $1, {r5-r12}
+        ldmia $0!, {r5-r12}
+        stmia $1, {r5-r12}
+    "   : "+&rm"(table_ptr)
+        : "r"(mpu::Rbar::<Srt>::ADDRESS)
+        : "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12"
+        : "volatile"
+    );
 }
 
 #[allow(clippy::cast_lossless)]

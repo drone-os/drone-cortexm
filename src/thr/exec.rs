@@ -1,4 +1,7 @@
-use crate::thr::{prelude::*, wake::WakeInt};
+use crate::{
+    fib,
+    thr::{prelude::*, wake::WakeInt},
+};
 use core::{
     fmt::Display,
     future::Future,
@@ -59,19 +62,15 @@ impl<T: IntToken> ThrExec for T {
             let mut cx = Context::from_waker(&waker);
             fut.poll(&mut cx)
         }
-        self.add(move || {
-            loop {
-                match poll(unsafe { Pin::new_unchecked(&mut fut) }, Self::INT_NUM) {
-                    Poll::Pending => {
-                        yield;
-                    }
-                    Poll::Ready(output) => {
-                        output.terminate();
-                        break;
-                    }
+        self.add_fn(
+            move || match poll(unsafe { Pin::new_unchecked(&mut fut) }, Self::INT_NUM) {
+                Poll::Pending => fib::Yielded(()),
+                Poll::Ready(output) => {
+                    output.terminate();
+                    fib::Complete(())
                 }
-            }
-        });
+            },
+        );
     }
 
     #[inline]

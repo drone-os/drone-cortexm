@@ -93,13 +93,13 @@
 //! # }
 //! ```
 
-#![cfg_attr(feature = "std", allow(unused_variables))]
+#![cfg_attr(feature = "std", allow(unreachable_code, unused_variables))]
 
 mod switch;
 
 pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
 
-use core::mem::size_of;
+use core::{intrinsics::unreachable, mem::size_of};
 
 /// Generic supervisor.
 pub trait Supervisor: Sized + 'static {
@@ -125,26 +125,23 @@ pub trait SvService: Sized + Send + 'static {
 #[inline(always)]
 pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
     #[cfg(feature = "std")]
-    unimplemented!();
-    #[cfg(not(feature = "std"))]
-    {
-        if size_of::<T>() == 0 {
-            asm!("
-                svc $0
-            "   :
-                : "i"(num)
-                :
-                : "volatile"
-            );
-        } else {
-            asm!("
-                svc $0
-            "   :
-                : "i"(num), "{r12}"(service)
-                :
-                : "volatile"
-            );
-        }
+    return unimplemented!();
+    if size_of::<T>() == 0 {
+        asm!("
+            svc $0
+        "   :
+            : "i"(num)
+            :
+            : "volatile"
+        );
+    } else {
+        asm!("
+            svc $0
+        "   :
+            : "i"(num), "{r12}"(service)
+            :
+            : "volatile"
+        );
     }
 }
 
@@ -164,23 +161,19 @@ pub unsafe extern "C" fn service_handler<T: SvService>(mut frame: *mut *mut u8) 
 #[naked]
 pub unsafe extern "C" fn sv_handler<T: Supervisor>() {
     #[cfg(feature = "std")]
-    unimplemented!();
-    #[cfg(not(feature = "std"))]
-    {
-        use core::intrinsics::unreachable;
-        asm!("
-            tst lr, #4
-            ite eq
-            mrseq r0, msp
-            mrsne r0, psp
-            ldr r1, [r0, #24]
-            ldrb r1, [r1, #-2]
-            ldr pc, [r2, r1, lsl #2]
-        "   :
-            : "{r2}"(T::first())
-            : "r0", "r1", "cc"
-            : "volatile"
-        );
-        unreachable();
-    }
+    return unimplemented!();
+    asm!("
+        tst lr, #4
+        ite eq
+        mrseq r0, msp
+        mrsne r0, psp
+        ldr r1, [r0, #24]
+        ldrb r1, [r1, #-2]
+        ldr pc, [r2, r1, lsl #2]
+    "   :
+        : "{r2}"(T::first())
+        : "r0", "r1", "cc"
+        : "volatile"
+    );
+    unreachable();
 }

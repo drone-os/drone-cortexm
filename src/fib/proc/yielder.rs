@@ -1,12 +1,12 @@
-use super::{Data, StackData};
-use crate::{fib::FiberState, sv::Switch};
+use super::{Data, ProcData};
+use crate::{fib, sv::Switch};
 use core::{marker::PhantomData, mem::forget};
 
-/// A zero-sized token that provides [`stack_yield`](Yielder::stack_yield)
-/// method to yield from [`FiberStack`](crate::fib::FiberStack).
+/// A zero-sized token that provides [`proc_yield`](Yielder::proc_yield) method
+/// to yield from [`FiberProc`](crate::fib::FiberProc).
 pub struct Yielder<Sv, I, Y, R>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     I: Send + 'static,
     Y: Send + 'static,
     R: Send + 'static,
@@ -19,7 +19,7 @@ where
 
 impl<Sv, I, Y, R> Yielder<Sv, I, Y, R>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     I: Send + 'static,
     Y: Send + 'static,
     R: Send + 'static,
@@ -29,9 +29,9 @@ where
     /// # Safety
     ///
     /// The token must be created only in a closure provided to a
-    /// [`FiberStack`](crate::fib::FiberStack). The type parameters for the
+    /// [`FiberProc`](crate::fib::FiberProc). The type parameters for the
     /// [`Yielder`] must be equal to the type parameters for the
-    /// [`FiberStack`](crate::fib::FiberStack).
+    /// [`FiberProc`](crate::fib::FiberProc).
     #[inline]
     pub unsafe fn new() -> Self {
         Self {
@@ -42,13 +42,13 @@ where
         }
     }
 
-    /// Yields from the [`FiberStack`](crate::fib::FiberStack).
+    /// Yields from the [`FiberProc`](crate::fib::FiberProc).
     ///
     /// This method blocks, the stack is saved, and the fiber is suspended.
     #[inline]
-    pub fn stack_yield(self, output: Y) -> I {
+    pub fn proc_yield(self, output: Y) -> I {
         unsafe {
-            let output = FiberState::Yielded(output);
+            let output = fib::Yielded(output);
             let mut data = Data { output };
             let mut data_ptr = &mut data as *mut _;
             Sv::switch_back(&mut data_ptr);
@@ -60,7 +60,7 @@ where
 
 impl<Sv, I, Y, R> Clone for Yielder<Sv, I, Y, R>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     I: Send + 'static,
     Y: Send + 'static,
     R: Send + 'static,
@@ -72,9 +72,29 @@ where
 
 impl<Sv, I, Y, R> Copy for Yielder<Sv, I, Y, R>
 where
-    Sv: Switch<StackData<I, Y, R>>,
+    Sv: Switch<ProcData<I, Y, R>>,
     I: Send + 'static,
     Y: Send + 'static,
     R: Send + 'static,
 {
+}
+
+mod compile_tests {
+    //! ```compile_fail
+    //! use drone_cortex_m::{fib::Yielder, sv, sv::SwitchBackService, sv::SwitchContextService};
+    //! sv!(pub struct Sv; static SERVICES; SwitchContextService; SwitchBackService;);
+    //! fn assert_send<T: Send>() {}
+    //! fn main() {
+    //!     assert_send::<Yielder<Sv, (), (), ()>>();
+    //! }
+    //! ```
+    //!
+    //! ```compile_fail
+    //! use drone_cortex_m::{fib::Yielder, sv, sv::SwitchBackService, sv::SwitchContextService};
+    //! sv!(pub struct Sv; static SERVICES; SwitchContextService; SwitchBackService;);
+    //! fn assert_sync<T: Sync>() {}
+    //! fn main() {
+    //!     assert_sync::<Yielder<Sv, (), (), ()>>();
+    //! }
+    //! ```
 }

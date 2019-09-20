@@ -34,18 +34,17 @@ pub struct SysTickDiverged {
 impl<I: IntSysTick> Timer for SysTick<I> {
     type Stop = Self;
 
-    fn sleep(&mut self, duration: usize) -> TimerSleep<'_, Self> {
+    fn sleep(&mut self, duration: u32) -> TimerSleep<'_, Self> {
         let ctrl = self.periph.stk_ctrl;
         let pendstclr = self.periph.scb_icsr_pendstclr;
-        let fut = Box::pin(self.int.add_future(fib::new(move || {
-            loop {
-                let mut ctrl_val = ctrl.load();
-                if ctrl_val.countflag() {
-                    ctrl.store_val(disable(&mut ctrl_val).val());
-                    unsafe { set_bit(&pendstclr) };
-                    break;
-                }
-                yield;
+        let fut = Box::pin(self.int.add_future(fib::new_fn(move || {
+            let mut ctrl_val = ctrl.load();
+            if ctrl_val.countflag() {
+                ctrl.store_val(disable(&mut ctrl_val).val());
+                unsafe { set_bit(&pendstclr) };
+                fib::Complete(())
+            } else {
+                fib::Yielded(())
             }
         })));
         schedule(&self.periph.stk_load, &self.periph.stk_val, duration);
@@ -56,14 +55,14 @@ impl<I: IntSysTick> Timer for SysTick<I> {
 
     fn interval(
         &mut self,
-        duration: usize,
+        duration: u32,
     ) -> TimerInterval<'_, Self, Result<NonZeroUsize, TimerOverflow>> {
         self.interval_stream(duration, |int, ctrl| {
             Box::pin(int.add_stream_pulse(|| Err(TimerOverflow), Self::interval_fib(ctrl)))
         })
     }
 
-    fn interval_skip(&mut self, duration: usize) -> TimerInterval<'_, Self, NonZeroUsize> {
+    fn interval_skip(&mut self, duration: u32) -> TimerInterval<'_, Self, NonZeroUsize> {
         self.interval_stream(duration, |int, ctrl| {
             Box::pin(int.add_stream_pulse_skip(Self::interval_fib(ctrl)))
         })
@@ -127,7 +126,7 @@ impl<I: IntSysTick> SysTick<I> {
 
     fn interval_stream<'a, T: 'a>(
         &'a mut self,
-        duration: usize,
+        duration: u32,
         f: impl FnOnce(I, stk::Ctrl<Crt>) -> Pin<Box<dyn Stream<Item = T> + Send + 'a>>,
     ) -> TimerInterval<'a, Self, T> {
         let stream = f(self.int, self.periph.stk_ctrl);
@@ -140,14 +139,12 @@ impl<I: IntSysTick> SysTick<I> {
     fn interval_fib<T>(
         ctrl: stk::Ctrl<Crt>,
     ) -> impl Fiber<Input = (), Yield = Option<usize>, Return = T> {
-        fib::new(move || {
-            loop {
-                yield if ctrl.load().countflag() {
-                    Some(1)
-                } else {
-                    None
-                };
-            }
+        fib::new_fn(move || {
+            fib::Yielded(if ctrl.load().countflag() {
+                Some(1)
+            } else {
+                None
+            })
         })
     }
 }
@@ -175,8 +172,8 @@ impl<I: IntSysTick> SysTick<I> {
     }
 }
 
-fn schedule(stk_load: &stk::Load<Srt>, stk_val: &stk::Val<Srt>, duration: usize) {
-    stk_load.store(|r| r.write_reload(duration as u32));
+fn schedule(stk_load: &stk::Load<Srt>, stk_val: &stk::Val<Srt>, duration: u32) {
+    stk_load.store(|r| r.write_reload(duration));
     stk_val.store(|r| r.write_current(0));
 }
 
