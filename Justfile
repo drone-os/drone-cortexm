@@ -39,7 +39,7 @@ readme:
 # Bump crate versions
 version-bump version drone-core-version:
 	sed -i "s/\(api\.drone-os\.com\/drone-cortex-m\/\)[0-9]\+\(\.[0-9]\+\)\+/\1$(echo {{version}} | sed 's/\(.*\)\.[0-9]\+/\1/')/" \
-		Cargo.toml src/lib.rs
+		Cargo.toml macros/Cargo.toml src/lib.rs
 	sed -i '/\[.*\]/h;/version = ".*"/{x;s/\[package\]/version = "{{version}}"/;t;x}' \
 		Cargo.toml macros/Cargo.toml
 	sed -i '/\[.*\]/h;/version = "=.*"/{x;s/\[.*drone-cortex-m-.*\]/version = "={{version}}"/;t;x}' \
@@ -58,6 +58,7 @@ publish:
 # Publish the docs to api.drone-os.com
 publish-doc: doc
 	dir=$(sed -n 's/.*api\.drone-os\.com\/\(.*\)"/\1/;T;p' Cargo.toml) \
+		&& rm -rf ../drone-api/$dir \
 		&& cp -rT target/doc ../drone-api/$dir \
 		&& cp -rT target/{{build_target}}/doc ../drone-api/$dir \
 		&& echo '<!DOCTYPE html><meta http-equiv="refresh" content="0; URL=./drone_cortex_m">' > ../drone-api/$dir/index.html \

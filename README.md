@@ -26,7 +26,7 @@ this table.
 ## Documentation
 
 - [Drone Book](https://book.drone-os.com/)
-- [API documentation](https://api.drone-os.com/drone-cortex-m/0.10)
+- [API documentation](https://api.drone-os.com/drone-cortex-m/0.10/)
 
 ## Usage
 
