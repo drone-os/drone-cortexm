@@ -1,5 +1,4 @@
 [![crates.io](https://img.shields.io/crates/v/drone-cortex-m.svg)](https://crates.io/crates/drone-cortex-m)
-[![docs.rs](https://docs.rs/drone-cortex-m/badge.svg)](https://docs.rs/drone-cortex-m)
 ![maintenance](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)
 
 # drone-cortex-m
@@ -27,7 +26,7 @@ this table.
 ## Documentation
 
 - [Drone Book](https://book.drone-os.com/)
-- [API documentation](https://docs.rs/drone-cortex-m/0.10.0)
+- [API documentation](https://api.drone-os.com/drone-cortex-m/0.10)
 
 ## Usage
 
@@ -35,7 +34,7 @@ Place the following to the Cargo.toml:
 
 ```toml
 [dependencies]
-drone-cortex-m = { version = "0.10.0", features = [...] }
+drone-cortex-m = { version = "0.10.1", features = [...] }
 ```
 
 ## License

@@ -21,7 +21,7 @@
 //! # Documentation
 //!
 //! - [Drone Book](https://book.drone-os.com/)
-//! - [API documentation](https://docs.rs/drone-cortex-m/0.10.0)
+//! - [API documentation](https://api.drone-os.com/drone-cortex-m/0.10)
 //!
 //! # Usage
 //!
@@ -29,7 +29,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! drone-cortex-m = { version = "0.10.0", features = [...] }
+//! drone-cortex-m = { version = "0.10.1", features = [...] }
 //! ```
 
 #![feature(asm)]
