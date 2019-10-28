@@ -17,6 +17,7 @@ where
     _return: PhantomData<*const R>,
 }
 
+#[allow(clippy::unused_self)]
 impl<Sv, I, Y, R> Yielder<Sv, I, Y, R>
 where
     Sv: Switch<ProcData<I, Y, R>>,
@@ -48,12 +49,11 @@ where
     #[inline]
     pub fn proc_yield(self, output: Y) -> I {
         unsafe {
-            let output = fib::Yielded(output);
-            let mut data = Data { output };
+            let mut data = Data::from_output(fib::Yielded(output));
             let mut data_ptr = &mut data as *mut _;
             Sv::switch_back(&mut data_ptr);
             forget(data);
-            data_ptr.read().input
+            data_ptr.read().into_input()
         }
     }
 }

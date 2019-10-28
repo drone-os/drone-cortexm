@@ -6,7 +6,6 @@ deps:
 	rustup target add {{build_target}}
 	rustup component add clippy
 	rustup component add rustfmt
-	rustup component add rls rust-analysis rust-src
 	type cargo-readme >/dev/null || cargo +stable install cargo-readme
 
 # Reformat the source code

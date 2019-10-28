@@ -111,6 +111,10 @@ pub trait Supervisor: Sized + 'static {
 pub trait SvCall<T: SvService>: Supervisor {
     /// Calls the supervisor service `service`. Translates to `SVC num`
     /// instruction, where `num` corresponds to the service `T`.
+    ///
+    /// # Safety
+    ///
+    /// Safety is implementation defined.
     unsafe fn call(service: &mut T);
 }
 
@@ -118,10 +122,18 @@ pub trait SvCall<T: SvService>: Supervisor {
 pub trait SvService: Sized + Send + 'static {
     /// Called when `SVC num` instruction was invoked and `num` corresponds to
     /// the service.
+    ///
+    /// # Safety
+    ///
+    /// This function should not be called directly.
     unsafe extern "C" fn handler(&mut self);
 }
 
 /// Calls `SVC num` instruction.
+///
+/// # Safety
+///
+/// This function should not be called directly.
 #[inline(always)]
 pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
     #[cfg(feature = "std")]
@@ -148,6 +160,10 @@ pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
 /// This function is called by [`sv_handler`] for the supervisor service
 /// `T`. Parameter `T` is based on the number `num` in the `SVC num`
 /// instruction.
+///
+/// # Safety
+///
+/// This function should not be called directly.
 pub unsafe extern "C" fn service_handler<T: SvService>(mut frame: *mut *mut u8) {
     if size_of::<T>() == 0 {
         T::handler(&mut *(frame as *mut T));
@@ -158,6 +174,10 @@ pub unsafe extern "C" fn service_handler<T: SvService>(mut frame: *mut *mut u8) 
 }
 
 /// `SV_CALL` exception handler for the supervisor `T`.
+///
+/// # Safety
+///
+/// This function should be called only by NVIC as part of a vector table.
 #[naked]
 pub unsafe extern "C" fn sv_handler<T: Supervisor>() {
     #[cfg(feature = "std")]

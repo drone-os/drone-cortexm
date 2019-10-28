@@ -8,6 +8,7 @@ static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake, drop);
 
 pub struct WakeRoot(());
 
+#[allow(clippy::unused_self)]
 impl WakeRoot {
     pub fn new() -> Self {
         Self(())

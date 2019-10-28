@@ -4,11 +4,11 @@ mod yielder;
 pub use self::{fiber::FiberProc, yielder::Yielder};
 
 use crate::{fib::FiberState, sv::Switch, thr::ThrSv};
+use core::mem::ManuallyDrop;
 
-#[allow(unions_with_drop_fields)]
 pub union Data<I, O> {
-    input: I,
-    output: O,
+    input: ManuallyDrop<I>,
+    output: ManuallyDrop<O>,
     _align: [u32; 0],
 }
 
@@ -212,3 +212,25 @@ pub trait ThrFiberProc: ThrSv {
 }
 
 impl<T: ThrSv> ThrFiberProc for T {}
+
+impl<I, O> Data<I, O> {
+    fn from_input(input: I) -> Self {
+        Self {
+            input: ManuallyDrop::new(input),
+        }
+    }
+
+    fn from_output(output: O) -> Self {
+        Self {
+            output: ManuallyDrop::new(output),
+        }
+    }
+
+    unsafe fn into_input(self) -> I {
+        ManuallyDrop::into_inner(self.input)
+    }
+
+    unsafe fn into_output(self) -> O {
+        ManuallyDrop::into_inner(self.output)
+    }
+}

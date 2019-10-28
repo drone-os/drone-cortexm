@@ -42,7 +42,6 @@
 #![feature(never_type)]
 #![feature(prelude_import)]
 #![feature(proc_macro_hygiene)]
-#![feature(todo_macro)]
 #![feature(untagged_unions)]
 #![deny(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]
@@ -52,6 +51,8 @@
     clippy::doc_markdown,
     clippy::inline_always,
     clippy::module_name_repetitions,
+    clippy::must_use_candidate,
+    clippy::needless_doctest_main,
     clippy::precedence,
     clippy::shadow_unrelated,
     clippy::type_repetition_in_bounds

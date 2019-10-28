@@ -188,10 +188,10 @@ where
     }
 
     unsafe extern "C" fn handler(fn_ptr: *mut F, mut data_ptr: *mut ProcData<I, Y, R>) {
-        let input = data_ptr.read().input;
         let yielder = Yielder::new();
-        let output = FiberState::Complete((*fn_ptr)(input, yielder));
-        data_ptr.write(Data { output });
+        let input = data_ptr.read().into_input();
+        let output = Data::from_output(FiberState::Complete((*fn_ptr)(input, yielder)));
+        data_ptr.write(output);
         Sv::switch_back(&mut data_ptr);
     }
 
@@ -233,9 +233,9 @@ where
         return unimplemented!();
         unsafe {
             let data_ptr = self.data_ptr();
-            data_ptr.write(Data { input });
+            data_ptr.write(Data::from_input(input));
             Sv::switch_context(data_ptr, &mut self.stack_ptr);
-            data_ptr.read().output
+            data_ptr.read().into_output()
         }
     }
 }
