@@ -1,5 +1,8 @@
+features := 'fpu'
 build_target := 'thumbv7em-none-eabihf'
-features := 'cortex_m4_r0p1 fpu'
+cortex_m_core := 'cortex_m4f_r0p1'
+
+export CARGO_TARGET_THUMBV7EM_NONE_EABIHF_RUSTFLAGS := '--cfg cortex_m_core="' + cortex_m_core + '"'
 
 # Install dependencies
 deps:

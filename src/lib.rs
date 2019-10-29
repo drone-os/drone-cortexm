@@ -2,26 +2,25 @@
 //!
 //! # Supported Cores
 //!
-//! | Architecture | Core name             | Cargo features                      | Rust target             |
-//! |--------------|-----------------------|-------------------------------------|-------------------------|
-//! | ARMv7-M      | ARM® Cortex®-M3 r0p0  | `cortex_m3_r0p0`                    | `thumbv7m-none-eabi`    |
-//! | ARMv7-M      | ARM® Cortex®-M3 r1p0  | `cortex_m3_r1p0`                    | `thumbv7m-none-eabi`    |
-//! | ARMv7-M      | ARM® Cortex®-M3 r1p1  | `cortex_m3_r1p1`                    | `thumbv7m-none-eabi`    |
-//! | ARMv7-M      | ARM® Cortex®-M3 r2p0  | `cortex_m3_r2p0`                    | `thumbv7m-none-eabi`    |
-//! | ARMv7-M      | ARM® Cortex®-M3 r2p1  | `cortex_m3_r2p1`                    | `thumbv7m-none-eabi`    |
-//! | ARMv7E-M     | ARM® Cortex®-M4 r0p0  | `cortex_m4_r0p0`                    | `thumbv7em-none-eabi`   |
-//! | ARMv7E-M     | ARM® Cortex®-M4 r0p1  | `cortex_m4_r0p1`                    | `thumbv7em-none-eabi`   |
-//! | ARMv7E-M     | ARM® Cortex®-M4F r0p0 | `cortex_m4f_r0p0`, `fpu` (optional) | `thumbv7em-none-eabihf` |
-//! | ARMv7E-M     | ARM® Cortex®-M4F r0p1 | `cortex_m4f_r0p1`, `fpu` (optional) | `thumbv7em-none-eabihf` |
+//! | Architecture | Core name             | Rust target             | `cortex_m_core` config flag |
+//! |--------------|-----------------------|-------------------------|-----------------------------|
+//! | ARMv7-M      | ARM® Cortex®-M3 r0p0  | `thumbv7m-none-eabi`    | `cortex_m3_r0p0`            |
+//! | ARMv7-M      | ARM® Cortex®-M3 r1p0  | `thumbv7m-none-eabi`    | `cortex_m3_r1p0`            |
+//! | ARMv7-M      | ARM® Cortex®-M3 r1p1  | `thumbv7m-none-eabi`    | `cortex_m3_r1p1`            |
+//! | ARMv7-M      | ARM® Cortex®-M3 r2p0  | `thumbv7m-none-eabi`    | `cortex_m3_r2p0`            |
+//! | ARMv7-M      | ARM® Cortex®-M3 r2p1  | `thumbv7m-none-eabi`    | `cortex_m3_r2p1`            |
+//! | ARMv7E-M     | ARM® Cortex®-M4 r0p0  | `thumbv7em-none-eabi`   | `cortex_m4_r0p0`            |
+//! | ARMv7E-M     | ARM® Cortex®-M4 r0p1  | `thumbv7em-none-eabi`   | `cortex_m4_r0p1`            |
+//! | ARMv7E-M     | ARM® Cortex®-M4F r0p0 | `thumbv7em-none-eabihf` | `cortex_m4f_r0p0`           |
+//! | ARMv7E-M     | ARM® Cortex®-M4F r0p1 | `thumbv7em-none-eabihf` | `cortex_m4f_r0p1`           |
 //!
-//! **NOTE** Cargo features for `drone-cortex-m` dependency and target triple
-//! for the resulting binary should be selected for a particular core according
-//! this table.
+//! Rust target triple and `cortex_m_core` config flag should be set at the
+//! application level according to this table.
 //!
 //! # Documentation
 //!
 //! - [Drone Book](https://book.drone-os.com/)
-//! - [API documentation](https://api.drone-os.com/drone-cortex-m/0.10/)
+//! - [API documentation](https://api.drone-os.com/drone-cortex-m/0.11/)
 //!
 //! # Usage
 //!
@@ -29,7 +28,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! drone-cortex-m = { version = "0.10.1", features = [...] }
+//! drone-cortex-m = { version = "0.11.0", features = [...] }
 //! ```
 
 #![feature(asm)]

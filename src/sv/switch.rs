@@ -56,7 +56,10 @@ impl SvService for SwitchContextService {
             stack_ptr,
             data_ptr,
         } = *self;
-        #[cfg(feature = "fpu")]
+        #[cfg(all(
+            feature = "fpu",
+            any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
+        ))]
         asm!("
             mrs      r3, control
             tst      lr, #0x4
@@ -103,7 +106,10 @@ impl SvService for SwitchContextService {
             : "cc", "memory"
             : "volatile"
         );
-        #[cfg(not(feature = "fpu"))]
+        #[cfg(not(all(
+            feature = "fpu",
+            any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
+        )))]
         asm!("
             mrs      r3, control
             tst      lr, #0x4
@@ -154,7 +160,10 @@ impl SvService for SwitchBackService {
             data_ptr,
             data_size,
         } = *self;
-        #[cfg(feature = "fpu")]
+        #[cfg(all(
+            feature = "fpu",
+            any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
+        ))]
         asm!("
             movw     r2, #0xED94
             movt     r2, #0xE000
@@ -213,7 +222,10 @@ impl SvService for SwitchBackService {
             : "cc", "memory"
             : "volatile"
         );
-        #[cfg(not(feature = "fpu"))]
+        #[cfg(not(all(
+            feature = "fpu",
+            any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
+        )))]
         asm!("
             movw     r2, #0xED94
             movt     r2, #0xE000
