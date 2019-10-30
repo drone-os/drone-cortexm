@@ -9,6 +9,11 @@
 mod macros;
 mod port;
 
+/// Updates the SWO prescaler register to match the baud-rate defined at
+/// `Drone.toml`.
+#[doc(inline)]
+pub use drone_cortex_m_macros::itm_update_prescaler as update_prescaler;
+
 pub use self::port::Port;
 
 use crate::{
@@ -124,13 +129,9 @@ pub fn sync() {
 
 /// Updates the SWO prescaler register.
 #[inline]
-pub fn update_prescaler(hclk: u32, baud_rate: u32) {
-    #[inline]
-    fn set_tpiu_acpr(swoscaler: u32) {
-        let mut acpr = unsafe { tpiu::Acpr::<Urt>::take() };
-        acpr.store(|r| r.write_swoscaler(swoscaler));
-    }
-    set_tpiu_acpr(hclk / baud_rate - 1);
+pub fn update_prescaler(swoscaler: u32) {
+    let mut acpr = unsafe { tpiu::Acpr::<Urt>::take() };
+    acpr.store(|r| r.write_swoscaler(swoscaler));
     sync();
 }
 

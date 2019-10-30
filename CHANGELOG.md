@@ -13,6 +13,10 @@ Possible log types:
 
 ### Unreleased
 
+- [added] New macro `itm::update_prescaler!`
+- [changed] `itm::update_prescaler` function now takes a single argument
+- [changed] Using `cortex_m_core` config flag to specify the MCU core version
+
 ### v0.10.1 (2019-09-27)
 
 - [fixed] Fix API documentation by moving to self-hosted https://api.drone-os.com
