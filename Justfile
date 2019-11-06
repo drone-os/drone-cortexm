@@ -1,12 +1,10 @@
+export DRONE_RUSTFLAGS := '--cfg cortex_m_core="cortex_m4f_r0p1"'
+target := 'thumbv7em-none-eabihf'
 features := 'fpu'
-build_target := 'thumbv7em-none-eabihf'
-cortex_m_core := 'cortex_m4f_r0p1'
-
-export CARGO_TARGET_THUMBV7EM_NONE_EABIHF_RUSTFLAGS := '--cfg cortex_m_core="' + cortex_m_core + '"'
 
 # Install dependencies
 deps:
-	rustup target add {{build_target}}
+	rustup target add {{target}}
 	rustup component add clippy
 	rustup component add rustfmt
 	type cargo-readme >/dev/null || cargo +stable install cargo-readme
@@ -18,21 +16,21 @@ fmt:
 # Check for mistakes
 lint:
 	cargo clippy --package drone-cortex-m-macros
-	cargo clippy --target {{build_target}} --features "{{features}}" --package drone-cortex-m
+	drone env {{target}} -- cargo clippy --features "{{features}}" --package drone-cortex-m
 
 # Generate the docs
 doc:
 	cargo doc --package drone-cortex-m-macros
-	cargo doc --target {{build_target}} --features "{{features}}" --package drone-cortex-m
+	drone env {{target}} -- cargo doc --features "{{features}}" --package drone-cortex-m
 
 # Open the docs in a browser
 doc-open: doc
-	cargo doc --target {{build_target}} --features "{{features}}" --package drone-cortex-m --open
+	drone env {{target}} -- cargo doc --features "{{features}}" --package drone-cortex-m --open
 
 # Run the tests
 test:
 	cargo test --package drone-cortex-m-macros
-	cargo test --features "{{features}} std" --package drone-cortex-m
+	drone env -- cargo test --features "{{features}} std" --package drone-cortex-m
 
 # Update README.md
 readme:
@@ -57,13 +55,13 @@ version-bump version drone-version drone-core-version:
 publish:
 	cd macros && cargo publish
 	sleep 5
-	cargo publish --target {{build_target}} --features "{{features}}"
+	drone env {{target}} -- cargo publish --features "{{features}}"
 
 # Publish the docs to api.drone-os.com
 publish-doc: doc
 	dir=$(sed -n 's/.*api\.drone-os\.com\/\(.*\)"/\1/;T;p' Cargo.toml) \
 		&& rm -rf ../drone-api/$dir \
 		&& cp -rT target/doc ../drone-api/$dir \
-		&& cp -rT target/{{build_target}}/doc ../drone-api/$dir \
+		&& cp -rT target/{{target}}/doc ../drone-api/$dir \
 		&& echo '<!DOCTYPE html><meta http-equiv="refresh" content="0; URL=./drone_cortex_m">' > ../drone-api/$dir/index.html \
 		&& cd ../drone-api && git add $dir && git commit -m "Docs for $dir"

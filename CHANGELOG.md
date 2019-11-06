@@ -13,6 +13,8 @@ Possible log types:
 
 ### Unreleased
 
+### v0.11.0 (2019-11-06)
+
 - [added] New macro `itm::update_prescaler!`
 - [changed] `itm::update_prescaler` function now takes a single argument
 - [changed] Using `cortex_m_core` config flag to specify the MCU core version
