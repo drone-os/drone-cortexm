@@ -34,7 +34,7 @@ maintenance = { status = "actively-developed" }
 
 [features]
 default = []
-std = ["drone-core/std", "futures-preview/std"]
+std = ["drone-core/std", "futures/std"]
 fpu = []
 
 [dependencies.drone-cortex-m-macros]
@@ -46,4 +46,4 @@ version = "0.11.0"
 path = "../drone-core"
 
 [dependencies]
-futures-preview = { version = "0.3.0-alpha", default-features = false }
+futures = { version = "0.3.0", default-features = false }
