@@ -1,7 +1,6 @@
-use drone_macros_core::new_ident;
 use inflector::Inflector;
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{
     parse::{Parse, ParseStream, Result},
     parse_macro_input, Attribute, Ident, LitInt, Token, Visibility,
@@ -40,8 +39,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         number,
     } = parse_macro_input!(input as Int);
     let int_name = format!("INT_{}", ident);
-    let name_ident = new_ident!("{}", int_name.to_pascal_case());
-    let number_ident = new_ident!("Int{}", number.value());
+    let name_ident = format_ident!("{}", int_name.to_pascal_case());
+    let number_ident = format_ident!("Int{}", number.base10_digits());
 
     let expanded = quote! {
         #(#attrs)*

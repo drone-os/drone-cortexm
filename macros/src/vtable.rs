@@ -1,9 +1,8 @@
-use drone_macros_core::new_ident;
 use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::quote;
-use std::{collections::HashSet, convert::TryFrom};
+use quote::{format_ident, quote};
+use std::collections::HashSet;
 use syn::{
     parse::{Parse, ParseStream, Result},
     parse_macro_input, Attribute, ExprPath, Ident, LitInt, Token, Visibility,
@@ -170,7 +169,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     } = parse_macro_input!(input as Vtable);
     let int_len = ints
         .iter()
-        .map(|int| usize::try_from(int.num.value()).unwrap() + 1)
+        .map(|int| int.num.base10_parse::<usize>().unwrap() + 1)
         .max()
         .unwrap_or(0);
     let mut exc_holes = exc_set();
@@ -196,7 +195,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             &mut thr_tokens,
         );
         if let Some(struct_ident) = struct_ident {
-            let int_trait = new_ident!("Int{}", struct_ident);
+            let int_trait = format_ident!("Int{}", struct_ident);
             thr_tokens.push(quote! {
                 impl #int_trait for #struct_ident {}
             });
@@ -221,8 +220,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             &mut thr_tokens,
         );
         if let Some(struct_ident) = struct_ident {
-            let int_trait = new_ident!("Int{}", num.value());
-            let bundle = new_ident!("IntBundle{}", num.value() / 32);
+            let int_trait = format_ident!("Int{}", num.base10_digits());
+            let bundle = format_ident!("IntBundle{}", num.base10_parse::<usize>().unwrap() / 32);
             thr_tokens.push(quote! {
                 impl ::drone_cortex_m::thr::IntToken for #struct_ident {
                     type Bundle = ::drone_cortex_m::map::thr::#bundle;
@@ -233,12 +232,12 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
                 impl #int_trait for #struct_ident {}
             });
         }
-        vtable_tokens[usize::try_from(num.value()).unwrap()] = Some(quote! {
+        vtable_tokens[num.base10_parse::<usize>().unwrap()] = Some(quote! {
             #field_ident: Option<::drone_cortex_m::thr::vtable::Handler>
         });
     }
     for exc_ident in exc_holes {
-        let exc_ident = new_ident!("{}", exc_ident);
+        let exc_ident = format_ident!("{}", exc_ident);
         vtable_ctor_tokens.push(quote!(#exc_ident: None));
     }
     let vtable_tokens = vtable_tokens
@@ -246,7 +245,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         .enumerate()
         .map(|(i, tokens)| {
             tokens.unwrap_or_else(|| {
-                let int_ident = new_ident!("_int{}", i);
+                let int_ident = format_ident!("_int{}", i);
                 vtable_ctor_tokens.push(quote!(#int_ident: None));
                 quote!(#int_ident: Option<::drone_cortex_m::thr::vtable::Handler>)
             })
@@ -365,8 +364,8 @@ fn gen_exc(
         ref ident,
     } = exc;
     let field_ident = ident.to_string().to_snake_case();
-    let field_ident = new_ident!("{}", field_ident);
-    let struct_ident = new_ident!("{}", ident.to_string().to_pascal_case());
+    let field_ident = format_ident!("{}", field_ident);
+    let struct_ident = format_ident!("{}", ident.to_string().to_pascal_case());
     match *mode {
         Mode::Thread(_) => {
             vtable_ctor_tokens.push(quote! {

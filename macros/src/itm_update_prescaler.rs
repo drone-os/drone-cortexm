@@ -5,7 +5,7 @@ use proc_macro2::Span;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream, Result},
-    parse_macro_input, Expr, IntSuffix, LitInt,
+    parse_macro_input, Expr, LitInt,
 };
 
 struct ItmUpdatePrescaler {
@@ -27,8 +27,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     };
     if let Some(probe) = config.probe {
         if let Some(itm) = probe.itm {
-            let baud_rate =
-                LitInt::new(u64::from(itm.baud_rate), IntSuffix::None, Span::call_site());
+            let baud_rate = LitInt::new(&itm.baud_rate.to_string(), Span::call_site());
             quote!(::drone_cortex_m::itm::update_prescaler(#hclk / #baud_rate - 1)).into()
         } else {
             compile_error!("Missing `probe.itm` section in `Drone.toml`");

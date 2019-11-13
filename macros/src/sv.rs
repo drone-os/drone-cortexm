@@ -3,7 +3,7 @@ use proc_macro2::Span;
 use quote::quote;
 use syn::{
     parse::{Parse, ParseStream, Result},
-    parse_macro_input, Attribute, Ident, IntSuffix, LitInt, Token, Visibility,
+    parse_macro_input, Attribute, Ident, LitInt, Token, Visibility,
 };
 
 struct Sv {
@@ -70,7 +70,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     let mut array_tokens = Vec::new();
     let mut service_tokens = Vec::new();
     for Service { ident } in services {
-        let index = LitInt::new(service_counter as u64, IntSuffix::None, Span::call_site());
+        let index = LitInt::new(&service_counter.to_string(), Span::call_site());
         service_counter += 1;
         array_tokens.push(quote! {
             #sv_ident(::drone_cortex_m::sv::service_handler::<#ident>)
