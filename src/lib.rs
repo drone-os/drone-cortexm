@@ -28,7 +28,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! drone-cortex-m = { version = "0.11.0", features = [...] }
+//! drone-cortex-m = { version = "0.11.1", features = [...] }
 //! ```
 
 #![feature(asm)]

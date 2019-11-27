@@ -3,7 +3,7 @@ members = ["macros"]
 
 [package]
 name = "drone-cortex-m"
-version = "0.11.0"
+version = "0.11.1"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/drone-os/drone-cortex-m"
@@ -38,11 +38,11 @@ std = ["drone-core/std", "futures/std"]
 fpu = []
 
 [dependencies.drone-cortex-m-macros]
-version = "=0.11.0"
+version = "=0.11.1"
 path = "macros"
 
 [dependencies.drone-core]
-version = "0.11.0"
+version = "0.11.1"
 path = "../drone-core"
 
 [dependencies]
