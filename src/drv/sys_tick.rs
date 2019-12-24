@@ -139,13 +139,7 @@ impl<I: IntSysTick> SysTick<I> {
     fn interval_fib<T>(
         ctrl: stk::Ctrl<Crt>,
     ) -> impl Fiber<Input = (), Yield = Option<usize>, Return = T> {
-        fib::new_fn(move || {
-            fib::Yielded(if ctrl.load().countflag() {
-                Some(1)
-            } else {
-                None
-            })
-        })
+        fib::new_fn(move || fib::Yielded(if ctrl.load().countflag() { Some(1) } else { None }))
     }
 }
 
@@ -193,8 +187,5 @@ where
 {
     let mut val = F::Reg::take().default_val();
     field.set(&mut val);
-    write_volatile(
-        F::Reg::ADDRESS as *mut <<F::Reg as Reg<T>>::Val as Bitfield>::Bits,
-        val.bits(),
-    );
+    write_volatile(F::Reg::ADDRESS as *mut <<F::Reg as Reg<T>>::Val as Bitfield>::Bits, val.bits());
 }

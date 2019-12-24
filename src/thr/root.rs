@@ -66,11 +66,7 @@ impl<'a, T: Stream> StreamRootExt<'a> for T {
     where
         Self: Sized,
     {
-        StreamRootWait {
-            stream: self,
-            exhausted: false,
-            _marker: PhantomData,
-        }
+        StreamRootWait { stream: self, exhausted: false, _marker: PhantomData }
     }
 }
 

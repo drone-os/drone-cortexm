@@ -52,10 +52,7 @@ impl SvService for SwitchContextService {
     unsafe extern "C" fn handler(&mut self) {
         #[cfg(feature = "std")]
         return unimplemented!();
-        let Self {
-            stack_ptr,
-            data_ptr,
-        } = *self;
+        let Self { stack_ptr, data_ptr } = *self;
         #[cfg(all(
             feature = "fpu",
             any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
@@ -156,10 +153,7 @@ impl SvService for SwitchBackService {
     unsafe extern "C" fn handler(&mut self) {
         #[cfg(feature = "std")]
         return unimplemented!();
-        let Self {
-            data_ptr,
-            data_size,
-        } = *self;
+        let Self { data_ptr, data_size } = *self;
         #[cfg(all(
             feature = "fpu",
             any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
@@ -284,10 +278,7 @@ where
     Sv: SvCall<SwitchBackService>,
 {
     unsafe fn switch_context(data: *mut T, stack_ptr: *mut *const u8) {
-        Self::call(&mut SwitchContextService {
-            stack_ptr,
-            data_ptr: data as *mut u8,
-        });
+        Self::call(&mut SwitchContextService { stack_ptr, data_ptr: data as *mut u8 });
     }
 
     unsafe fn switch_back(data: *mut *mut T) {

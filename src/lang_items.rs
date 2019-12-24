@@ -9,10 +9,7 @@ fn begin_panic(pi: &PanicInfo<'_>) -> ! {
 
 #[lang = "oom"]
 fn oom(layout: Layout) -> ! {
-    eprintln!(
-        "Couldn't allocate memory of size {}. Aborting!",
-        layout.size()
-    );
+    eprintln!("Couldn't allocate memory of size {}. Aborting!", layout.size());
     abort()
 }
 

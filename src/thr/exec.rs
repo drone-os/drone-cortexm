@@ -62,15 +62,13 @@ impl<T: IntToken> ThrExec for T {
             let mut cx = Context::from_waker(&waker);
             fut.poll(&mut cx)
         }
-        self.add_fn(
-            move || match poll(unsafe { Pin::new_unchecked(&mut fut) }, Self::INT_NUM) {
-                Poll::Pending => fib::Yielded(()),
-                Poll::Ready(output) => {
-                    output.terminate();
-                    fib::Complete(())
-                }
-            },
-        );
+        self.add_fn(move || match poll(unsafe { Pin::new_unchecked(&mut fut) }, Self::INT_NUM) {
+            Poll::Pending => fib::Yielded(()),
+            Poll::Ready(output) => {
+                output.terminate();
+                fib::Complete(())
+            }
+        });
     }
 
     #[inline]

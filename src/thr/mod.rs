@@ -80,11 +80,7 @@
 //!
 //! // Define and export the actual vector table with all handlers attached.
 //! #[no_mangle]
-//! pub static VTABLE: Vtable = Vtable::new(Handlers {
-//!     reset,
-//!     sv_call,
-//!     adc1,
-//! });
+//! pub static VTABLE: Vtable = Vtable::new(Handlers { reset, sv_call, adc1 });
 //! ```
 //!
 //! The list of all available non-interrupt exceptions:

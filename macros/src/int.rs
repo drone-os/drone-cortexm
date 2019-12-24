@@ -22,22 +22,12 @@ impl Parse for Int {
         input.parse::<Token![:]>()?;
         let number = input.parse()?;
         input.parse::<Option<Token![;]>>()?;
-        Ok(Self {
-            attrs,
-            vis,
-            ident,
-            number,
-        })
+        Ok(Self { attrs, vis, ident, number })
     }
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-    let Int {
-        attrs,
-        vis,
-        ident,
-        number,
-    } = parse_macro_input!(input as Int);
+    let Int { attrs, vis, ident, number } = parse_macro_input!(input as Int);
     let int_name = format!("INT_{}", ident);
     let name_ident = format_ident!("{}", int_name.to_pascal_case());
     let number_ident = format_ident!("Int{}", number.base10_digits());

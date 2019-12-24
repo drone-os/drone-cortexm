@@ -36,15 +36,7 @@ impl Parse for Sv {
         while !input.is_empty() {
             services.push(input.parse()?);
         }
-        Ok(Self {
-            sv_attrs,
-            sv_vis,
-            sv_ident,
-            array_attrs,
-            array_vis,
-            array_ident,
-            services,
-        })
+        Ok(Self { sv_attrs, sv_vis, sv_ident, array_attrs, array_vis, array_ident, services })
     }
 }
 
@@ -57,15 +49,8 @@ impl Parse for Service {
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-    let Sv {
-        sv_attrs,
-        sv_vis,
-        sv_ident,
-        array_attrs,
-        array_vis,
-        array_ident,
-        services,
-    } = parse_macro_input!(input as Sv);
+    let Sv { sv_attrs, sv_vis, sv_ident, array_attrs, array_vis, array_ident, services } =
+        parse_macro_input!(input as Sv);
     let mut service_counter = 0_usize;
     let mut array_tokens = Vec::new();
     let mut service_tokens = Vec::new();

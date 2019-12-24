@@ -145,9 +145,7 @@ pub fn trace_alloc(layout: Layout, _pool: &Pool) {
         #[cfg(feature = "std")]
         return unimplemented!();
         unsafe { asm!("cpsid i" :::: "volatile") };
-        Port::new(HEAP_TRACE_PORT)
-            .write(0xCDAB_u16)
-            .write((layout.size() as u32) ^ HEAP_TRACE_KEY);
+        Port::new(HEAP_TRACE_PORT).write(0xCDAB_u16).write((layout.size() as u32) ^ HEAP_TRACE_KEY);
         unsafe { asm!("cpsie i" :::: "volatile") };
     }
     if is_port_enabled(HEAP_TRACE_PORT) {
@@ -165,9 +163,7 @@ pub fn trace_dealloc(layout: Layout, _pool: &Pool) {
         #[cfg(feature = "std")]
         return unimplemented!();
         unsafe { asm!("cpsid i" :::: "volatile") };
-        Port::new(HEAP_TRACE_PORT)
-            .write(0xBADC_u16)
-            .write((layout.size() as u32) ^ HEAP_TRACE_KEY);
+        Port::new(HEAP_TRACE_PORT).write(0xBADC_u16).write((layout.size() as u32) ^ HEAP_TRACE_KEY);
         unsafe { asm!("cpsie i" :::: "volatile") };
     }
     if is_port_enabled(HEAP_TRACE_PORT) {

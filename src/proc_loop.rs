@@ -83,16 +83,8 @@
 //!
 //! // All possible requests used by `disk_read` and `disk_write` functions above.
 //! pub enum Req {
-//!     DiskRead {
-//!         buf: *mut u8,
-//!         sector: u32,
-//!         count: u32,
-//!     },
-//!     DiskWrite {
-//!         buf: *const u8,
-//!         sector: u32,
-//!         count: u32,
-//!     },
+//!     DiskRead { buf: *mut u8, sector: u32, count: u32 },
+//!     DiskWrite { buf: *const u8, sector: u32, count: u32 },
 //! }
 //!
 //! // Results for each of the requests above.
@@ -113,9 +105,9 @@
 //! pub struct FatfsSess<'sess>(&'sess mut proc_loop::Fiber<Sv, FatfsRes>);
 //!
 //! impl ProcLoop for FatfsRes {
-//!     type Context = proc_loop::Yielder<Sv, FatfsRes>;
 //!     type Cmd = Cmd;
 //!     type CmdRes = CmdRes;
+//!     type Context = proc_loop::Yielder<Sv, FatfsRes>;
 //!     type Req = Req;
 //!     type ReqRes = ReqRes;
 //!
@@ -156,9 +148,9 @@
 //! }
 //!
 //! impl proc_loop::Sess for FatfsSess<'_> {
-//!     type ProcLoop = FatfsRes;
-//!     type Fiber = proc_loop::Fiber<Sv, FatfsRes>;
 //!     type Error = !;
+//!     type Fiber = proc_loop::Fiber<Sv, FatfsRes>;
+//!     type ProcLoop = FatfsRes;
 //!
 //!     fn fib(&mut self) -> Pin<&mut Self::Fiber> {
 //!         Pin::new(self.0)
@@ -284,10 +276,8 @@ where
     fn cmd_loop(mut input: In<T::Cmd, T::ReqRes>, yielder: InnerYielder<Sv, T>) -> ! {
         T::on_enter();
         loop {
-            input = yielder.proc_yield(Out::CmdRes(T::run_cmd(
-                unsafe { input.into_cmd() },
-                Yielder(yielder),
-            )));
+            input = yielder
+                .proc_yield(Out::CmdRes(T::run_cmd(unsafe { input.into_cmd() }, Yielder(yielder))));
         }
     }
 }
@@ -310,8 +300,8 @@ where
     T: ProcLoop<Context = Yielder<Sv, T>>,
 {
     type Input = InnerIn<T>;
-    type Yield = InnerOut<T>;
     type Return = !;
+    type Yield = InnerOut<T>;
 
     #[inline]
     fn resume(mut self: Pin<&mut Self>, input: InnerIn<T>) -> FiberState<InnerOut<T>, !> {

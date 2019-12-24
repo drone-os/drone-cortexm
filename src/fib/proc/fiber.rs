@@ -132,11 +132,7 @@ where
         stack_ptr.write(if unprivileged { 0b11 } else { 0b10 });
         // MPU CONFIG
         stack_ptr = stack_ptr.sub(1);
-        stack_ptr.write(if unchecked {
-            0
-        } else {
-            Self::mpu_config(stack_bottom)
-        });
+        stack_ptr.write(if unchecked { 0 } else { Self::mpu_config(stack_bottom) });
         stack_ptr as *const u8
     }
 
@@ -225,8 +221,8 @@ where
     R: Send + 'static,
 {
     type Input = I;
-    type Yield = Y;
     type Return = R;
+    type Yield = Y;
 
     fn resume(mut self: Pin<&mut Self>, input: I) -> FiberState<Y, R> {
         #[cfg(feature = "std")]

@@ -25,9 +25,7 @@ impl Port {
     /// If `port` is out of bounds.
     pub fn new(address: usize) -> Self {
         assert!(address < 0x20);
-        Self {
-            address: ADDRESS_BASE + (address << 2),
-        }
+        Self { address: ADDRESS_BASE + (address << 2) }
     }
 
     /// Writes `bytes` to the stimulus port.
@@ -46,19 +44,13 @@ impl Port {
         end += start;
         if rem != 0 {
             rem = 0b100 - rem;
-            write_slice(self, unsafe {
-                slice::from_raw_parts(start as *const u8, rem)
-            });
+            write_slice(self, unsafe { slice::from_raw_parts(start as *const u8, rem) });
             start += rem;
         }
         rem = end & 0b11;
         end -= rem;
-        write_slice(self, unsafe {
-            slice::from_raw_parts(start as *const u32, end - start >> 2)
-        });
-        write_slice(self, unsafe {
-            slice::from_raw_parts(end as *const u8, rem)
-        });
+        write_slice(self, unsafe { slice::from_raw_parts(start as *const u32, end - start >> 2) });
+        write_slice(self, unsafe { slice::from_raw_parts(end as *const u8, rem) });
     }
 
     /// Writes `value` of type `u8`, `u16` or `u32` to the stimulus port.

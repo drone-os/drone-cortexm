@@ -163,9 +163,7 @@ pub trait ThrFiberProc: ThrSv {
         F: Send + 'static,
         Self::Sv: Switch<ProcData<(), (), ()>>,
     {
-        self.add_fib(new_proc_unchecked(stack_size, move |(), yielder| {
-            f(yielder)
-        }))
+        self.add_fib(new_proc_unchecked(stack_size, move |(), yielder| f(yielder)))
     }
 
     /// Adds a stackful fiber for the closure `f` to the fiber chain, which will
@@ -182,9 +180,7 @@ pub trait ThrFiberProc: ThrSv {
         F: Send + 'static,
         Self::Sv: Switch<ProcData<(), (), ()>>,
     {
-        self.add_fib(new_proc_unprivileged(stack_size, move |(), yielder| {
-            f(yielder)
-        }))
+        self.add_fib(new_proc_unprivileged(stack_size, move |(), yielder| f(yielder)))
     }
 
     /// Adds a stackful fiber for the closure `f` to the fiber chain, which will
@@ -204,10 +200,7 @@ pub trait ThrFiberProc: ThrSv {
         F: Send + 'static,
         Self::Sv: Switch<ProcData<(), (), ()>>,
     {
-        self.add_fib(new_proc_unprivileged_unchecked(
-            stack_size,
-            move |(), yielder| f(yielder),
-        ))
+        self.add_fib(new_proc_unprivileged_unchecked(stack_size, move |(), yielder| f(yielder)))
     }
 }
 
@@ -215,15 +208,11 @@ impl<T: ThrSv> ThrFiberProc for T {}
 
 impl<I, O> Data<I, O> {
     fn from_input(input: I) -> Self {
-        Self {
-            input: ManuallyDrop::new(input),
-        }
+        Self { input: ManuallyDrop::new(input) }
     }
 
     fn from_output(output: O) -> Self {
-        Self {
-            output: ManuallyDrop::new(output),
-        }
+        Self { output: ManuallyDrop::new(output) }
     }
 
     unsafe fn into_input(self) -> I {

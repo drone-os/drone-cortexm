@@ -124,10 +124,7 @@ impl Parse for Int {
         input.parse::<Token![:]>()?;
         let ident = input.parse()?;
         input.parse::<Token![;]>()?;
-        Ok(Self {
-            num,
-            exc: Exc { attrs, mode, ident },
-        })
+        Ok(Self { num, exc: Exc { attrs, mode, ident } })
     }
 }
 
@@ -167,11 +164,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         excs,
         ints,
     } = parse_macro_input!(input as Vtable);
-    let int_len = ints
-        .iter()
-        .map(|int| int.num.base10_parse::<usize>().unwrap() + 1)
-        .max()
-        .unwrap_or(0);
+    let int_len =
+        ints.iter().map(|int| int.num.base10_parse::<usize>().unwrap() + 1).max().unwrap_or(0);
     let mut exc_holes = exc_set();
     let mut vtable_tokens = vec![None; int_len];
     let mut vtable_ctor_tokens = Vec::new();
@@ -358,11 +352,7 @@ fn gen_exc(
     array_tokens: &mut Vec<TokenStream2>,
     thr_tokens: &mut Vec<TokenStream2>,
 ) -> (Ident, Option<Ident>) {
-    let &Exc {
-        ref attrs,
-        ref mode,
-        ref ident,
-    } = exc;
+    let &Exc { ref attrs, ref mode, ref ident } = exc;
     let field_ident = ident.to_string().to_snake_case();
     let field_ident = format_ident!("{}", field_ident);
     let struct_ident = format_ident!("{}", ident.to_string().to_pascal_case());

@@ -35,12 +35,7 @@ where
     /// [`FiberProc`](crate::fib::FiberProc).
     #[inline]
     pub unsafe fn new() -> Self {
-        Self {
-            _sv: PhantomData,
-            _input: PhantomData,
-            _yield: PhantomData,
-            _return: PhantomData,
-        }
+        Self { _sv: PhantomData, _input: PhantomData, _yield: PhantomData, _return: PhantomData }
     }
 
     /// Yields from the [`FiberProc`](crate::fib::FiberProc).

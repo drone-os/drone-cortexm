@@ -26,9 +26,7 @@ impl Fpu {
 impl Fpu {
     /// Enables the FPU.
     pub fn enable(&self) {
-        self.periph
-            .fpu_cpacr
-            .store(|r| r.write_cp10(0b11).write_cp11(0b11));
+        self.periph.fpu_cpacr.store(|r| r.write_cp10(0b11).write_cp11(0b11));
         #[cfg(feature = "std")]
         return unimplemented!();
         unsafe {
