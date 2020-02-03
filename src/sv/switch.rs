@@ -54,7 +54,7 @@ impl SvService for SwitchContextService {
         return unimplemented!();
         let Self { stack_ptr, data_ptr } = *self;
         #[cfg(all(
-            feature = "fpu",
+            feature = "floating_point_unit",
             any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
         ))]
         asm!("
@@ -104,7 +104,7 @@ impl SvService for SwitchContextService {
             : "volatile"
         );
         #[cfg(not(all(
-            feature = "fpu",
+            feature = "floating_point_unit",
             any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
         )))]
         asm!("
@@ -155,7 +155,7 @@ impl SvService for SwitchBackService {
         return unimplemented!();
         let Self { data_ptr, data_size } = *self;
         #[cfg(all(
-            feature = "fpu",
+            feature = "floating_point_unit",
             any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
         ))]
         asm!("
@@ -217,7 +217,7 @@ impl SvService for SwitchBackService {
             : "volatile"
         );
         #[cfg(not(all(
-            feature = "fpu",
+            feature = "floating_point_unit",
             any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
         )))]
         asm!("

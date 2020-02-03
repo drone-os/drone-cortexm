@@ -90,6 +90,7 @@
 //! * `MEM_MANAGE` - Memory management.
 //! * `BUS_FAULT` - Pre-fetch fault, memory access fault.
 //! * `USAGE_FAULT` - Undefined instruction or illegal state.
+//! * `SECURE_FAULT` - Security check violation. (Available when `security_extension` feature is enabled)
 //! * `SV_CALL` - System service call via SWI instruction.
 //! * `DEBUG` - Monitor.
 //! * `PEND_SV` - Pendable request for system service.

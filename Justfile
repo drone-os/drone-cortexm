@@ -1,6 +1,7 @@
-export DRONE_RUSTFLAGS := '--cfg cortex_m_core="cortex_m4f_r0p1"'
+cortex_m_core := 'cortex_m4f_r0p1'
+export DRONE_RUSTFLAGS := '--cfg cortex_m_core="' + cortex_m_core + '"'
 target := 'thumbv7em-none-eabihf'
-features := 'fpu'
+features := 'floating_point_unit'
 
 # Install dependencies
 deps:

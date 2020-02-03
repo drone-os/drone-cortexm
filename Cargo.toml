@@ -3,12 +3,12 @@ members = ["macros"]
 
 [package]
 name = "drone-cortex-m"
-version = "0.11.1"
+version = "0.12.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/drone-os/drone-cortex-m"
 homepage = "https://www.drone-os.com/"
-documentation = "https://api.drone-os.com/drone-cortex-m/0.11/drone_cortex_m/"
+documentation = "https://api.drone-os.com/drone-cortex-m/0.12/drone_cortex_m/"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 keywords = [
@@ -35,14 +35,15 @@ maintenance = { status = "actively-developed" }
 [features]
 default = []
 std = ["drone-core/std", "futures/std"]
-fpu = []
+floating_point_unit = []
+security_extension = []
 
 [dependencies.drone-cortex-m-macros]
-version = "=0.11.1"
+version = "=0.12.0"
 path = "macros"
 
 [dependencies.drone-core]
-version = "0.11.1"
+version = "0.12.0"
 path = "../drone-core"
 
 [dependencies]

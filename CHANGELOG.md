@@ -13,6 +13,11 @@ Possible log types:
 
 ### Unreleased
 
+- [added] Added Cortex-M33 support
+- [changed] Feature `fpu` renamed to `floating_point_unit`
+- [added] Added feature `security_extension`
+- [added] Added SECURE_FAULT exception mapping
+
 ### v0.11.1 (2019-11-27)
 
 - [changed] Upgraded to `syn` 1.0

@@ -2,7 +2,6 @@ use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
-use std::collections::HashSet;
 use syn::{
     parse::{Parse, ParseStream, Result},
     parse_macro_input, Attribute, ExprPath, Ident, LitInt, Token, Visibility,
@@ -166,8 +165,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     } = parse_macro_input!(input as Vtable);
     let int_len =
         ints.iter().map(|int| int.num.base10_parse::<usize>().unwrap() + 1).max().unwrap_or(0);
-    let mut exc_holes = exc_set();
     let mut vtable_tokens = vec![None; int_len];
+    let mut vtable_ctor_default_tokens = Vec::new();
     let mut vtable_ctor_tokens = Vec::new();
     let mut handlers_tokens = Vec::new();
     let mut index_tokens = Vec::new();
@@ -176,7 +175,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     let mut thr_tokens = Vec::new();
     let mut thr_counter = 1;
     for exc in excs {
-        let (field_ident, struct_ident) = gen_exc(
+        let (_, struct_ident) = gen_exc(
             &exc,
             &thr,
             sv.as_ref(),
@@ -194,11 +193,6 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
                 impl #int_trait for #struct_ident {}
             });
         }
-        assert!(
-            exc_holes.remove(field_ident.to_string().as_str()),
-            "Unknown exception name: {}",
-            exc.ident.to_string(),
-        );
     }
     for Int { num, exc } in ints {
         let (field_ident, struct_ident) = gen_exc(
@@ -229,10 +223,9 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         vtable_tokens[num.base10_parse::<usize>().unwrap()] = Some(quote! {
             #field_ident: Option<::drone_cortex_m::thr::vtable::Handler>
         });
-    }
-    for exc_ident in exc_holes {
-        let exc_ident = format_ident!("{}", exc_ident);
-        vtable_ctor_tokens.push(quote!(#exc_ident: None));
+        vtable_ctor_default_tokens.push(quote! {
+            #field_ident: None
+        });
     }
     let vtable_tokens = vtable_tokens
         .into_iter()
@@ -240,8 +233,12 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         .map(|(i, tokens)| {
             tokens.unwrap_or_else(|| {
                 let int_ident = format_ident!("_int{}", i);
-                vtable_ctor_tokens.push(quote!(#int_ident: None));
-                quote!(#int_ident: Option<::drone_cortex_m::thr::vtable::Handler>)
+                vtable_ctor_default_tokens.push(quote! {
+                    #int_ident: None
+                });
+                quote! {
+                    #int_ident: Option<::drone_cortex_m::thr::vtable::Handler>
+                }
             })
         })
         .collect::<Vec<_>>();
@@ -281,10 +278,34 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             mem_manage: Option<::drone_cortex_m::thr::vtable::Handler>,
             bus_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
             usage_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
-            _reserved0: [::drone_cortex_m::thr::vtable::Reserved; 4],
+            #[cfg(all(
+                feature = "security_extension",
+                any(
+                    cortex_m_core = "cortex_m33_r0p2",
+                    cortex_m_core = "cortex_m33_r0p3",
+                    cortex_m_core = "cortex_m33_r0p4",
+                    cortex_m_core = "cortex_m33f_r0p2",
+                    cortex_m_core = "cortex_m33f_r0p3",
+                    cortex_m_core = "cortex_m33f_r0p4",
+                )
+            ))]
+            secure_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
+            #[cfg(not(all(
+                feature = "security_extension",
+                any(
+                    cortex_m_core = "cortex_m33_r0p2",
+                    cortex_m_core = "cortex_m33_r0p3",
+                    cortex_m_core = "cortex_m33_r0p4",
+                    cortex_m_core = "cortex_m33f_r0p2",
+                    cortex_m_core = "cortex_m33f_r0p3",
+                    cortex_m_core = "cortex_m33f_r0p4",
+                )
+            )))]
+            _reserved0: [::drone_cortex_m::thr::vtable::Reserved; 1],
+            _reserved1: [::drone_cortex_m::thr::vtable::Reserved; 3],
             sv_call: Option<::drone_cortex_m::thr::vtable::Handler>,
             debug: Option<::drone_cortex_m::thr::vtable::Handler>,
-            _reserved1: [::drone_cortex_m::thr::vtable::Reserved; 1],
+            _reserved2: [::drone_cortex_m::thr::vtable::Reserved; 1],
             pend_sv: Option<::drone_cortex_m::thr::vtable::Handler>,
             sys_tick: Option<::drone_cortex_m::thr::vtable::Handler>,
             #(#vtable_tokens),*
@@ -314,10 +335,46 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             /// Creates a new vector table.
             pub const fn new(handlers: #handlers_ident) -> Self {
                 Self {
-                    reset: handlers.reset,
-                    _reserved0: [::drone_cortex_m::thr::vtable::Reserved::Vector; 4],
-                    _reserved1: [::drone_cortex_m::thr::vtable::Reserved::Vector; 1],
-                    #(#vtable_ctor_tokens),*
+                    #(#vtable_ctor_tokens,)*
+                    ..Self {
+                        reset: handlers.reset,
+                        nmi: None,
+                        hard_fault: None,
+                        mem_manage: None,
+                        bus_fault: None,
+                        usage_fault: None,
+                        #[cfg(all(
+                            feature = "security_extension",
+                            any(
+                                cortex_m_core = "cortex_m33_r0p2",
+                                cortex_m_core = "cortex_m33_r0p3",
+                                cortex_m_core = "cortex_m33_r0p4",
+                                cortex_m_core = "cortex_m33f_r0p2",
+                                cortex_m_core = "cortex_m33f_r0p3",
+                                cortex_m_core = "cortex_m33f_r0p4",
+                            )
+                        ))]
+                        secure_fault: None,
+                        #[cfg(not(all(
+                            feature = "security_extension",
+                            any(
+                                cortex_m_core = "cortex_m33_r0p2",
+                                cortex_m_core = "cortex_m33_r0p3",
+                                cortex_m_core = "cortex_m33_r0p4",
+                                cortex_m_core = "cortex_m33f_r0p2",
+                                cortex_m_core = "cortex_m33f_r0p3",
+                                cortex_m_core = "cortex_m33f_r0p4",
+                            )
+                        )))]
+                        _reserved0: [::drone_cortex_m::thr::vtable::Reserved::Vector; 1],
+                        _reserved1: [::drone_cortex_m::thr::vtable::Reserved::Vector; 3],
+                        sv_call: None,
+                        debug: None,
+                        _reserved2: [::drone_cortex_m::thr::vtable::Reserved::Vector; 1],
+                        pend_sv: None,
+                        sys_tick: None,
+                        #(#vtable_ctor_default_tokens,)*
+                    }
                 }
             }
         }
@@ -415,18 +472,4 @@ fn gen_exc(
         }
         Mode::Fn => (field_ident, None),
     }
-}
-
-fn exc_set() -> HashSet<&'static str> {
-    let mut set = HashSet::new();
-    set.insert("nmi");
-    set.insert("hard_fault");
-    set.insert("mem_manage");
-    set.insert("bus_fault");
-    set.insert("usage_fault");
-    set.insert("sv_call");
-    set.insert("debug");
-    set.insert("pend_sv");
-    set.insert("sys_tick");
-    set
 }

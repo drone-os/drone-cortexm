@@ -224,9 +224,7 @@ trait NvicBundle<T: IntBundle>: Sized {
     {
         let mut value = Self::new(0);
         f(&mut value);
-        unsafe {
-            write_volatile((Self::BASE as *mut u32).add(T::BUNDLE_NUM), value.inner());
-        }
+        unsafe { write_volatile((Self::BASE as *mut u32).add(T::BUNDLE_NUM), value.inner()) };
     }
 
     fn read<U: IntToken>(&self) -> bool {
