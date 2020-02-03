@@ -167,7 +167,7 @@ pub use drone_cortex_m_macros::int;
 pub use self::{
     exec::{ExecOutput, ThrExec},
     init::{init, ThrInitPeriph},
-    nvic::{NvicIabr, NvicIcer, NvicIcpr, NvicIser, NvicIspr, ThrNvic},
+    nvic::{NvicBlock, NvicIabr, NvicIcer, NvicIcpr, NvicIser, NvicIspr, ThrNvic},
     root::{FutureRootExt, StreamRootExt, StreamRootWait},
 };
 
@@ -179,17 +179,11 @@ use drone_core::{
 
 /// An interrupt token.
 pub trait IntToken: ThrToken {
-    /// NVIC bundle the interrupt belongs to.
-    type Bundle: IntBundle;
+    /// NVIC block the interrupt belongs to.
+    type NvicBlock: NvicBlock;
 
     /// The number of the interrupt.
     const INT_NUM: usize;
-}
-
-/// NVIC registers bundle.
-pub trait IntBundle {
-    /// The number of NVIC bundle.
-    const BUNDLE_NUM: usize;
 }
 
 /// A set of thread tokens.

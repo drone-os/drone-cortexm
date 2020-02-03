@@ -209,10 +209,11 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         );
         if let Some(struct_ident) = struct_ident {
             let int_trait = format_ident!("Int{}", num.base10_digits());
-            let bundle = format_ident!("IntBundle{}", num.base10_parse::<usize>().unwrap() / 32);
+            let nvic_block =
+                format_ident!("NvicBlock{}", num.base10_parse::<usize>().unwrap() / 32);
             thr_tokens.push(quote! {
                 impl ::drone_cortex_m::thr::IntToken for #struct_ident {
-                    type Bundle = ::drone_cortex_m::map::thr::#bundle;
+                    type NvicBlock = ::drone_cortex_m::map::thr::#nvic_block;
 
                     const INT_NUM: usize = #num;
                 }
