@@ -7,7 +7,7 @@
 //! own additions, in which case it should be used instead.
 
 #[cfg(all(
-    feature = "floating_point_unit",
+    feature = "floating-point-unit",
     any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
 ))]
 pub mod fpu;

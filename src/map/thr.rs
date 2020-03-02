@@ -16,7 +16,7 @@ exception!(IntMemManage, "Memory management.");
 exception!(IntBusFault, "Pre-fetch fault, memory access fault.");
 exception!(IntUsageFault, "Undefined instruction or illegal state.");
 #[cfg(all(
-    feature = "security_extension",
+    feature = "security-extension",
     any(
         cortex_m_core = "cortex_m33_r0p2",
         cortex_m_core = "cortex_m33_r0p3",

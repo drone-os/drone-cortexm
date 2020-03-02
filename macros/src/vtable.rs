@@ -280,7 +280,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             bus_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
             usage_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
             #[cfg(all(
-                feature = "security_extension",
+                feature = "security-extension",
                 any(
                     cortex_m_core = "cortex_m33_r0p2",
                     cortex_m_core = "cortex_m33_r0p3",
@@ -292,7 +292,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             ))]
             secure_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
             #[cfg(not(all(
-                feature = "security_extension",
+                feature = "security-extension",
                 any(
                     cortex_m_core = "cortex_m33_r0p2",
                     cortex_m_core = "cortex_m33_r0p3",
@@ -345,7 +345,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
                         bus_fault: None,
                         usage_fault: None,
                         #[cfg(all(
-                            feature = "security_extension",
+                            feature = "security-extension",
                             any(
                                 cortex_m_core = "cortex_m33_r0p2",
                                 cortex_m_core = "cortex_m33_r0p3",
@@ -357,7 +357,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
                         ))]
                         secure_fault: None,
                         #[cfg(not(all(
-                            feature = "security_extension",
+                            feature = "security-extension",
                             any(
                                 cortex_m_core = "cortex_m33_r0p2",
                                 cortex_m_core = "cortex_m33_r0p3",

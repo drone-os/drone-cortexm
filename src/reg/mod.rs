@@ -36,12 +36,38 @@ pub mod marker;
 pub mod prelude;
 
 mod atomic;
+#[cfg(all(
+    feature = "bit-band",
+    any(
+        cortex_m_core = "cortex_m3_r0p0",
+        cortex_m_core = "cortex_m3_r1p0",
+        cortex_m_core = "cortex_m3_r1p1",
+        cortex_m_core = "cortex_m3_r2p0",
+        cortex_m_core = "cortex_m3_r2p1",
+        cortex_m_core = "cortex_m4_r0p0",
+        cortex_m_core = "cortex_m4_r0p1",
+        cortex_m_core = "cortex_m4f_r0p0",
+        cortex_m_core = "cortex_m4f_r0p1",
+    )
+))]
 mod bit_band;
 
 #[doc(no_inline)]
 pub use drone_core::reg::*;
 
-pub use self::{
-    atomic::RwRegAtomic,
-    bit_band::{RegBitBand, BIT_BAND_BASE, BIT_BAND_WIDTH},
-};
+pub use self::atomic::RwRegAtomic;
+#[cfg(all(
+    feature = "bit-band",
+    any(
+        cortex_m_core = "cortex_m3_r0p0",
+        cortex_m_core = "cortex_m3_r1p0",
+        cortex_m_core = "cortex_m3_r1p1",
+        cortex_m_core = "cortex_m3_r2p0",
+        cortex_m_core = "cortex_m3_r2p1",
+        cortex_m_core = "cortex_m4_r0p0",
+        cortex_m_core = "cortex_m4_r0p1",
+        cortex_m_core = "cortex_m4f_r0p0",
+        cortex_m_core = "cortex_m4f_r0p1",
+    )
+))]
+pub use self::bit_band::{RegBitBand, BIT_BAND_BASE, BIT_BAND_WIDTH};

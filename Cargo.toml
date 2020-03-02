@@ -35,8 +35,9 @@ maintenance = { status = "actively-developed" }
 [features]
 default = []
 std = ["drone-core/std", "futures/std"]
-floating_point_unit = []
-security_extension = []
+bit-band = []
+floating-point-unit = []
+security-extension = []
 
 [dependencies.drone-cortex-m-macros]
 version = "=0.12.0"
