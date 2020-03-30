@@ -13,6 +13,7 @@ Possible log types:
 
 ### Unreleased
 
+- [removed] `itm::trace_shrink_in_place` and `itm::trace_grow_in_place` hooks
 - [added] Added Cortex-M33 support
 - [changed] Feature `fpu` renamed to `floating-point-unit`
 - [added] Added feature `security-extension`

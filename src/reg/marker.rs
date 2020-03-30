@@ -205,6 +205,7 @@ where
 {
 }
 
+#[allow(clippy::wildcard_imports)]
 #[cfg(all(
     feature = "bit-band",
     any(
