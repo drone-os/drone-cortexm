@@ -19,6 +19,9 @@ Possible log types:
 - [added] Added feature `security-extension`
 - [changed] Bit-band support moved behind the new `bit-band` feature
 - [added] Added SECURE_FAULT exception mapping
+- [changed] Add threads initialization token to `vtable!`
+- [changed] Removed `thr::init!` macro in favor of
+  `thr::init`/`thr::init_extended` functions
 
 ### v0.11.1 (2019-11-27)
 

@@ -28,6 +28,9 @@
 //!     /// Thread tokens.
 //!     pub struct Thrs;
 //!
+//!     /// Threads initialization token.
+//!     pub struct ThrsInit;
+//!
 //!     /// The array of threads.
 //!     static THREADS;
 //!
@@ -123,35 +126,6 @@ mod wake;
 #[doc(no_inline)]
 pub use drone_core::thr::*;
 
-/// Initializes the thread system and returns a set of thread tokens.
-///
-/// # Examples
-///
-/// ```no_run
-/// # #![feature(const_fn)]
-/// # drone_cortex_m::thr::vtable! {
-/// #     use Thr;
-/// #     struct Vtable;
-/// #     struct Handlers;
-/// #     struct Thrs;
-/// #     static THREADS;
-/// # }
-/// # drone_cortex_m::thr! {
-/// #     use THREADS;
-/// #     struct Thr {}
-/// #     struct ThrLocal {}
-/// # }
-/// # drone_cortex_m::cortex_m_reg_tokens!(struct Regs;);
-/// # fn main() {
-/// # let reg = unsafe { <Regs as drone_core::token::Token>::take() };
-/// use drone_cortex_m::thr;
-///
-/// let (thr, _) = thr::init!(reg, Thrs);
-/// # }
-/// ```
-#[doc(inline)]
-pub use crate::thr_init as init;
-
 /// Defines a vector table.
 ///
 /// See [the module level documentation](self) for details.
@@ -166,7 +140,7 @@ pub use drone_cortex_m_macros::int;
 
 pub use self::{
     exec::{ExecOutput, ThrExec},
-    init::{init, ThrInitPeriph},
+    init::{init, init_extended, ThrInitExtended, ThrsInitToken},
     nvic::{NvicBlock, NvicIabr, NvicIcer, NvicIcpr, NvicIser, NvicIspr, ThrNvic},
     root::{FutureRootExt, StreamRootExt, StreamRootWait},
 };

@@ -27,6 +27,7 @@
 //!     pub struct Vtable;
 //!     pub struct Handlers;
 //!     pub struct Thrs;
+//!     pub struct ThrsInit;
 //!     static THREADS;
 //!
 //!     // Define an external function handler for the SV_CALL exception.

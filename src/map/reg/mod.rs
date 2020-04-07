@@ -3,6 +3,16 @@
 #[path = "."]
 mod inner {
     mod dwt;
+    #[cfg(all(
+        feature = "floating-point-unit",
+        any(
+            cortex_m_core = "cortex_m4f_r0p0",
+            cortex_m_core = "cortex_m4f_r0p1",
+            cortex_m_core = "cortex_m33f_r0p2",
+            cortex_m_core = "cortex_m33f_r0p3",
+            cortex_m_core = "cortex_m33f_r0p4"
+        )
+    ))]
     mod fpu;
     mod itm;
     mod mpu;
@@ -10,7 +20,18 @@ mod inner {
     mod stk;
     mod tpiu;
 
-    pub use self::{dwt::*, fpu::*, itm::*, mpu::*, scb::*, stk::*, tpiu::*};
+    #[cfg(all(
+        feature = "floating-point-unit",
+        any(
+            cortex_m_core = "cortex_m4f_r0p0",
+            cortex_m_core = "cortex_m4f_r0p1",
+            cortex_m_core = "cortex_m33f_r0p2",
+            cortex_m_core = "cortex_m33f_r0p3",
+            cortex_m_core = "cortex_m33f_r0p4"
+        )
+    ))]
+    pub use self::fpu::*;
+    pub use self::{dwt::*, itm::*, mpu::*, scb::*, stk::*, tpiu::*};
 }
 
 use drone_core::reg;
@@ -43,6 +64,16 @@ reg::tokens! {
     }
 
     /// Floating point unit.
+    #[cfg(all(
+        feature = "floating-point-unit",
+        any(
+            cortex_m_core = "cortex_m4f_r0p0",
+            cortex_m_core = "cortex_m4f_r0p1",
+            cortex_m_core = "cortex_m33f_r0p2",
+            cortex_m_core = "cortex_m33f_r0p3",
+            cortex_m_core = "cortex_m33f_r0p4"
+        )
+    ))]
     pub mod FPU {
         CPACR; FPCCR; FPCAR; FPDSCR;
     }

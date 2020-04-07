@@ -19,6 +19,9 @@ struct Vtable {
     index_attrs: Vec<Attribute>,
     index_vis: Visibility,
     index_ident: Ident,
+    init_attrs: Vec<Attribute>,
+    init_vis: Visibility,
+    init_ident: Ident,
     array_attrs: Vec<Attribute>,
     array_vis: Visibility,
     array_ident: Ident,
@@ -71,6 +74,11 @@ impl Parse for Vtable {
         input.parse::<Token![struct]>()?;
         let index_ident = input.parse()?;
         input.parse::<Token![;]>()?;
+        let init_attrs = input.call(Attribute::parse_outer)?;
+        let init_vis = input.parse()?;
+        input.parse::<Token![struct]>()?;
+        let init_ident = input.parse()?;
+        input.parse::<Token![;]>()?;
         let array_attrs = input.call(Attribute::parse_outer)?;
         let array_vis = input.parse()?;
         input.parse::<Token![static]>()?;
@@ -96,6 +104,9 @@ impl Parse for Vtable {
             index_attrs,
             index_vis,
             index_ident,
+            init_attrs,
+            init_vis,
+            init_ident,
             array_attrs,
             array_vis,
             array_ident,
@@ -157,6 +168,9 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         index_attrs,
         index_vis,
         index_ident,
+        init_attrs,
+        init_vis,
+        init_ident,
         array_attrs,
         array_vis,
         array_ident,
@@ -326,6 +340,11 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             #(#index_tokens),*
         }
 
+        #(#init_attrs)*
+        #init_vis struct #init_ident {
+            __priv: (),
+        }
+
         #(#array_attrs)*
         #array_vis static mut #array_ident: [#thr; #thr_counter] = [
             #thr::new(0),
@@ -392,7 +411,27 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
 
         unsafe impl ::drone_cortex_m::thr::ThrTokens for #index_ident {}
 
+        unsafe impl ::drone_core::token::Token for #init_ident {
+            #[inline]
+            unsafe fn take() -> Self {
+                Self {
+                    __priv: (),
+                }
+            }
+        }
+
+        unsafe impl ::drone_cortex_m::thr::ThrsInitToken for #init_ident {
+            type ThrTokens = #index_ident;
+        }
+
         #(#thr_tokens)*
+
+        ::drone_cortex_m::reg::assert_taken!(scb_ccr);
+        ::drone_cortex_m::reg::assert_taken!(mpu_type);
+        ::drone_cortex_m::reg::assert_taken!(mpu_ctrl);
+        ::drone_cortex_m::reg::assert_taken!(mpu_rnr);
+        ::drone_cortex_m::reg::assert_taken!(mpu_rbar);
+        ::drone_cortex_m::reg::assert_taken!(mpu_rasr);
     };
     expanded.into()
 }

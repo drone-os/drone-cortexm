@@ -26,8 +26,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         Err(err) => compile_error!("{}", err),
     };
     if let Some(probe) = config.probe {
-        if let Some(itm) = probe.itm {
-            let baud_rate = LitInt::new(&itm.baud_rate.to_string(), Span::call_site());
+        if let Some(swo) = probe.swo {
+            let baud_rate = LitInt::new(&swo.baud_rate.to_string(), Span::call_site());
             quote!(::drone_cortex_m::itm::update_prescaler(#hclk / #baud_rate - 1)).into()
         } else {
             compile_error!("Missing `probe.itm` section in `Drone.toml`");

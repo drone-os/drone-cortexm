@@ -49,13 +49,20 @@ unsafe impl Send for SwitchContextService {}
 unsafe impl Send for SwitchBackService {}
 
 impl SvService for SwitchContextService {
+    #[allow(clippy::too_many_lines)]
     unsafe extern "C" fn handler(&mut self) {
         #[cfg(feature = "std")]
         return unimplemented!();
         let Self { stack_ptr, data_ptr } = *self;
         #[cfg(all(
             feature = "floating-point-unit",
-            any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
+            any(
+                cortex_m_core = "cortex_m4f_r0p0",
+                cortex_m_core = "cortex_m4f_r0p1",
+                cortex_m_core = "cortex_m33f_r0p2",
+                cortex_m_core = "cortex_m33f_r0p3",
+                cortex_m_core = "cortex_m33f_r0p4"
+            )
         ))]
         asm!("
             mrs      r3, control
@@ -105,7 +112,13 @@ impl SvService for SwitchContextService {
         );
         #[cfg(not(all(
             feature = "floating-point-unit",
-            any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
+            any(
+                cortex_m_core = "cortex_m4f_r0p0",
+                cortex_m_core = "cortex_m4f_r0p1",
+                cortex_m_core = "cortex_m33f_r0p2",
+                cortex_m_core = "cortex_m33f_r0p3",
+                cortex_m_core = "cortex_m33f_r0p4"
+            )
         )))]
         asm!("
             mrs      r3, control
@@ -156,7 +169,13 @@ impl SvService for SwitchBackService {
         let Self { data_ptr, data_size } = *self;
         #[cfg(all(
             feature = "floating-point-unit",
-            any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
+            any(
+                cortex_m_core = "cortex_m4f_r0p0",
+                cortex_m_core = "cortex_m4f_r0p1",
+                cortex_m_core = "cortex_m33f_r0p2",
+                cortex_m_core = "cortex_m33f_r0p3",
+                cortex_m_core = "cortex_m33f_r0p4"
+            )
         ))]
         asm!("
             movw     r2, #0xED94
@@ -218,7 +237,13 @@ impl SvService for SwitchBackService {
         );
         #[cfg(not(all(
             feature = "floating-point-unit",
-            any(cortex_m_core = "cortex_m4f_r0p0", cortex_m_core = "cortex_m4f_r0p1")
+            any(
+                cortex_m_core = "cortex_m4f_r0p0",
+                cortex_m_core = "cortex_m4f_r0p1",
+                cortex_m_core = "cortex_m33f_r0p2",
+                cortex_m_core = "cortex_m33f_r0p3",
+                cortex_m_core = "cortex_m33f_r0p4"
+            )
         )))]
         asm!("
             movw     r2, #0xED94
