@@ -1,7 +1,7 @@
 cortex_m_core := 'cortex_m4f_r0p1'
 export DRONE_RUSTFLAGS := '--cfg cortex_m_core="' + cortex_m_core + '"'
 target := 'thumbv7em-none-eabihf'
-features := 'bit-band floating-point-unit security-extension'
+features := 'bit-band floating-point-unit memory-protection-unit security-extension'
 
 # Install dependencies
 deps:

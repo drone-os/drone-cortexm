@@ -37,6 +37,7 @@ default = []
 std = ["drone-core/std", "futures/std"]
 bit-band = []
 floating-point-unit = []
+memory-protection-unit = []
 security-extension = []
 
 [dependencies.drone-cortex-m-macros]

@@ -3,8 +3,6 @@
 use super::{Data, ProcData, Yielder};
 use crate::{
     fib::{Fiber, FiberRoot, FiberState},
-    map::reg::mpu,
-    reg::prelude::*,
     sv::Switch,
 };
 use ::alloc::alloc;
@@ -15,9 +13,6 @@ use core::{
     mem::{align_of, size_of},
     pin::Pin,
 };
-use drone_core::{bitfield::Bitfield, token::Token};
-
-const GUARD_SIZE: u32 = 5;
 
 /// Stackful fiber for [`FnMut`] closure.
 ///
@@ -54,8 +49,9 @@ where
     R: Send + 'static,
 {
     pub(super) unsafe fn new(stack_size: usize, unprivileged: bool, unchecked: bool, f: F) -> Self {
-        if !unchecked && !mpu_check() {
-            panic!("MPU not present");
+        if !unchecked {
+            #[cfg(feature = "memory-protection-unit")]
+            mpu::check();
         }
         let stack_bottom = alloc::alloc(layout(stack_size));
         if stack_bottom.is_null() {
@@ -90,11 +86,7 @@ where
                     + 4
                     + 16
                     + 2
-                    + if unchecked {
-                        1
-                    } else {
-                        1 + (1 << GUARD_SIZE + 1) + (1 << GUARD_SIZE + 1) - 1
-                    },
+                    + guard_size(unchecked),
             "insufficient stack size",
         );
         let stack_ptr = stack_bottom.add(stack_size);
@@ -132,46 +124,8 @@ where
         stack_ptr.write(if unprivileged { 0b11 } else { 0b10 });
         // MPU CONFIG
         stack_ptr = stack_ptr.sub(1);
-        stack_ptr.write(if unchecked { 0 } else { Self::mpu_config(stack_bottom) });
+        stack_ptr.write(mpu_config(unchecked, stack_bottom));
         stack_ptr as *const u8
-    }
-
-    #[allow(clippy::cast_ptr_alignment)]
-    unsafe fn mpu_config(mut guard_ptr: *mut u8) -> u32 {
-        let rbar_bits = |region, addr| {
-            mpu::Rbar::<Srt>::take()
-                .default()
-                .write_addr(addr >> 5)
-                .set_valid()
-                .write_region(region)
-                .val()
-                .bits()
-        };
-        let rasr_bits = || {
-            mpu::Rasr::<Srt>::take()
-                .default()
-                .write_ap(0b000)
-                .write_size(GUARD_SIZE)
-                .set_enable()
-                .val()
-                .bits()
-        };
-        if (guard_ptr as usize).trailing_zeros() <= GUARD_SIZE {
-            guard_ptr = guard_ptr
-                .add((1 << GUARD_SIZE + 1) - ((guard_ptr as usize) & (1 << GUARD_SIZE + 1) - 1));
-        }
-        let mut table_ptr = guard_ptr as *mut u32;
-        table_ptr.write(rbar_bits(0, guard_ptr as u32));
-        table_ptr = table_ptr.add(1);
-        table_ptr.write(rasr_bits());
-        table_ptr = table_ptr.add(1);
-        for i in 1..8 {
-            table_ptr.write(rbar_bits(i, 0));
-            table_ptr = table_ptr.add(1);
-            table_ptr.write(0);
-            table_ptr = table_ptr.add(1);
-        }
-        table_ptr.sub(16) as u32
     }
 
     unsafe fn stack_reserve<T>(mut stack_ptr: *mut u8) -> *mut u8 {
@@ -272,12 +226,81 @@ where
 {
 }
 
-fn mpu_check() -> bool {
-    #[cfg(feature = "std")]
-    return true;
-    unsafe { mpu::Type::<Srt>::take().load().dregion() != 0 }
+fn guard_size(unchecked: bool) -> usize {
+    if !unchecked {
+        #[cfg(feature = "memory-protection-unit")]
+        return mpu::guard_size();
+    }
+    1
+}
+
+#[allow(unused_variables)]
+unsafe fn mpu_config(unchecked: bool, stack_bottom: *mut u8) -> u32 {
+    if !unchecked {
+        #[cfg(feature = "memory-protection-unit")]
+        return mpu::config(stack_bottom);
+    }
+    0
 }
 
 unsafe fn layout(stack_size: usize) -> Layout {
     Layout::from_size_align_unchecked(stack_size, 1)
+}
+
+#[cfg(feature = "memory-protection-unit")]
+mod mpu {
+    use crate::{map::reg::mpu, reg::prelude::*};
+    use drone_core::{bitfield::Bitfield, token::Token};
+
+    const GUARD_SIZE: u32 = 5;
+
+    pub(super) fn check() {
+        #[cfg(feature = "std")]
+        return;
+        if unsafe { mpu::Type::<Srt>::take().load().dregion() == 0 } {
+            panic!("MPU not present");
+        }
+    }
+
+    pub(super) fn guard_size() -> usize {
+        1 + (1 << GUARD_SIZE + 1) + (1 << GUARD_SIZE + 1) - 1
+    }
+
+    #[allow(clippy::cast_ptr_alignment)]
+    pub(super) unsafe fn config(mut guard_ptr: *mut u8) -> u32 {
+        let rbar_bits = |region, addr| {
+            mpu::Rbar::<Srt>::take()
+                .default()
+                .write_addr(addr >> 5)
+                .set_valid()
+                .write_region(region)
+                .val()
+                .bits()
+        };
+        let rasr_bits = || {
+            mpu::Rasr::<Srt>::take()
+                .default()
+                .write_ap(0b000)
+                .write_size(GUARD_SIZE)
+                .set_enable()
+                .val()
+                .bits()
+        };
+        if (guard_ptr as usize).trailing_zeros() <= GUARD_SIZE {
+            guard_ptr = guard_ptr
+                .add((1 << GUARD_SIZE + 1) - ((guard_ptr as usize) & (1 << GUARD_SIZE + 1) - 1));
+        }
+        let mut table_ptr = guard_ptr as *mut u32;
+        table_ptr.write(rbar_bits(0, guard_ptr as u32));
+        table_ptr = table_ptr.add(1);
+        table_ptr.write(rasr_bits());
+        table_ptr = table_ptr.add(1);
+        for i in 1..8 {
+            table_ptr.write(rbar_bits(i, 0));
+            table_ptr = table_ptr.add(1);
+            table_ptr.write(0);
+            table_ptr = table_ptr.add(1);
+        }
+        table_ptr.sub(16) as u32
+    }
 }

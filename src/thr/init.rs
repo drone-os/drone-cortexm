@@ -1,10 +1,6 @@
 #![cfg_attr(feature = "std", allow(unreachable_code, unused_mut))]
 
-use crate::{
-    map::reg::{mpu, scb},
-    reg::prelude::*,
-    thr::ThrTokens,
-};
+use crate::{map::reg::scb, reg::prelude::*, thr::ThrTokens};
 use drone_core::token::Token;
 
 /// Threads initialization token.
@@ -74,8 +70,9 @@ pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExten
         usersetmpend: scb_ccr_usersetmpend,
         nonbasethrdena,
     } = scb_ccr;
+    #[cfg(feature = "memory-protection-unit")]
     unsafe {
-        mpu_reset();
+        mpu::reset();
     }
     drop(stkalign);
     drop(nonbasethrdena);
@@ -128,49 +125,55 @@ pub fn init<T: ThrsInitToken>(token: T) -> T::ThrTokens {
     thr
 }
 
-static MPU_RESET_TABLE: [u32; 16] = [
-    rbar_reset(0),
-    0,
-    rbar_reset(1),
-    0,
-    rbar_reset(2),
-    0,
-    rbar_reset(3),
-    0,
-    rbar_reset(4),
-    0,
-    rbar_reset(5),
-    0,
-    rbar_reset(6),
-    0,
-    rbar_reset(7),
-    0,
-];
+#[cfg(feature = "memory-protection-unit")]
+mod mpu {
+    use crate::{map::reg::mpu, reg::prelude::*};
+    use drone_core::token::Token;
 
-#[allow(unused_assignments, unused_variables)]
-unsafe fn mpu_reset() {
-    #[cfg(feature = "std")]
-    return unimplemented!();
-    let mpu_type = mpu::Type::<Srt>::take();
-    let mpu_ctrl = mpu::Ctrl::<Srt>::take();
-    let mut table_ptr = &MPU_RESET_TABLE;
-    if mpu_type.load().dregion() == 0 {
-        return;
-    }
-    mpu_ctrl.reset();
-    asm!("
+    static MPU_RESET_TABLE: [u32; 16] = [
+        rbar_reset(0),
+        0,
+        rbar_reset(1),
+        0,
+        rbar_reset(2),
+        0,
+        rbar_reset(3),
+        0,
+        rbar_reset(4),
+        0,
+        rbar_reset(5),
+        0,
+        rbar_reset(6),
+        0,
+        rbar_reset(7),
+        0,
+    ];
+
+    #[allow(unused_assignments, unused_variables)]
+    pub(super) unsafe fn reset() {
+        #[cfg(feature = "std")]
+        return unimplemented!();
+        let mpu_type = mpu::Type::<Srt>::take();
+        let mpu_ctrl = mpu::Ctrl::<Srt>::take();
+        let mut table_ptr = &MPU_RESET_TABLE;
+        if mpu_type.load().dregion() == 0 {
+            return;
+        }
+        mpu_ctrl.reset();
+        asm!("
         ldmia $0!, {r5, r6, r8, r9, r10, r11, r12, r14}
         stmia $1, {r5, r6, r8, r9, r10, r11, r12, r14}
         ldmia $0!, {r5, r6, r8, r9, r10, r11, r12, r14}
         stmia $1, {r5, r6, r8, r9, r10, r11, r12, r14}
     "   : "+&rm"(table_ptr)
-        : "r"(mpu::Rbar::<Srt>::ADDRESS)
-        : "r5", "r6", "r8", "r9", "r10", "r11", "r12", "r14"
-        : "volatile"
-    );
-}
+            : "r"(mpu::Rbar::<Srt>::ADDRESS)
+            : "r5", "r6", "r8", "r9", "r10", "r11", "r12", "r14"
+            : "volatile"
+        );
+    }
 
-#[allow(clippy::cast_lossless)]
-const fn rbar_reset(region: u8) -> u32 {
-    1 << 4 | region as u32 & 0b1111
+    #[allow(clippy::cast_lossless)]
+    const fn rbar_reset(region: u8) -> u32 {
+        1 << 4 | region as u32 & 0b1111
+    }
 }

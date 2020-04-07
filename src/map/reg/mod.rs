@@ -3,35 +3,20 @@
 #[path = "."]
 mod inner {
     mod dwt;
-    #[cfg(all(
-        feature = "floating-point-unit",
-        any(
-            cortex_m_core = "cortex_m4f_r0p0",
-            cortex_m_core = "cortex_m4f_r0p1",
-            cortex_m_core = "cortex_m33f_r0p2",
-            cortex_m_core = "cortex_m33f_r0p3",
-            cortex_m_core = "cortex_m33f_r0p4"
-        )
-    ))]
+    #[cfg(feature = "floating-point-unit")]
     mod fpu;
     mod itm;
+    #[cfg(feature = "memory-protection-unit")]
     mod mpu;
     mod scb;
     mod stk;
     mod tpiu;
 
-    #[cfg(all(
-        feature = "floating-point-unit",
-        any(
-            cortex_m_core = "cortex_m4f_r0p0",
-            cortex_m_core = "cortex_m4f_r0p1",
-            cortex_m_core = "cortex_m33f_r0p2",
-            cortex_m_core = "cortex_m33f_r0p3",
-            cortex_m_core = "cortex_m33f_r0p4"
-        )
-    ))]
+    #[cfg(feature = "floating-point-unit")]
     pub use self::fpu::*;
-    pub use self::{dwt::*, itm::*, mpu::*, scb::*, stk::*, tpiu::*};
+    #[cfg(feature = "memory-protection-unit")]
+    pub use self::mpu::*;
+    pub use self::{dwt::*, itm::*, scb::*, stk::*, tpiu::*};
 }
 
 use drone_core::reg;
@@ -64,21 +49,13 @@ reg::tokens! {
     }
 
     /// Floating point unit.
-    #[cfg(all(
-        feature = "floating-point-unit",
-        any(
-            cortex_m_core = "cortex_m4f_r0p0",
-            cortex_m_core = "cortex_m4f_r0p1",
-            cortex_m_core = "cortex_m33f_r0p2",
-            cortex_m_core = "cortex_m33f_r0p3",
-            cortex_m_core = "cortex_m33f_r0p4"
-        )
-    ))]
+    #[cfg(feature = "floating-point-unit")]
     pub mod FPU {
         CPACR; FPCCR; FPCAR; FPDSCR;
     }
 
     /// Memory protection unit.
+    #[cfg(feature = "memory-protection-unit")]
     pub mod MPU {
         TYPE; CTRL; RNR; RBAR; RASR;
     }

@@ -54,16 +54,7 @@ impl SvService for SwitchContextService {
         #[cfg(feature = "std")]
         return unimplemented!();
         let Self { stack_ptr, data_ptr } = *self;
-        #[cfg(all(
-            feature = "floating-point-unit",
-            any(
-                cortex_m_core = "cortex_m4f_r0p0",
-                cortex_m_core = "cortex_m4f_r0p1",
-                cortex_m_core = "cortex_m33f_r0p2",
-                cortex_m_core = "cortex_m33f_r0p3",
-                cortex_m_core = "cortex_m33f_r0p4"
-            )
-        ))]
+        #[cfg(feature = "floating-point-unit")]
         asm!("
             mrs      r3, control
             tst      lr, #0x4
@@ -110,16 +101,7 @@ impl SvService for SwitchContextService {
             : "cc", "memory"
             : "volatile"
         );
-        #[cfg(not(all(
-            feature = "floating-point-unit",
-            any(
-                cortex_m_core = "cortex_m4f_r0p0",
-                cortex_m_core = "cortex_m4f_r0p1",
-                cortex_m_core = "cortex_m33f_r0p2",
-                cortex_m_core = "cortex_m33f_r0p3",
-                cortex_m_core = "cortex_m33f_r0p4"
-            )
-        )))]
+        #[cfg(not(feature = "floating-point-unit"))]
         asm!("
             mrs      r3, control
             tst      lr, #0x4
@@ -167,16 +149,7 @@ impl SvService for SwitchBackService {
         #[cfg(feature = "std")]
         return unimplemented!();
         let Self { data_ptr, data_size } = *self;
-        #[cfg(all(
-            feature = "floating-point-unit",
-            any(
-                cortex_m_core = "cortex_m4f_r0p0",
-                cortex_m_core = "cortex_m4f_r0p1",
-                cortex_m_core = "cortex_m33f_r0p2",
-                cortex_m_core = "cortex_m33f_r0p3",
-                cortex_m_core = "cortex_m33f_r0p4"
-            )
-        ))]
+        #[cfg(feature = "floating-point-unit")]
         asm!("
             movw     r2, #0xED94
             movt     r2, #0xE000
@@ -235,16 +208,7 @@ impl SvService for SwitchBackService {
             : "cc", "memory"
             : "volatile"
         );
-        #[cfg(not(all(
-            feature = "floating-point-unit",
-            any(
-                cortex_m_core = "cortex_m4f_r0p0",
-                cortex_m_core = "cortex_m4f_r0p1",
-                cortex_m_core = "cortex_m33f_r0p2",
-                cortex_m_core = "cortex_m33f_r0p3",
-                cortex_m_core = "cortex_m33f_r0p4"
-            )
-        )))]
+        #[cfg(not(feature = "floating-point-unit"))]
         asm!("
             movw     r2, #0xED94
             movt     r2, #0xE000

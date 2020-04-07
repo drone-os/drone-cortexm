@@ -22,6 +22,7 @@ Possible log types:
 - [changed] Add threads initialization token to `vtable!`
 - [changed] Removed `thr::init!` macro in favor of
   `thr::init`/`thr::init_extended` functions
+- [added] Add `memory-protection-unit` feature
 
 ### v0.11.1 (2019-11-27)
 
