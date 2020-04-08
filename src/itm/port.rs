@@ -13,8 +13,8 @@ pub struct Port {
     address: usize,
 }
 
-pub trait Integer: Copy {
-    fn write(self, address: usize);
+pub trait Value: Copy {
+    fn port_write(address: usize, value: Self);
 }
 
 impl Port {
@@ -23,14 +23,16 @@ impl Port {
     /// # Panics
     ///
     /// If `port` is out of bounds.
+    #[inline]
     pub fn new(address: usize) -> Self {
         assert!(address < 0x20);
         Self { address: ADDRESS_BASE + (address << 2) }
     }
 
     /// Writes `bytes` to the stimulus port.
+    #[inline]
     pub fn write_bytes(self, bytes: &[u8]) {
-        fn write_slice<T: Integer>(port: Port, slice: &[T]) {
+        fn write_slice<T: Value>(port: Port, slice: &[T]) {
             for item in slice {
                 port.write(*item);
             }
@@ -55,22 +57,24 @@ impl Port {
 
     /// Writes `value` of type `u8`, `u16` or `u32` to the stimulus port.
     ///
-    /// This method could be chained.
-    pub fn write<T: Integer>(self, value: T) -> Self {
-        value.write(self.address);
+    /// This method can be chained.
+    #[inline]
+    pub fn write<T: Value>(self, value: T) -> Self {
+        T::port_write(self.address, value);
         self
     }
 }
 
 impl Write for Port {
+    #[inline]
     fn write_str(&mut self, string: &str) -> fmt::Result {
         self.write_bytes(string.as_bytes());
         Ok(())
     }
 }
 
-impl Integer for u8 {
-    fn write(self, address: usize) {
+impl Value for u8 {
+    fn port_write(address: usize, value: Self) {
         #[cfg(feature = "std")]
         return unimplemented!();
         unsafe {
@@ -83,7 +87,7 @@ impl Integer for u8 {
                 cmpne r0, #1
                 beq 0b
             "   :
-                : "r"(self), "r"(address as *mut Self)
+                : "r"(value), "r"(address as *mut Self)
                 : "r0", "cc"
                 : "volatile"
             );
@@ -91,8 +95,8 @@ impl Integer for u8 {
     }
 }
 
-impl Integer for u16 {
-    fn write(self, address: usize) {
+impl Value for u16 {
+    fn port_write(address: usize, value: Self) {
         #[cfg(feature = "std")]
         return unimplemented!();
         unsafe {
@@ -105,7 +109,7 @@ impl Integer for u16 {
                 cmpne r0, #1
                 beq 0b
             "   :
-                : "r"(self), "r"(address as *mut Self)
+                : "r"(value), "r"(address as *mut Self)
                 : "r0", "cc"
                 : "volatile"
             );
@@ -113,8 +117,8 @@ impl Integer for u16 {
     }
 }
 
-impl Integer for u32 {
-    fn write(self, address: usize) {
+impl Value for u32 {
+    fn port_write(address: usize, value: Self) {
         #[cfg(feature = "std")]
         return unimplemented!();
         unsafe {
@@ -127,7 +131,7 @@ impl Integer for u32 {
                 cmpne r0, #1
                 beq 0b
             "   :
-                : "r"(self), "r"(address as *mut Self)
+                : "r"(value), "r"(address as *mut Self)
                 : "r0", "cc"
                 : "volatile"
             );

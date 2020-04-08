@@ -6,7 +6,6 @@
 
 #![cfg_attr(feature = "std", allow(unreachable_code, unused_variables))]
 
-mod macros;
 mod port;
 
 /// Updates the SWO prescaler register to match the baud-rate defined at
@@ -21,29 +20,13 @@ use crate::{
     processor,
     reg::prelude::*,
 };
-use core::{
-    alloc::Layout,
-    fmt::{self, Write},
-    ptr::read_volatile,
-};
-use drone_core::{heap::Pool, token::Token};
-
-/// Port number of the standard output stream.
-pub const STDOUT_PORT: usize = 0;
-
-/// Port number of the standard error stream.
-pub const STDERR_PORT: usize = 1;
-
-/// Port number of the heap trace stream.
-pub const HEAP_TRACE_PORT: usize = 31;
-
-/// XOR pattern for heap trace output.
-pub const HEAP_TRACE_KEY: u32 = 0xC5AC_CE55;
+use core::ptr::read_volatile;
+use drone_core::token::Token;
 
 const ITM_TER: usize = 0xE000_0E00;
 const ITM_TCR: usize = 0xE000_0E80;
 
-/// Returns `true` if a debug probe is connected and listening to the ITM
+/// Returns `true` if the debug probe is connected and listening to the ITM
 /// output.
 #[inline]
 pub fn is_enabled() -> bool {
@@ -52,7 +35,7 @@ pub fn is_enabled() -> bool {
     unsafe { read_volatile(ITM_TCR as *const u32) & 1 != 0 }
 }
 
-/// Returns `true` if a debug probe is connected and listening to the ITM port
+/// Returns `true` if the debug probe is connected and listening to the ITM port
 /// `port` output.
 #[inline]
 pub fn is_port_enabled(port: usize) -> bool {
@@ -61,46 +44,23 @@ pub fn is_port_enabled(port: usize) -> bool {
     unsafe { read_volatile(ITM_TER as *const u32) & 1 << port != 0 }
 }
 
-/// Writes `string` to the stimulus port number `address`.
-///
-/// The presence of a debug probe is not checked, so it is recommended to use it
-/// together with [`is_port_enabled`].
-///
-/// # Examples
-///
-/// ```
-/// use drone_cortex_m::itm;
-///
-/// if itm::is_port_enabled(11) {
-///     itm::write_str(11, "hello there!\n");
-/// }
-/// ```
-#[inline(never)]
-pub fn write_str(address: usize, string: &str) {
-    // Can never be `Err(_)`
-    Port::new(address).write_str(string).unwrap_or(())
+/// Writes `bytes` to the ITM port number `port`.
+#[inline]
+pub fn write_bytes(port: u8, bytes: &[u8]) {
+    #[cfg(feature = "std")]
+    return;
+    Port::new(port as usize).write_bytes(bytes);
 }
 
-/// Writes `args` to the stimulus port number `address`.
-///
-/// The presence of a debug probe is not checked, so it is recommended to use it
-/// together with [`is_port_enabled`].
-///
-/// # Examples
-///
-/// ```
-/// use drone_cortex_m::itm;
-///
-/// let a = 0;
-///
-/// if itm::is_port_enabled(11) {
-///     itm::write_fmt(11, format_args!("a = {}\n", a));
-/// }
-/// ```
-#[inline(never)]
-pub fn write_fmt(address: usize, args: fmt::Arguments<'_>) {
-    // Can never be `Err(_)`
-    Port::new(address).write_fmt(args).unwrap_or(())
+/// Writes `bytes` to the ITM port number `port`, ensuring no other writes can
+/// be made in between.
+#[inline]
+pub fn write_bytes_exclusive(port: u8, bytes: &[u8]) {
+    #[cfg(feature = "std")]
+    return;
+    unsafe { asm!("cpsid i" :::: "volatile") };
+    write_bytes(port, bytes);
+    unsafe { asm!("cpsie i" :::: "volatile") };
 }
 
 /// Blocks until all pending packets are transmitted.
@@ -135,38 +95,54 @@ pub fn update_prescaler(swoscaler: u32) {
     sync();
 }
 
-/// Logs an allocation to the ITM port #31.
-///
-/// This function is a no-op if no debug probe is connected and listening.
-#[inline(always)]
-pub fn trace_alloc(layout: Layout, _pool: &Pool) {
-    #[inline(never)]
-    fn instrument(layout: Layout) {
-        #[cfg(feature = "std")]
-        return unimplemented!();
-        unsafe { asm!("cpsid i" :::: "volatile") };
-        Port::new(HEAP_TRACE_PORT).write(0xCDAB_u16).write((layout.size() as u32) ^ HEAP_TRACE_KEY);
-        unsafe { asm!("cpsie i" :::: "volatile") };
-    }
-    if is_port_enabled(HEAP_TRACE_PORT) {
-        instrument(layout);
-    }
+#[doc(hidden)]
+#[macro_export]
+macro_rules! itm_init {
+    () => {
+        $crate::reg::assert_taken!(dwt_cyccnt);
+        $crate::reg::assert_taken!(itm_tpr);
+        $crate::reg::assert_taken!(itm_tcr);
+        $crate::reg::assert_taken!(itm_lar);
+        $crate::reg::assert_taken!(tpiu_acpr);
+        $crate::reg::assert_taken!(tpiu_sppr);
+        $crate::reg::assert_taken!(tpiu_ffcr);
+
+        #[no_mangle]
+        extern "C" fn drone_log_is_port_enabled(port: u8) -> bool {
+            $crate::itm::is_port_enabled(port as usize)
+        }
+
+        #[no_mangle]
+        extern "C" fn drone_log_port_write_bytes(
+            port: u8,
+            exclusive: bool,
+            buffer: *const u8,
+            count: usize,
+        ) {
+            let bytes = unsafe { ::core::slice::from_raw_parts(buffer, count) };
+            if exclusive {
+                $crate::itm::write_bytes_exclusive(port, bytes);
+            } else {
+                $crate::itm::write_bytes(port, bytes);
+            }
+        }
+
+        #[no_mangle]
+        extern "C" fn drone_log_flush() {
+            $crate::itm::flush();
+        }
+    };
 }
 
-/// Logs a deallocation to the ITM port #31.
+/// Initializes ITM logging.
 ///
-/// This function is a no-op if no debug probe is connected and listening.
-#[inline(always)]
-pub fn trace_dealloc(layout: Layout, _pool: &Pool) {
-    #[inline(never)]
-    fn instrument(layout: Layout) {
-        #[cfg(feature = "std")]
-        return unimplemented!();
-        unsafe { asm!("cpsid i" :::: "volatile") };
-        Port::new(HEAP_TRACE_PORT).write(0xBADC_u16).write((layout.size() as u32) ^ HEAP_TRACE_KEY);
-        unsafe { asm!("cpsie i" :::: "volatile") };
-    }
-    if is_port_enabled(HEAP_TRACE_PORT) {
-        instrument(layout);
-    }
-}
+/// # Examples
+///
+/// ```
+/// #![feature(proc_macro_hygiene)]
+/// use drone_cortex_m::itm;
+///
+/// itm::init!();
+/// ```
+#[doc(inline)]
+pub use crate::itm_init as init;

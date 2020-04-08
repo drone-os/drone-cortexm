@@ -13,7 +13,6 @@ Possible log types:
 
 ### Unreleased
 
-- [removed] `itm::trace_shrink_in_place` and `itm::trace_grow_in_place` hooks
 - [added] Added Cortex-M33 support
 - [changed] Feature `fpu` renamed to `floating-point-unit`
 - [added] Added feature `security-extension`
@@ -23,6 +22,13 @@ Possible log types:
 - [changed] Removed `thr::init!` macro in favor of
   `thr::init`/`thr::init_extended` functions
 - [added] Add `memory-protection-unit` feature
+- [removed] Remove `itm::trace_*` hooks
+- [removed] Remove `dbg`, `eprint`, `eprintln`, `print`, `println` macros
+- [removed] Remove `itm::*_PORT`, `itm::HEAP_TRACE_KEY` constants
+- [removed] Remove `itm::write_str`, `itm::write_fmt` functions
+- [added] Add `itm::init!` macro
+- [changed] `drone-cortex-m` is no longer responsible for defining lang items
+- [removed] Remove `prelude` module
 
 ### v0.11.1 (2019-11-27)
 

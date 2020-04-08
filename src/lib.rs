@@ -41,7 +41,6 @@
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
 #![feature(exhaustive_patterns)]
-#![feature(lang_items)]
 #![feature(marker_trait_attr)]
 #![feature(naked_functions)]
 #![feature(never_type)]
@@ -71,15 +70,13 @@ pub mod drv;
 pub mod fib;
 pub mod itm;
 pub mod map;
-pub mod prelude;
 pub mod proc_loop;
 pub mod processor;
 pub mod reg;
 pub mod sv;
 pub mod thr;
 
-#[cfg(not(feature = "std"))]
-mod lang_items;
+mod rt;
 
 mod drone_core_macro_reexport {
     pub use drone_core::{reg, thr};
@@ -95,4 +92,4 @@ pub use drone_cortex_m_macros::sv;
 
 #[prelude_import]
 #[allow(unused_imports)]
-use crate::prelude::*;
+use drone_core::prelude::*;

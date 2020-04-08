@@ -3,7 +3,7 @@
 
 #[prelude_import]
 #[allow(unused_imports)]
-use drone_cortex_m::prelude::*;
+use drone_core::prelude::*;
 
 use core::mem::size_of;
 use drone_cortex_m::{
