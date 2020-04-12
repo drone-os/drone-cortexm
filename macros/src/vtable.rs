@@ -426,12 +426,12 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
 
         #(#thr_tokens)*
 
-        ::drone_cortex_m::reg::assert_taken!(scb_ccr);
-        ::drone_cortex_m::reg::assert_taken!(mpu_type);
-        ::drone_cortex_m::reg::assert_taken!(mpu_ctrl);
-        ::drone_cortex_m::reg::assert_taken!(mpu_rnr);
-        ::drone_cortex_m::reg::assert_taken!(mpu_rbar);
-        ::drone_cortex_m::reg::assert_taken!(mpu_rasr);
+        ::drone_cortex_m::reg::assert_taken!("scb_ccr");
+        ::drone_cortex_m::reg::assert_taken!("mpu_type");
+        ::drone_cortex_m::reg::assert_taken!("mpu_ctrl");
+        ::drone_cortex_m::reg::assert_taken!("mpu_rnr");
+        ::drone_cortex_m::reg::assert_taken!("mpu_rbar");
+        ::drone_cortex_m::reg::assert_taken!("mpu_rasr");
     };
     expanded.into()
 }

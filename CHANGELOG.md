@@ -26,7 +26,9 @@ Possible log types:
 - [removed] Remove `dbg`, `eprint`, `eprintln`, `print`, `println` macros
 - [removed] Remove `itm::*_PORT`, `itm::HEAP_TRACE_KEY` constants
 - [removed] Remove `itm::write_str`, `itm::write_fmt` functions
-- [added] Add `itm::init!` macro
+- [removed] Remove `itm::update_prescaler!` macro in favor of
+  `itm::update_prescaler` function
+- [added] Add `itm::set_log!` macro
 - [changed] `drone-cortex-m` is no longer responsible for defining lang items
 - [removed] Remove `prelude` module
 

@@ -30,7 +30,7 @@ pub struct ThrInitExtended {
 /// # #![feature(const_fn)]
 /// # #![feature(proc_macro_hygiene)]
 /// # use drone_core::token::Token;
-/// # drone_cortex_m::thr::vtable! {
+/// # thr::vtable! {
 /// #     use Thr;
 /// #     struct Vtable;
 /// #     struct Handlers;
@@ -38,23 +38,26 @@ pub struct ThrInitExtended {
 /// #     struct ThrsInit;
 /// #     static THREADS;
 /// # }
-/// # drone_cortex_m::thr! {
+/// # thr! {
 /// #     use THREADS;
 /// #     struct Thr {}
 /// #     struct ThrLocal {}
 /// # }
-/// # drone_cortex_m::cortex_m_reg_tokens! {
-/// #     struct Regs;
-/// #     !scb_ccr;
-/// #     !mpu_type; !mpu_ctrl; !mpu_rnr; !mpu_rbar; !mpu_rasr;
-/// # }
-/// # fn main() {
-/// # let reg = unsafe { Regs::take() };
-/// # let thr_init = unsafe { ThrsInit::take() };
-/// use drone_cortex_m::{reg::prelude::*, thr};
+/// use drone_cortex_m::{cortex_m_reg_tokens, reg::prelude::*, thr};
 ///
-/// let (thr, extended) = thr::init_extended(thr_init);
-/// extended.scb_ccr_div_0_trp.set_bit();
+/// cortex_m_reg_tokens! {
+///     struct Regs;
+///     !scb_ccr;
+///     !mpu_type; !mpu_ctrl; !mpu_rnr; !mpu_rbar; !mpu_rasr;
+/// }
+///
+/// fn handler(reg: Regs, thr_init: ThrsInit) {
+///     let (thr, extended) = thr::init_extended(thr_init);
+///     extended.scb_ccr_div_0_trp.set_bit();
+/// }
+///
+/// # fn main() {
+/// #     handler(unsafe { Regs::take() }, unsafe { ThrsInit::take() })
 /// # }
 /// ```
 #[allow(clippy::needless_pass_by_value)]
@@ -92,7 +95,7 @@ pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExten
 /// # #![feature(const_fn)]
 /// # #![feature(proc_macro_hygiene)]
 /// # use drone_core::token::Token;
-/// # drone_cortex_m::thr::vtable! {
+/// # thr::vtable! {
 /// #     use Thr;
 /// #     struct Vtable;
 /// #     struct Handlers;
@@ -100,22 +103,25 @@ pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExten
 /// #     struct ThrsInit;
 /// #     static THREADS;
 /// # }
-/// # drone_cortex_m::thr! {
+/// # thr! {
 /// #     use THREADS;
 /// #     struct Thr {}
 /// #     struct ThrLocal {}
 /// # }
-/// # drone_cortex_m::cortex_m_reg_tokens! {
-/// #     struct Regs;
-/// #     !scb_ccr;
-/// #     !mpu_type; !mpu_ctrl; !mpu_rnr; !mpu_rbar; !mpu_rasr;
-/// # }
-/// # fn main() {
-/// # let reg = unsafe { Regs::take() };
-/// # let thr_init = unsafe { ThrsInit::take() };
-/// use drone_cortex_m::thr;
+/// use drone_cortex_m::{cortex_m_reg_tokens, thr};
 ///
-/// let thr = thr::init(thr_init);
+/// cortex_m_reg_tokens! {
+///     struct Regs;
+///     !scb_ccr;
+///     !mpu_type; !mpu_ctrl; !mpu_rnr; !mpu_rbar; !mpu_rasr;
+/// }
+///
+/// fn handler(reg: Regs, thr_init: ThrsInit) {
+///     let thr = thr::init(thr_init);
+/// }
+///
+/// # fn main() {
+/// #     handler(unsafe { Regs::take() }, unsafe { ThrsInit::take() })
 /// # }
 /// ```
 #[allow(clippy::needless_pass_by_value)]
