@@ -28,7 +28,8 @@ Possible log types:
 - [removed] Remove `itm::write_str`, `itm::write_fmt` functions
 - [removed] Remove `itm::update_prescaler!` macro in favor of
   `itm::update_prescaler` function
-- [added] Add `itm::set_log!` macro
+- [changed] Renamed `itm` module to `swo`
+- [added] Add `swo::set_log!` macro
 - [changed] `drone-cortex-m` is no longer responsible for defining lang items
 - [removed] Remove `prelude` module
 

@@ -68,12 +68,12 @@ extern crate alloc;
 
 pub mod drv;
 pub mod fib;
-pub mod itm;
 pub mod map;
 pub mod proc_loop;
 pub mod processor;
 pub mod reg;
 pub mod sv;
+pub mod swo;
 pub mod thr;
 
 mod rt;

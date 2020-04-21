@@ -1,8 +1,8 @@
-//! The Instrumentation Trace Macrocell.
+//! Single Wire Output interface.
 //!
-//! This module provides interface to transmit log data through the SWO pin.
-//!
-//! ITM ports #0 and #1 are reserved for STDOUT and STDERR respectively.
+//! This module provides interface for ITM (Instrumentation Trace Macrocell)
+//! output through SWO (Single Wire Output) pin, and optionally the respective
+//! implementation for `drone_core::log` facade (via [`swo::set_log`] macro).
 
 #![cfg_attr(feature = "std", allow(unreachable_code, unused_variables))]
 
@@ -18,6 +18,9 @@ use crate::{
 use core::ptr::read_volatile;
 use drone_core::token::Token;
 
+/// Number of ports.
+pub const PORTS_COUNT: u8 = 32;
+
 const ITM_TER: usize = 0xE000_0E00;
 const ITM_TCR: usize = 0xE000_0E80;
 
@@ -26,7 +29,7 @@ const ITM_TCR: usize = 0xE000_0E80;
 #[inline]
 pub fn is_enabled() -> bool {
     #[cfg(feature = "std")]
-    return false;
+    return unimplemented!();
     unsafe { read_volatile(ITM_TCR as *const u32) & 1 != 0 }
 }
 
@@ -35,27 +38,8 @@ pub fn is_enabled() -> bool {
 #[inline]
 pub fn is_port_enabled(port: usize) -> bool {
     #[cfg(feature = "std")]
-    return false;
+    return unimplemented!();
     unsafe { read_volatile(ITM_TER as *const u32) & 1 << port != 0 }
-}
-
-/// Writes `bytes` to the ITM port number `port`.
-#[inline]
-pub fn write_bytes(port: u8, bytes: &[u8]) {
-    #[cfg(feature = "std")]
-    return;
-    Port::new(port as usize).write_bytes(bytes);
-}
-
-/// Writes `bytes` to the ITM port number `port`, ensuring no other writes can
-/// be made in between.
-#[inline]
-pub fn write_bytes_exclusive(port: u8, bytes: &[u8]) {
-    #[cfg(feature = "std")]
-    return;
-    unsafe { asm!("cpsid i" :::: "volatile") };
-    write_bytes(port, bytes);
-    unsafe { asm!("cpsie i" :::: "volatile") };
 }
 
 /// Blocks until all pending packets are transmitted.
@@ -79,7 +63,7 @@ pub fn flush() {
 #[inline]
 pub fn sync() {
     #[cfg(feature = "std")]
-    return;
+    return unimplemented!();
     let mut cyccnt = unsafe { dwt::Cyccnt::<Urt>::take() };
     cyccnt.store(|r| r.write_cyccnt(0xFFFF_FFFF));
 }
@@ -88,7 +72,7 @@ pub fn sync() {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// # #![feature(proc_macro_hygiene)]
 /// # drone_core::config_override! { "
 /// # [memory]
@@ -104,14 +88,14 @@ pub fn sync() {
 /// # baud-rate = 115200
 /// # " }
 /// use drone_core::log;
-/// use drone_cortex_m::itm;
+/// use drone_cortex_m::swo;
 ///
-/// itm::update_prescaler(72_000_000 / log::baud_rate!() - 1);
+/// swo::update_prescaler(72_000_000 / log::baud_rate!() - 1);
 /// ```
 #[inline]
 pub fn update_prescaler(swoscaler: u32) {
     #[cfg(feature = "std")]
-    return;
+    return unimplemented!();
     let mut acpr = unsafe { tpiu::Acpr::<Urt>::take() };
     acpr.store(|r| r.write_swoscaler(swoscaler));
     sync();
@@ -119,7 +103,7 @@ pub fn update_prescaler(swoscaler: u32) {
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! itm_set_log {
+macro_rules! swo_set_log {
     () => {
         const _: () = {
             $crate::reg::assert_taken!("dwt_cyccnt");
@@ -132,39 +116,45 @@ macro_rules! itm_set_log {
 
             #[no_mangle]
             extern "C" fn drone_log_is_enabled(port: u8) -> bool {
-                $crate::itm::is_port_enabled(port as usize)
+                $crate::swo::is_port_enabled(port as usize)
             }
 
             #[no_mangle]
-            extern "C" fn drone_log_write_bytes(
-                port: u8,
-                exclusive: bool,
-                buffer: *const u8,
-                count: usize,
-            ) {
+            extern "C" fn drone_log_write_bytes(port: u8, buffer: *const u8, count: usize) {
                 let bytes = unsafe { ::core::slice::from_raw_parts(buffer, count) };
-                if exclusive {
-                    $crate::itm::write_bytes_exclusive(port, bytes);
-                } else {
-                    $crate::itm::write_bytes(port, bytes);
-                }
+                $crate::swo::Port::new(port).write_bytes(bytes);
+            }
+
+            #[no_mangle]
+            extern "C" fn drone_log_write_u8(port: u8, value: u8) {
+                $crate::swo::Port::new(port).write(value);
+            }
+
+            #[no_mangle]
+            extern "C" fn drone_log_write_u16(port: u8, value: u16) {
+                $crate::swo::Port::new(port).write(value);
+            }
+
+            #[no_mangle]
+            extern "C" fn drone_log_write_u32(port: u8, value: u32) {
+                $crate::swo::Port::new(port).write(value);
             }
 
             #[no_mangle]
             extern "C" fn drone_log_flush() {
-                $crate::itm::flush();
+                $crate::swo::flush();
             }
         };
     };
 }
 
-/// Sets ITM as default logger.
+/// Sets SWO as default logger.
 ///
 /// # Examples
 ///
 /// ```
 /// # #![feature(proc_macro_hygiene)]
-/// use drone_cortex_m::{cortex_m_reg_tokens, itm};
+/// use drone_cortex_m::{cortex_m_reg_tokens, swo};
 ///
 /// cortex_m_reg_tokens! {
 ///     struct Regs;
@@ -173,7 +163,7 @@ macro_rules! itm_set_log {
 ///     !tpiu_acpr; !tpiu_sppr; !tpiu_ffcr;
 /// }
 ///
-/// itm::set_log!();
+/// swo::set_log!();
 /// ```
 #[doc(inline)]
-pub use crate::itm_set_log as set_log;
+pub use crate::swo_set_log as set_log;

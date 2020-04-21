@@ -1,5 +1,6 @@
 #![cfg_attr(feature = "std", allow(unreachable_code, unused_variables))]
 
+use super::PORTS_COUNT;
 use core::{
     fmt::{self, Write},
     slice,
@@ -7,39 +8,44 @@ use core::{
 
 const ADDRESS_BASE: usize = 0xE000_0000;
 
-/// ITM stimulus port handler.
+/// ITM stimulus port handle.
 #[derive(Clone, Copy)]
 pub struct Port {
     address: usize,
 }
 
-pub trait Value: Copy {
+pub trait PortWrite: Copy {
     fn port_write(address: usize, value: Self);
 }
 
 impl Port {
-    /// Creates a new ITM stimulus port handler.
+    /// Creates a new ITM stimulus port handle.
     ///
     /// # Panics
     ///
-    /// If `port` is out of bounds.
+    /// If `port` is more than or equal to [`PORTS_COUNT`].
     #[inline]
-    pub fn new(address: usize) -> Self {
-        assert!(address < 0x20);
-        Self { address: ADDRESS_BASE + (address << 2) }
+    pub fn new(address: u8) -> Self {
+        assert!(address < PORTS_COUNT);
+        Self { address: ADDRESS_BASE + (usize::from(address) << 2) }
     }
 
-    /// Writes `bytes` to the stimulus port.
+    /// Writes a sequence of bytes to the ITM stimulus port.
+    ///
+    /// The resulting byte sequence that will be read from the port may be
+    /// interleaved with concurrent writes. See also [`Port::write`] for writing
+    /// atomic byte sequences.
     #[inline]
-    pub fn write_bytes(self, bytes: &[u8]) {
-        fn write_slice<T: Value>(port: Port, slice: &[T]) {
+    pub fn write_bytes(self, bytes: &[u8]) -> Self {
+        fn write_slice<T: PortWrite>(port: Port, slice: &[T]) {
             for item in slice {
                 port.write(*item);
             }
         }
         let mut end = bytes.len();
         if end < 4 {
-            return write_slice(self, bytes);
+            write_slice(self, bytes);
+            return self;
         }
         let mut start = bytes.as_ptr() as usize;
         let mut rem = start & 0b11;
@@ -53,14 +59,18 @@ impl Port {
         end -= rem;
         write_slice(self, unsafe { slice::from_raw_parts(start as *const u32, end - start >> 2) });
         write_slice(self, unsafe { slice::from_raw_parts(end as *const u8, rem) });
+        self
     }
 
-    /// Writes `value` of type `u8`, `u16` or `u32` to the stimulus port.
+    /// Writes an atomic byte sequence to the ITM stimulus port. `T` can be one
+    /// of `u8`, `u16`, `u32`.
     ///
-    /// This method can be chained.
+    /// Bytes are written in big-endian order. It's guaranteed that all bytes of
+    /// `value` will not be split.
     #[inline]
-    pub fn write<T: Value>(self, value: T) -> Self {
-        T::port_write(self.address, value);
+    pub fn write<T: PortWrite>(self, value: T) -> Self {
+        let Self { address } = self;
+        T::port_write(address, value);
         self
     }
 }
@@ -73,7 +83,7 @@ impl Write for Port {
     }
 }
 
-impl Value for u8 {
+impl PortWrite for u8 {
     fn port_write(address: usize, value: Self) {
         #[cfg(feature = "std")]
         return unimplemented!();
@@ -95,7 +105,7 @@ impl Value for u8 {
     }
 }
 
-impl Value for u16 {
+impl PortWrite for u16 {
     fn port_write(address: usize, value: Self) {
         #[cfg(feature = "std")]
         return unimplemented!();
@@ -117,7 +127,7 @@ impl Value for u16 {
     }
 }
 
-impl Value for u32 {
+impl PortWrite for u32 {
     fn port_write(address: usize, value: Self) {
         #[cfg(feature = "std")]
         return unimplemented!();
