@@ -11,7 +11,7 @@
 pub fn wait_for_int() {
     #[cfg(feature = "std")]
     return unimplemented!();
-    unsafe { asm!("wfi" :::: "volatile") };
+    unsafe { llvm_asm!("wfi" :::: "volatile") };
 }
 
 /// Wait for event.
@@ -26,7 +26,7 @@ pub fn wait_for_int() {
 pub fn wait_for_event() {
     #[cfg(feature = "std")]
     return unimplemented!();
-    unsafe { asm!("wfe" :::: "volatile") };
+    unsafe { llvm_asm!("wfe" :::: "volatile") };
 }
 
 /// Send event.
@@ -39,7 +39,7 @@ pub fn wait_for_event() {
 pub fn send_event() {
     #[cfg(feature = "std")]
     return unimplemented!();
-    unsafe { asm!("sev" :::: "volatile") };
+    unsafe { llvm_asm!("sev" :::: "volatile") };
 }
 
 /// Requests system reset.
@@ -57,7 +57,7 @@ pub fn self_reset() -> ! {
     unsafe {
         use crate::{map::reg::scb, reg::prelude::*};
         use drone_core::token::Token;
-        asm!("
+        llvm_asm!("
             dmb
             cpsid f
         "   :
@@ -77,7 +77,7 @@ pub fn spin(mut cycles: u32) {
     #[cfg(feature = "std")]
     return unimplemented!();
     unsafe {
-        asm!("
+        llvm_asm!("
         0:
             subs $0, $0, #3
             bhi 0b

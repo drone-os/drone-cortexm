@@ -55,7 +55,7 @@ impl SvService for SwitchContextService {
         return unimplemented!();
         let Self { stack_ptr, data_ptr } = *self;
         #[cfg(feature = "floating-point-unit")]
-        asm!("
+        llvm_asm!("
             mrs      r3, control
             tst      lr, #0x4
             bne      3f
@@ -102,7 +102,7 @@ impl SvService for SwitchContextService {
             : "volatile"
         );
         #[cfg(not(feature = "floating-point-unit"))]
-        asm!("
+        llvm_asm!("
             mrs      r3, control
             tst      lr, #0x4
             bne      3f
@@ -150,7 +150,7 @@ impl SvService for SwitchBackService {
         return unimplemented!();
         let Self { data_ptr, data_size } = *self;
         #[cfg(feature = "floating-point-unit")]
-        asm!("
+        llvm_asm!("
             movw     r2, #0xED94
             movt     r2, #0xE000
             mov      r3, #0
@@ -209,7 +209,7 @@ impl SvService for SwitchBackService {
             : "volatile"
         );
         #[cfg(not(feature = "floating-point-unit"))]
-        asm!("
+        llvm_asm!("
             movw     r2, #0xED94
             movt     r2, #0xE000
             mov      r3, #0

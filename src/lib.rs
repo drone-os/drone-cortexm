@@ -37,10 +37,10 @@
 //! drone-cortex-m = { version = "0.12.0", features = [...] }
 //! ```
 
-#![feature(asm)]
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
 #![feature(exhaustive_patterns)]
+#![feature(llvm_asm)]
 #![feature(marker_trait_attr)]
 #![feature(naked_functions)]
 #![feature(never_type)]

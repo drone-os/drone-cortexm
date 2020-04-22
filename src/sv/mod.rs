@@ -140,7 +140,7 @@ pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
     #[cfg(feature = "std")]
     return unimplemented!();
     if size_of::<T>() == 0 {
-        asm!("
+        llvm_asm!("
             svc $0
         "   :
             : "i"(num)
@@ -148,7 +148,7 @@ pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
             : "volatile"
         );
     } else {
-        asm!("
+        llvm_asm!("
             svc $0
         "   :
             : "i"(num), "{r12}"(service)
@@ -183,7 +183,7 @@ pub unsafe extern "C" fn service_handler<T: SvService>(mut frame: *mut *mut u8) 
 pub unsafe extern "C" fn sv_handler<T: Supervisor>() {
     #[cfg(feature = "std")]
     return unimplemented!();
-    asm!("
+    llvm_asm!("
         tst lr, #4
         ite eq
         mrseq r0, msp

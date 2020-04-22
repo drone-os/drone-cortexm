@@ -30,7 +30,7 @@ impl Fpu {
         #[cfg(feature = "std")]
         return unimplemented!();
         unsafe {
-            asm!("
+            llvm_asm!("
                 dsb
                 isb
             "   :

@@ -166,12 +166,12 @@ mod mpu {
             return;
         }
         mpu_ctrl.reset();
-        asm!("
-        ldmia $0!, {r5, r6, r8, r9, r10, r11, r12, r14}
-        stmia $1, {r5, r6, r8, r9, r10, r11, r12, r14}
-        ldmia $0!, {r5, r6, r8, r9, r10, r11, r12, r14}
-        stmia $1, {r5, r6, r8, r9, r10, r11, r12, r14}
-    "   : "+&rm"(table_ptr)
+        llvm_asm!("
+            ldmia $0!, {r5, r6, r8, r9, r10, r11, r12, r14}
+            stmia $1, {r5, r6, r8, r9, r10, r11, r12, r14}
+            ldmia $0!, {r5, r6, r8, r9, r10, r11, r12, r14}
+            stmia $1, {r5, r6, r8, r9, r10, r11, r12, r14}
+        "   : "+&rm"(table_ptr)
             : "r"(mpu::Rbar::<Srt>::ADDRESS)
             : "r5", "r6", "r8", "r9", "r10", "r11", "r12", "r14"
             : "volatile"

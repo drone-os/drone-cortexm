@@ -2,6 +2,7 @@ cortex_m_core := 'cortex_m4f_r0p1'
 export DRONE_RUSTFLAGS := '--cfg cortex_m_core="' + cortex_m_core + '"'
 target := 'thumbv7em-none-eabihf'
 features := 'bit-band floating-point-unit memory-protection-unit security-extension'
+cargo_features := '-Z features=itarget,build_dep,dev_dep -Z package-features'
 
 # Install dependencies
 deps:
@@ -12,30 +13,30 @@ deps:
 
 # Reformat the source code
 fmt:
-	cargo fmt
+	cargo {{cargo_features}} fmt
 
 # Check for mistakes
 lint:
-	cargo clippy --package drone-cortex-m-macros
-	drone env {{target}} -- cargo clippy --features "{{features}}" --package drone-cortex-m
+	cargo {{cargo_features}} clippy --package drone-cortex-m-macros
+	drone env {{target}} -- cargo {{cargo_features}} clippy --features "{{features}}" --package drone-cortex-m
 
 # Generate the docs
 doc:
-	cargo doc --package drone-cortex-m-macros
-	drone env {{target}} -- cargo doc --features "{{features}}" --package drone-cortex-m
+	cargo {{cargo_features}} doc --package drone-cortex-m-macros
+	drone env {{target}} -- cargo {{cargo_features}} doc --features "{{features}}" --package drone-cortex-m
 
 # Open the docs in a browser
 doc-open: doc
-	drone env {{target}} -- cargo doc --features "{{features}}" --package drone-cortex-m --open
+	drone env {{target}} -- cargo {{cargo_features}} doc --features "{{features}}" --package drone-cortex-m --open
 
 # Run the tests
 test:
-	cargo test --package drone-cortex-m-macros
-	drone env -- cargo test --features "{{features}} std" --package drone-cortex-m
+	cargo {{cargo_features}} test --package drone-cortex-m-macros
+	drone env -- cargo {{cargo_features}} test --features "{{features}} std" --package drone-cortex-m
 
 # Update README.md
 readme:
-	cargo readme -o README.md
+	cargo {{cargo_features}} readme -o README.md
 
 # Bump crate versions
 version-bump version drone-version drone-core-version:
@@ -54,9 +55,9 @@ version-bump version drone-version drone-core-version:
 
 # Publish to crates.io
 publish:
-	cd macros && cargo publish
+	cd macros && cargo {{cargo_features}} publish
 	sleep 5
-	drone env {{target}} -- cargo publish --features "{{features}}"
+	drone env {{target}} -- cargo {{cargo_features}} publish --features "{{features}}"
 
 # Publish the docs to api.drone-os.com
 publish-doc: doc

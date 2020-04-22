@@ -88,7 +88,7 @@ impl PortWrite for u8 {
         #[cfg(feature = "std")]
         return unimplemented!();
         unsafe {
-            asm!("
+            llvm_asm!("
             0:
                 ldrexb r0, [$1]
                 cmp r0, #0
@@ -110,7 +110,7 @@ impl PortWrite for u16 {
         #[cfg(feature = "std")]
         return unimplemented!();
         unsafe {
-            asm!("
+            llvm_asm!("
             0:
                 ldrexh r0, [$1]
                 cmp r0, #0
@@ -132,7 +132,7 @@ impl PortWrite for u32 {
         #[cfg(feature = "std")]
         return unimplemented!();
         unsafe {
-            asm!("
+            llvm_asm!("
             0:
                 ldrex r0, [$1]
                 cmp r0, #0

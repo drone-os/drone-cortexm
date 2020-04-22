@@ -188,7 +188,7 @@ macro_rules! atomic_bits {
                 #[cfg(feature = "std")]
                 return unimplemented!();
                 let raw: Self;
-                asm!($ldrex
+                llvm_asm!($ldrex
                      : "=r"(raw)
                      : "r"(address)
                      :
@@ -201,7 +201,7 @@ macro_rules! atomic_bits {
                 #[cfg(feature = "std")]
                 return unimplemented!();
                 let status: Self;
-                asm!($strex
+                llvm_asm!($strex
                      : "=r"(status)
                      : "r"(self), "r"(address)
                      :
