@@ -30,8 +30,12 @@ Possible log types:
   `itm::update_prescaler` function
 - [changed] Renamed `itm` module to `swo`
 - [added] Add `swo::set_log!` macro
-- [changed] `drone-cortex-m` is no longer responsible for defining lang items
+- [changed] Lang item definitions moved to `drone-core`
 - [removed] Remove `prelude` module
+- [changed] Rename the whole crate to `drone-cortexm` (previously was
+  `drone-cortex-m`)
+- [changed] Rename `cortex_m_core` config flag to `cortexm_core` as well as its
+  values from `cortex_m...` to `cortexm...`
 
 ### v0.11.1 (2019-11-27)
 

@@ -8,7 +8,7 @@
 //! ```
 //! # #![feature(const_fn)]
 //! # fn main() {}
-//! use drone_cortex_m::{sv, thr};
+//! use drone_cortexm::{sv, thr};
 //!
 //! sv! {
 //!     /// The supervisor.
@@ -44,7 +44,7 @@
 //! pub static VTABLE: Vtable = Vtable::new(Handlers {
 //!     reset,
 //!     // Attach the SV_CALL handler for the supervisor `Sv`.
-//!     sv_call: drone_cortex_m::sv::sv_handler::<Sv>,
+//!     sv_call: drone_cortexm::sv::sv_handler::<Sv>,
 //! });
 //!
 //! unsafe extern "C" fn reset() -> ! {
@@ -62,9 +62,9 @@
 //!
 //! ```no_run
 //! # #![feature(new_uninit)]
-//! use drone_cortex_m::sv::{Switch, SwitchBackService, SwitchContextService};
+//! use drone_cortexm::sv::{Switch, SwitchBackService, SwitchContextService};
 //!
-//! use drone_cortex_m::sv;
+//! use drone_cortexm::sv;
 //!
 //! sv! {
 //!     /// The supervisor.

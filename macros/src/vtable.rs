@@ -226,8 +226,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             let nvic_block =
                 format_ident!("NvicBlock{}", num.base10_parse::<usize>().unwrap() / 32);
             thr_tokens.push(quote! {
-                impl ::drone_cortex_m::thr::IntToken for #struct_ident {
-                    type NvicBlock = ::drone_cortex_m::map::thr::#nvic_block;
+                impl ::drone_cortexm::thr::IntToken for #struct_ident {
+                    type NvicBlock = ::drone_cortexm::map::thr::#nvic_block;
 
                     const INT_NUM: usize = #num;
                 }
@@ -236,7 +236,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             });
         }
         vtable_tokens[num.base10_parse::<usize>().unwrap()] = Some(quote! {
-            #field_ident: Option<::drone_cortex_m::thr::vtable::Handler>
+            #field_ident: Option<::drone_cortexm::thr::vtable::Handler>
         });
         vtable_ctor_default_tokens.push(quote! {
             #field_ident: None
@@ -252,7 +252,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
                     #int_ident: None
                 });
                 quote! {
-                    #int_ident: Option<::drone_cortex_m::thr::vtable::Handler>
+                    #int_ident: Option<::drone_cortexm::thr::vtable::Handler>
                 }
             })
         })
@@ -278,7 +278,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     });
     if let Some(sv) = sv {
         thr_tokens.push(quote! {
-            impl ::drone_cortex_m::thr::ThrSv for Reset {
+            impl ::drone_cortexm::thr::ThrSv for Reset {
                 type Sv = #sv;
             }
         });
@@ -287,49 +287,49 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         #(#vtable_attrs)*
         #[allow(dead_code)]
         #vtable_vis struct #vtable_ident {
-            reset: ::drone_cortex_m::thr::vtable::ResetHandler,
-            nmi: Option<::drone_cortex_m::thr::vtable::Handler>,
-            hard_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
-            mem_manage: Option<::drone_cortex_m::thr::vtable::Handler>,
-            bus_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
-            usage_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
+            reset: ::drone_cortexm::thr::vtable::ResetHandler,
+            nmi: Option<::drone_cortexm::thr::vtable::Handler>,
+            hard_fault: Option<::drone_cortexm::thr::vtable::Handler>,
+            mem_manage: Option<::drone_cortexm::thr::vtable::Handler>,
+            bus_fault: Option<::drone_cortexm::thr::vtable::Handler>,
+            usage_fault: Option<::drone_cortexm::thr::vtable::Handler>,
             #[cfg(all(
                 feature = "security-extension",
                 any(
-                    cortex_m_core = "cortex_m33_r0p2",
-                    cortex_m_core = "cortex_m33_r0p3",
-                    cortex_m_core = "cortex_m33_r0p4",
-                    cortex_m_core = "cortex_m33f_r0p2",
-                    cortex_m_core = "cortex_m33f_r0p3",
-                    cortex_m_core = "cortex_m33f_r0p4",
+                    cortexm_core = "cortexm33_r0p2",
+                    cortexm_core = "cortexm33_r0p3",
+                    cortexm_core = "cortexm33_r0p4",
+                    cortexm_core = "cortexm33f_r0p2",
+                    cortexm_core = "cortexm33f_r0p3",
+                    cortexm_core = "cortexm33f_r0p4",
                 )
             ))]
-            secure_fault: Option<::drone_cortex_m::thr::vtable::Handler>,
+            secure_fault: Option<::drone_cortexm::thr::vtable::Handler>,
             #[cfg(not(all(
                 feature = "security-extension",
                 any(
-                    cortex_m_core = "cortex_m33_r0p2",
-                    cortex_m_core = "cortex_m33_r0p3",
-                    cortex_m_core = "cortex_m33_r0p4",
-                    cortex_m_core = "cortex_m33f_r0p2",
-                    cortex_m_core = "cortex_m33f_r0p3",
-                    cortex_m_core = "cortex_m33f_r0p4",
+                    cortexm_core = "cortexm33_r0p2",
+                    cortexm_core = "cortexm33_r0p3",
+                    cortexm_core = "cortexm33_r0p4",
+                    cortexm_core = "cortexm33f_r0p2",
+                    cortexm_core = "cortexm33f_r0p3",
+                    cortexm_core = "cortexm33f_r0p4",
                 )
             )))]
-            _reserved0: [::drone_cortex_m::thr::vtable::Reserved; 1],
-            _reserved1: [::drone_cortex_m::thr::vtable::Reserved; 3],
-            sv_call: Option<::drone_cortex_m::thr::vtable::Handler>,
-            debug: Option<::drone_cortex_m::thr::vtable::Handler>,
-            _reserved2: [::drone_cortex_m::thr::vtable::Reserved; 1],
-            pend_sv: Option<::drone_cortex_m::thr::vtable::Handler>,
-            sys_tick: Option<::drone_cortex_m::thr::vtable::Handler>,
+            _reserved0: [::drone_cortexm::thr::vtable::Reserved; 1],
+            _reserved1: [::drone_cortexm::thr::vtable::Reserved; 3],
+            sv_call: Option<::drone_cortexm::thr::vtable::Handler>,
+            debug: Option<::drone_cortexm::thr::vtable::Handler>,
+            _reserved2: [::drone_cortexm::thr::vtable::Reserved; 1],
+            pend_sv: Option<::drone_cortexm::thr::vtable::Handler>,
+            sys_tick: Option<::drone_cortexm::thr::vtable::Handler>,
             #(#vtable_tokens),*
         }
 
         #(#handlers_attrs)*
         #handlers_vis struct #handlers_ident {
             /// Reset exception handler.
-            pub reset: ::drone_cortex_m::thr::vtable::ResetHandler,
+            pub reset: ::drone_cortexm::thr::vtable::ResetHandler,
             #(#handlers_tokens),*
         }
 
@@ -366,31 +366,31 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
                         #[cfg(all(
                             feature = "security-extension",
                             any(
-                                cortex_m_core = "cortex_m33_r0p2",
-                                cortex_m_core = "cortex_m33_r0p3",
-                                cortex_m_core = "cortex_m33_r0p4",
-                                cortex_m_core = "cortex_m33f_r0p2",
-                                cortex_m_core = "cortex_m33f_r0p3",
-                                cortex_m_core = "cortex_m33f_r0p4",
+                                cortexm_core = "cortexm33_r0p2",
+                                cortexm_core = "cortexm33_r0p3",
+                                cortexm_core = "cortexm33_r0p4",
+                                cortexm_core = "cortexm33f_r0p2",
+                                cortexm_core = "cortexm33f_r0p3",
+                                cortexm_core = "cortexm33f_r0p4",
                             )
                         ))]
                         secure_fault: None,
                         #[cfg(not(all(
                             feature = "security-extension",
                             any(
-                                cortex_m_core = "cortex_m33_r0p2",
-                                cortex_m_core = "cortex_m33_r0p3",
-                                cortex_m_core = "cortex_m33_r0p4",
-                                cortex_m_core = "cortex_m33f_r0p2",
-                                cortex_m_core = "cortex_m33f_r0p3",
-                                cortex_m_core = "cortex_m33f_r0p4",
+                                cortexm_core = "cortexm33_r0p2",
+                                cortexm_core = "cortexm33_r0p3",
+                                cortexm_core = "cortexm33_r0p4",
+                                cortexm_core = "cortexm33f_r0p2",
+                                cortexm_core = "cortexm33f_r0p3",
+                                cortexm_core = "cortexm33f_r0p4",
                             )
                         )))]
-                        _reserved0: [::drone_cortex_m::thr::vtable::Reserved::Vector; 1],
-                        _reserved1: [::drone_cortex_m::thr::vtable::Reserved::Vector; 3],
+                        _reserved0: [::drone_cortexm::thr::vtable::Reserved::Vector; 1],
+                        _reserved1: [::drone_cortexm::thr::vtable::Reserved::Vector; 3],
                         sv_call: None,
                         debug: None,
-                        _reserved2: [::drone_cortex_m::thr::vtable::Reserved::Vector; 1],
+                        _reserved2: [::drone_cortexm::thr::vtable::Reserved::Vector; 1],
                         pend_sv: None,
                         sys_tick: None,
                         #(#vtable_ctor_default_tokens,)*
@@ -409,7 +409,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             }
         }
 
-        unsafe impl ::drone_cortex_m::thr::ThrTokens for #index_ident {}
+        unsafe impl ::drone_cortexm::thr::ThrTokens for #index_ident {}
 
         unsafe impl ::drone_core::token::Token for #init_ident {
             #[inline]
@@ -420,18 +420,18 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             }
         }
 
-        unsafe impl ::drone_cortex_m::thr::ThrsInitToken for #init_ident {
+        unsafe impl ::drone_cortexm::thr::ThrsInitToken for #init_ident {
             type ThrTokens = #index_ident;
         }
 
         #(#thr_tokens)*
 
-        ::drone_cortex_m::reg::assert_taken!("scb_ccr");
-        ::drone_cortex_m::reg::assert_taken!("mpu_type");
-        ::drone_cortex_m::reg::assert_taken!("mpu_ctrl");
-        ::drone_cortex_m::reg::assert_taken!("mpu_rnr");
-        ::drone_cortex_m::reg::assert_taken!("mpu_rbar");
-        ::drone_cortex_m::reg::assert_taken!("mpu_rasr");
+        ::drone_cortexm::reg::assert_taken!("scb_ccr");
+        ::drone_cortexm::reg::assert_taken!("mpu_type");
+        ::drone_cortexm::reg::assert_taken!("mpu_ctrl");
+        ::drone_cortexm::reg::assert_taken!("mpu_rnr");
+        ::drone_cortexm::reg::assert_taken!("mpu_rbar");
+        ::drone_cortexm::reg::assert_taken!("mpu_rasr");
     };
     expanded.into()
 }
@@ -456,7 +456,7 @@ fn gen_exc(
     match *mode {
         Mode::Thread(_) => {
             vtable_ctor_tokens.push(quote! {
-                #field_ident: Some(::drone_cortex_m::thr::thr_handler::<#struct_ident>)
+                #field_ident: Some(::drone_cortexm::thr::thr_handler::<#struct_ident>)
             });
         }
         Mode::Extern(_) | Mode::Fn => {
@@ -465,7 +465,7 @@ fn gen_exc(
             });
             handlers_tokens.push(quote! {
                 #(#attrs)*
-                pub #field_ident: ::drone_cortex_m::thr::vtable::Handler
+                pub #field_ident: ::drone_cortexm::thr::vtable::Handler
             });
         }
     }
@@ -503,7 +503,7 @@ fn gen_exc(
             });
             if let Some(sv) = sv {
                 thr_tokens.push(quote! {
-                    impl ::drone_cortex_m::thr::ThrSv for #struct_ident {
+                    impl ::drone_cortexm::thr::ThrSv for #struct_ident {
                         type Sv = #sv;
                     }
                 });

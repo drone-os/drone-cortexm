@@ -83,12 +83,12 @@ pub fn sync() {
 /// # pools = []
 /// # [probe]
 /// # gdb-client-command = \"gdb-multiarch\"
-/// # [probe.swo]
+/// # [log.swo]
 /// # reset-freq = 8000000
 /// # baud-rate = 115200
 /// # " }
 /// use drone_core::log;
-/// use drone_cortex_m::swo;
+/// use drone_cortexm::swo;
 ///
 /// swo::update_prescaler(72_000_000 / log::baud_rate!() - 1);
 /// ```
@@ -154,9 +154,9 @@ macro_rules! swo_set_log {
 ///
 /// ```
 /// # #![feature(proc_macro_hygiene)]
-/// use drone_cortex_m::{cortex_m_reg_tokens, swo};
+/// use drone_cortexm::{cortexm_reg_tokens, swo};
 ///
-/// cortex_m_reg_tokens! {
+/// cortexm_reg_tokens! {
 ///     struct Regs;
 ///     !dwt_cyccnt;
 ///     !itm_tpr; !itm_tcr; !itm_lar;

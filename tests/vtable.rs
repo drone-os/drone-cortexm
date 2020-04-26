@@ -6,7 +6,7 @@
 use drone_core::prelude::*;
 
 use core::mem::size_of;
-use drone_cortex_m::{
+use drone_cortexm::{
     map::thr::*,
     sv,
     sv::{sv_handler, SvService},

@@ -6,7 +6,7 @@
 //!
 //! ```
 //! # #![allow(unused_imports)]
-//! use drone_cortex_m::thr::prelude::*;
+//! use drone_cortexm::thr::prelude::*;
 //! ```
 
 #[doc(no_inline)]

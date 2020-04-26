@@ -1,9 +1,8 @@
-//! Procedural macros for [drone-cortex-m].
+//! Procedural macros for [drone-cortexm].
 //!
-//! [drone-cortex-m]: https://github.com/drone-os/drone-cortex-m
+//! [drone-cortexm]: https://github.com/drone-os/drone-cortexm
 
 #![recursion_limit = "256"]
-#![deny(elided_lifetimes_in_paths)]
 #![warn(clippy::pedantic)]
 
 extern crate proc_macro;

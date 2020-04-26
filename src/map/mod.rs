@@ -12,4 +12,4 @@ pub mod thr;
 
 /// Defines an index of core ARM Cortex-M register tokens.
 #[doc(inline)]
-pub use crate::cortex_m_reg_tokens;
+pub use crate::cortexm_reg_tokens;

@@ -23,7 +23,7 @@ use drone_core::reg;
 
 reg::tokens! {
     #[doc(hidden)]
-    pub macro cortex_m_reg_tokens_inner;
+    pub macro cortexm_reg_tokens_inner;
     super::inner;
     crate::map::reg;
 
@@ -70,9 +70,9 @@ reg::tokens! {
 // error.
 #[doc(hidden)]
 #[macro_export]
-macro_rules! cortex_m_reg_tokens {
+macro_rules! cortexm_reg_tokens {
     ($($tt:tt)*) => {
-        use $crate::cortex_m_reg_tokens_inner;
-        cortex_m_reg_tokens_inner!($($tt)*);
+        use $crate::cortexm_reg_tokens_inner;
+        cortexm_reg_tokens_inner!($($tt)*);
     };
 }

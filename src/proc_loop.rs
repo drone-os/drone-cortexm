@@ -11,13 +11,13 @@
 //! # #![feature(never_type)]
 //! use core::{future::Future, pin::Pin, slice};
 //! use drone_core::ffi::{c_char, CString};
-//! use drone_cortex_m::{
+//! use drone_cortexm::{
 //!     proc_loop::{self, Context as _, ProcLoop, Sess as _},
 //!     sv,
 //! };
 //! use futures::prelude::*;
 //!
-//! use drone_cortex_m::sv::{SwitchBackService, SwitchContextService};
+//! use drone_cortexm::sv::{SwitchBackService, SwitchContextService};
 //!
 //! // Stackful fibers need a supervisor.
 //! sv! {

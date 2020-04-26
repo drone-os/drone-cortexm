@@ -43,9 +43,9 @@ pub struct ThrInitExtended {
 /// #     struct Thr {}
 /// #     struct ThrLocal {}
 /// # }
-/// use drone_cortex_m::{cortex_m_reg_tokens, reg::prelude::*, thr};
+/// use drone_cortexm::{cortexm_reg_tokens, reg::prelude::*, thr};
 ///
-/// cortex_m_reg_tokens! {
+/// cortexm_reg_tokens! {
 ///     struct Regs;
 ///     !scb_ccr;
 ///     !mpu_type; !mpu_ctrl; !mpu_rnr; !mpu_rbar; !mpu_rasr;
@@ -108,9 +108,9 @@ pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExten
 /// #     struct Thr {}
 /// #     struct ThrLocal {}
 /// # }
-/// use drone_cortex_m::{cortex_m_reg_tokens, thr};
+/// use drone_cortexm::{cortexm_reg_tokens, thr};
 ///
-/// cortex_m_reg_tokens! {
+/// cortexm_reg_tokens! {
 ///     struct Regs;
 ///     !scb_ccr;
 ///     !mpu_type; !mpu_ctrl; !mpu_rnr; !mpu_rbar; !mpu_rasr;

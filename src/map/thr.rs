@@ -18,12 +18,12 @@ exception!(IntUsageFault, "Undefined instruction or illegal state.");
 #[cfg(all(
     feature = "security-extension",
     any(
-        cortex_m_core = "cortex_m33_r0p2",
-        cortex_m_core = "cortex_m33_r0p3",
-        cortex_m_core = "cortex_m33_r0p4",
-        cortex_m_core = "cortex_m33f_r0p2",
-        cortex_m_core = "cortex_m33f_r0p3",
-        cortex_m_core = "cortex_m33f_r0p4",
+        cortexm_core = "cortexm33_r0p2",
+        cortexm_core = "cortexm33_r0p3",
+        cortexm_core = "cortexm33_r0p4",
+        cortexm_core = "cortexm33f_r0p2",
+        cortexm_core = "cortexm33f_r0p3",
+        cortexm_core = "cortexm33f_r0p4",
     )
 ))]
 exception!(IntSecureFault, "Security check violation.");
@@ -43,15 +43,15 @@ macro_rules! nvic_block {
     };
 }
 
-macro_rules! nvic_block_cortex_m33 {
+macro_rules! nvic_block_cortexm33 {
     ($name:ident, $number:expr, $doc:expr) => {
         #[cfg(any(
-            cortex_m_core = "cortex_m33_r0p2",
-            cortex_m_core = "cortex_m33_r0p3",
-            cortex_m_core = "cortex_m33_r0p4",
-            cortex_m_core = "cortex_m33f_r0p2",
-            cortex_m_core = "cortex_m33f_r0p3",
-            cortex_m_core = "cortex_m33f_r0p4",
+            cortexm_core = "cortexm33_r0p2",
+            cortexm_core = "cortexm33_r0p3",
+            cortexm_core = "cortexm33_r0p4",
+            cortexm_core = "cortexm33f_r0p2",
+            cortexm_core = "cortexm33f_r0p3",
+            cortexm_core = "cortexm33f_r0p4",
         ))]
         nvic_block!($name, $number, $doc);
     };
@@ -65,11 +65,11 @@ nvic_block!(NvicBlock4, 4, "NVIC register block 4.");
 nvic_block!(NvicBlock5, 5, "NVIC register block 5.");
 nvic_block!(NvicBlock6, 6, "NVIC register block 6.");
 nvic_block!(NvicBlock7, 7, "NVIC register block 7.");
-nvic_block_cortex_m33!(NvicBlock8, 8, "NVIC register block 8.");
-nvic_block_cortex_m33!(NvicBlock9, 9, "NVIC register block 9.");
-nvic_block_cortex_m33!(NvicBlock10, 10, "NVIC register block 10.");
-nvic_block_cortex_m33!(NvicBlock11, 11, "NVIC register block 11.");
-nvic_block_cortex_m33!(NvicBlock12, 12, "NVIC register block 12.");
-nvic_block_cortex_m33!(NvicBlock13, 13, "NVIC register block 13.");
-nvic_block_cortex_m33!(NvicBlock14, 14, "NVIC register block 14.");
-nvic_block_cortex_m33!(NvicBlock15, 15, "NVIC register block 15.");
+nvic_block_cortexm33!(NvicBlock8, 8, "NVIC register block 8.");
+nvic_block_cortexm33!(NvicBlock9, 9, "NVIC register block 9.");
+nvic_block_cortexm33!(NvicBlock10, 10, "NVIC register block 10.");
+nvic_block_cortexm33!(NvicBlock11, 11, "NVIC register block 11.");
+nvic_block_cortexm33!(NvicBlock12, 12, "NVIC register block 12.");
+nvic_block_cortexm33!(NvicBlock13, 13, "NVIC register block 13.");
+nvic_block_cortexm33!(NvicBlock14, 14, "NVIC register block 14.");
+nvic_block_cortexm33!(NvicBlock15, 15, "NVIC register block 15.");

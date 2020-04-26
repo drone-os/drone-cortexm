@@ -8,10 +8,10 @@
 //! ```
 //! # #![feature(const_fn)]
 //! # #![feature(marker_trait_attr)]
-//! # drone_cortex_m::thr::int!(pub trait Rcc: 5);
-//! # drone_cortex_m::thr::int!(pub trait Adc1: 18);
+//! # drone_cortexm::thr::int!(pub trait Rcc: 5);
+//! # drone_cortexm::thr::int!(pub trait Adc1: 18);
 //! # fn main() {}
-//! use drone_cortex_m::{map::thr::*, thr};
+//! use drone_cortexm::{map::thr::*, thr};
 //!
 //! thr::vtable! {
 //!     // Path to the thread object.
@@ -106,7 +106,7 @@
 //! ```
 //! # #![feature(marker_trait_attr)]
 //! # fn main() {}
-//! use drone_cortex_m::thr::int;
+//! use drone_cortexm::thr::int;
 //!
 //! int! {
 //!     /// RCC global interrupt.
@@ -130,13 +130,13 @@ pub use drone_core::thr::*;
 ///
 /// See [the module level documentation](self) for details.
 #[doc(inline)]
-pub use drone_cortex_m_macros::vtable;
+pub use drone_cortexm_macros::vtable;
 
 /// Defines an interrupt.
 ///
 /// See [the module level documentation](self) for details.
 #[doc(inline)]
-pub use drone_cortex_m_macros::int;
+pub use drone_cortexm_macros::int;
 
 pub use self::{
     exec::{ExecOutput, ThrExec},

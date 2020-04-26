@@ -14,9 +14,9 @@
 //! [`fib::new_proc_unprivileged_unchecked`](crate::fib::new_proc_unprivileged_unchecked):
 //!
 //! ```
-//! use drone_cortex_m::{fib, sv};
+//! use drone_cortexm::{fib, sv};
 //!
-//! use drone_cortex_m::sv::{SwitchBackService, SwitchContextService};
+//! use drone_cortexm::sv::{SwitchBackService, SwitchContextService};
 //!
 //! // Stackful fibers need a supervisor.
 //! sv! {
@@ -52,7 +52,7 @@
 //! ```
 //! # #![feature(generators)]
 //! # use drone_core::token::Token;
-//! # use drone_cortex_m::{sv, sv::SwitchBackService, sv::SwitchContextService};
+//! # use drone_cortexm::{sv, sv::SwitchBackService, sv::SwitchContextService};
 //! # static mut THREADS: [Thr; 1] = [Thr::new(0)];
 //! # drone_core::thr!(use THREADS; struct Thr {} struct ThrLocal {});
 //! # #[derive(Clone, Copy)] struct SysTick;
@@ -68,12 +68,12 @@
 //! #     type Thr = Thr;
 //! #     const THR_NUM: usize = 0;
 //! # }
-//! # impl drone_cortex_m::thr::ThrSv for SysTick {
+//! # impl drone_cortexm::thr::ThrSv for SysTick {
 //! #     type Sv = Sv;
 //! # }
 //! # fn main() {
 //! #     let thr = unsafe { Thrs::take() };
-//! use drone_cortex_m::thr::prelude::*;
+//! use drone_cortexm::thr::prelude::*;
 //!
 //! // this is `impl Fiber<Input = (), Yield = (), Return = ()>`
 //! thr.sys_tick.add_proc(0x800, |yielder| {

@@ -9,15 +9,15 @@ pub use crate::reg::atomic::{WRwRegFieldAtomic, WRwRegFieldBitAtomic, WRwRegFiel
 #[cfg(all(
     feature = "bit-band",
     any(
-        cortex_m_core = "cortex_m3_r0p0",
-        cortex_m_core = "cortex_m3_r1p0",
-        cortex_m_core = "cortex_m3_r1p1",
-        cortex_m_core = "cortex_m3_r2p0",
-        cortex_m_core = "cortex_m3_r2p1",
-        cortex_m_core = "cortex_m4_r0p0",
-        cortex_m_core = "cortex_m4_r0p1",
-        cortex_m_core = "cortex_m4f_r0p0",
-        cortex_m_core = "cortex_m4f_r0p1",
+        cortexm_core = "cortexm3_r0p0",
+        cortexm_core = "cortexm3_r1p0",
+        cortexm_core = "cortexm3_r1p1",
+        cortexm_core = "cortexm3_r2p0",
+        cortexm_core = "cortexm3_r2p1",
+        cortexm_core = "cortexm4_r0p0",
+        cortexm_core = "cortexm4_r0p1",
+        cortexm_core = "cortexm4f_r0p0",
+        cortexm_core = "cortexm4f_r0p1",
     )
 ))]
 pub use crate::reg::bit_band::{RRRegFieldBitBand, WWRegFieldBitBand};
