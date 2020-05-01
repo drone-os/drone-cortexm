@@ -2,7 +2,7 @@
 //!
 //! This module provides interface for ITM (Instrumentation Trace Macrocell)
 //! output through SWO (Single Wire Output) pin, and optionally the respective
-//! implementation for `drone_core::log` facade (via [`swo::set_log`] macro).
+//! implementation for `drone_core::log` facade (via `set_log!` macro).
 
 #![cfg_attr(feature = "std", allow(unreachable_code, unused_variables))]
 

@@ -3,20 +3,7 @@
 #[doc(inline)]
 pub use drone_core::reg::marker::*;
 
-#[cfg(all(
-    feature = "bit-band",
-    any(
-        cortexm_core = "cortexm3_r0p0",
-        cortexm_core = "cortexm3_r1p0",
-        cortexm_core = "cortexm3_r1p1",
-        cortexm_core = "cortexm3_r2p0",
-        cortexm_core = "cortexm3_r2p1",
-        cortexm_core = "cortexm4_r0p0",
-        cortexm_core = "cortexm4_r0p1",
-        cortexm_core = "cortexm4f_r0p0",
-        cortexm_core = "cortexm4f_r0p1",
-    )
-))]
+#[cfg(feature = "bit-band")]
 use crate::reg::{
     field::{RRRegFieldBitBand, WWRegFieldBitBand},
     tag::{RegTag, Urt},
@@ -206,20 +193,7 @@ where
 }
 
 #[allow(clippy::wildcard_imports)]
-#[cfg(all(
-    feature = "bit-band",
-    any(
-        cortexm_core = "cortexm3_r0p0",
-        cortexm_core = "cortexm3_r1p0",
-        cortexm_core = "cortexm3_r1p1",
-        cortexm_core = "cortexm3_r2p0",
-        cortexm_core = "cortexm3_r2p1",
-        cortexm_core = "cortexm4_r0p0",
-        cortexm_core = "cortexm4_r0p1",
-        cortexm_core = "cortexm4f_r0p0",
-        cortexm_core = "cortexm4f_r0p1",
-    )
-))]
+#[cfg(feature = "bit-band")]
 mod bit_band {
     use super::*;
 
@@ -766,18 +740,5 @@ mod bit_band {
     }
 }
 
-#[cfg(all(
-    feature = "bit-band",
-    any(
-        cortexm_core = "cortexm3_r0p0",
-        cortexm_core = "cortexm3_r1p0",
-        cortexm_core = "cortexm3_r1p1",
-        cortexm_core = "cortexm3_r2p0",
-        cortexm_core = "cortexm3_r2p1",
-        cortexm_core = "cortexm4_r0p0",
-        cortexm_core = "cortexm4_r0p1",
-        cortexm_core = "cortexm4f_r0p0",
-        cortexm_core = "cortexm4f_r0p1",
-    )
-))]
+#[cfg(feature = "bit-band")]
 pub use self::bit_band::*;

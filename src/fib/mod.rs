@@ -42,10 +42,10 @@
 //! ```
 //!
 //! A stackful fiber can be attached to a thread with
-//! [`token.add_proc(...)`](fib::ThrFiberProc::add_proc),
-//! [`token.add_proc_unchecked(...)`](fib::ThrFiberProc::add_proc_unchecked),
-//! [`token.add_proc_unprivileged(...)`](fib::ThrFiberProc::add_proc_unprivileged),
-//! [`token.add_proc_unprivileged_unchecked(...)`](fib::ThrFiberProc::add_proc_unprivileged_unchecked).
+//! [`token.add_proc(...)`](ThrFiberProc::add_proc),
+//! [`token.add_proc_unchecked(...)`](ThrFiberProc::add_proc_unchecked),
+//! [`token.add_proc_unprivileged(...)`](ThrFiberProc::add_proc_unprivileged),
+//! [`token.add_proc_unprivileged_unchecked(...)`](ThrFiberProc::add_proc_unprivileged_unchecked).
 //! Note that fibers that are directly attached to threads can't have input,
 //! yield and return values other than `()`.
 //!

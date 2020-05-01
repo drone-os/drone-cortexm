@@ -293,29 +293,9 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             mem_manage: Option<::drone_cortexm::thr::vtable::Handler>,
             bus_fault: Option<::drone_cortexm::thr::vtable::Handler>,
             usage_fault: Option<::drone_cortexm::thr::vtable::Handler>,
-            #[cfg(all(
-                feature = "security-extension",
-                any(
-                    cortexm_core = "cortexm33_r0p2",
-                    cortexm_core = "cortexm33_r0p3",
-                    cortexm_core = "cortexm33_r0p4",
-                    cortexm_core = "cortexm33f_r0p2",
-                    cortexm_core = "cortexm33f_r0p3",
-                    cortexm_core = "cortexm33f_r0p4",
-                )
-            ))]
+            #[cfg(feature = "security-extension")]
             secure_fault: Option<::drone_cortexm::thr::vtable::Handler>,
-            #[cfg(not(all(
-                feature = "security-extension",
-                any(
-                    cortexm_core = "cortexm33_r0p2",
-                    cortexm_core = "cortexm33_r0p3",
-                    cortexm_core = "cortexm33_r0p4",
-                    cortexm_core = "cortexm33f_r0p2",
-                    cortexm_core = "cortexm33f_r0p3",
-                    cortexm_core = "cortexm33f_r0p4",
-                )
-            )))]
+            #[cfg(not(feature = "security-extension"))]
             _reserved0: [::drone_cortexm::thr::vtable::Reserved; 1],
             _reserved1: [::drone_cortexm::thr::vtable::Reserved; 3],
             sv_call: Option<::drone_cortexm::thr::vtable::Handler>,
@@ -363,29 +343,9 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
                         mem_manage: None,
                         bus_fault: None,
                         usage_fault: None,
-                        #[cfg(all(
-                            feature = "security-extension",
-                            any(
-                                cortexm_core = "cortexm33_r0p2",
-                                cortexm_core = "cortexm33_r0p3",
-                                cortexm_core = "cortexm33_r0p4",
-                                cortexm_core = "cortexm33f_r0p2",
-                                cortexm_core = "cortexm33f_r0p3",
-                                cortexm_core = "cortexm33f_r0p4",
-                            )
-                        ))]
+                        #[cfg(feature = "security-extension")]
                         secure_fault: None,
-                        #[cfg(not(all(
-                            feature = "security-extension",
-                            any(
-                                cortexm_core = "cortexm33_r0p2",
-                                cortexm_core = "cortexm33_r0p3",
-                                cortexm_core = "cortexm33_r0p4",
-                                cortexm_core = "cortexm33f_r0p2",
-                                cortexm_core = "cortexm33f_r0p3",
-                                cortexm_core = "cortexm33f_r0p4",
-                            )
-                        )))]
+                        #[cfg(not(feature = "security-extension"))]
                         _reserved0: [::drone_cortexm::thr::vtable::Reserved::Vector; 1],
                         _reserved1: [::drone_cortexm::thr::vtable::Reserved::Vector; 3],
                         sv_call: None,

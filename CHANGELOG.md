@@ -11,31 +11,31 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
-### Unreleased
+### v0.12.0 (2020-05-01)
 
 - [added] Added Cortex-M33 support
 - [changed] Feature `fpu` renamed to `floating-point-unit`
 - [added] Added feature `security-extension`
 - [changed] Bit-band support moved behind the new `bit-band` feature
 - [added] Added SECURE_FAULT exception mapping
-- [changed] Add threads initialization token to `vtable!`
+- [changed] Added threads initialization token to `vtable!`
 - [changed] Removed `thr::init!` macro in favor of
   `thr::init`/`thr::init_extended` functions
-- [added] Add `memory-protection-unit` feature
-- [removed] Remove `itm::trace_*` hooks
-- [removed] Remove `dbg`, `eprint`, `eprintln`, `print`, `println` macros
-- [removed] Remove `itm::*_PORT`, `itm::HEAP_TRACE_KEY` constants
-- [removed] Remove `itm::write_str`, `itm::write_fmt` functions
-- [removed] Remove `itm::update_prescaler!` macro in favor of
+- [added] Added `memory-protection-unit` feature
+- [removed] Removed `itm::trace_*` hooks
+- [removed] Removed `dbg`, `eprint`, `eprintln`, `print`, `println` macros
+- [removed] Removed `itm::*_PORT`, `itm::HEAP_TRACE_KEY` constants
+- [removed] Removed `itm::write_str`, `itm::write_fmt` functions
+- [removed] Removed `itm::update_prescaler!` macro in favor of
   `itm::update_prescaler` function
 - [changed] Renamed `itm` module to `swo`
-- [added] Add `swo::set_log!` macro
+- [added] Added `swo::set_log!` macro
 - [changed] Lang item definitions moved to `drone-core`
-- [removed] Remove `prelude` module
-- [changed] Rename the whole crate to `drone-cortexm` (previously was
+- [removed] Removed `prelude` module
+- [changed] Renamed the whole crate to `drone-cortexm` (previously was
   `drone-cortex-m`)
-- [changed] Rename `cortex_m_core` config flag to `cortexm_core` as well as its
-  values from `cortex_m...` to `cortexm...`
+- [changed] Renamed `cortex_m_core` config flag to `cortexm_core` as well as its
+  values from `cortex_m*` to `cortexm*`
 
 ### v0.11.1 (2019-11-27)
 
@@ -47,8 +47,10 @@ Possible log types:
 
 - [added] New macro `itm::update_prescaler!`
 - [changed] `itm::update_prescaler` function now takes a single argument
-- [changed] Using `cortex_m_core` config flag to specify the MCU core version
+- [changed] Switched to `cortex_m_core` config flag to specify the MCU core
+  version
 
 ### v0.10.1 (2019-09-27)
 
-- [fixed] Fix API documentation by moving to self-hosted https://api.drone-os.com
+- [fixed] Fixed API documentation by moving to self-hosted
+  https://api.drone-os.com

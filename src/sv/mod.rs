@@ -54,11 +54,9 @@
 //!
 //! # Predefined Services
 //!
-//! If [`SwitchContextService`](sv::SwitchContextService) and
-//! [`SwitchBackService`](sv::SwitchBackService) are defined for the supervisor,
-//! [`switch_context`](sv::Switch::switch_context) and
-//! [`switch_back`](sv::Switch::switch_back) functions become available to
-//! switch the program stack.
+//! If [`SwitchContextService`] and [`SwitchBackService`] are defined for the
+//! supervisor, [`Switch::switch_context`] and [`Switch::switch_back`] functions
+//! become available to switch the program stack.
 //!
 //! ```no_run
 //! # #![feature(new_uninit)]

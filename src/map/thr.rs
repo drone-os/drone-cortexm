@@ -15,17 +15,7 @@ exception!(IntHardFault, "All classes of fault.");
 exception!(IntMemManage, "Memory management.");
 exception!(IntBusFault, "Pre-fetch fault, memory access fault.");
 exception!(IntUsageFault, "Undefined instruction or illegal state.");
-#[cfg(all(
-    feature = "security-extension",
-    any(
-        cortexm_core = "cortexm33_r0p2",
-        cortexm_core = "cortexm33_r0p3",
-        cortexm_core = "cortexm33_r0p4",
-        cortexm_core = "cortexm33f_r0p2",
-        cortexm_core = "cortexm33f_r0p3",
-        cortexm_core = "cortexm33f_r0p4",
-    )
-))]
+#[cfg(feature = "security-extension")]
 exception!(IntSecureFault, "Security check violation.");
 exception!(IntSvCall, "System service call via SWI instruction.");
 exception!(IntDebug, "Monitor.");
