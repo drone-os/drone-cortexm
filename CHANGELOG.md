@@ -11,6 +11,10 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### Unreleased
+
+- [added] Added `modify_reg` method for `RwRegAtomic`
+
 ### v0.12.0 (2020-05-01)
 
 - [added] Added Cortex-M33 support

@@ -27,9 +27,10 @@
 //!
 //! ## Register Token
 //!
-//! |                                      | Mode       | Tag      |
-//! |--------------------------------------|------------|----------|
-//! | [`modify`](RwRegAtomic::modify)      | read-write | Srt, Crt |
+//! |                                         | Mode       | Tag      |
+//! |-----------------------------------------|------------|----------|
+//! | [`modify`](RwRegAtomic::modify)         | read-write | Srt, Crt |
+//! | [`modify_reg`](RwRegAtomic::modify_reg) | read-write | Srt, Crt |
 
 pub mod field;
 pub mod marker;

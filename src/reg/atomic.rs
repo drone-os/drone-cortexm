@@ -16,11 +16,22 @@ pub trait RwRegAtomic<'a, T: RegAtomic>: RReg<T> + WRegAtomic<'a, T> + RegRef<'a
     ///
     /// This operation is atomic, it repeats itself in case it was interrupted
     /// in the middle. Thus the closure `f` may be called multiple times.
+    ///
+    /// See also [`modify_reg`](RwRegAtomic::modify_reg).
     fn modify<F>(&'a self, f: F)
     where
         F: for<'b> Fn(
             &'b mut <Self as RegRef<'a, T>>::Hold,
         ) -> &'b mut <Self as RegRef<'a, T>>::Hold;
+
+    /// Reads the value from the register memory, then passes a reference to
+    /// this register token and the value to the closure `f`, then writes the
+    /// modified value into the register memory.
+    ///
+    /// See also [`modify`](RwRegAtomic::modify).
+    fn modify_reg<F>(&'a self, f: F)
+    where
+        F: for<'b> Fn(&'b Self, &'b mut Self::Val);
 }
 
 /// Atomic operations for writable field of read-write register.
@@ -93,6 +104,20 @@ where
             let mut val = unsafe { self.hold(load_excl::<T, Self>()) };
             f(&mut val);
             if unsafe { store_excl::<T, Self>(val.val()) } {
+                break;
+            }
+        }
+    }
+
+    #[inline]
+    fn modify_reg<F>(&'a self, f: F)
+    where
+        F: for<'b> Fn(&'b Self, &'b mut Self::Val),
+    {
+        loop {
+            let mut val = unsafe { load_excl::<T, Self>() };
+            f(self, &mut val);
+            if unsafe { store_excl::<T, Self>(val) } {
                 break;
             }
         }
