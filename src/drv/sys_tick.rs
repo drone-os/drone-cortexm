@@ -58,13 +58,13 @@ impl<I: IntSysTick> Timer for SysTick<I> {
         duration: u32,
     ) -> TimerInterval<'_, Self, Result<NonZeroUsize, TimerOverflow>> {
         self.interval_stream(duration, |int, ctrl| {
-            Box::pin(int.add_stream_pulse(|| Err(TimerOverflow), Self::interval_fib(ctrl)))
+            Box::pin(int.add_pulse_try_stream(|| Err(TimerOverflow), Self::interval_fib(ctrl)))
         })
     }
 
     fn interval_skip(&mut self, duration: u32) -> TimerInterval<'_, Self, NonZeroUsize> {
         self.interval_stream(duration, |int, ctrl| {
-            Box::pin(int.add_stream_pulse_skip(Self::interval_fib(ctrl)))
+            Box::pin(int.add_saturating_pulse_stream(Self::interval_fib(ctrl)))
         })
     }
 }
