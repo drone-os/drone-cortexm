@@ -14,6 +14,8 @@ Possible log types:
 ### Unreleased
 
 - [added] Added `modify_reg` method for `RwRegAtomic`
+- [added] Added `processor::fpu_init` function
+- [deprecated] Deprecated `drv::fpu` module
 
 ### v0.12.0 (2020-05-01)
 

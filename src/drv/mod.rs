@@ -7,6 +7,7 @@
 //! own additions, in which case it should be used instead.
 
 #[cfg(feature = "floating-point-unit")]
+#[deprecated = "please use 'processor::fpu_init' instead"]
 pub mod fpu;
 pub mod sys_tick;
 pub mod timer;

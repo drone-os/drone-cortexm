@@ -2,7 +2,7 @@
 
 #![cfg_attr(feature = "std", allow(unreachable_code, unused_mut))]
 
-/// Wait for interrupt.
+/// Waits for interrupt.
 ///
 /// It is a hint instruction. It suspends execution, in the lowest power state
 /// available consistent with a fast wakeup without the need for software
@@ -14,7 +14,7 @@ pub fn wait_for_int() {
     unsafe { llvm_asm!("wfi" :::: "volatile") };
 }
 
-/// Wait for event.
+/// Waits for event.
 ///
 /// It is a hint instruction. If the Event Register is clear, it suspends
 /// execution in the lowest power state available consistent with a fast wakeup
@@ -29,7 +29,7 @@ pub fn wait_for_event() {
     unsafe { llvm_asm!("wfe" :::: "volatile") };
 }
 
-/// Send event.
+/// Sends event.
 ///
 /// It is a hint instruction. It causes an event to be signaled to all CPUs
 /// within the multiprocessor system.
@@ -87,4 +87,28 @@ pub fn spin(mut cycles: u32) {
             : "volatile"
         );
     }
+}
+
+/// Enables the FPU.
+///
+/// The FPU is disabled from reset. You must enable it before you can use any
+/// floating-point instructions.
+///
+/// # Safety
+///
+/// * The processor must be in privileged mode
+/// * The function rewrites contents of FPU_CPACR register without taking into
+///   account register tokens
+#[cfg(feature = "floating-point-unit")]
+#[inline]
+pub unsafe fn fpu_init(full_access: bool) {
+    const FPU_CPACR: usize = 0xE000_ED88;
+    core::ptr::write_volatile(
+        FPU_CPACR as *mut u32,
+        if full_access {
+            0xF // full access
+        } else {
+            0x5 // privileged access only
+        } << 20,
+    );
 }
