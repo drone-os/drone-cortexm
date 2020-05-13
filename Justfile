@@ -55,7 +55,7 @@ version-bump version drone-version drone-core-version:
 # Publish to crates.io
 publish:
 	cd macros && cargo publish
-	sleep 10
+	sleep 30
 	drone env {{target}} -- cargo publish --features "{{features}}"
 
 # Publish the docs to api.drone-os.com

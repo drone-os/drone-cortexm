@@ -5,7 +5,7 @@ members = ["macros"]
 
 [package]
 name = "drone-cortexm"
-version = "0.12.0"
+version = "0.12.1"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
 edition = "2018"
 resolver = "2"
@@ -44,11 +44,11 @@ memory-protection-unit = []
 security-extension = []
 
 [dependencies.drone-cortexm-macros]
-version = "=0.12.0"
+version = "=0.12.1"
 path = "macros"
 
 [dependencies.drone-core]
-version = "0.12.0"
+version = "0.12.1"
 path = "../drone-core"
 
 [dependencies]
