@@ -21,10 +21,6 @@ proc-macro = true
 version = "0.12.1"
 path = "../../drone-core/macros-core"
 
-[dependencies.drone-config]
-version = "0.12.1"
-path = "../../drone/config"
-
 [dependencies]
 Inflector = "0.11"
 proc-macro2 = "1"

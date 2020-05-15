@@ -38,15 +38,13 @@ readme:
 	cargo readme -o README.md
 
 # Bump the versions
-version-bump version drone-version drone-core-version:
+version-bump version drone-core-version:
 	sed -i "s/\(api\.drone-os\.com\/drone-cortexm\/\)[0-9]\+\(\.[0-9]\+\)\+/\1$(echo {{version}} | sed 's/\(.*\)\.[0-9]\+/\1/')/" \
 		Cargo.toml macros/Cargo.toml src/lib.rs
 	sed -i '/\[.*\]/h;/version = ".*"/{x;s/\[package\]/version = "{{version}}"/;t;x}' \
 		Cargo.toml macros/Cargo.toml
 	sed -i '/\[.*\]/h;/version = "=.*"/{x;s/\[.*drone-cortexm-.*\]/version = "={{version}}"/;t;x}' \
 		Cargo.toml
-	sed -i '/\[.*\]/h;/version = ".*"/{x;s/\[.*drone-config\]/version = "{{drone-version}}"/;t;x}' \
-		macros/Cargo.toml
 	sed -i '/\[.*\]/h;/version = ".*"/{x;s/\[.*drone\(-macros\)\?-core\]/version = "{{drone-core-version}}"/;t;x}' \
 		Cargo.toml macros/Cargo.toml
 	sed -i 's/\(drone-cortexm.*\)version = "[^"]\+"/\1version = "{{version}}"/' \
