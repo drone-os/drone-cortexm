@@ -190,6 +190,7 @@ where
     }
 }
 
+#[allow(clippy::unused_unit)]
 impl<Sv, F> FiberRoot for FiberProc<Sv, (), (), (), F>
 where
     Sv: Switch<ProcData<(), (), ()>>,

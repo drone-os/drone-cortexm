@@ -11,6 +11,10 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### Unreleased
+
+- [removed] Removed deprecated `drv::fpu` module
+
 ### v0.12.2 (2020-09-27)
 
 - [added] Added `DWT_CTRL` register mapping.
