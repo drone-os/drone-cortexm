@@ -185,7 +185,12 @@ where
     F::Reg: WReg<T>,
     T: RegTag,
 {
-    let mut val = F::Reg::take().default_val();
-    field.set(&mut val);
-    write_volatile(F::Reg::ADDRESS as *mut <<F::Reg as Reg<T>>::Val as Bitfield>::Bits, val.bits());
+    unsafe {
+        let mut val = F::Reg::take().default_val();
+        field.set(&mut val);
+        write_volatile(
+            F::Reg::ADDRESS as *mut <<F::Reg as Reg<T>>::Val as Bitfield>::Bits,
+            val.bits(),
+        );
+    }
 }

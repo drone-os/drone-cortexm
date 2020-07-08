@@ -54,8 +54,9 @@
 #![feature(never_type_fallback)]
 #![feature(prelude_import)]
 #![feature(proc_macro_hygiene)]
+#![feature(unsafe_block_in_unsafe_fn)]
 #![feature(untagged_unions)]
-#![warn(missing_docs)]
+#![warn(missing_docs, unsafe_op_in_unsafe_fn)]
 #![warn(clippy::pedantic)]
 #![allow(
     clippy::cast_possible_truncation,

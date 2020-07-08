@@ -3,6 +3,8 @@
 //! [drone-cortexm]: https://github.com/drone-os/drone-cortexm
 
 #![recursion_limit = "256"]
+#![feature(unsafe_block_in_unsafe_fn)]
+#![warn(unsafe_op_in_unsafe_fn)]
 #![warn(clippy::pedantic)]
 
 extern crate proc_macro;

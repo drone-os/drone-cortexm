@@ -179,5 +179,5 @@ pub trait ThrSv: ThrToken {
 ///
 /// The function is not reentrant.
 pub unsafe extern "C" fn thr_handler<T: ThrToken>() {
-    thread_resume::<T>();
+    unsafe { thread_resume::<T>() };
 }

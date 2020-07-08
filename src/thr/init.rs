@@ -159,8 +159,8 @@ mod mpu {
     pub(super) unsafe fn reset() {
         #[cfg(feature = "std")]
         return unimplemented!();
-        let mpu_type = mpu::Type::<Srt>::take();
-        let mpu_ctrl = mpu::Ctrl::<Srt>::take();
+        let mpu_type = unsafe { mpu::Type::<Srt>::take() };
+        let mpu_ctrl = unsafe { mpu::Ctrl::<Srt>::take() };
         let mut table_ptr = &MPU_RESET_TABLE;
         if mpu_type.load().dregion() == 0 {
             return;

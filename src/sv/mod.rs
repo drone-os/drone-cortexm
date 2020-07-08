@@ -165,10 +165,12 @@ pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
 /// This function should not be called directly.
 pub unsafe extern "C" fn service_handler<T: SvService>(mut frame: *mut *mut u8) {
     if size_of::<T>() == 0 {
-        T::handler(&mut *(frame as *mut T));
+        unsafe { T::handler(&mut *(frame as *mut T)) };
     } else {
-        frame = frame.add(4); // Stacked R12
-        T::handler(&mut *(*frame as *mut T));
+        unsafe {
+            frame = frame.add(4); // Stacked R12
+            T::handler(&mut *(*frame as *mut T));
+        }
     }
 }
 
@@ -194,5 +196,5 @@ pub unsafe extern "C" fn sv_handler<T: Supervisor>() {
         : "r0", "r1", "cc"
         : "volatile"
     );
-    unreachable();
+    unsafe { unreachable() };
 }
