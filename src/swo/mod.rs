@@ -81,6 +81,8 @@ pub fn sync() {
 /// # [heap]
 /// # size = \"0\"
 /// # pools = []
+/// # [linker]
+/// # platform = \"arm\"
 /// # [probe]
 /// # gdb-client-command = \"gdb-multiarch\"
 /// # [log.swo]
