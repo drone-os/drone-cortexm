@@ -39,7 +39,7 @@ Add the crate to your `Cargo.toml` dependencies:
 
 ```toml
 [dependencies]
-drone-cortexm = { version = "0.12.1", features = [...] }
+drone-cortexm = { version = "0.12.2", features = [...] }
 ```
 
 Add or extend `std` feature as follows:

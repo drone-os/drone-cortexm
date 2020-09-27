@@ -11,6 +11,10 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### v0.12.2 (2020-09-27)
+
+- [added] Added `DWT_CTRL` register mapping.
+
 ### v0.12.1 (2020-05-13)
 
 - [added] Added `modify_reg` method for `RwRegAtomic`
