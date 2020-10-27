@@ -580,28 +580,16 @@ fn def_thr_token(
                             }
                         });
                     }
-                    match thread {
-                        Thread::Reset(_) => {}
-                        Thread::Exception(_) => {
-                            let int_trait = format_ident!("Int{}", struct_ident);
-                            tokens.push(quote! {
-                                impl #int_trait for #struct_ident {}
-                            });
-                        }
-                        Thread::Interrupt(num, _) => {
-                            let num = *num as usize;
-                            let int_trait = format_ident!("Int{}", num);
-                            let nvic_block = format_ident!("NvicBlock{}", num / 32);
-                            tokens.push(quote! {
-                                impl ::drone_cortexm::thr::IntToken for #struct_ident {
-                                    type NvicBlock = ::drone_cortexm::map::thr::#nvic_block;
+                    if let Thread::Interrupt(num, _) = thread {
+                        let num = *num as usize;
+                        let nvic_block = format_ident!("NvicBlock{}", num / 32);
+                        tokens.push(quote! {
+                            impl ::drone_cortexm::thr::IntToken for #struct_ident {
+                                type NvicBlock = ::drone_cortexm::map::thr::#nvic_block;
 
-                                    const INT_NUM: usize = #num;
-                                }
-
-                                impl #int_trait for #struct_ident {}
-                            });
-                        }
+                                const INT_NUM: usize = #num;
+                            }
+                        });
                     }
                     Some((
                         quote!(#(#tokens)*),

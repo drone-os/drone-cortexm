@@ -9,16 +9,10 @@
 
 extern crate proc_macro;
 
-mod int;
 mod sv;
 mod thr;
 
 use proc_macro::TokenStream;
-
-#[proc_macro]
-pub fn int(input: TokenStream) -> TokenStream {
-    int::proc_macro(input)
-}
 
 #[proc_macro]
 pub fn sv(input: TokenStream) -> TokenStream {

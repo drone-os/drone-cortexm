@@ -8,8 +8,6 @@
 //! ```
 //! # #![feature(const_fn)]
 //! # #![feature(marker_trait_attr)]
-//! # drone_cortexm::thr::int!(pub trait Rcc: 5);
-//! # drone_cortexm::thr::int!(pub trait Adc1: 18);
 //! # fn main() {}
 //! use drone_cortexm::{map::thr::*, thr};
 //!
@@ -90,19 +88,6 @@
 //! * `debug` - Monitor.
 //! * `pend_sv` - Pendable request for system service.
 //! * `sys_tick` - System tick timer.
-//!
-//! # Interrupt Mappings
-//!
-//! All available interrupts should be mapped with this macro:
-//! ```
-//! # #![feature(marker_trait_attr)]
-//! # fn main() {}
-//! use drone_cortexm::thr::int;
-//!
-//! int! {
-//!     /// RCC global interrupt.
-//!     pub trait RCC: 5;
-//! }
 //! ```
 
 pub mod prelude;
@@ -115,12 +100,6 @@ mod wake;
 
 #[doc(no_inline)]
 pub use drone_core::thr::*;
-
-/// Defines an interrupt.
-///
-/// See [the module level documentation](self) for details.
-#[doc(inline)]
-pub use drone_cortexm_macros::int;
 
 pub use self::{
     exec::{ExecOutput, ThrExec},

@@ -26,9 +26,6 @@ impl SvService for BarService {
     unsafe extern "C" fn handler(&mut self) {}
 }
 
-trait Int10: IntToken {}
-trait Int5: IntToken {}
-
 thr! {
     thread => pub Thr {};
 

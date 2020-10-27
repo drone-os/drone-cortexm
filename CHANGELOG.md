@@ -16,6 +16,7 @@ Possible log types:
 - [removed] Removed deprecated `drv::fpu` module
 - [changed] The syntax of `thr::vtable!` macro has been changed and the macro
   has been renamed to `thr!`
+- [removed] Removed `thr::int!` macro
 
 ### v0.12.2 (2020-09-27)
 

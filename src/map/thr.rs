@@ -1,26 +1,6 @@
-//! Core ARM Cortex-M exception mappings.
+//! Core ARM Cortex-M interrupt mappings.
 
-use crate::thr::{prelude::*, NvicBlock};
-
-macro_rules! exception {
-    ($name:ident, $doc:expr) => {
-        #[doc = $doc]
-        #[marker]
-        pub trait $name: ThrToken {}
-    };
-}
-
-exception!(IntNmi, "Non maskable interrupt.");
-exception!(IntHardFault, "All classes of fault.");
-exception!(IntMemManage, "Memory management.");
-exception!(IntBusFault, "Pre-fetch fault, memory access fault.");
-exception!(IntUsageFault, "Undefined instruction or illegal state.");
-#[cfg(feature = "security-extension")]
-exception!(IntSecureFault, "Security check violation.");
-exception!(IntSvCall, "System service call via SWI instruction.");
-exception!(IntDebug, "Monitor.");
-exception!(IntPendSv, "Pendable request for system service.");
-exception!(IntSysTick, "System tick timer.");
+use crate::thr::NvicBlock;
 
 macro_rules! nvic_block {
     ($name:ident, $number:expr, $doc:expr) => {

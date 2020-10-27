@@ -6,7 +6,6 @@ use crate::{
     map::{
         periph::sys_tick::SysTickPeriph,
         reg::{scb, stk},
-        thr::IntSysTick,
     },
     reg::{field::WWRegFieldBit, prelude::*},
     thr::prelude::*,
@@ -16,7 +15,7 @@ use drone_core::{bitfield::Bitfield, token::Token};
 use futures::stream::Stream;
 
 /// SysTick driver.
-pub struct SysTick<I: IntSysTick> {
+pub struct SysTick<I: IntToken> {
     periph: SysTickDiverged,
     int: I,
 }
@@ -31,7 +30,7 @@ pub struct SysTickDiverged {
     pub stk_val: stk::Val<Srt>,
 }
 
-impl<I: IntSysTick> Timer for SysTick<I> {
+impl<I: IntToken> Timer for SysTick<I> {
     type Stop = Self;
 
     fn sleep(&mut self, duration: u32) -> TimerSleep<'_, Self> {
@@ -69,14 +68,14 @@ impl<I: IntSysTick> Timer for SysTick<I> {
     }
 }
 
-impl<I: IntSysTick> TimerStop for SysTick<I> {
+impl<I: IntToken> TimerStop for SysTick<I> {
     fn stop(&mut self) {
         let mut ctrl_val = self.periph.stk_ctrl.load();
         self.periph.stk_ctrl.store_val(disable(&mut ctrl_val).val());
     }
 }
 
-impl<I: IntSysTick> SysTick<I> {
+impl<I: IntToken> SysTick<I> {
     /// Creates a new driver from the peripheral.
     #[inline]
     pub fn new(periph: SysTickPeriph, int: I) -> Self {
@@ -144,7 +143,7 @@ impl<I: IntSysTick> SysTick<I> {
 }
 
 #[allow(missing_docs)]
-impl<I: IntSysTick> SysTick<I> {
+impl<I: IntToken> SysTick<I> {
     #[inline]
     pub fn int(&self) -> I {
         self.int
