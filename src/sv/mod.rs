@@ -22,30 +22,22 @@
 //!     // SwitchBackService;
 //! }
 //!
-//! thr::vtable! {
-//!     use Thr;
-//!     pub struct Vtable;
-//!     pub struct Handlers;
-//!     pub struct Thrs;
-//!     pub struct ThrsInit;
-//!     static THREADS;
-//!
-//!     // Define an external function handler for the SV_CALL exception.
-//!     fn SV_CALL;
-//! }
-//!
 //! thr! {
-//!     use THREADS;
-//!     pub struct Thr {}
-//!     pub struct ThrLocal {}
+//!     thread => pub Thr {};
+//!     local => pub ThrLocal {};
+//!     vtable => pub Vtable;
+//!     index => pub Thrs;
+//!     init => pub ThrsInit;
+//!     threads => {
+//!         exceptions => {
+//!             // Define an external function handler for the SV_CALL exception.
+//!             naked(sv::sv_handler::<Sv>) sv_call,
+//!         },
+//!     };
 //! }
 //!
 //! #[no_mangle]
-//! pub static VTABLE: Vtable = Vtable::new(Handlers {
-//!     reset,
-//!     // Attach the SV_CALL handler for the supervisor `Sv`.
-//!     sv_call: drone_cortexm::sv::sv_handler::<Sv>,
-//! });
+//! pub static VTABLE: Vtable = Vtable::new(reset);
 //!
 //! unsafe extern "C" fn reset() -> ! {
 //!     loop {}

@@ -11,7 +11,7 @@ extern crate proc_macro;
 
 mod int;
 mod sv;
-mod vtable;
+mod thr;
 
 use proc_macro::TokenStream;
 
@@ -26,6 +26,6 @@ pub fn sv(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-pub fn vtable(input: TokenStream) -> TokenStream {
-    vtable::proc_macro(input)
+pub fn thr(input: TokenStream) -> TokenStream {
+    thr::proc_macro(input)
 }

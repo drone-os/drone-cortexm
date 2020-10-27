@@ -91,6 +91,12 @@ mod drone_core_macro_reexport {
 
 pub use drone_core_macro_reexport::*;
 
+/// Defines threads.
+///
+/// See [the module level documentation](thr) for details.
+#[doc(inline)]
+pub use drone_cortexm_macros::thr;
+
 /// Defines the supervisor type.
 ///
 /// See [the module level documentation](sv) for details.

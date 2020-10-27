@@ -30,18 +30,13 @@ pub struct ThrInitExtended {
 /// # #![feature(const_fn)]
 /// # #![feature(proc_macro_hygiene)]
 /// # use drone_core::token::Token;
-/// # thr::vtable! {
-/// #     use Thr;
-/// #     struct Vtable;
-/// #     struct Handlers;
-/// #     struct Thrs;
-/// #     struct ThrsInit;
-/// #     static THREADS;
-/// # }
 /// # thr! {
-/// #     use THREADS;
-/// #     struct Thr {}
-/// #     struct ThrLocal {}
+/// #     thread => pub Thr {};
+/// #     local => pub ThrLocal {};
+/// #     vtable => Vtable;
+/// #     index => Thrs;
+/// #     init => ThrsInit;
+/// #     threads => {};
 /// # }
 /// use drone_cortexm::{cortexm_reg_tokens, reg::prelude::*, thr};
 ///
@@ -95,18 +90,13 @@ pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExten
 /// # #![feature(const_fn)]
 /// # #![feature(proc_macro_hygiene)]
 /// # use drone_core::token::Token;
-/// # thr::vtable! {
-/// #     use Thr;
-/// #     struct Vtable;
-/// #     struct Handlers;
-/// #     struct Thrs;
-/// #     struct ThrsInit;
-/// #     static THREADS;
-/// # }
 /// # thr! {
-/// #     use THREADS;
-/// #     struct Thr {}
-/// #     struct ThrLocal {}
+/// #     thread => pub Thr {};
+/// #     local => pub ThrLocal {};
+/// #     vtable => Vtable;
+/// #     index => Thrs;
+/// #     init => ThrsInit;
+/// #     threads => {};
 /// # }
 /// use drone_cortexm::{cortexm_reg_tokens, thr};
 ///
