@@ -17,6 +17,7 @@ Possible log types:
 - [changed] The syntax of `thr::vtable!` macro has been changed and the macro
   has been renamed to `thr!`
 - [removed] Removed `thr::int!` macro
+- [changed] Changed syntax of `sv!` macro
 
 ### v0.12.2 (2020-09-27)
 

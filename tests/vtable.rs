@@ -67,11 +67,12 @@ extern "C" fn nmi_handler() {}
 extern "C" fn rcc_handler() {}
 
 sv! {
-    pub struct Sv;
-    pub static SERVICES;
-
-    FooService;
-    BarService;
+    supervisor => pub Sv;
+    array => pub SERVICES;
+    services => {
+        FooService,
+        BarService,
+    }
 }
 
 #[test]

@@ -11,15 +11,17 @@
 //! use drone_cortexm::{sv, thr};
 //!
 //! sv! {
-//!     /// The supervisor.
-//!     pub struct Sv;
+//!     /// The supervisor type.
+//!     supervisor => pub Sv;
 //!
 //!     /// Array of services.
-//!     static SERVICES;
+//!     array => SERVICES;
 //!
-//!     // The list of attached services goes here.
-//!     // SwitchContextService;
-//!     // SwitchBackService;
+//!     // Attached services.
+//!     services => {
+//!         // SwitchContextService,
+//!         // SwitchBackService,
+//!     }
 //! }
 //!
 //! thr! {
@@ -57,14 +59,17 @@
 //! use drone_cortexm::sv;
 //!
 //! sv! {
-//!     /// The supervisor.
-//!     pub struct Sv;
+//!     /// The supervisor type.
+//!     supervisor => pub Sv;
 //!
 //!     /// Array of services.
-//!     static SERVICES;
+//!     array => SERVICES;
 //!
-//!     SwitchContextService;
-//!     SwitchBackService;
+//!     // Attached services.
+//!     services => {
+//!         SwitchContextService,
+//!         SwitchBackService,
+//!     }
 //! }
 //!
 //! # fn main() {

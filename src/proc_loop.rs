@@ -21,12 +21,13 @@
 //!
 //! // Stackful fibers need a supervisor.
 //! sv! {
-//!     pub struct Sv;
-//!     static SERVICES;
-//!
-//!     // These services are required for stackful fibers.
-//!     SwitchContextService;
-//!     SwitchBackService;
+//!     supervisor => pub Sv;
+//!     array => SERVICES;
+//!     services => {
+//!         // These services are required for stackful fibers.
+//!         SwitchContextService,
+//!         SwitchBackService,
+//!     }
 //! }
 //!
 //! // Here is the library API.
