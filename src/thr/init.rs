@@ -27,7 +27,7 @@ pub struct ThrInitExtended {
 /// # Examples
 ///
 /// ```no_run
-/// # #![feature(const_fn)]
+/// # #![feature(const_fn_fn_ptr_basics)]
 /// # #![feature(proc_macro_hygiene)]
 /// # use drone_core::token::Token;
 /// # thr! {
@@ -87,7 +87,7 @@ pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExten
 /// # Examples
 ///
 /// ```no_run
-/// # #![feature(const_fn)]
+/// # #![feature(const_fn_fn_ptr_basics)]
 /// # #![feature(proc_macro_hygiene)]
 /// # use drone_core::token::Token;
 /// # thr! {

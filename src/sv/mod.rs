@@ -6,7 +6,7 @@
 //! # Usage
 //!
 //! ```
-//! # #![feature(const_fn)]
+//! # #![feature(const_fn_fn_ptr_basics)]
 //! # fn main() {}
 //! use drone_cortexm::{sv, thr};
 //!

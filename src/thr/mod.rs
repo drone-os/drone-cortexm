@@ -6,7 +6,7 @@
 //! # Vector Table
 //!
 //! ```
-//! # #![feature(const_fn)]
+//! # #![feature(const_fn_fn_ptr_basics)]
 //! # #![feature(marker_trait_attr)]
 //! # fn main() {}
 //! use drone_cortexm::{map::thr::*, thr};

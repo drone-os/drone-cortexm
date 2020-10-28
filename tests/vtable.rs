@@ -1,4 +1,4 @@
-#![feature(const_fn)]
+#![feature(const_fn_fn_ptr_basics)]
 #![feature(prelude_import)]
 
 #[prelude_import]
@@ -7,11 +7,9 @@ use drone_core::prelude::*;
 
 use core::mem::size_of;
 use drone_cortexm::{
-    map::thr::*,
     sv,
     sv::{sv_handler, SvService},
     thr,
-    thr::prelude::*,
 };
 
 struct FooService;
