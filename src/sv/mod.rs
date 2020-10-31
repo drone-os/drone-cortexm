@@ -19,8 +19,8 @@
 //!
 //!     // Attached services.
 //!     services => {
-//!         // SwitchContextService,
-//!         // SwitchBackService,
+//!         // SwitchContextService;
+//!         // SwitchBackService;
 //!     }
 //! }
 //!
@@ -33,8 +33,8 @@
 //!     threads => {
 //!         exceptions => {
 //!             // Define an external function handler for the SV_CALL exception.
-//!             naked(sv::sv_handler::<Sv>) sv_call,
-//!         },
+//!             naked(sv::sv_handler::<Sv>) sv_call;
+//!         };
 //!     };
 //! }
 //!
@@ -67,8 +67,8 @@
 //!
 //!     // Attached services.
 //!     services => {
-//!         SwitchContextService,
-//!         SwitchBackService,
+//!         SwitchContextService;
+//!         SwitchBackService;
 //!     }
 //! }
 //!

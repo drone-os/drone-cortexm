@@ -43,22 +43,22 @@ thr! {
         exceptions => {
             /// Test doc attribute
             #[doc = "test attribute"]
-            pub outer(nmi_handler) nmi,
+            pub outer(nmi_handler) nmi;
             /// Test doc attribute
             #[doc = "test attribute"]
-            pub naked(sv_handler::<Sv>) sv_call,
+            pub naked(sv_handler::<Sv>) sv_call;
             /// Test doc attribute
             #[doc = "test attribute"]
-            pub sys_tick,
-        },
+            pub sys_tick;
+        };
         interrupts => {
             /// Test doc attribute
             #[doc = "test attribute"]
-            10: pub exti4,
+            10: pub exti4;
             /// Test doc attribute
             #[doc = "test attribute"]
-            5: pub naked(rcc_handler) rcc,
-        },
+            5: pub naked(rcc_handler) rcc;
+        };
     };
 }
 
@@ -70,8 +70,8 @@ sv! {
     supervisor => pub Sv;
     array => pub SERVICES;
     services => {
-        FooService,
-        BarService,
+        FooService;
+        BarService;
     }
 }
 

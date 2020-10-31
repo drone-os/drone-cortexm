@@ -24,8 +24,8 @@
 //!     array => SERVICES;
 //!     services => {
 //!         // These services are required for stackful fibers.
-//!         SwitchContextService,
-//!         SwitchBackService,
+//!         SwitchContextService;
+//!         SwitchBackService;
 //!     }
 //! }
 //!
@@ -58,7 +58,7 @@
 //! # drone_core::thr!(array => THREADS; thread => Thr {}; local => ThrLocal {});
 //! # #[derive(Clone, Copy)] struct SysTick;
 //! # struct Thrs { sys_tick: SysTick }
-//! # sv!(supervisor => pub Sv; array => SERVICES; services => {SwitchContextService, SwitchBackService});
+//! # sv!(supervisor => pub Sv; array => SERVICES; services => { SwitchContextService; SwitchBackService });
 //! # unsafe impl Token for Thrs {
 //! #     unsafe fn take() -> Self { Self { sys_tick: SysTick::take() } }
 //! # }

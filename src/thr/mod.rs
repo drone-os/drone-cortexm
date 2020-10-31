@@ -35,28 +35,28 @@
 //!             // structure `Nmi`, a field `nmi` in the `Thrs` structure, and an element in the
 //!             // array of `Thr`.
 //!             /// Non maskable interrupt.
-//!             pub nmi,
+//!             pub nmi;
 //!             /// All classes of fault.
-//!             pub hard_fault,
+//!             pub hard_fault;
 //!             // Define a naked handler for the SV_CALL exception. This inserts the function
 //!             // `sv_call_handler` directly to the vector table.
 //!             /// System service call.
-//!             pub naked(sv_call_handler) sv_call,
+//!             pub naked(sv_call_handler) sv_call;
 //!             /// System tick timer.
-//!             pub sys_tick,
-//!         },
+//!             pub sys_tick;
+//!         };
 //!         // Threads for interrupts.
 //!         interrupts => {
 //!             // Define a regular thread for the interrupt #5 with name `rcc`.
 //!             /// RCC global interrupt.
-//!             5: pub rcc,
+//!             5: pub rcc;
 //!             // Define an outer thread for the interrupt #18 with name `adc1`. This creates a
 //!             // thread token structure `Adc1`, a field `adc1` in the `Thrs` structure, and an
 //!             // element in the array of `Thr`. But unlike a regular thread, this outer thread
 //!             // uses a custom handler `adc1_handler`.
 //!             /// ADC1 global interrupt.
-//!             18: pub outer(adc1_handler) adc1,
-//!         },
+//!             18: pub outer(adc1_handler) adc1;
+//!         };
 //!     };
 //! }
 //!

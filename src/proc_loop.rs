@@ -25,8 +25,8 @@
 //!     array => SERVICES;
 //!     services => {
 //!         // These services are required for stackful fibers.
-//!         SwitchContextService,
-//!         SwitchBackService,
+//!         SwitchContextService;
+//!         SwitchBackService;
 //!     }
 //! }
 //!

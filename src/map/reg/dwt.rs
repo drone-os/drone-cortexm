@@ -49,9 +49,14 @@ reg! {
 
 reg! {
     /// Cycle Count Register.
-    pub mod DWT CYCCNT;
-    0xE000_1004 0x20 0x0000_0000
-    RReg WReg;
-    /// Incrementing cycle counter value.
-    CYCCNT { 0 32 RRRegField WWRegField }
+    pub DWT CYCCNT => {
+        address => 0xE000_1004;
+        size => 0x20;
+        reset => 0x0000_0000;
+        traits => { RReg WReg };
+        fields => {
+            /// Incrementing cycle counter value.
+            CYCCNT => { offset => 0; width => 32; traits => { RRRegField WWRegField } };
+        };
+    };
 }

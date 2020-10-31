@@ -133,6 +133,8 @@ impl Parse for Input {
                 } else {
                     return Err(input.error("multiple `threads` specifications"));
                 }
+            } else {
+                return Err(input.error(format!("unknown key: `{}`", ident)));
             }
             if !input.is_empty() {
                 input.parse::<Token![;]>()?;
@@ -222,7 +224,7 @@ impl Parse for Threads {
                     let ident = input3.parse()?;
                     threads.push(Thread::Exception(ThreadSpec { attrs, vis, kind, ident }));
                     if !input3.is_empty() {
-                        input3.parse::<Token![,]>()?;
+                        input3.parse::<Token![;]>()?;
                     }
                 }
             } else if attrs.is_empty() && ident == "interrupts" {
@@ -237,14 +239,14 @@ impl Parse for Threads {
                     let ident = input3.parse()?;
                     threads.push(Thread::Interrupt(num, ThreadSpec { attrs, vis, kind, ident }));
                     if !input3.is_empty() {
-                        input3.parse::<Token![,]>()?;
+                        input3.parse::<Token![;]>()?;
                     }
                 }
             } else {
                 return Err(input2.error(format!("Unexpected ident `{}`", ident)));
             }
             if !input2.is_empty() {
-                input2.parse::<Token![,]>()?;
+                input2.parse::<Token![;]>()?;
             }
         }
         Ok(Self { threads })

@@ -60,6 +60,8 @@ impl Parse for Input {
                 } else {
                     return Err(input.error("multiple `services` specifications"));
                 }
+            } else {
+                return Err(input.error(format!("unknown key: `{}`", ident)));
             }
             if !input.is_empty() {
                 input.parse::<Token![;]>()?;
@@ -98,7 +100,7 @@ impl Parse for Services {
             let ident = input2.parse::<Ident>()?;
             services.push(Service { ident });
             if !input2.is_empty() {
-                input2.parse::<Token![,]>()?;
+                input2.parse::<Token![;]>()?;
             }
         }
         Ok(Self { services })

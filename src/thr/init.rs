@@ -41,9 +41,11 @@ pub struct ThrInitExtended {
 /// use drone_cortexm::{cortexm_reg_tokens, reg::prelude::*, thr};
 ///
 /// cortexm_reg_tokens! {
-///     struct Regs;
-///     !scb_ccr;
-///     !mpu_type; !mpu_ctrl; !mpu_rnr; !mpu_rbar; !mpu_rasr;
+///     index => Regs;
+///     exclude => {
+///         scb_ccr,
+///         mpu_type, mpu_ctrl, mpu_rnr, mpu_rbar, mpu_rasr,
+///     }
 /// }
 ///
 /// fn handler(reg: Regs, thr_init: ThrsInit) {
@@ -101,9 +103,11 @@ pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExten
 /// use drone_cortexm::{cortexm_reg_tokens, thr};
 ///
 /// cortexm_reg_tokens! {
-///     struct Regs;
-///     !scb_ccr;
-///     !mpu_type; !mpu_ctrl; !mpu_rnr; !mpu_rbar; !mpu_rasr;
+///     index => Regs;
+///     exclude => {
+///         scb_ccr,
+///         mpu_type, mpu_ctrl, mpu_rnr, mpu_rbar, mpu_rasr,
+///     }
 /// }
 ///
 /// fn handler(reg: Regs, thr_init: ThrsInit) {
