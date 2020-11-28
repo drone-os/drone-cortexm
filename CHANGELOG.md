@@ -11,7 +11,7 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
-### Unreleased
+### v0.13.0 (2020-11-28)
 
 - [removed] Removed deprecated `drv::fpu` module
 - [changed] The syntax of `thr::vtable!` macro has been changed and the macro
