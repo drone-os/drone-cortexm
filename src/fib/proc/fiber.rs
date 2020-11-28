@@ -53,11 +53,12 @@ where
             #[cfg(feature = "memory-protection-unit")]
             mpu::check();
         }
-        let stack_bottom = alloc::alloc(layout(stack_size));
+        let stack_bottom = unsafe { alloc::alloc(layout(stack_size)) };
         if stack_bottom.is_null() {
             panic!("Stack allocation failure");
         }
-        let stack_ptr = Self::stack_init(stack_bottom, stack_size, unprivileged, unchecked, f);
+        let stack_ptr =
+            unsafe { Self::stack_init(stack_bottom, stack_size, unprivileged, unchecked, f) };
         Self {
             stack_bottom,
             stack_ptr,
@@ -89,65 +90,71 @@ where
                     + guard_size(unchecked),
             "insufficient stack size",
         );
-        let stack_ptr = stack_bottom.add(stack_size);
-        let data_ptr = Self::stack_reserve::<ProcData<I, Y, R>>(stack_ptr);
-        let fn_ptr = Self::stack_reserve::<F>(data_ptr) as *mut F;
-        fn_ptr.write(f);
-        let mut stack_ptr = fn_ptr as *mut u32;
-        // Align the stack to double word.
-        if (stack_ptr as usize).trailing_zeros() < 3 {
+        unsafe {
+            let stack_ptr = stack_bottom.add(stack_size);
+            let data_ptr = Self::stack_reserve::<ProcData<I, Y, R>>(stack_ptr);
+            let fn_ptr = Self::stack_reserve::<F>(data_ptr) as *mut F;
+            fn_ptr.write(f);
+            let mut stack_ptr = fn_ptr as *mut u32;
+            // Align the stack to double word.
+            if (stack_ptr as usize).trailing_zeros() < 3 {
+                stack_ptr = stack_ptr.sub(1);
+            }
+            // xPSR
             stack_ptr = stack_ptr.sub(1);
+            stack_ptr.write(0x0100_0000);
+            // PC
+            stack_ptr = stack_ptr.sub(1);
+            stack_ptr.write(Self::handler as usize as u32);
+            // LR, R12, R3, R2
+            stack_ptr = stack_ptr.sub(4);
+            stack_ptr.write_bytes(0, 4);
+            // R1
+            stack_ptr = stack_ptr.sub(1);
+            stack_ptr.write(data_ptr as u32);
+            // R0
+            stack_ptr = stack_ptr.sub(1);
+            stack_ptr.write(fn_ptr as u32);
+            // LR
+            stack_ptr = stack_ptr.sub(1);
+            stack_ptr.write(0xFFFF_FFFD);
+            // R11, R10, R9, R8, R7, R6, R5, R4
+            stack_ptr = stack_ptr.sub(8);
+            stack_ptr.write_bytes(0, 8);
+            // CONTROL
+            stack_ptr = stack_ptr.sub(1);
+            stack_ptr.write(if unprivileged { 0b11 } else { 0b10 });
+            // MPU CONFIG
+            stack_ptr = stack_ptr.sub(1);
+            stack_ptr.write(mpu_config(unchecked, stack_bottom));
+            stack_ptr as *const u8
         }
-        // xPSR
-        stack_ptr = stack_ptr.sub(1);
-        stack_ptr.write(0x0100_0000);
-        // PC
-        stack_ptr = stack_ptr.sub(1);
-        stack_ptr.write(Self::handler as usize as u32);
-        // LR, R12, R3, R2
-        stack_ptr = stack_ptr.sub(4);
-        stack_ptr.write_bytes(0, 4);
-        // R1
-        stack_ptr = stack_ptr.sub(1);
-        stack_ptr.write(data_ptr as u32);
-        // R0
-        stack_ptr = stack_ptr.sub(1);
-        stack_ptr.write(fn_ptr as u32);
-        // LR
-        stack_ptr = stack_ptr.sub(1);
-        stack_ptr.write(0xFFFF_FFFD);
-        // R11, R10, R9, R8, R7, R6, R5, R4
-        stack_ptr = stack_ptr.sub(8);
-        stack_ptr.write_bytes(0, 8);
-        // CONTROL
-        stack_ptr = stack_ptr.sub(1);
-        stack_ptr.write(if unprivileged { 0b11 } else { 0b10 });
-        // MPU CONFIG
-        stack_ptr = stack_ptr.sub(1);
-        stack_ptr.write(mpu_config(unchecked, stack_bottom));
-        stack_ptr as *const u8
     }
 
     unsafe fn stack_reserve<T>(mut stack_ptr: *mut u8) -> *mut u8 {
         if size_of::<T>() != 0 {
             let align = max(align_of::<T>(), 4);
-            stack_ptr = stack_ptr.sub(size_of::<T>());
-            stack_ptr = stack_ptr.sub((stack_ptr as usize) & (align - 1));
+            unsafe {
+                stack_ptr = stack_ptr.sub(size_of::<T>());
+                stack_ptr = stack_ptr.sub((stack_ptr as usize) & (align - 1));
+            }
         }
         stack_ptr
     }
 
     unsafe extern "C" fn handler(fn_ptr: *mut F, mut data_ptr: *mut ProcData<I, Y, R>) {
-        let yielder = Yielder::new();
-        let input = data_ptr.read().into_input();
-        let output = Data::from_output(FiberState::Complete((*fn_ptr)(input, yielder)));
-        data_ptr.write(output);
-        Sv::switch_back(&mut data_ptr);
+        unsafe {
+            let yielder = Yielder::new();
+            let input = data_ptr.read().into_input();
+            let output = Data::from_output(FiberState::Complete((*fn_ptr)(input, yielder)));
+            data_ptr.write(output);
+            Sv::switch_back(&mut data_ptr);
+        }
     }
 
     unsafe fn data_ptr(&mut self) -> *mut ProcData<I, Y, R> {
         let data_size = size_of::<ProcData<I, Y, R>>();
-        self.stack_bottom.add(self.stack_size - data_size) as _
+        unsafe { self.stack_bottom.add(self.stack_size - data_size) as _ }
     }
 }
 
@@ -190,6 +197,7 @@ where
     }
 }
 
+#[allow(clippy::unused_unit)]
 impl<Sv, F> FiberRoot for FiberProc<Sv, (), (), (), F>
 where
     Sv: Switch<ProcData<(), (), ()>>,
@@ -238,13 +246,13 @@ fn guard_size(unchecked: bool) -> usize {
 unsafe fn mpu_config(unchecked: bool, stack_bottom: *mut u8) -> u32 {
     if !unchecked {
         #[cfg(feature = "memory-protection-unit")]
-        return mpu::config(stack_bottom);
+        return unsafe { mpu::config(stack_bottom) };
     }
     0
 }
 
 unsafe fn layout(stack_size: usize) -> Layout {
-    Layout::from_size_align_unchecked(stack_size, 1)
+    unsafe { Layout::from_size_align_unchecked(stack_size, 1) }
 }
 
 #[cfg(feature = "memory-protection-unit")]
@@ -268,39 +276,42 @@ mod mpu {
 
     #[allow(clippy::cast_ptr_alignment)]
     pub(super) unsafe fn config(mut guard_ptr: *mut u8) -> u32 {
-        let rbar_bits = |region, addr| {
-            mpu::Rbar::<Srt>::take()
-                .default()
-                .write_addr(addr >> 5)
-                .set_valid()
-                .write_region(region)
-                .val()
-                .bits()
-        };
-        let rasr_bits = || {
-            mpu::Rasr::<Srt>::take()
-                .default()
-                .write_ap(0b000)
-                .write_size(GUARD_SIZE)
-                .set_enable()
-                .val()
-                .bits()
-        };
-        if (guard_ptr as usize).trailing_zeros() <= GUARD_SIZE {
-            guard_ptr = guard_ptr
-                .add((1 << GUARD_SIZE + 1) - ((guard_ptr as usize) & (1 << GUARD_SIZE + 1) - 1));
-        }
-        let mut table_ptr = guard_ptr as *mut u32;
-        table_ptr.write(rbar_bits(0, guard_ptr as u32));
-        table_ptr = table_ptr.add(1);
-        table_ptr.write(rasr_bits());
-        table_ptr = table_ptr.add(1);
-        for i in 1..8 {
-            table_ptr.write(rbar_bits(i, 0));
+        unsafe {
+            let rbar_bits = |region, addr| {
+                mpu::Rbar::<Srt>::take()
+                    .default()
+                    .write_addr(addr >> 5)
+                    .set_valid()
+                    .write_region(region)
+                    .val()
+                    .bits()
+            };
+            let rasr_bits = || {
+                mpu::Rasr::<Srt>::take()
+                    .default()
+                    .write_ap(0b000)
+                    .write_size(GUARD_SIZE)
+                    .set_enable()
+                    .val()
+                    .bits()
+            };
+            if (guard_ptr as usize).trailing_zeros() <= GUARD_SIZE {
+                guard_ptr = guard_ptr.add(
+                    (1 << GUARD_SIZE + 1) - ((guard_ptr as usize) & (1 << GUARD_SIZE + 1) - 1),
+                );
+            }
+            let mut table_ptr = guard_ptr as *mut u32;
+            table_ptr.write(rbar_bits(0, guard_ptr as u32));
             table_ptr = table_ptr.add(1);
-            table_ptr.write(0);
+            table_ptr.write(rasr_bits());
             table_ptr = table_ptr.add(1);
+            for i in 1..8 {
+                table_ptr.write(rbar_bits(i, 0));
+                table_ptr = table_ptr.add(1);
+                table_ptr.write(0);
+                table_ptr = table_ptr.add(1);
+            }
+            table_ptr.sub(16) as u32
         }
-        table_ptr.sub(16) as u32
     }
 }

@@ -81,6 +81,8 @@ pub fn sync() {
 /// # [heap]
 /// # size = \"0\"
 /// # pools = []
+/// # [linker]
+/// # platform = \"arm\"
 /// # [probe]
 /// # gdb-client-command = \"gdb-multiarch\"
 /// # [log.swo]
@@ -157,10 +159,12 @@ macro_rules! swo_set_log {
 /// use drone_cortexm::{cortexm_reg_tokens, swo};
 ///
 /// cortexm_reg_tokens! {
-///     struct Regs;
-///     !dwt_cyccnt;
-///     !itm_tpr; !itm_tcr; !itm_lar;
-///     !tpiu_acpr; !tpiu_sppr; !tpiu_ffcr;
+///     index => Regs;
+///     exclude => {
+///         dwt_cyccnt,
+///         itm_tpr, itm_tcr, itm_lar,
+///         tpiu_acpr, tpiu_sppr, tpiu_ffcr,
+///     }
 /// }
 ///
 /// swo::set_log!();

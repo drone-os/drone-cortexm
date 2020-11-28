@@ -6,69 +6,58 @@
 //! # Vector Table
 //!
 //! ```
-//! # #![feature(const_fn)]
+//! # #![feature(const_fn_fn_ptr_basics)]
 //! # #![feature(marker_trait_attr)]
-//! # drone_cortexm::thr::int!(pub trait Rcc: 5);
-//! # drone_cortexm::thr::int!(pub trait Adc1: 18);
 //! # fn main() {}
 //! use drone_cortexm::{map::thr::*, thr};
 //!
-//! thr::vtable! {
-//!     // Path to the thread object.
-//!     use Thr;
+//! thr! {
+//!     // See the `drone_core` documentation of `thr!` macro for details.
+//!     thread => pub Thr {};
 //!
-//!     /// The vector table.
-//!     pub struct Vtable;
+//!     // See the `drone_core` documentation of `thr!` macro for details.
+//!     local => pub ThrLocal {};
 //!
-//!     // Arguments to the vector table constructor. Contains at least the
-//!     // `reset` handler.
-//!     /// Explicit vector table handlers.
-//!     pub struct Handlers;
+//!     /// The vector table type.
+//!     vtable => pub Vtable;
 //!
 //!     /// Thread tokens.
-//!     pub struct Thrs;
+//!     index => pub Thrs;
 //!
 //!     /// Threads initialization token.
-//!     pub struct ThrsInit;
+//!     init => pub ThrsInit;
 //!
-//!     /// The array of threads.
-//!     static THREADS;
-//!
-//!     // Exceptions start here.
-//!
-//!     // Define a normal thread for the non-interrupt exception NMI. This will
-//!     // define a thread token `Nmi`, add `nmi` field to the `Thrs` index, and
-//!     // reserve an item in the `THREADS` array.
-//!     /// Non maskable interrupt.
-//!     pub NMI;
-//!     /// All classes of fault.
-//!     pub HARD_FAULT;
-//!     // Define a function handler for the non-interrupt exception SV_CALL. This
-//!     // will only add a field to the `Handlers` structure.
-//!     /// System service call.
-//!     fn SV_CALL;
-//!     /// System tick timer.
-//!     pub SYS_TICK;
-//!
-//!     // Interrupts start here.
-//!
-//!     // Define a normal thread for the interrupt #5 with the name RCC. The name
-//!     // can be arbitrary.
-//!     /// RCC global interrupt.
-//!     pub 5: RCC;
-//!     // Define an external thread for the interrupt #18 with the name ADC1. This
-//!     // will add a field to the `Handlers` structure, define a thread token
-//!     // `Adc1`, add `adc1` field to the `Thrs` index, and reserve an item in the
-//!     // `THREADS` array.
-//!     /// ADC1 global interrupt.
-//!     pub extern 18: ADC1;
-//! }
-//!
-//! // See the `drone_core` documentation of `thr!` macro.
-//! thr! {
-//!     use THREADS;
-//!     pub struct Thr {}
-//!     pub struct ThrLocal {}
+//!     // Threads configuration.
+//!     threads => {
+//!         // Threads for exceptions.
+//!         exceptions => {
+//!             // Define a regular thread for the NMI exception. This creates a thread token
+//!             // structure `Nmi`, a field `nmi` in the `Thrs` structure, and an element in the
+//!             // array of `Thr`.
+//!             /// Non maskable interrupt.
+//!             pub nmi;
+//!             /// All classes of fault.
+//!             pub hard_fault;
+//!             // Define a naked handler for the SV_CALL exception. This inserts the function
+//!             // `sv_call_handler` directly to the vector table.
+//!             /// System service call.
+//!             pub naked(sv_call_handler) sv_call;
+//!             /// System tick timer.
+//!             pub sys_tick;
+//!         };
+//!         // Threads for interrupts.
+//!         interrupts => {
+//!             // Define a regular thread for the interrupt #5 with name `rcc`.
+//!             /// RCC global interrupt.
+//!             5: pub rcc;
+//!             // Define an outer thread for the interrupt #18 with name `adc1`. This creates a
+//!             // thread token structure `Adc1`, a field `adc1` in the `Thrs` structure, and an
+//!             // element in the array of `Thr`. But unlike a regular thread, this outer thread
+//!             // uses a custom handler `adc1_handler`.
+//!             /// ADC1 global interrupt.
+//!             18: pub outer(adc1_handler) adc1;
+//!         };
+//!     };
 //! }
 //!
 //! // The reset handler should always be provided externally.
@@ -78,44 +67,30 @@
 //!
 //! // Define external handlers for the exceptions defined using `fn` or
 //! // `extern` keyword.
-//! unsafe extern "C" fn sv_call() {}
-//! unsafe extern "C" fn adc1() {}
+//! unsafe extern "C" fn sv_call_handler() {}
+//! unsafe extern "C" fn adc1_handler() {}
 //!
 //! // Define and export the actual vector table with all handlers attached.
 //! #[no_mangle]
-//! pub static VTABLE: Vtable = Vtable::new(Handlers { reset, sv_call, adc1 });
+//! pub static VTABLE: Vtable = Vtable::new(reset);
 //! ```
 //!
 //! The list of all available non-interrupt exceptions:
 //!
-//! * `NMI` - Non maskable interrupt.
-//! * `HARD_FAULT` - All classes of fault.
-//! * `MEM_MANAGE` - Memory management.
-//! * `BUS_FAULT` - Pre-fetch fault, memory access fault.
-//! * `USAGE_FAULT` - Undefined instruction or illegal state.
-//! * `SECURE_FAULT` - Security check violation. (Available when `security-extension` feature is enabled)
-//! * `SV_CALL` - System service call via SWI instruction.
-//! * `DEBUG` - Monitor.
-//! * `PEND_SV` - Pendable request for system service.
-//! * `SYS_TICK` - System tick timer.
-//!
-//! # Interrupt Mappings
-//!
-//! All available interrupts should be mapped with this macro:
-//!
-//! ```
-//! # #![feature(marker_trait_attr)]
-//! # fn main() {}
-//! use drone_cortexm::thr::int;
-//!
-//! int! {
-//!     /// RCC global interrupt.
-//!     pub trait RCC: 5;
-//! }
+//! * `nmi` - Non maskable interrupt.
+//! * `hard_fault` - All classes of fault.
+//! * `mem_manage` - Memory management.
+//! * `bus_fault` - Pre-fetch fault, memory access fault.
+//! * `usage_fault` - Undefined instruction or illegal state.
+//! * `secure_fault` - Security check violation. (Available when
+//!   `security-extension` feature is enabled)
+//! * `sv_call` - System service call via SWI instruction.
+//! * `debug` - Monitor.
+//! * `pend_sv` - Pendable request for system service.
+//! * `sys_tick` - System tick timer.
 //! ```
 
 pub mod prelude;
-pub mod vtable;
 
 mod exec;
 mod init;
@@ -126,18 +101,6 @@ mod wake;
 #[doc(no_inline)]
 pub use drone_core::thr::*;
 
-/// Defines a vector table.
-///
-/// See [the module level documentation](self) for details.
-#[doc(inline)]
-pub use drone_cortexm_macros::vtable;
-
-/// Defines an interrupt.
-///
-/// See [the module level documentation](self) for details.
-#[doc(inline)]
-pub use drone_cortexm_macros::int;
-
 pub use self::{
     exec::{ExecOutput, ThrExec},
     init::{init, init_extended, ThrInitExtended, ThrsInitToken},
@@ -146,10 +109,7 @@ pub use self::{
 };
 
 use crate::sv::Supervisor;
-use drone_core::{
-    thr::{thread_resume, ThrToken},
-    token::Token,
-};
+use drone_core::{thr::ThrToken, token::Token};
 
 /// An interrupt token.
 pub trait IntToken: ThrToken {
@@ -171,13 +131,4 @@ pub unsafe trait ThrTokens: Token {}
 pub trait ThrSv: ThrToken {
     /// The supervisor.
     type Sv: Supervisor;
-}
-
-/// The thread handler function for a vector table.
-///
-/// # Safety
-///
-/// The function is not reentrant.
-pub unsafe extern "C" fn thr_handler<T: ThrToken>() {
-    thread_resume::<T>();
 }

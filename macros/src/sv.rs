@@ -2,17 +2,30 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
+    braced,
     parse::{Parse, ParseStream, Result},
     parse_macro_input, Attribute, Ident, LitInt, Token, Visibility,
 };
 
+struct Input {
+    sv: Sv,
+    array: Array,
+    services: Services,
+}
+
 struct Sv {
-    sv_attrs: Vec<Attribute>,
-    sv_vis: Visibility,
-    sv_ident: Ident,
-    array_attrs: Vec<Attribute>,
-    array_vis: Visibility,
-    array_ident: Ident,
+    attrs: Vec<Attribute>,
+    vis: Visibility,
+    ident: Ident,
+}
+
+struct Array {
+    attrs: Vec<Attribute>,
+    vis: Visibility,
+    ident: Ident,
+}
+
+struct Services {
     services: Vec<Service>,
 }
 
@@ -20,37 +33,85 @@ struct Service {
     ident: Ident,
 }
 
-impl Parse for Sv {
+impl Parse for Input {
     fn parse(input: ParseStream<'_>) -> Result<Self> {
-        let sv_attrs = input.call(Attribute::parse_outer)?;
-        let sv_vis = input.parse()?;
-        input.parse::<Token![struct]>()?;
-        let sv_ident = input.parse()?;
-        input.parse::<Token![;]>()?;
-        let array_attrs = input.call(Attribute::parse_outer)?;
-        let array_vis = input.parse()?;
-        input.parse::<Token![static]>()?;
-        let array_ident = input.parse()?;
-        input.parse::<Token![;]>()?;
-        let mut services = Vec::new();
+        let mut sv = None;
+        let mut array = None;
+        let mut services = None;
         while !input.is_empty() {
-            services.push(input.parse()?);
+            let attrs = input.call(Attribute::parse_outer)?;
+            let ident = input.parse::<Ident>()?;
+            input.parse::<Token![=>]>()?;
+            if ident == "supervisor" {
+                if sv.is_none() {
+                    sv = Some(Sv::parse(input, attrs)?);
+                } else {
+                    return Err(input.error("multiple `supervisor` specifications"));
+                }
+            } else if ident == "array" {
+                if array.is_none() {
+                    array = Some(Array::parse(input, attrs)?);
+                } else {
+                    return Err(input.error("multiple `array` specifications"));
+                }
+            } else if attrs.is_empty() && ident == "services" {
+                if services.is_none() {
+                    services = Some(input.parse()?);
+                } else {
+                    return Err(input.error("multiple `services` specifications"));
+                }
+            } else {
+                return Err(input.error(format!("unknown key: `{}`", ident)));
+            }
+            if !input.is_empty() {
+                input.parse::<Token![;]>()?;
+            }
         }
-        Ok(Self { sv_attrs, sv_vis, sv_ident, array_attrs, array_vis, array_ident, services })
+        Ok(Self {
+            sv: sv.ok_or_else(|| input.error("missing `sv` specification"))?,
+            array: array.ok_or_else(|| input.error("missing `array` specification"))?,
+            services: services.ok_or_else(|| input.error("missing `services` specification"))?,
+        })
     }
 }
 
-impl Parse for Service {
-    fn parse(input: ParseStream<'_>) -> Result<Self> {
+impl Sv {
+    fn parse(input: ParseStream<'_>, attrs: Vec<Attribute>) -> Result<Self> {
+        let vis = input.parse()?;
         let ident = input.parse()?;
-        input.parse::<Token![;]>()?;
-        Ok(Self { ident })
+        Ok(Self { attrs, vis, ident })
+    }
+}
+
+impl Array {
+    fn parse(input: ParseStream<'_>, attrs: Vec<Attribute>) -> Result<Self> {
+        let vis = input.parse()?;
+        let ident = input.parse()?;
+        Ok(Self { attrs, vis, ident })
+    }
+}
+
+impl Parse for Services {
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
+        let input2;
+        braced!(input2 in input);
+        let mut services = Vec::new();
+        while !input2.is_empty() {
+            let ident = input2.parse::<Ident>()?;
+            services.push(Service { ident });
+            if !input2.is_empty() {
+                input2.parse::<Token![;]>()?;
+            }
+        }
+        Ok(Self { services })
     }
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-    let Sv { sv_attrs, sv_vis, sv_ident, array_attrs, array_vis, array_ident, services } =
-        parse_macro_input!(input as Sv);
+    let Input { sv, array, services } = parse_macro_input!(input as Input);
+    let Sv { attrs: sv_attrs, vis: sv_vis, ident: sv_ident } = sv;
+    let Array { attrs: array_attrs, vis: array_vis, ident: array_ident } = array;
+    let Services { services } = services;
     let mut service_counter = 0_usize;
     let mut array_tokens = Vec::new();
     let mut service_tokens = Vec::new();
@@ -69,7 +130,6 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             }
         });
     }
-
     let expanded = quote! {
         #(#sv_attrs)*
         #sv_vis struct #sv_ident(unsafe extern "C" fn(*mut *mut u8));

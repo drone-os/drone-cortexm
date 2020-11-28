@@ -103,12 +103,14 @@ pub fn spin(mut cycles: u32) {
 #[inline]
 pub unsafe fn fpu_init(full_access: bool) {
     const FPU_CPACR: usize = 0xE000_ED88;
-    core::ptr::write_volatile(
-        FPU_CPACR as *mut u32,
-        if full_access {
-            0xF // full access
-        } else {
-            0x5 // privileged access only
-        } << 20,
-    );
+    unsafe {
+        core::ptr::write_volatile(
+            FPU_CPACR as *mut u32,
+            if full_access {
+                0xF // full access
+            } else {
+                0x5 // privileged access only
+            } << 20,
+        );
+    }
 }

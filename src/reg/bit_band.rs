@@ -126,16 +126,18 @@ mod tests {
 
     reg! {
         #[allow(dead_code)]
-        mod R LOW;
-        0x4000_0000 0x20 0x0000_0000 RegBitBand;
-        TEST_BIT { 0 1 }
+        R LOW => {
+            address => 0x4000_0000; size => 0x20; reset => 0x0000_0000; traits => { RegBitBand };
+            fields => { TEST_BIT => { offset => 0; width => 1 } };
+        };
     }
 
     reg! {
         #[allow(dead_code)]
-        mod R HIGH;
-        0x400F_FFFC 0x20 0x0000_0000 RegBitBand;
-        TEST_BIT { 0 1 }
+        R HIGH => {
+            address => 0x400F_FFFC; size => 0x20; reset => 0x0000_0000; traits => { RegBitBand };
+            fields => { TEST_BIT => { offset => 0; width => 1 } };
+        };
     }
 
     #[test]

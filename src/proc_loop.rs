@@ -21,12 +21,13 @@
 //!
 //! // Stackful fibers need a supervisor.
 //! sv! {
-//!     pub struct Sv;
-//!     static SERVICES;
-//!
-//!     // These services are required for stackful fibers.
-//!     SwitchContextService;
-//!     SwitchBackService;
+//!     supervisor => pub Sv;
+//!     array => SERVICES;
+//!     services => {
+//!         // These services are required for stackful fibers.
+//!         SwitchContextService;
+//!         SwitchBackService;
+//!     }
 //! }
 //!
 //! // Here is the library API.
@@ -265,12 +266,12 @@ where
     ///
     /// Unprotected from stack overflow.
     pub unsafe fn new_unchecked() -> Self {
-        Self::new_with(fib::new_proc_unchecked)
+        unsafe { Self::new_with(fib::new_proc_unchecked) }
     }
 
     unsafe fn new_with(f: unsafe fn(usize, CmdLoop<Sv, T>) -> InnerFiber<Sv, T>) -> Self {
         T::on_create();
-        Self(f(T::STACK_SIZE, Self::cmd_loop))
+        Self(unsafe { f(T::STACK_SIZE, Self::cmd_loop) })
     }
 
     fn cmd_loop(mut input: In<T::Cmd, T::ReqRes>, yielder: InnerYielder<Sv, T>) -> ! {
@@ -317,7 +318,7 @@ where
 {
     #[inline]
     unsafe fn new() -> Self {
-        Self(fib::Yielder::new())
+        Self(unsafe { fib::Yielder::new() })
     }
 
     #[inline]

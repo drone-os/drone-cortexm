@@ -27,28 +27,25 @@ pub struct ThrInitExtended {
 /// # Examples
 ///
 /// ```no_run
-/// # #![feature(const_fn)]
+/// # #![feature(const_fn_fn_ptr_basics)]
 /// # #![feature(proc_macro_hygiene)]
 /// # use drone_core::token::Token;
-/// # thr::vtable! {
-/// #     use Thr;
-/// #     struct Vtable;
-/// #     struct Handlers;
-/// #     struct Thrs;
-/// #     struct ThrsInit;
-/// #     static THREADS;
-/// # }
 /// # thr! {
-/// #     use THREADS;
-/// #     struct Thr {}
-/// #     struct ThrLocal {}
+/// #     thread => pub Thr {};
+/// #     local => pub ThrLocal {};
+/// #     vtable => Vtable;
+/// #     index => Thrs;
+/// #     init => ThrsInit;
+/// #     threads => {};
 /// # }
 /// use drone_cortexm::{cortexm_reg_tokens, reg::prelude::*, thr};
 ///
 /// cortexm_reg_tokens! {
-///     struct Regs;
-///     !scb_ccr;
-///     !mpu_type; !mpu_ctrl; !mpu_rnr; !mpu_rbar; !mpu_rasr;
+///     index => Regs;
+///     exclude => {
+///         scb_ccr,
+///         mpu_type, mpu_ctrl, mpu_rnr, mpu_rbar, mpu_rasr,
+///     }
 /// }
 ///
 /// fn handler(reg: Regs, thr_init: ThrsInit) {
@@ -92,28 +89,25 @@ pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExten
 /// # Examples
 ///
 /// ```no_run
-/// # #![feature(const_fn)]
+/// # #![feature(const_fn_fn_ptr_basics)]
 /// # #![feature(proc_macro_hygiene)]
 /// # use drone_core::token::Token;
-/// # thr::vtable! {
-/// #     use Thr;
-/// #     struct Vtable;
-/// #     struct Handlers;
-/// #     struct Thrs;
-/// #     struct ThrsInit;
-/// #     static THREADS;
-/// # }
 /// # thr! {
-/// #     use THREADS;
-/// #     struct Thr {}
-/// #     struct ThrLocal {}
+/// #     thread => pub Thr {};
+/// #     local => pub ThrLocal {};
+/// #     vtable => Vtable;
+/// #     index => Thrs;
+/// #     init => ThrsInit;
+/// #     threads => {};
 /// # }
 /// use drone_cortexm::{cortexm_reg_tokens, thr};
 ///
 /// cortexm_reg_tokens! {
-///     struct Regs;
-///     !scb_ccr;
-///     !mpu_type; !mpu_ctrl; !mpu_rnr; !mpu_rbar; !mpu_rasr;
+///     index => Regs;
+///     exclude => {
+///         scb_ccr,
+///         mpu_type, mpu_ctrl, mpu_rnr, mpu_rbar, mpu_rasr,
+///     }
 /// }
 ///
 /// fn handler(reg: Regs, thr_init: ThrsInit) {
@@ -159,8 +153,8 @@ mod mpu {
     pub(super) unsafe fn reset() {
         #[cfg(feature = "std")]
         return unimplemented!();
-        let mpu_type = mpu::Type::<Srt>::take();
-        let mpu_ctrl = mpu::Ctrl::<Srt>::take();
+        let mpu_type = unsafe { mpu::Type::<Srt>::take() };
+        let mpu_ctrl = unsafe { mpu::Ctrl::<Srt>::take() };
         let mut table_ptr = &MPU_RESET_TABLE;
         if mpu_type.load().dregion() == 0 {
             return;

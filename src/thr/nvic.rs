@@ -245,5 +245,5 @@ trait NvicReg<T: NvicBlock>: Sized {
 impl<T: IntToken> ThrNvic for T {}
 
 const fn block_offset<T: IntToken>() -> usize {
-    T::INT_NUM & 0b11_111
+    T::INT_NUM & 0b1_1111
 }

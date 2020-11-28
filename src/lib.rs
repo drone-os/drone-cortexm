@@ -26,7 +26,7 @@
 //! # Documentation
 //!
 //! - [Drone Book](https://book.drone-os.com/)
-//! - [API documentation](https://api.drone-os.com/drone-cortexm/0.12/)
+//! - [API documentation](https://api.drone-os.com/drone-cortexm/0.13/)
 //!
 //! # Usage
 //!
@@ -34,7 +34,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! drone-cortexm = { version = "0.12.2", features = [...] }
+//! drone-cortexm = { version = "0.13.0", features = [...] }
 //! ```
 //!
 //! Add or extend `std` feature as follows:
@@ -54,8 +54,9 @@
 #![feature(never_type_fallback)]
 #![feature(prelude_import)]
 #![feature(proc_macro_hygiene)]
+#![feature(unsafe_block_in_unsafe_fn)]
 #![feature(untagged_unions)]
-#![warn(missing_docs)]
+#![warn(missing_docs, unsafe_op_in_unsafe_fn)]
 #![warn(clippy::pedantic)]
 #![allow(
     clippy::cast_possible_truncation,
@@ -89,6 +90,12 @@ mod drone_core_macro_reexport {
 }
 
 pub use drone_core_macro_reexport::*;
+
+/// Defines threads.
+///
+/// See [the module level documentation](thr) for details.
+#[doc(inline)]
+pub use drone_cortexm_macros::thr;
 
 /// Defines the supervisor type.
 ///

@@ -20,12 +20,13 @@
 //!
 //! // Stackful fibers need a supervisor.
 //! sv! {
-//!     pub struct Sv;
-//!     static SERVICES;
-//!
-//!     // These services are required for stackful fibers.
-//!     SwitchContextService;
-//!     SwitchBackService;
+//!     supervisor => pub Sv;
+//!     array => SERVICES;
+//!     services => {
+//!         // These services are required for stackful fibers.
+//!         SwitchContextService;
+//!         SwitchBackService;
+//!     }
 //! }
 //!
 //! # fn main() {
@@ -54,10 +55,10 @@
 //! # use drone_core::token::Token;
 //! # use drone_cortexm::{sv, sv::SwitchBackService, sv::SwitchContextService};
 //! # static mut THREADS: [Thr; 1] = [Thr::new(0)];
-//! # drone_core::thr!(use THREADS; struct Thr {} struct ThrLocal {});
+//! # drone_core::thr!(array => THREADS; thread => Thr {}; local => ThrLocal {});
 //! # #[derive(Clone, Copy)] struct SysTick;
 //! # struct Thrs { sys_tick: SysTick }
-//! # sv!(pub struct Sv; static SERVICES; SwitchContextService; SwitchBackService;);
+//! # sv!(supervisor => pub Sv; array => SERVICES; services => { SwitchContextService; SwitchBackService });
 //! # unsafe impl Token for Thrs {
 //! #     unsafe fn take() -> Self { Self { sys_tick: SysTick::take() } }
 //! # }
@@ -66,7 +67,7 @@
 //! # }
 //! # unsafe impl drone_core::thr::ThrToken for SysTick {
 //! #     type Thr = Thr;
-//! #     const THR_NUM: usize = 0;
+//! #     const THR_IDX: usize = 0;
 //! # }
 //! # impl drone_cortexm::thr::ThrSv for SysTick {
 //! #     type Sv = Sv;

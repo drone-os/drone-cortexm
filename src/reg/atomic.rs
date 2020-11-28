@@ -194,7 +194,7 @@ where
     R: Reg<T>,
     <R::Val as Bitfield>::Bits: AtomicBits,
 {
-    R::val_from(<R::Val as Bitfield>::Bits::load_excl(R::ADDRESS))
+    unsafe { R::val_from(<R::Val as Bitfield>::Bits::load_excl(R::ADDRESS)) }
 }
 
 unsafe fn store_excl<T, R>(val: R::Val) -> bool
@@ -203,7 +203,7 @@ where
     R: Reg<T>,
     <R::Val as Bitfield>::Bits: AtomicBits,
 {
-    val.bits().store_excl(R::ADDRESS)
+    unsafe { val.bits().store_excl(R::ADDRESS) }
 }
 
 macro_rules! atomic_bits {

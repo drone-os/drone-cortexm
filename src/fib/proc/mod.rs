@@ -67,7 +67,7 @@ where
     Y: Send + 'static,
     R: Send + 'static,
 {
-    FiberProc::new(stack_size, false, true, f)
+    unsafe { FiberProc::new(stack_size, false, true, f) }
 }
 
 /// Creates a stackful fiber from the closure `f`, which will run in
@@ -125,7 +125,7 @@ where
     Y: Send + 'static,
     R: Send + 'static,
 {
-    FiberProc::new(stack_size, true, true, f)
+    unsafe { FiberProc::new(stack_size, true, true, f) }
 }
 
 /// Extends [`ThrToken`](crate::thr::ThrToken) types with `add_proc` methods.
@@ -163,7 +163,7 @@ pub trait ThrFiberProc: ThrSv {
         F: Send + 'static,
         Self::Sv: Switch<ProcData<(), (), ()>>,
     {
-        self.add_fib(new_proc_unchecked(stack_size, move |(), yielder| f(yielder)))
+        self.add_fib(unsafe { new_proc_unchecked(stack_size, move |(), yielder| f(yielder)) })
     }
 
     /// Adds a stackful fiber for the closure `f` to the fiber chain, which will
@@ -200,7 +200,9 @@ pub trait ThrFiberProc: ThrSv {
         F: Send + 'static,
         Self::Sv: Switch<ProcData<(), (), ()>>,
     {
-        self.add_fib(new_proc_unprivileged_unchecked(stack_size, move |(), yielder| f(yielder)))
+        self.add_fib(unsafe {
+            new_proc_unprivileged_unchecked(stack_size, move |(), yielder| f(yielder))
+        })
     }
 }
 
@@ -216,10 +218,10 @@ impl<I, O> Data<I, O> {
     }
 
     unsafe fn into_input(self) -> I {
-        ManuallyDrop::into_inner(self.input)
+        unsafe { ManuallyDrop::into_inner(self.input) }
     }
 
     unsafe fn into_output(self) -> O {
-        ManuallyDrop::into_inner(self.output)
+        unsafe { ManuallyDrop::into_inner(self.output) }
     }
 }

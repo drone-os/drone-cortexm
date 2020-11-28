@@ -6,46 +6,40 @@
 //! # Usage
 //!
 //! ```
-//! # #![feature(const_fn)]
+//! # #![feature(const_fn_fn_ptr_basics)]
 //! # fn main() {}
 //! use drone_cortexm::{sv, thr};
 //!
 //! sv! {
-//!     /// The supervisor.
-//!     pub struct Sv;
+//!     /// The supervisor type.
+//!     supervisor => pub Sv;
 //!
 //!     /// Array of services.
-//!     static SERVICES;
+//!     array => SERVICES;
 //!
-//!     // The list of attached services goes here.
-//!     // SwitchContextService;
-//!     // SwitchBackService;
-//! }
-//!
-//! thr::vtable! {
-//!     use Thr;
-//!     pub struct Vtable;
-//!     pub struct Handlers;
-//!     pub struct Thrs;
-//!     pub struct ThrsInit;
-//!     static THREADS;
-//!
-//!     // Define an external function handler for the SV_CALL exception.
-//!     fn SV_CALL;
+//!     // Attached services.
+//!     services => {
+//!         // SwitchContextService;
+//!         // SwitchBackService;
+//!     }
 //! }
 //!
 //! thr! {
-//!     use THREADS;
-//!     pub struct Thr {}
-//!     pub struct ThrLocal {}
+//!     thread => pub Thr {};
+//!     local => pub ThrLocal {};
+//!     vtable => pub Vtable;
+//!     index => pub Thrs;
+//!     init => pub ThrsInit;
+//!     threads => {
+//!         exceptions => {
+//!             // Define an external function handler for the SV_CALL exception.
+//!             naked(sv::sv_handler::<Sv>) sv_call;
+//!         };
+//!     };
 //! }
 //!
 //! #[no_mangle]
-//! pub static VTABLE: Vtable = Vtable::new(Handlers {
-//!     reset,
-//!     // Attach the SV_CALL handler for the supervisor `Sv`.
-//!     sv_call: drone_cortexm::sv::sv_handler::<Sv>,
-//! });
+//! pub static VTABLE: Vtable = Vtable::new(reset);
 //!
 //! unsafe extern "C" fn reset() -> ! {
 //!     loop {}
@@ -65,14 +59,17 @@
 //! use drone_cortexm::sv;
 //!
 //! sv! {
-//!     /// The supervisor.
-//!     pub struct Sv;
+//!     /// The supervisor type.
+//!     supervisor => pub Sv;
 //!
 //!     /// Array of services.
-//!     static SERVICES;
+//!     array => SERVICES;
 //!
-//!     SwitchContextService;
-//!     SwitchBackService;
+//!     // Attached services.
+//!     services => {
+//!         SwitchContextService;
+//!         SwitchBackService;
+//!     }
 //! }
 //!
 //! # fn main() {
@@ -165,10 +162,12 @@ pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
 /// This function should not be called directly.
 pub unsafe extern "C" fn service_handler<T: SvService>(mut frame: *mut *mut u8) {
     if size_of::<T>() == 0 {
-        T::handler(&mut *(frame as *mut T));
+        unsafe { T::handler(&mut *(frame as *mut T)) };
     } else {
-        frame = frame.add(4); // Stacked R12
-        T::handler(&mut *(*frame as *mut T));
+        unsafe {
+            frame = frame.add(4); // Stacked R12
+            T::handler(&mut *(*frame as *mut T));
+        }
     }
 }
 
@@ -194,5 +193,5 @@ pub unsafe extern "C" fn sv_handler<T: Supervisor>() {
         : "r0", "r1", "cc"
         : "volatile"
     );
-    unreachable();
+    unsafe { unreachable() };
 }
