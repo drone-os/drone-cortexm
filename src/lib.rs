@@ -26,7 +26,7 @@
 //! # Documentation
 //!
 //! - [Drone Book](https://book.drone-os.com/)
-//! - [API documentation](https://api.drone-os.com/drone-cortexm/0.13/)
+//! - [API documentation](https://api.drone-os.com/drone-cortexm/0.14/)
 //!
 //! # Usage
 //!
@@ -34,7 +34,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! drone-cortexm = { version = "0.13.0", features = [...] }
+//! drone-cortexm = { version = "0.14.0", features = [...] }
 //! ```
 //!
 //! Add or extend `std` feature as follows:
