@@ -78,7 +78,7 @@ pub fn sync() {
 /// # [memory]
 /// # flash = { size = \"128K\", origin = 0x08000000 }
 /// # ram = { size = \"20K\", origin = 0x20000000 }
-/// # [heap]
+/// # [heap.main]
 /// # size = \"0\"
 /// # pools = []
 /// # [linker]
