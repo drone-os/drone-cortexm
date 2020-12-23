@@ -2,7 +2,8 @@
 
 use crate::{
     drv::timer::{Timer, TimerInterval, TimerOverflow, TimerSleep, TimerStop},
-    fib::{self, Fiber},
+    fib,
+    fib::Fiber,
     map::{
         periph::sys_tick::SysTickPeriph,
         reg::{scb, stk},
@@ -15,7 +16,7 @@ use drone_core::{bitfield::Bitfield, token::Token};
 use futures::stream::Stream;
 
 /// SysTick driver.
-pub struct SysTick<I: IntToken> {
+pub struct SysTick<I: ThrToken> {
     periph: SysTickDiverged,
     int: I,
 }
@@ -30,7 +31,7 @@ pub struct SysTickDiverged {
     pub stk_val: stk::Val<Srt>,
 }
 
-impl<I: IntToken> Timer for SysTick<I> {
+impl<I: ThrToken> Timer for SysTick<I> {
     type Stop = Self;
 
     fn sleep(&mut self, duration: u32) -> TimerSleep<'_, Self> {
@@ -68,14 +69,14 @@ impl<I: IntToken> Timer for SysTick<I> {
     }
 }
 
-impl<I: IntToken> TimerStop for SysTick<I> {
+impl<I: ThrToken> TimerStop for SysTick<I> {
     fn stop(&mut self) {
         let mut ctrl_val = self.periph.stk_ctrl.load();
         self.periph.stk_ctrl.store_val(disable(&mut ctrl_val).val());
     }
 }
 
-impl<I: IntToken> SysTick<I> {
+impl<I: ThrToken> SysTick<I> {
     /// Creates a new driver from the peripheral.
     #[inline]
     pub fn new(periph: SysTickPeriph, int: I) -> Self {
@@ -143,7 +144,7 @@ impl<I: IntToken> SysTick<I> {
 }
 
 #[allow(missing_docs)]
-impl<I: IntToken> SysTick<I> {
+impl<I: ThrToken> SysTick<I> {
     #[inline]
     pub fn int(&self) -> I {
         self.int

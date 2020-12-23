@@ -34,7 +34,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! drone-cortexm = { version = "0.13.0", features = [...] }
+//! drone-cortexm = { version = "0.13.1", features = [...] }
 //! ```
 //!
 //! Add or extend `std` feature as follows:
