@@ -146,9 +146,9 @@ pub mod interrupt {
     fn primask() -> u32 {
         #[cfg(feature = "std")]
         return unimplemented!();
-        let r;
+        let r: usize;
         unsafe { asm!("mrs {}, PRIMASK", out(reg) r) };
-        r
+        r as u32
     }
 
     /// Critical section token.
