@@ -114,3 +114,65 @@ pub unsafe fn fpu_init(full_access: bool) {
         );
     }
 }
+
+pub mod interrupt {
+    //! Utility function for working with global interrupts.
+    
+    use core::sync::atomic::{Ordering, compiler_fence};
+
+    /// Disables all interrupts
+    #[inline]
+    pub fn disable() {
+        #[cfg(feature = "std")]
+        return unimplemented!();
+        unsafe { asm!("cpsid i") };
+        compiler_fence(Ordering::SeqCst);
+    }
+
+    /// Enables all (not masked) interrupts
+    ///
+    /// # Safety
+    ///
+    /// - Do not call this function inside a critical section.
+    #[inline]
+    pub unsafe fn enable() {
+        #[cfg(feature = "std")]
+        return unimplemented!();
+        compiler_fence(Ordering::SeqCst);
+        unsafe { asm!("cpsie i") };
+    }
+
+    #[inline]
+    fn primask() -> u32 {
+        #[cfg(feature = "std")]
+        return unimplemented!();
+        let r;
+        unsafe { asm!("mrs {}, PRIMASK", out(reg) r) };
+        r
+    }
+
+    /// Critical section token.
+    pub struct CriticalSection;
+
+    /// Execute the closure `f` in an interrupt-free context.
+    #[inline]
+    pub fn critical<F, R>(f: F) -> R
+    where
+        F: FnOnce(&CriticalSection) -> R,
+    {
+        let primask = primask();
+
+        // Disable interrupts - they may already be disabled if this is a nested critical section.
+        disable();
+
+        let cs = CriticalSection;
+        let r = f(&cs);
+
+        // Only enable interrupt if interrupts were active when entering.
+        if primask & 1 == 0 {
+            unsafe { enable() }
+        }
+
+        r
+    }
+}

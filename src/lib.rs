@@ -44,6 +44,7 @@
 //! std = ["drone-cortexm/std"]
 //! ```
 
+#![feature(asm)]
 #![feature(const_fn)]
 #![feature(core_intrinsics)]
 #![feature(exhaustive_patterns)]
