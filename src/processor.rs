@@ -160,7 +160,7 @@ pub mod interrupt {
     where
         F: FnOnce(&CriticalSection) -> R,
     {
-        let primask = primask();
+        let pm = primask();
 
         // Disable interrupts - they may already be disabled if this is a nested critical section.
         disable();
@@ -169,7 +169,7 @@ pub mod interrupt {
         let r = f(&cs);
 
         // Only enable interrupt if interrupts were active when entering.
-        if primask & 1 == 0 {
+        if pm & 1 == 0 {
             unsafe { enable() }
         }
 
