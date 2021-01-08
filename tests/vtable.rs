@@ -62,7 +62,7 @@ thr! {
     };
 }
 
-extern "C" fn nmi_handler() {}
+fn nmi_handler(_thr: &Thr) {}
 
 extern "C" fn rcc_handler() {}
 

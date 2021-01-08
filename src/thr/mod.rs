@@ -68,7 +68,7 @@
 //! // Define external handlers for the exceptions defined using `fn` or
 //! // `extern` keyword.
 //! unsafe extern "C" fn sv_call_handler() {}
-//! unsafe extern "C" fn adc1_handler() {}
+//! unsafe fn adc1_handler(_thr: &Thr) {}
 //!
 //! // Define and export the actual vector table with all handlers attached.
 //! #[no_mangle]
