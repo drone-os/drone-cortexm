@@ -135,9 +135,26 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         #sv_vis struct #sv_ident(unsafe extern "C" fn(*mut *mut u8));
 
         impl ::drone_cortexm::sv::Supervisor for #sv_ident {
-            #[inline]
-            fn first() -> *const Self {
-                #array_ident.as_ptr()
+            #[cfg_attr(not(feature = "std"), naked)]
+            unsafe extern "C" fn handler() {
+                #[allow(unreachable_code)]
+                #[cfg(feature = "std")]
+                return unimplemented!();
+                #[cfg(not(feature = "std"))]
+                unsafe {
+                    asm!(
+                        "tst lr, #4",
+                        "ite eq",
+                        "mrseq r0, msp",
+                        "mrsne r0, psp",
+                        "ldr r1, [r0, #24]",
+                        "ldrb r1, [r1, #-2]",
+                        "adr r0, {}",
+                        "ldr pc, [r0, r1, lsl #2]",
+                        sym #array_ident,
+                        options(noreturn),
+                    );
+                }
             }
         }
 

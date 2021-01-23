@@ -13,6 +13,9 @@ Possible log types:
 
 ### Unreleased
 
+- [removed] `sv::sv_handler` and `sv::Supervisor::first` functions were removed
+  in favor of a new `sv::Supervisor::handler` function
+
 ### v0.13.1 (2020-12-23)
 
 - [fixed] Fixed `drv::sys_tick`, which had an incorrect trait bound

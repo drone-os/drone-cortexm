@@ -8,6 +8,7 @@
 //! how it could be wrapped:
 //!
 //! ```
+//! # #![feature(naked_functions)]
 //! # #![feature(never_type)]
 //! use core::{future::Future, pin::Pin, slice};
 //! use drone_core::ffi::{c_char, CString};

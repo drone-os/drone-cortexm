@@ -14,6 +14,7 @@
 //! [`fib::new_proc_unprivileged_unchecked`](crate::fib::new_proc_unprivileged_unchecked):
 //!
 //! ```
+//! # #![feature(naked_functions)]
 //! use drone_cortexm::{fib, sv};
 //!
 //! use drone_cortexm::sv::{SwitchBackService, SwitchContextService};
@@ -52,6 +53,7 @@
 //!
 //! ```
 //! # #![feature(generators)]
+//! # #![feature(naked_functions)]
 //! # use drone_core::token::Token;
 //! # use drone_cortexm::{sv, sv::SwitchBackService, sv::SwitchContextService};
 //! # static mut THREADS: [Thr; 1] = [Thr::new(0)];

@@ -7,8 +7,9 @@
 //!
 //! ```
 //! # #![feature(const_fn_fn_ptr_basics)]
+//! # #![feature(naked_functions)]
 //! # fn main() {}
-//! use drone_cortexm::{sv, thr};
+//! use drone_cortexm::{sv, sv::Supervisor, thr};
 //!
 //! sv! {
 //!     /// The supervisor type.
@@ -33,7 +34,7 @@
 //!     threads => {
 //!         exceptions => {
 //!             // Define an external function handler for the SV_CALL exception.
-//!             naked(sv::sv_handler::<Sv>) sv_call;
+//!             naked(Sv::handler) sv_call;
 //!         };
 //!     };
 //! }
@@ -53,6 +54,7 @@
 //! become available to switch the program stack.
 //!
 //! ```no_run
+//! # #![feature(naked_functions)]
 //! # #![feature(new_uninit)]
 //! use drone_cortexm::sv::{Switch, SwitchBackService, SwitchContextService};
 //!
@@ -95,12 +97,16 @@ mod switch;
 
 pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
 
-use core::{intrinsics::unreachable, mem::size_of};
+use core::mem::size_of;
 
 /// Generic supervisor.
 pub trait Supervisor: Sized + 'static {
-    /// Returns a pointer to the first service in the services array.
-    fn first() -> *const Self;
+    /// `SV_CALL` exception handler for the supervisor.
+    ///
+    /// # Safety
+    ///
+    /// This function should be called only by NVIC as part of the vector table.
+    unsafe extern "C" fn handler();
 }
 
 /// A supervisor call.
@@ -153,7 +159,7 @@ pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
     }
 }
 
-/// This function is called by [`sv_handler`] for the supervisor service
+/// This function is called by [`Sv::handler`] for the supervisor service
 /// `T`. Parameter `T` is based on the number `num` in the `SVC num`
 /// instruction.
 ///
@@ -169,29 +175,4 @@ pub unsafe extern "C" fn service_handler<T: SvService>(mut frame: *mut *mut u8) 
             T::handler(&mut *(*frame).cast::<T>());
         }
     }
-}
-
-/// `SV_CALL` exception handler for the supervisor `T`.
-///
-/// # Safety
-///
-/// This function should be called only by NVIC as part of a vector table.
-#[naked]
-pub unsafe extern "C" fn sv_handler<T: Supervisor>() {
-    #[cfg(feature = "std")]
-    return unimplemented!();
-    llvm_asm!("
-        tst lr, #4
-        ite eq
-        mrseq r0, msp
-        mrsne r0, psp
-        ldr r1, [r0, #24]
-        ldrb r1, [r1, #-2]
-        ldr pc, [r2, r1, lsl #2]
-    "   :
-        : "{r2}"(T::first())
-        : "r0", "r1", "cc"
-        : "volatile"
-    );
-    unsafe { unreachable() };
 }

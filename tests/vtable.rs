@@ -1,4 +1,5 @@
 #![feature(const_fn_fn_ptr_basics)]
+#![feature(naked_functions)]
 #![feature(prelude_import)]
 
 #[prelude_import]
@@ -8,7 +9,7 @@ use drone_core::prelude::*;
 use core::mem::size_of;
 use drone_cortexm::{
     sv,
-    sv::{sv_handler, SvService},
+    sv::{Supervisor, SvService},
     thr,
 };
 
@@ -46,7 +47,7 @@ thr! {
             pub outer(nmi_handler) nmi;
             /// Test doc attribute
             #[doc = "test attribute"]
-            pub naked(sv_handler::<Sv>) sv_call;
+            pub naked(Sv::handler) sv_call;
             /// Test doc attribute
             #[doc = "test attribute"]
             pub sys_tick;
