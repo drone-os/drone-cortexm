@@ -267,13 +267,13 @@ where
     Sv: SvCall<SwitchBackService>,
 {
     unsafe fn switch_context(data: *mut T, stack_ptr: *mut *const u8) {
-        unsafe { Self::call(&mut SwitchContextService { stack_ptr, data_ptr: data as *mut u8 }) };
+        unsafe { Self::call(&mut SwitchContextService { stack_ptr, data_ptr: data.cast::<u8>() }) };
     }
 
     unsafe fn switch_back(data: *mut *mut T) {
         unsafe {
             Self::call(&mut SwitchBackService {
-                data_ptr: data as *mut *mut u8,
+                data_ptr: data.cast::<*mut u8>(),
                 data_size: size_of::<T>(),
             });
         }

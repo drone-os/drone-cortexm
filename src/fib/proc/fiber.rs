@@ -93,9 +93,9 @@ where
         unsafe {
             let stack_ptr = stack_bottom.add(stack_size);
             let data_ptr = Self::stack_reserve::<ProcData<I, Y, R>>(stack_ptr);
-            let fn_ptr = Self::stack_reserve::<F>(data_ptr) as *mut F;
+            let fn_ptr = Self::stack_reserve::<F>(data_ptr).cast::<F>();
             fn_ptr.write(f);
-            let mut stack_ptr = fn_ptr as *mut u32;
+            let mut stack_ptr = fn_ptr.cast::<u32>();
             // Align the stack to double word.
             if (stack_ptr as usize).trailing_zeros() < 3 {
                 stack_ptr = stack_ptr.sub(1);
@@ -154,7 +154,7 @@ where
 
     unsafe fn data_ptr(&mut self) -> *mut ProcData<I, Y, R> {
         let data_size = size_of::<ProcData<I, Y, R>>();
-        unsafe { self.stack_bottom.add(self.stack_size - data_size) as _ }
+        unsafe { self.stack_bottom.add(self.stack_size - data_size).cast() }
     }
 }
 
@@ -300,7 +300,7 @@ mod mpu {
                     (1 << GUARD_SIZE + 1) - ((guard_ptr as usize) & (1 << GUARD_SIZE + 1) - 1),
                 );
             }
-            let mut table_ptr = guard_ptr as *mut u32;
+            let mut table_ptr = guard_ptr.cast::<u32>();
             table_ptr.write(rbar_bits(0, guard_ptr as u32));
             table_ptr = table_ptr.add(1);
             table_ptr.write(rasr_bits());
