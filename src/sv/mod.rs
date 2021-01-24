@@ -137,25 +137,25 @@ pub trait SvService: Sized + Send + 'static {
 ///
 /// This function should not be called directly.
 #[inline(always)]
-pub unsafe fn sv_call<T: SvService>(service: &mut T, num: u8) {
+pub unsafe fn sv_call<T: SvService, const NUM: u8>(service: &mut T) {
     #[cfg(feature = "std")]
     return unimplemented!();
-    if size_of::<T>() == 0 {
-        llvm_asm!("
-            svc $0
-        "   :
-            : "i"(num)
-            :
-            : "volatile"
-        );
-    } else {
-        llvm_asm!("
-            svc $0
-        "   :
-            : "i"(num), "{r12}"(service)
-            :
-            : "volatile"
-        );
+    #[cfg(not(feature = "std"))]
+    unsafe {
+        if size_of::<T>() == 0 {
+            asm!(
+                "svc {}",
+                const NUM,
+                options(nomem, preserves_flags),
+            );
+        } else {
+            asm!(
+                "svc {}",
+                const NUM,
+                in("r12") service,
+                options(nomem, preserves_flags),
+            );
+        }
     }
 }
 

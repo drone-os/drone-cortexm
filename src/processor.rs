@@ -1,6 +1,6 @@
 //! Common utility functions for working with ARM Cortex-M processors.
 
-#![cfg_attr(feature = "std", allow(unreachable_code, unused_mut))]
+#![cfg_attr(feature = "std", allow(unused_variables, unreachable_code))]
 
 /// Waits for interrupt.
 ///
@@ -11,7 +11,10 @@
 pub fn wait_for_int() {
     #[cfg(feature = "std")]
     return unimplemented!();
-    unsafe { llvm_asm!("wfi" :::: "volatile") };
+    #[cfg(not(feature = "std"))]
+    unsafe {
+        asm!("wfi", options(nomem, nostack, preserves_flags))
+    }
 }
 
 /// Waits for event.
@@ -26,7 +29,10 @@ pub fn wait_for_int() {
 pub fn wait_for_event() {
     #[cfg(feature = "std")]
     return unimplemented!();
-    unsafe { llvm_asm!("wfe" :::: "volatile") };
+    #[cfg(not(feature = "std"))]
+    unsafe {
+        asm!("wfe", options(nomem, nostack, preserves_flags));
+    }
 }
 
 /// Sends event.
@@ -39,7 +45,10 @@ pub fn wait_for_event() {
 pub fn send_event() {
     #[cfg(feature = "std")]
     return unimplemented!();
-    unsafe { llvm_asm!("sev" :::: "volatile") };
+    #[cfg(not(feature = "std"))]
+    unsafe {
+        asm!("sev", options(nomem, nostack, preserves_flags));
+    }
 }
 
 /// Requests system reset.
@@ -54,37 +63,28 @@ pub fn send_event() {
 pub fn self_reset() -> ! {
     #[cfg(feature = "std")]
     return unimplemented!();
+    #[cfg(not(feature = "std"))]
     unsafe {
         use crate::{map::reg::scb, reg::prelude::*};
         use drone_core::token::Token;
-        llvm_asm!("
-            dmb
-            cpsid f
-        "   :
-            :
-            :
-            : "volatile"
-        );
+        asm!("dmb", "cpsid f", options(nomem, nostack, preserves_flags),);
         scb::Aircr::<Urt>::take().store(|r| r.write_vectkey(0x05FA).set_sysresetreq());
         loop {}
     }
 }
 
 /// Spins the `cycles` number of processor cycles in a loop.
-#[allow(unused_assignments, unused_variables)]
 #[inline(always)]
-pub fn spin(mut cycles: u32) {
+pub fn spin(cycles: u32) {
     #[cfg(feature = "std")]
     return unimplemented!();
+    #[cfg(not(feature = "std"))]
     unsafe {
-        llvm_asm!("
-        0:
-            subs $0, $0, #3
-            bhi 0b
-        "   : "+r"(cycles)
-            :
-            : "cc"
-            : "volatile"
+        asm!(
+            "0: subs {0}, {0}, #3",
+            "   bhi 0b",
+            inlateout(reg) cycles => _,
+            options(nomem, nostack),
         );
     }
 }

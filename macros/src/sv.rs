@@ -125,7 +125,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             impl ::drone_cortexm::sv::SvCall<#ident> for #sv_ident {
                 #[inline]
                 unsafe fn call(service: &mut #ident) {
-                    ::drone_cortexm::sv::sv_call(service, #index);
+                    ::drone_cortexm::sv::sv_call::<_, #index>(service);
                 }
             }
         });
@@ -137,7 +137,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         impl ::drone_cortexm::sv::Supervisor for #sv_ident {
             #[cfg_attr(not(feature = "std"), naked)]
             unsafe extern "C" fn handler() {
-                #[allow(unreachable_code)]
+                #[cfg_attr(feature = "std", allow(unreachable_code))]
                 #[cfg(feature = "std")]
                 return unimplemented!();
                 #[cfg(not(feature = "std"))]

@@ -212,32 +212,39 @@ macro_rules! atomic_bits {
             unsafe fn load_excl(address: usize) -> Self {
                 #[cfg(feature = "std")]
                 return unimplemented!();
-                let raw: Self;
-                llvm_asm!($ldrex
-                     : "=r"(raw)
-                     : "r"(address)
-                     :
-                     : "volatile"
-                );
-                raw
+                let output: Self;
+                #[cfg(not(feature = "std"))]
+                unsafe {
+                    asm!(
+                        $ldrex,
+                        address = in(reg) address,
+                        output = lateout(reg) output,
+                        options(readonly, nostack, preserves_flags),
+                    );
+                }
+                output
             }
 
             unsafe fn store_excl(self, address: usize) -> bool {
                 #[cfg(feature = "std")]
                 return unimplemented!();
                 let status: Self;
-                llvm_asm!($strex
-                     : "=r"(status)
-                     : "r"(self), "r"(address)
-                     :
-                     : "volatile"
-                );
+                #[cfg(not(feature = "std"))]
+                unsafe {
+                    asm!(
+                        $strex,
+                        input = in(reg) self,
+                        address = in(reg) address,
+                        status = lateout(reg) status,
+                        options(nostack, preserves_flags),
+                    );
+                }
                 status == 0
             }
         }
     };
 }
 
-atomic_bits!(u32, "ldrex $0, [$1]", "strex $0, $1, [$2]");
-atomic_bits!(u16, "ldrexh $0, [$1]", "strexh $0, $1, [$2]");
-atomic_bits!(u8, "ldrexb $0, [$1]", "strexb $0, $1, [$2]");
+atomic_bits!(u32, "ldrex {output}, [{address}]", "strex {status}, {input}, [{address}]");
+atomic_bits!(u16, "ldrexh {output}, [{address}]", "strexh {status}, {input}, [{address}]");
+atomic_bits!(u8, "ldrexb {output}, [{address}]", "strexb {status}, {input}, [{address}]");

@@ -1,5 +1,3 @@
-#![cfg_attr(feature = "std", allow(unreachable_code, unused_variables))]
-
 use super::PORTS_COUNT;
 use core::{
     fmt::{self, Write},
@@ -87,19 +85,19 @@ impl PortWrite for u8 {
     fn port_write(address: usize, value: Self) {
         #[cfg(feature = "std")]
         return unimplemented!();
+        #[cfg(not(feature = "std"))]
         unsafe {
-            llvm_asm!("
-            0:
-                ldrexb r0, [$1]
-                cmp r0, #0
-                itt ne
-                strexbne r0, $0, [$1]
-                cmpne r0, #1
-                beq 0b
-            "   :
-                : "r"(value), "r"(address as *mut Self)
-                : "r0", "cc"
-                : "volatile"
+            asm!(
+                "0: ldrexb {tmp}, [{address}]",
+                "   cmp {tmp}, #0",
+                "   itt ne",
+                "   strexbne {tmp}, {value}, [{address}]",
+                "   cmpne {tmp}, #1",
+                "   beq 0b",
+                value = in(reg) value,
+                address = in(reg) address as *mut Self,
+                tmp = out(reg) _,
+                options(nostack),
             );
         }
     }
@@ -109,19 +107,19 @@ impl PortWrite for u16 {
     fn port_write(address: usize, value: Self) {
         #[cfg(feature = "std")]
         return unimplemented!();
+        #[cfg(not(feature = "std"))]
         unsafe {
-            llvm_asm!("
-            0:
-                ldrexh r0, [$1]
-                cmp r0, #0
-                itt ne
-                strexhne r0, $0, [$1]
-                cmpne r0, #1
-                beq 0b
-            "   :
-                : "r"(value), "r"(address as *mut Self)
-                : "r0", "cc"
-                : "volatile"
+            asm!(
+                "0: ldrexh {tmp}, [{address}]",
+                "   cmp {tmp}, #0",
+                "   itt ne",
+                "   strexhne {tmp}, {value}, [{address}]",
+                "   cmpne {tmp}, #1",
+                "   beq 0b",
+                value = in(reg) value,
+                address = in(reg) address as *mut Self,
+                tmp = out(reg) _,
+                options(nostack),
             );
         }
     }
@@ -131,19 +129,19 @@ impl PortWrite for u32 {
     fn port_write(address: usize, value: Self) {
         #[cfg(feature = "std")]
         return unimplemented!();
+        #[cfg(not(feature = "std"))]
         unsafe {
-            llvm_asm!("
-            0:
-                ldrex r0, [$1]
-                cmp r0, #0
-                itt ne
-                strexne r0, $0, [$1]
-                cmpne r0, #1
-                beq 0b
-            "   :
-                : "r"(value), "r"(address as *mut Self)
-                : "r0", "cc"
-                : "volatile"
+            asm!(
+                "0: ldrex {tmp}, [{address}]",
+                "   cmp {tmp}, #0",
+                "   itt ne",
+                "   strexne {tmp}, {value}, [{address}]",
+                "   cmpne {tmp}, #1",
+                "   beq 0b",
+                value = in(reg) value,
+                address = in(reg) address as *mut Self,
+                tmp = out(reg) _,
+                options(nostack),
             );
         }
     }

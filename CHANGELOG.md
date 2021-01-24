@@ -15,6 +15,7 @@ Possible log types:
 
 - [removed] `sv::sv_handler` and `sv::Supervisor::first` functions were removed
   in favor of a new `sv::Supervisor::handler` function
+- [changed] Changed signature of `sv::sv_call` function
 
 ### v0.13.1 (2020-12-23)
 

@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "std", allow(unreachable_code, unused_mut))]
+#![cfg_attr(feature = "std", allow(dead_code, unreachable_code))]
 
 use crate::{map::reg::scb, reg::prelude::*, thr::ThrTokens};
 use drone_core::token::Token;
@@ -149,27 +149,35 @@ mod mpu {
         0,
     ];
 
-    #[allow(unused_assignments, unused_variables)]
     pub(super) unsafe fn reset() {
         #[cfg(feature = "std")]
         return unimplemented!();
         let mpu_type = unsafe { mpu::Type::<Srt>::take() };
         let mpu_ctrl = unsafe { mpu::Ctrl::<Srt>::take() };
-        let mut table_ptr = &MPU_RESET_TABLE;
         if mpu_type.load().dregion() == 0 {
             return;
         }
         mpu_ctrl.reset();
-        llvm_asm!("
-            ldmia $0!, {r5, r6, r8, r9, r10, r11, r12, r14}
-            stmia $1, {r5, r6, r8, r9, r10, r11, r12, r14}
-            ldmia $0!, {r5, r6, r8, r9, r10, r11, r12, r14}
-            stmia $1, {r5, r6, r8, r9, r10, r11, r12, r14}
-        "   : "+&rm"(table_ptr)
-            : "r"(mpu::Rbar::<Srt>::ADDRESS)
-            : "r5", "r6", "r8", "r9", "r10", "r11", "r12", "r14"
-            : "volatile"
-        );
+        #[cfg(not(feature = "std"))]
+        unsafe {
+            asm!(
+                "ldmia r0!, {{r2, r3, r4, r5, r8, r9, r10, r11}}",
+                "stmia r1,  {{r2, r3, r4, r5, r8, r9, r10, r11}}",
+                "ldmia r0!, {{r2, r3, r4, r5, r8, r9, r10, r11}}",
+                "stmia r1,  {{r2, r3, r4, r5, r8, r9, r10, r11}}",
+                inout("r0") MPU_RESET_TABLE.as_ptr() => _,
+                in("r1") mpu::Rbar::<Srt>::ADDRESS,
+                out("r2") _,
+                out("r3") _,
+                out("r4") _,
+                out("r5") _,
+                out("r8") _,
+                out("r9") _,
+                out("r10") _,
+                out("r11") _,
+                options(preserves_flags),
+            );
+        }
     }
 
     #[allow(clippy::cast_lossless)]
