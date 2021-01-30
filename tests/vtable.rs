@@ -1,17 +1,13 @@
 #![feature(const_fn_fn_ptr_basics)]
 #![feature(naked_functions)]
-#![feature(prelude_import)]
+#![no_implicit_prelude]
 
-#[prelude_import]
-#[allow(unused_imports)]
-use drone_core::prelude::*;
-
-use core::mem::size_of;
-use drone_cortexm::{
+use ::drone_cortexm::{
     sv,
     sv::{Supervisor, SvService},
     thr,
 };
+use ::std::{assert_eq, mem::size_of};
 
 struct FooService;
 

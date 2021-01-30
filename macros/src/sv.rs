@@ -139,7 +139,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             unsafe extern "C" fn handler() {
                 #[cfg_attr(feature = "std", allow(unreachable_code))]
                 #[cfg(feature = "std")]
-                return unimplemented!();
+                return ::std::unimplemented!();
                 #[cfg(not(feature = "std"))]
                 unsafe {
                     asm!(

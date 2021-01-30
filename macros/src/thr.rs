@@ -354,7 +354,7 @@ fn def_vtable(thr: &Thr, vtable: &Vtable, threads: &[(Option<usize>, Thread)]) -
                 let (handler, path) = def_handler(thr, idx, kind);
                 tokens.push(handler);
                 vtable_ctor_tokens.push(quote! {
-                    #field_ident: Some(#path)
+                    #field_ident: ::core::option::Option::Some(#path)
                 });
                 if let Thread::Interrupt(num, _) = thread {
                     let num = *num as usize;
@@ -362,10 +362,10 @@ fn def_vtable(thr: &Thr, vtable: &Vtable, threads: &[(Option<usize>, Thread)]) -
                         vtable_tokens.resize(num + 1, None);
                     }
                     vtable_tokens[num] = Some(quote! {
-                        #field_ident: Option<unsafe extern "C" fn()>
+                        #field_ident: ::core::option::Option<unsafe extern "C" fn()>
                     });
                     vtable_ctor_default_tokens.push(quote! {
-                        #field_ident: None
+                        #field_ident: ::core::option::Option::None
                     });
                 }
             }
@@ -378,10 +378,10 @@ fn def_vtable(thr: &Thr, vtable: &Vtable, threads: &[(Option<usize>, Thread)]) -
             tokens.unwrap_or_else(|| {
                 let field_ident = format_ident!("_int{}", i);
                 vtable_ctor_default_tokens.push(quote! {
-                    #field_ident: None
+                    #field_ident: ::core::option::Option::None
                 });
                 quote! {
-                    #field_ident: Option<unsafe extern "C" fn()>
+                    #field_ident: ::core::option::Option<unsafe extern "C" fn()>
                 }
             })
         })
@@ -391,21 +391,21 @@ fn def_vtable(thr: &Thr, vtable: &Vtable, threads: &[(Option<usize>, Thread)]) -
         #[allow(dead_code)]
         #vtable_vis struct #vtable_ident {
             reset: unsafe extern "C" fn() -> !,
-            nmi: Option<unsafe extern "C" fn()>,
-            hard_fault: Option<unsafe extern "C" fn()>,
-            mem_manage: Option<unsafe extern "C" fn()>,
-            bus_fault: Option<unsafe extern "C" fn()>,
-            usage_fault: Option<unsafe extern "C" fn()>,
+            nmi: ::core::option::Option<unsafe extern "C" fn()>,
+            hard_fault: ::core::option::Option<unsafe extern "C" fn()>,
+            mem_manage: ::core::option::Option<unsafe extern "C" fn()>,
+            bus_fault: ::core::option::Option<unsafe extern "C" fn()>,
+            usage_fault: ::core::option::Option<unsafe extern "C" fn()>,
             #[cfg(feature = "security-extension")]
-            secure_fault: Option<unsafe extern "C" fn()>,
+            secure_fault: ::core::option::Option<unsafe extern "C" fn()>,
             #[cfg(not(feature = "security-extension"))]
             _reserved0: [usize; 1],
             _reserved1: [usize; 3],
-            sv_call: Option<unsafe extern "C" fn()>,
-            debug: Option<unsafe extern "C" fn()>,
+            sv_call: ::core::option::Option<unsafe extern "C" fn()>,
+            debug: ::core::option::Option<unsafe extern "C" fn()>,
             _reserved2: [usize; 1],
-            pend_sv: Option<unsafe extern "C" fn()>,
-            sys_tick: Option<unsafe extern "C" fn()>,
+            pend_sv: ::core::option::Option<unsafe extern "C" fn()>,
+            sys_tick: ::core::option::Option<unsafe extern "C" fn()>,
             #(#vtable_tokens),*
         }
 
@@ -416,21 +416,21 @@ fn def_vtable(thr: &Thr, vtable: &Vtable, threads: &[(Option<usize>, Thread)]) -
                     #(#vtable_ctor_tokens,)*
                     ..Self {
                         reset,
-                        nmi: None,
-                        hard_fault: None,
-                        mem_manage: None,
-                        bus_fault: None,
-                        usage_fault: None,
+                        nmi: ::core::option::Option::None,
+                        hard_fault: ::core::option::Option::None,
+                        mem_manage: ::core::option::Option::None,
+                        bus_fault: ::core::option::Option::None,
+                        usage_fault: ::core::option::Option::None,
                         #[cfg(feature = "security-extension")]
-                        secure_fault: None,
+                        secure_fault: ::core::option::Option::None,
                         #[cfg(not(feature = "security-extension"))]
                         _reserved0: [0; 1],
                         _reserved1: [0; 3],
-                        sv_call: None,
-                        debug: None,
+                        sv_call: ::core::option::Option::None,
+                        debug: ::core::option::Option::None,
                         _reserved2: [0; 1],
-                        pend_sv: None,
-                        sys_tick: None,
+                        pend_sv: ::core::option::Option::None,
+                        sys_tick: ::core::option::Option::None,
                         #(#vtable_ctor_default_tokens,)*
                     }
                 }
