@@ -2,7 +2,7 @@
 
 use super::{Data, ProcData, Yielder};
 use crate::{
-    fib::{Fiber, FiberRoot, FiberState},
+    fib::{Fiber, FiberState, RootFiber},
     sv::Switch,
 };
 use ::alloc::alloc;
@@ -198,7 +198,7 @@ where
 }
 
 #[allow(clippy::unused_unit)]
-impl<Sv, F> FiberRoot for FiberProc<Sv, (), (), (), F>
+impl<Sv, F> RootFiber for FiberProc<Sv, (), (), (), F>
 where
     Sv: Switch<ProcData<(), (), ()>>,
     F: FnMut((), Yielder<Sv, (), (), ()>) -> (),
@@ -206,8 +206,8 @@ where
 {
     fn advance(self: Pin<&mut Self>) -> bool {
         match self.resume(()) {
-            FiberState::Yielded(()) => true,
-            FiberState::Complete(()) => false,
+            FiberState::Yielded(()) => false,
+            FiberState::Complete(()) => true,
         }
     }
 }

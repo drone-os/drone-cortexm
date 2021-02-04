@@ -13,16 +13,36 @@ use core::{
 pub trait ThrExec: IntToken {
     /// Adds an executor for the future `fut` to the fiber chain and triggers
     /// the thread immediately.
-    fn exec<F, O: ExecOutput>(self, fut: F)
+    fn exec<F, O>(self, fut: F)
     where
-        F: Future<Output = O> + Send + 'static;
+        F: Future<Output = O> + Send + 'static,
+        O: ExecOutput;
+
+    /// Adds an executor for the future returned by `factory` to the fiber chain
+    /// and triggers the thread immediately.
+    fn exec_factory<C, F, O>(self, factory: C)
+    where
+        C: FnOnce() -> F + Send + 'static,
+        F: Future<Output = O> + 'static,
+        O: ExecOutput;
 
     /// Adds an executor for the future `fut` to the fiber chain.
     ///
     /// The future `fut` will start polling on the next thread wake-up.
-    fn add_exec<F, O: ExecOutput>(self, fut: F)
+    fn add_exec<F, O>(self, fut: F)
     where
-        F: Future<Output = O> + Send + 'static;
+        F: Future<Output = O> + Send + 'static,
+        O: ExecOutput;
+
+    /// Adds an executor for the future returned by `factory` to the fiber
+    /// chain.
+    ///
+    /// The future `fut` will start polling on the next thread wake-up.
+    fn add_exec_factory<C, F, O>(self, factory: C)
+    where
+        C: FnOnce() -> F + Send + 'static,
+        F: Future<Output = O> + 'static,
+        O: ExecOutput;
 
     /// Generates the interrupt.
     ///
@@ -45,28 +65,52 @@ pub trait ExecOutput: Sized + Send {
 
 impl<T: IntToken> ThrExec for T {
     #[inline]
-    fn exec<F, O: ExecOutput>(self, fut: F)
+    fn exec<F, O>(self, fut: F)
     where
         F: Future<Output = O> + Send + 'static,
+        O: ExecOutput,
     {
-        self.add_exec(fut);
+        self.exec_factory(|| fut);
+    }
+
+    #[inline]
+    fn exec_factory<C, F, O>(self, factory: C)
+    where
+        C: FnOnce() -> F + Send + 'static,
+        F: Future<Output = O> + 'static,
+        O: ExecOutput,
+    {
+        self.add_exec_factory(factory);
         self.trigger();
     }
 
-    fn add_exec<F, O: ExecOutput>(self, mut fut: F)
+    fn add_exec<F, O>(self, fut: F)
     where
         F: Future<Output = O> + Send + 'static,
+        O: ExecOutput,
+    {
+        self.add_exec_factory(|| fut);
+    }
+
+    fn add_exec_factory<C, F, O>(self, factory: C)
+    where
+        C: FnOnce() -> F + Send + 'static,
+        F: Future<Output = O> + 'static,
+        O: ExecOutput,
     {
         fn poll<F: Future>(fut: Pin<&mut F>, int_num: usize) -> Poll<F::Output> {
             let waker = WakeInt::new(int_num).to_waker();
             let mut cx = Context::from_waker(&waker);
             fut.poll(&mut cx)
         }
-        self.add_fn(move || match poll(unsafe { Pin::new_unchecked(&mut fut) }, Self::INT_NUM) {
-            Poll::Pending => fib::Yielded(()),
-            Poll::Ready(output) => {
-                output.terminate();
-                fib::Complete(())
+        self.add_fn_factory(|| {
+            let mut fut = factory();
+            move || match poll(unsafe { Pin::new_unchecked(&mut fut) }, Self::INT_NUM) {
+                Poll::Pending => fib::Yielded(()),
+                Poll::Ready(output) => {
+                    output.terminate();
+                    fib::Complete(())
+                }
             }
         });
     }
