@@ -11,12 +11,12 @@
 //! # fn main() {}
 //! use drone_cortexm::{sv, sv::Supervisor, thr};
 //!
-//! sv! {
-//!     /// The supervisor type.
-//!     supervisor => pub Sv;
+//! sv::pool! {
+//!     /// Pool of services.
+//!     pool => Services;
 //!
-//!     /// Array of services.
-//!     array => SERVICES;
+//!     /// Supervisor type.
+//!     supervisor => pub Sv;
 //!
 //!     // Attached services.
 //!     services => {
@@ -25,12 +25,14 @@
 //!     }
 //! }
 //!
-//! thr! {
+//! thr::nvic! {
+//!     pool => pub ThrPool;
 //!     thread => pub Thr {};
 //!     local => pub ThrLocal {};
-//!     vtable => pub Vtable;
 //!     index => pub Thrs;
+//!     vtable => pub Vtable;
 //!     init => pub ThrsInit;
+//!     supervisor => Sv;
 //!     threads => {
 //!         exceptions => {
 //!             // Define an external function handler for the SV_CALL exception.
@@ -54,18 +56,19 @@
 //! become available to switch the program stack.
 //!
 //! ```no_run
+//! # #![feature(const_fn_fn_ptr_basics)]
 //! # #![feature(naked_functions)]
 //! # #![feature(new_uninit)]
 //! use drone_cortexm::sv::{Switch, SwitchBackService, SwitchContextService};
 //!
 //! use drone_cortexm::sv;
 //!
-//! sv! {
+//! sv::pool! {
+//!     /// Pool of services.
+//!     pool => Services;
+//!
 //!     /// The supervisor type.
 //!     supervisor => pub Sv;
-//!
-//!     /// Array of services.
-//!     array => SERVICES;
 //!
 //!     // Attached services.
 //!     services => {
@@ -96,6 +99,12 @@
 mod switch;
 
 pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
+
+/// Defines the supervisor type.
+///
+/// See [the module level documentation](self) for details.
+#[doc(inline)]
+pub use drone_cortexm_macros::sv_pool as pool;
 
 use core::mem::size_of;
 

@@ -11,18 +11,21 @@
 //! # fn main() {}
 //! use drone_cortexm::{map::thr::*, thr};
 //!
-//! thr! {
-//!     // See the `drone_core` documentation of `thr!` macro for details.
+//! thr::nvic! {
+//!     // See the `drone_core` documentation of `thr::pool!` macro for details.
+//!     pool => pub ThrPool;
+//!
+//!     // See the `drone_core` documentation of `thr::pool!` macro for details.
 //!     thread => pub Thr {};
 //!
-//!     // See the `drone_core` documentation of `thr!` macro for details.
+//!     // See the `drone_core` documentation of `thr::pool!` macro for details.
 //!     local => pub ThrLocal {};
+//!
+//!     // See the `drone_core` documentation of `thr::pool!` macro for details.
+//!     index => pub Thrs;
 //!
 //!     /// The vector table type.
 //!     vtable => pub Vtable;
-//!
-//!     /// Thread tokens.
-//!     index => pub Thrs;
 //!
 //!     /// Threads initialization token.
 //!     init => pub ThrsInit;
@@ -108,8 +111,14 @@ pub use self::{
     root::{FutureRootExt, StreamRootExt, StreamRootWait},
 };
 
+/// Defines a thread pool driven by NVIC.
+///
+/// See [the module level documentation](self) for details.
+#[doc(inline)]
+pub use drone_cortexm_macros::thr_nvic as nvic;
+
 use crate::sv::Supervisor;
-use drone_core::{thr::ThrToken, token::Token};
+use drone_core::thr::ThrToken;
 
 /// An interrupt token.
 pub trait IntToken: ThrToken {
@@ -119,13 +128,6 @@ pub trait IntToken: ThrToken {
     /// The number of the interrupt.
     const INT_NUM: usize;
 }
-
-/// A set of thread tokens.
-///
-/// # Safety
-///
-/// Must contain only thread tokens.
-pub unsafe trait ThrTokens: Token {}
 
 /// A trait to assign a supervisor to threads.
 pub trait ThrSv: ThrToken {

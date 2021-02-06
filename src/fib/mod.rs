@@ -14,15 +14,16 @@
 //! [`fib::new_proc_unprivileged_unchecked`](crate::fib::new_proc_unprivileged_unchecked):
 //!
 //! ```
+//! # #![feature(const_fn_fn_ptr_basics)]
 //! # #![feature(naked_functions)]
 //! use drone_cortexm::{fib, sv};
 //!
 //! use drone_cortexm::sv::{SwitchBackService, SwitchContextService};
 //!
 //! // Stackful fibers need a supervisor.
-//! sv! {
+//! sv::pool! {
+//!     pool => Services;
 //!     supervisor => pub Sv;
-//!     array => SERVICES;
 //!     services => {
 //!         // These services are required for stackful fibers.
 //!         SwitchContextService;
@@ -52,24 +53,22 @@
 //! yield and return values other than `()`.
 //!
 //! ```
+//! # #![feature(const_fn_fn_ptr_basics)]
 //! # #![feature(generators)]
 //! # #![feature(naked_functions)]
 //! # use drone_core::token::Token;
 //! # use drone_cortexm::{sv, sv::SwitchBackService, sv::SwitchContextService};
-//! # static mut THREADS: [Thr; 1] = [Thr::new(0)];
-//! # drone_core::thr!(array => THREADS; thread => Thr {}; local => ThrLocal {});
-//! # #[derive(Clone, Copy)] struct SysTick;
-//! # struct Thrs { sys_tick: SysTick }
-//! # sv!(supervisor => pub Sv; array => SERVICES; services => { SwitchContextService; SwitchBackService });
-//! # unsafe impl Token for Thrs {
-//! #     unsafe fn take() -> Self { Self { sys_tick: SysTick::take() } }
+//! # drone_core::thr::pool! {
+//! #     pool => ThrPool;
+//! #     thread => Thr {};
+//! #     local => ThrLocal {};
+//! #     index => Thrs;
+//! #     threads => { sys_tick };
 //! # }
-//! # unsafe impl Token for SysTick {
-//! #     unsafe fn take() -> Self { Self }
-//! # }
-//! # unsafe impl drone_core::thr::ThrToken for SysTick {
-//! #     type Thr = Thr;
-//! #     const THR_IDX: usize = 0;
+//! # sv::pool! {
+//! #     pool => Services;
+//! #     supervisor => pub Sv;
+//! #     services => { SwitchContextService; SwitchBackService };
 //! # }
 //! # impl drone_cortexm::thr::ThrSv for SysTick {
 //! #     type Sv = Sv;

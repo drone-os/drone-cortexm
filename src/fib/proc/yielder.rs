@@ -76,8 +76,16 @@ where
 
 mod compile_tests {
     //! ```compile_fail
-    //! use drone_cortexm::{fib::Yielder, sv, sv::SwitchBackService, sv::SwitchContextService};
-    //! sv!(pub struct Sv; static SERVICES; SwitchContextService; SwitchBackService;);
+    //! use drone_cortexm::{
+    //!     fib::Yielder,
+    //!     sv,
+    //!     sv::{SwitchBackService, SwitchContextService},
+    //! };
+    //! sv::pool! {
+    //!     pool => Services;
+    //!     supervisor => pub Sv;
+    //!     services => { SwitchContextService; SwitchBackService };
+    //! }
     //! fn assert_send<T: Send>() {}
     //! fn main() {
     //!     assert_send::<Yielder<Sv, (), (), ()>>();
@@ -85,8 +93,16 @@ mod compile_tests {
     //! ```
     //!
     //! ```compile_fail
-    //! use drone_cortexm::{fib::Yielder, sv, sv::SwitchBackService, sv::SwitchContextService};
-    //! sv!(pub struct Sv; static SERVICES; SwitchContextService; SwitchBackService;);
+    //! use drone_cortexm::{
+    //!     fib::Yielder,
+    //!     sv,
+    //!     sv::{SwitchBackService, SwitchContextService},
+    //! };
+    //! sv::pool! {
+    //!     pool => Services;
+    //!     supervisor => pub Sv;
+    //!     services => { SwitchContextService; SwitchBackService };
+    //! }
     //! fn assert_sync<T: Sync>() {}
     //! fn main() {
     //!     assert_sync::<Yielder<Sv, (), (), ()>>();

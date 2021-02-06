@@ -9,17 +9,17 @@
 
 extern crate proc_macro;
 
-mod sv;
-mod thr;
+mod sv_pool;
+mod thr_nvic;
 
 use proc_macro::TokenStream;
 
 #[proc_macro]
-pub fn sv(input: TokenStream) -> TokenStream {
-    sv::proc_macro(input)
+pub fn sv_pool(input: TokenStream) -> TokenStream {
+    sv_pool::proc_macro(input)
 }
 
 #[proc_macro]
-pub fn thr(input: TokenStream) -> TokenStream {
-    thr::proc_macro(input)
+pub fn thr_nvic(input: TokenStream) -> TokenStream {
+    thr_nvic::proc_macro(input)
 }

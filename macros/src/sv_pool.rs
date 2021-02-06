@@ -1,6 +1,7 @@
+use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{
     braced,
     parse::{Parse, ParseStream, Result},
@@ -8,18 +9,18 @@ use syn::{
 };
 
 struct Input {
+    pool: Pool,
     sv: Sv,
-    array: Array,
     services: Services,
 }
 
-struct Sv {
+struct Pool {
     attrs: Vec<Attribute>,
     vis: Visibility,
     ident: Ident,
 }
 
-struct Array {
+struct Sv {
     attrs: Vec<Attribute>,
     vis: Visibility,
     ident: Ident,
@@ -35,24 +36,24 @@ struct Service {
 
 impl Parse for Input {
     fn parse(input: ParseStream<'_>) -> Result<Self> {
+        let mut pool = None;
         let mut sv = None;
-        let mut array = None;
         let mut services = None;
         while !input.is_empty() {
             let attrs = input.call(Attribute::parse_outer)?;
             let ident = input.parse::<Ident>()?;
             input.parse::<Token![=>]>()?;
-            if ident == "supervisor" {
+            if ident == "pool" {
+                if pool.is_none() {
+                    pool = Some(Pool::parse(input, attrs)?);
+                } else {
+                    return Err(input.error("multiple `pool` specifications"));
+                }
+            } else if ident == "supervisor" {
                 if sv.is_none() {
                     sv = Some(Sv::parse(input, attrs)?);
                 } else {
                     return Err(input.error("multiple `supervisor` specifications"));
-                }
-            } else if ident == "array" {
-                if array.is_none() {
-                    array = Some(Array::parse(input, attrs)?);
-                } else {
-                    return Err(input.error("multiple `array` specifications"));
                 }
             } else if attrs.is_empty() && ident == "services" {
                 if services.is_none() {
@@ -68,14 +69,14 @@ impl Parse for Input {
             }
         }
         Ok(Self {
+            pool: pool.ok_or_else(|| input.error("missing `pool` specification"))?,
             sv: sv.ok_or_else(|| input.error("missing `sv` specification"))?,
-            array: array.ok_or_else(|| input.error("missing `array` specification"))?,
             services: services.ok_or_else(|| input.error("missing `services` specification"))?,
         })
     }
 }
 
-impl Sv {
+impl Pool {
     fn parse(input: ParseStream<'_>, attrs: Vec<Attribute>) -> Result<Self> {
         let vis = input.parse()?;
         let ident = input.parse()?;
@@ -83,7 +84,7 @@ impl Sv {
     }
 }
 
-impl Array {
+impl Sv {
     fn parse(input: ParseStream<'_>, attrs: Vec<Attribute>) -> Result<Self> {
         let vis = input.parse()?;
         let ident = input.parse()?;
@@ -108,17 +109,17 @@ impl Parse for Services {
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-    let Input { sv, array, services } = parse_macro_input!(input as Input);
+    let Input { pool, sv, services } = parse_macro_input!(input as Input);
+    let Pool { attrs: pool_attrs, vis: pool_vis, ident: pool_ident } = pool;
     let Sv { attrs: sv_attrs, vis: sv_vis, ident: sv_ident } = sv;
-    let Array { attrs: array_attrs, vis: array_vis, ident: array_ident } = array;
     let Services { services } = services;
+    let mut pool_tokens = Vec::new();
     let mut service_counter = 0_usize;
-    let mut array_tokens = Vec::new();
     let mut service_tokens = Vec::new();
     for Service { ident } in services {
         let index = LitInt::new(&service_counter.to_string(), Span::call_site());
         service_counter += 1;
-        array_tokens.push(quote! {
+        pool_tokens.push(quote! {
             #sv_ident(::drone_cortexm::sv::service_handler::<#ident>)
         });
         service_tokens.push(quote! {
@@ -130,7 +131,25 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             }
         });
     }
+    let static_ident = format_ident!("{}", pool_ident.to_string().to_screaming_snake_case());
     let expanded = quote! {
+        #(#pool_attrs)*
+        #pool_vis static #static_ident: #pool_ident = #pool_ident::new();
+
+        #(#pool_attrs)*
+        #[repr(C)]
+        #pool_vis struct #pool_ident {
+            services: [#sv_ident; #service_counter],
+        }
+
+        impl #pool_ident {
+            const fn new() -> Self {
+                Self {
+                    services: [#(#pool_tokens),*],
+                }
+            }
+        }
+
         #(#sv_attrs)*
         #sv_vis struct #sv_ident(unsafe extern "C" fn(*mut *mut u8));
 
@@ -152,17 +171,12 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
                         "movw r0, #:lower16:{0}",
                         "movt r0, #:upper16:{0}",
                         "ldr pc, [r0, r1, lsl #2]",
-                        sym #array_ident,
+                        sym #static_ident,
                         options(noreturn),
                     );
                 }
             }
         }
-
-        #(#array_attrs)*
-        #array_vis static #array_ident: [#sv_ident; #service_counter] = [
-            #(#array_tokens),*
-        ];
 
         #(#service_tokens)*
     };
