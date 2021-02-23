@@ -1,7 +1,6 @@
-use inflector::Inflector;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{
     braced,
     parse::{Parse, ParseStream, Result},
@@ -131,24 +130,9 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             }
         });
     }
-    let static_ident = format_ident!("{}", pool_ident.to_string().to_screaming_snake_case());
     let expanded = quote! {
         #(#pool_attrs)*
-        #pool_vis static #static_ident: #pool_ident = #pool_ident::new();
-
-        #(#pool_attrs)*
-        #[repr(C)]
-        #pool_vis struct #pool_ident {
-            services: [#sv_ident; #service_counter],
-        }
-
-        impl #pool_ident {
-            const fn new() -> Self {
-                Self {
-                    services: [#(#pool_tokens),*],
-                }
-            }
-        }
+        #pool_vis static #pool_ident: [#sv_ident; #service_counter] = [#(#pool_tokens),*];
 
         #(#sv_attrs)*
         #sv_vis struct #sv_ident(unsafe extern "C" fn(*mut *mut u8));
@@ -171,7 +155,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
                         "movw r0, #:lower16:{0}",
                         "movt r0, #:upper16:{0}",
                         "ldr pc, [r0, r1, lsl #2]",
-                        sym #static_ident,
+                        sym #pool_ident,
                         options(noreturn),
                     );
                 }

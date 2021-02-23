@@ -32,7 +32,6 @@ pub struct ThrInitExtended {
 /// # #![feature(proc_macro_hygiene)]
 /// # use drone_core::token::Token;
 /// # thr::nvic! {
-/// #     pool => pub ThrPool;
 /// #     thread => pub Thr {};
 /// #     local => pub ThrLocal {};
 /// #     index => Thrs;
@@ -95,7 +94,6 @@ pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExten
 /// # #![feature(proc_macro_hygiene)]
 /// # use drone_core::token::Token;
 /// # thr::nvic! {
-/// #     pool => pub ThrPool;
 /// #     thread => pub Thr {};
 /// #     local => pub ThrLocal {};
 /// #     index => Thrs;

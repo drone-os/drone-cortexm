@@ -22,7 +22,7 @@
 //!
 //! // Stackful fibers need a supervisor.
 //! sv::pool! {
-//!     pool => Services;
+//!     pool => SERVICES;
 //!     supervisor => pub Sv;
 //!     services => {
 //!         // These services are required for stackful fibers.
@@ -59,14 +59,13 @@
 //! # use drone_core::token::Token;
 //! # use drone_cortexm::{sv, sv::SwitchBackService, sv::SwitchContextService};
 //! # drone_core::thr::pool! {
-//! #     pool => ThrPool;
 //! #     thread => Thr {};
 //! #     local => ThrLocal {};
 //! #     index => Thrs;
 //! #     threads => { sys_tick };
 //! # }
 //! # sv::pool! {
-//! #     pool => Services;
+//! #     pool => SERVICES;
 //! #     supervisor => pub Sv;
 //! #     services => { SwitchContextService; SwitchBackService };
 //! # }

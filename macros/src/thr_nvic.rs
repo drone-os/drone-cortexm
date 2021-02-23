@@ -10,7 +10,6 @@ use syn::{
 };
 
 struct Input {
-    pool: Pool,
     thr: Thr,
     local: Local,
     index: Index,
@@ -18,12 +17,6 @@ struct Input {
     init: Init,
     sv: Option<Sv>,
     threads: Threads,
-}
-
-struct Pool {
-    attrs: Vec<Attribute>,
-    vis: Visibility,
-    ident: Ident,
 }
 
 struct Thr {
@@ -87,7 +80,6 @@ enum ThreadKind {
 
 impl Parse for Input {
     fn parse(input: ParseStream<'_>) -> Result<Self> {
-        let mut pool = None;
         let mut thr = None;
         let mut local = None;
         let mut index = None;
@@ -99,13 +91,7 @@ impl Parse for Input {
             let attrs = input.call(Attribute::parse_outer)?;
             let ident = input.parse::<Ident>()?;
             input.parse::<Token![=>]>()?;
-            if ident == "pool" {
-                if pool.is_none() {
-                    pool = Some(Pool::parse(input, attrs)?);
-                } else {
-                    return Err(input.error("multiple `pool` specifications"));
-                }
-            } else if ident == "thread" {
+            if ident == "thread" {
                 if thr.is_none() {
                     thr = Some(Thr::parse(input, attrs)?);
                 } else {
@@ -155,7 +141,6 @@ impl Parse for Input {
             }
         }
         Ok(Self {
-            pool: pool.ok_or_else(|| input.error("missing `pool` specification"))?,
             thr: thr.ok_or_else(|| input.error("missing `thread` specification"))?,
             local: local.ok_or_else(|| input.error("missing `local` specification"))?,
             index: index.ok_or_else(|| input.error("missing `index` specification"))?,
@@ -164,14 +149,6 @@ impl Parse for Input {
             sv,
             threads: threads.ok_or_else(|| input.error("missing `threads` specification"))?,
         })
-    }
-}
-
-impl Pool {
-    fn parse(input: ParseStream<'_>, attrs: Vec<Attribute>) -> Result<Self> {
-        let vis = input.parse()?;
-        let ident = input.parse()?;
-        Ok(Self { attrs, vis, ident })
     }
 }
 
@@ -316,12 +293,11 @@ impl Parse for ThreadKind {
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-    let Input { pool, thr, local, index, vtable, init, sv, threads } =
-        parse_macro_input!(input as Input);
+    let Input { thr, local, index, vtable, init, sv, threads } = parse_macro_input!(input as Input);
     let Threads { mut threads } = threads;
     threads.insert(0, Thread::reset());
     let (threads, naked_threads) = partition_threads(threads);
-    let def_core_thr = def_core_thr(&pool, &thr, &local, &index, &threads);
+    let def_core_thr = def_core_thr(&thr, &local, &index, &threads);
     let def_vtable = def_vtable(&thr, &vtable, &threads, &naked_threads);
     let def_init = def_init(&index, &init);
     let thr_tokens =
@@ -490,14 +466,7 @@ fn def_init(index: &Index, init: &Init) -> TokenStream2 {
     }
 }
 
-fn def_core_thr(
-    pool: &Pool,
-    thr: &Thr,
-    local: &Local,
-    index: &Index,
-    threads: &[Thread],
-) -> TokenStream2 {
-    let Pool { vis: pool_vis, attrs: pool_attrs, ident: pool_ident } = pool;
+fn def_core_thr(thr: &Thr, local: &Local, index: &Index, threads: &[Thread]) -> TokenStream2 {
     let Thr { attrs: thr_attrs, vis: thr_vis, ident: thr_ident, tokens: thr_tokens } = thr;
     let Local { attrs: local_attrs, vis: local_vis, ident: local_ident, tokens: local_tokens } =
         local;
@@ -515,9 +484,6 @@ fn def_core_thr(
     }
     quote! {
         ::drone_core::thr::pool! {
-            #(#pool_attrs)*
-            pool => #pool_vis #pool_ident;
-
             #(#thr_attrs)*
             thread => #thr_vis #thr_ident { #thr_tokens };
 
@@ -558,6 +524,22 @@ fn def_thr_token(sv: &Option<Sv>, thread: &Thread) -> Vec<TokenStream2> {
 
                                 const INT_NUM: usize = #num;
                             }
+
+                            impl ::drone_core::thr::ThrExec for #struct_ident {
+                                #[inline]
+                                fn wakeup(self) {
+                                    unsafe {
+                                        <Self as ::drone_cortexm::thr::IntToken>::wakeup_unchecked();
+                                    }
+                                }
+
+                                #[inline]
+                                fn waker(self) -> ::core::task::Waker {
+                                    unsafe {
+                                        <Self as ::drone_cortexm::thr::IntToken>::waker_unchecked()
+                                    }
+                                }
+                            }
                         });
                     }
                 }
@@ -573,14 +555,14 @@ fn def_handler(thr: &Thr, idx: Option<usize>, kind: &ThreadKind) -> (TokenStream
     let def = |ident, path| {
         quote! {
             unsafe extern "C" fn #ident() {
-                unsafe { ::drone_cortexm::thr::run::<#thr_ident>(#idx, #path) };
+                unsafe { <#thr_ident as ::drone_core::thr::Thread>::call(#idx, #path) };
             }
         }
     };
     match kind {
         ThreadKind::Inner => {
             let ident = format_ident!("thr_handler_{}", idx.unwrap());
-            (def(&ident, quote!(::drone_cortexm::thr::resume)), quote!(#ident))
+            (def(&ident, quote!(::drone_core::thr::Thread::resume)), quote!(#ident))
         }
         ThreadKind::Outer(path) => {
             let ident = format_ident!("thr_handler_{}_outer", idx.unwrap());

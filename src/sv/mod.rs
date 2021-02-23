@@ -13,7 +13,7 @@
 //!
 //! sv::pool! {
 //!     /// Pool of services.
-//!     pool => Services;
+//!     pool => SERVICES;
 //!
 //!     /// Supervisor type.
 //!     supervisor => pub Sv;
@@ -26,7 +26,6 @@
 //! }
 //!
 //! thr::nvic! {
-//!     pool => pub ThrPool;
 //!     thread => pub Thr {};
 //!     local => pub ThrLocal {};
 //!     index => pub Thrs;
@@ -65,7 +64,7 @@
 //!
 //! sv::pool! {
 //!     /// Pool of services.
-//!     pool => Services;
+//!     pool => SERVICES;
 //!
 //!     /// The supervisor type.
 //!     supervisor => pub Sv;

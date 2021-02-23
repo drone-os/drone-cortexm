@@ -23,7 +23,7 @@
 //!
 //! // Stackful fibers need a supervisor.
 //! sv::pool! {
-//!     pool => Services;
+//!     pool => SERVICES;
 //!     supervisor => pub Sv;
 //!     services => {
 //!         // These services are required for stackful fibers.

@@ -82,7 +82,7 @@ mod compile_tests {
     //!     sv::{SwitchBackService, SwitchContextService},
     //! };
     //! sv::pool! {
-    //!     pool => Services;
+    //!     pool => SERVICES;
     //!     supervisor => pub Sv;
     //!     services => { SwitchContextService; SwitchBackService };
     //! }
@@ -99,7 +99,7 @@ mod compile_tests {
     //!     sv::{SwitchBackService, SwitchContextService},
     //! };
     //! sv::pool! {
-    //!     pool => Services;
+    //!     pool => SERVICES;
     //!     supervisor => pub Sv;
     //!     services => { SwitchContextService; SwitchBackService };
     //! }
