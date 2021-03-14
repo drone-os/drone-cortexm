@@ -8,15 +8,15 @@ const NVIC_STIR: usize = 0xE000_EF00;
 static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake, drop);
 
 #[repr(transparent)]
-pub struct WakeInt(usize);
+pub struct WakeInt(u16);
 
 impl WakeInt {
-    pub fn new(int_num: usize) -> Self {
+    pub fn new(int_num: u16) -> Self {
         Self(int_num)
     }
 
     pub fn wakeup(&self) {
-        unsafe { write_volatile(NVIC_STIR as *mut usize, self.0) };
+        unsafe { write_volatile(NVIC_STIR as *mut u16, self.0) };
     }
 
     pub fn to_waker(&self) -> Waker {
@@ -29,9 +29,9 @@ impl WakeInt {
 }
 
 unsafe fn clone(data: *const ()) -> RawWaker {
-    WakeInt::new(data as usize).to_raw_waker()
+    WakeInt::new(data as u16).to_raw_waker()
 }
 
 unsafe fn wake(data: *const ()) {
-    WakeInt::new(data as usize).wakeup();
+    WakeInt::new(data as u16).wakeup();
 }

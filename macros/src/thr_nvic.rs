@@ -62,7 +62,7 @@ struct Threads {
 enum Thread {
     Reset(ThreadSpec),
     Exception(ThreadSpec),
-    Interrupt(u32, ThreadSpec),
+    Interrupt(u16, ThreadSpec),
 }
 
 struct ThreadSpec {
@@ -329,7 +329,7 @@ fn partition_threads(threads: Vec<Thread>) -> (Vec<Thread>, Vec<Thread>) {
     })
 }
 
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
 fn def_vtable(
     thr: &Thr,
     vtable: &Vtable,
@@ -344,7 +344,7 @@ fn def_vtable(
     for (idx, thread) in threads
         .iter()
         .enumerate()
-        .map(|(idx, thread)| (Some(idx), thread))
+        .map(|(idx, thread)| (Some(idx as u16), thread))
         .chain(naked_threads.iter().map(|thread| (None, thread)))
     {
         match thread {
@@ -516,13 +516,12 @@ fn def_thr_token(sv: &Option<Sv>, thread: &Thread) -> Vec<TokenStream2> {
                         });
                     }
                     if let Thread::Interrupt(num, _) = thread {
-                        let num = *num as usize;
                         let nvic_block = format_ident!("NvicBlock{}", num / 32);
                         tokens.push(quote! {
                             impl ::drone_cortexm::thr::IntToken for #struct_ident {
                                 type NvicBlock = ::drone_cortexm::map::thr::#nvic_block;
 
-                                const INT_NUM: usize = #num;
+                                const INT_NUM: u16 = #num;
                             }
 
                             impl ::drone_core::thr::ThrExec for #struct_ident {
@@ -550,7 +549,7 @@ fn def_thr_token(sv: &Option<Sv>, thread: &Thread) -> Vec<TokenStream2> {
     tokens
 }
 
-fn def_handler(thr: &Thr, idx: Option<usize>, kind: &ThreadKind) -> (TokenStream2, TokenStream2) {
+fn def_handler(thr: &Thr, idx: Option<u16>, kind: &ThreadKind) -> (TokenStream2, TokenStream2) {
     let Thr { ident: thr_ident, .. } = thr;
     let def = |ident, path| {
         quote! {

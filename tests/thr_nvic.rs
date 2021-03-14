@@ -83,7 +83,7 @@ fn new() {
 
 #[test]
 fn size() {
-    assert_eq!(Thr::threads().len(), 4);
+    assert_eq!(Thr::COUNT, 4);
     assert_eq!(size_of::<Vtable>(), 208);
     assert_eq!(SERVICES.len(), 2);
 }

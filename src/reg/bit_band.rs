@@ -16,6 +16,7 @@ pub trait RegBitBand<T: RegTag>: Reg<T> {}
 
 /// Readable single-bit field of readable register located in the peripheral
 /// bit-band region.
+#[allow(clippy::upper_case_acronyms)]
 pub trait RRRegFieldBitBand<T: RegTag>
 where
     Self: RRRegFieldBit<T>,
@@ -33,6 +34,7 @@ where
 
 /// Writable single-bit field of writable register located in the peripheral
 /// bit-band region.
+#[allow(clippy::upper_case_acronyms)]
 pub trait WWRegFieldBitBand<T: RegTag>
 where
     Self: WWRegFieldBitBandMarker<T>,
@@ -51,6 +53,7 @@ where
     fn to_bit_band_mut_ptr(&self) -> *mut usize;
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[marker]
 pub trait WWRegFieldBitBandMarker<T: RegTag>
 where

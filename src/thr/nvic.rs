@@ -198,13 +198,13 @@ pub trait ThrNvic: IntToken {
     /// Reads the priority of the interrupt.
     #[inline]
     fn priority(self) -> u8 {
-        unsafe { read_volatile((NVIC_IPR as *const u8).add(Self::INT_NUM)) }
+        unsafe { read_volatile((NVIC_IPR as *const u8).add(Self::INT_NUM as usize)) }
     }
 
     /// Writes the priority of the interrupt.
     #[inline]
     fn set_priority(self, priority: u8) {
-        unsafe { write_volatile((NVIC_IPR as *mut u8).add(Self::INT_NUM), priority) };
+        unsafe { write_volatile((NVIC_IPR as *mut u8).add(Self::INT_NUM as usize), priority) };
     }
 }
 
@@ -242,5 +242,5 @@ trait NvicReg<T: NvicBlock>: Sized {
 impl<T: IntToken> ThrNvic for T {}
 
 const fn block_offset<T: IntToken>() -> usize {
-    T::INT_NUM & 0b1_1111
+    T::INT_NUM as usize & 0b1_1111
 }

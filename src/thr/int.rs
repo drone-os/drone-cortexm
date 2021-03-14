@@ -7,7 +7,7 @@ pub trait IntToken: ThrToken {
     type NvicBlock: NvicBlock;
 
     /// The number of the interrupt.
-    const INT_NUM: usize;
+    const INT_NUM: u16;
 
     /// Wakes up the thread.
     ///
