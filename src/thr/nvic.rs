@@ -24,10 +24,7 @@ macro_rules! nvic_reg {
 
             #[inline]
             fn new(inner: u32) -> Self {
-                Self {
-                    _nvic_block: PhantomData,
-                    inner,
-                }
+                Self { _nvic_block: PhantomData, inner }
             }
 
             #[inline]
@@ -72,7 +69,7 @@ macro_rules! nvic_methods {
         $(
             #[doc = $write_batch_doc]
             #[inline]
-            fn $write_batch<F>(&self, f: F)
+            fn $write_batch<F>(self, f: F)
             where
                 F: FnOnce(&mut $nvic_reg<Self::NvicBlock>),
             {
@@ -81,13 +78,13 @@ macro_rules! nvic_methods {
 
             #[doc = $write_doc]
             #[inline]
-            fn $write(&self, nvic_reg: &mut $nvic_reg<Self::NvicBlock>) {
+            fn $write(self, nvic_reg: &mut $nvic_reg<Self::NvicBlock>) {
                 nvic_reg.write::<Self>();
             }
 
             #[doc = $write_one_doc]
             #[inline]
-            fn $write_one(&self) {
+            fn $write_one(self) {
                 self.$write_batch(|r| {
                     self.$write(r);
                 });
@@ -96,19 +93,19 @@ macro_rules! nvic_methods {
         $(
             #[doc = $read_batch_doc]
             #[inline]
-            fn $read_batch(&self) -> $nvic_reg<Self::NvicBlock> {
+            fn $read_batch(self) -> $nvic_reg<Self::NvicBlock> {
                 $nvic_reg::load()
             }
 
             #[doc = $read_doc]
             #[inline]
-            fn $read(&self, nvic_reg: &$nvic_reg<Self::NvicBlock>) -> bool {
+            fn $read(self, nvic_reg: &$nvic_reg<Self::NvicBlock>) -> bool {
                 nvic_reg.read::<Self>()
             }
 
             #[doc = $read_one_doc]
             #[inline]
-            fn $read_one(&self) -> bool {
+            fn $read_one(self) -> bool {
                 self.$read(&self.$read_batch())
             }
         )*
@@ -200,14 +197,14 @@ pub trait ThrNvic: IntToken {
 
     /// Reads the priority of the interrupt.
     #[inline]
-    fn priority(&self) -> u8 {
-        unsafe { read_volatile((NVIC_IPR as *const u8).add(Self::INT_NUM)) }
+    fn priority(self) -> u8 {
+        unsafe { read_volatile((NVIC_IPR as *const u8).add(Self::INT_NUM as usize)) }
     }
 
     /// Writes the priority of the interrupt.
     #[inline]
-    fn set_priority(&self, priority: u8) {
-        unsafe { write_volatile((NVIC_IPR as *mut u8).add(Self::INT_NUM), priority) };
+    fn set_priority(self, priority: u8) {
+        unsafe { write_volatile((NVIC_IPR as *mut u8).add(Self::INT_NUM as usize), priority) };
     }
 }
 
@@ -245,5 +242,5 @@ trait NvicReg<T: NvicBlock>: Sized {
 impl<T: IntToken> ThrNvic for T {}
 
 const fn block_offset<T: IntToken>() -> usize {
-    T::INT_NUM & 0b1_1111
+    T::INT_NUM as usize & 0b1_1111
 }

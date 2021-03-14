@@ -8,6 +8,7 @@
 //! how it could be wrapped:
 //!
 //! ```
+//! # #![feature(const_fn_fn_ptr_basics)]
 //! # #![feature(naked_functions)]
 //! # #![feature(never_type)]
 //! use core::{future::Future, pin::Pin, slice};
@@ -21,9 +22,9 @@
 //! use drone_cortexm::sv::{SwitchBackService, SwitchContextService};
 //!
 //! // Stackful fibers need a supervisor.
-//! sv! {
+//! sv::pool! {
+//!     pool => SERVICES;
 //!     supervisor => pub Sv;
-//!     array => SERVICES;
 //!     services => {
 //!         // These services are required for stackful fibers.
 //!         SwitchContextService;

@@ -6,6 +6,7 @@ use ::drone_cortexm::{
     sv,
     sv::{Supervisor, SvService},
     thr,
+    thr::Thread,
 };
 use ::std::{assert_eq, mem::size_of};
 
@@ -21,16 +22,16 @@ impl SvService for BarService {
     unsafe extern "C" fn handler(&mut self) {}
 }
 
-thr! {
+thr::nvic! {
     thread => pub Thr {};
 
     #[allow(dead_code)]
     local => pub ThrLocal {};
 
-    vtable => pub Vtable;
-
     #[allow(dead_code)]
     index => pub Thrs;
+
+    vtable => pub Vtable;
 
     init => pub ThrsInit;
 
@@ -63,9 +64,9 @@ fn nmi_handler(_thr: &Thr) {}
 
 extern "C" fn rcc_handler() {}
 
-sv! {
+sv::pool! {
+    pool => pub SERVICES;
     supervisor => pub Sv;
-    array => pub SERVICES;
     services => {
         FooService;
         BarService;
@@ -82,7 +83,7 @@ fn new() {
 
 #[test]
 fn size() {
-    assert_eq!(unsafe { THREADS.len() }, 4);
+    assert_eq!(Thr::COUNT, 4);
     assert_eq!(size_of::<Vtable>(), 208);
     assert_eq!(SERVICES.len(), 2);
 }

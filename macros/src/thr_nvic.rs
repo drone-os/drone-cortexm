@@ -12,8 +12,8 @@ use syn::{
 struct Input {
     thr: Thr,
     local: Local,
-    vtable: Vtable,
     index: Index,
+    vtable: Vtable,
     init: Init,
     sv: Option<Sv>,
     threads: Threads,
@@ -33,13 +33,13 @@ struct Local {
     tokens: TokenStream2,
 }
 
-struct Vtable {
+struct Index {
     attrs: Vec<Attribute>,
     vis: Visibility,
     ident: Ident,
 }
 
-struct Index {
+struct Vtable {
     attrs: Vec<Attribute>,
     vis: Visibility,
     ident: Ident,
@@ -62,7 +62,7 @@ struct Threads {
 enum Thread {
     Reset(ThreadSpec),
     Exception(ThreadSpec),
-    Interrupt(u32, ThreadSpec),
+    Interrupt(u16, ThreadSpec),
 }
 
 struct ThreadSpec {
@@ -82,8 +82,8 @@ impl Parse for Input {
     fn parse(input: ParseStream<'_>) -> Result<Self> {
         let mut thr = None;
         let mut local = None;
-        let mut vtable = None;
         let mut index = None;
+        let mut vtable = None;
         let mut init = None;
         let mut sv = None;
         let mut threads = None;
@@ -103,17 +103,17 @@ impl Parse for Input {
                 } else {
                     return Err(input.error("multiple `local` specifications"));
                 }
-            } else if ident == "vtable" {
-                if vtable.is_none() {
-                    vtable = Some(Vtable::parse(input, attrs)?);
-                } else {
-                    return Err(input.error("multiple `vtable` specifications"));
-                }
             } else if ident == "index" {
                 if index.is_none() {
                     index = Some(Index::parse(input, attrs)?);
                 } else {
                     return Err(input.error("multiple `index` specifications"));
+                }
+            } else if ident == "vtable" {
+                if vtable.is_none() {
+                    vtable = Some(Vtable::parse(input, attrs)?);
+                } else {
+                    return Err(input.error("multiple `vtable` specifications"));
                 }
             } else if ident == "init" {
                 if init.is_none() {
@@ -143,8 +143,8 @@ impl Parse for Input {
         Ok(Self {
             thr: thr.ok_or_else(|| input.error("missing `thread` specification"))?,
             local: local.ok_or_else(|| input.error("missing `local` specification"))?,
-            vtable: vtable.ok_or_else(|| input.error("missing `vtable` specification"))?,
             index: index.ok_or_else(|| input.error("missing `index` specification"))?,
+            vtable: vtable.ok_or_else(|| input.error("missing `vtable` specification"))?,
             init: init.ok_or_else(|| input.error("missing `init` specification"))?,
             sv,
             threads: threads.ok_or_else(|| input.error("missing `threads` specification"))?,
@@ -174,7 +174,7 @@ impl Local {
     }
 }
 
-impl Vtable {
+impl Index {
     fn parse(input: ParseStream<'_>, attrs: Vec<Attribute>) -> Result<Self> {
         let vis = input.parse()?;
         let ident = input.parse()?;
@@ -182,7 +182,7 @@ impl Vtable {
     }
 }
 
-impl Index {
+impl Vtable {
     fn parse(input: ParseStream<'_>, attrs: Vec<Attribute>) -> Result<Self> {
         let vis = input.parse()?;
         let ident = input.parse()?;
@@ -293,21 +293,20 @@ impl Parse for ThreadKind {
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-    let Input { thr, local, vtable, index, init, sv, threads } = parse_macro_input!(input as Input);
+    let Input { thr, local, index, vtable, init, sv, threads } = parse_macro_input!(input as Input);
     let Threads { mut threads } = threads;
     threads.insert(0, Thread::reset());
-    let threads = enumerate_threads(threads);
-    let def_core_thr = def_core_thr(&thr, &local);
-    let def_vtable = def_vtable(&thr, &vtable, &threads);
-    let def_array = def_array(&thr, &threads);
-    let def_index = def_index(&thr, &index, &sv, &threads);
+    let (threads, naked_threads) = partition_threads(threads);
+    let def_core_thr = def_core_thr(&thr, &local, &index, &threads);
+    let def_vtable = def_vtable(&thr, &vtable, &threads, &naked_threads);
     let def_init = def_init(&index, &init);
+    let thr_tokens =
+        threads.iter().flat_map(|thread| def_thr_token(&sv, thread)).collect::<Vec<_>>();
     let expanded = quote! {
         #def_core_thr
         #def_vtable
-        #def_array
-        #def_index
         #def_init
+        #(#thr_tokens)*
         ::drone_cortexm::reg::assert_taken!("scb_ccr");
         ::drone_cortexm::reg::assert_taken!("mpu_type");
         ::drone_cortexm::reg::assert_taken!("mpu_ctrl");
@@ -318,34 +317,36 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-fn enumerate_threads(threads: Vec<Thread>) -> Vec<(Option<usize>, Thread)> {
-    let mut counter = 0;
-    threads
-        .into_iter()
-        .map(|thread| match &thread {
-            Thread::Reset(spec) | Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
-                let ThreadSpec { kind, .. } = spec;
-                match kind {
-                    ThreadKind::Inner | ThreadKind::Outer(_) => {
-                        let idx = counter;
-                        counter += 1;
-                        (Some(idx), thread)
-                    }
-                    ThreadKind::Naked(_) => (None, thread),
-                }
+fn partition_threads(threads: Vec<Thread>) -> (Vec<Thread>, Vec<Thread>) {
+    threads.into_iter().partition(|thread| match thread {
+        Thread::Reset(spec) | Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
+            let ThreadSpec { kind, .. } = spec;
+            match kind {
+                ThreadKind::Inner | ThreadKind::Outer(_) => true,
+                ThreadKind::Naked(_) => false,
             }
-        })
-        .collect()
+        }
+    })
 }
 
-#[allow(clippy::too_many_lines)]
-fn def_vtable(thr: &Thr, vtable: &Vtable, threads: &[(Option<usize>, Thread)]) -> TokenStream2 {
+#[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
+fn def_vtable(
+    thr: &Thr,
+    vtable: &Vtable,
+    threads: &[Thread],
+    naked_threads: &[Thread],
+) -> TokenStream2 {
     let Vtable { attrs: vtable_attrs, vis: vtable_vis, ident: vtable_ident } = vtable;
     let mut tokens = Vec::new();
     let mut vtable_tokens = Vec::new();
     let mut vtable_ctor_tokens = Vec::new();
     let mut vtable_ctor_default_tokens = Vec::new();
-    for (idx, thread) in threads {
+    for (idx, thread) in threads
+        .iter()
+        .enumerate()
+        .map(|(idx, thread)| (Some(idx as u16), thread))
+        .chain(naked_threads.iter().map(|thread| (None, thread)))
+    {
         match thread {
             Thread::Reset(_) => {}
             Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
@@ -441,62 +442,6 @@ fn def_vtable(thr: &Thr, vtable: &Vtable, threads: &[(Option<usize>, Thread)]) -
     }
 }
 
-fn def_array(thr: &Thr, threads: &[(Option<usize>, Thread)]) -> TokenStream2 {
-    let Thr { ident: thr_ident, .. } = thr;
-    let mut array_tokens = Vec::new();
-    for (idx, _) in threads {
-        if let Some(idx) = idx {
-            array_tokens.push(quote! {
-                #thr_ident::new(#idx)
-            });
-        }
-    }
-    let array_len = array_tokens.len();
-    quote! {
-        static mut THREADS: [#thr_ident; #array_len] = [#(#array_tokens),*];
-    }
-}
-
-fn def_index(
-    thr: &Thr,
-    index: &Index,
-    sv: &Option<Sv>,
-    threads: &[(Option<usize>, Thread)],
-) -> TokenStream2 {
-    let Index { attrs: index_attrs, vis: index_vis, ident: index_ident } = index;
-    let mut tokens = Vec::new();
-    let mut index_tokens = Vec::new();
-    let mut index_ctor_tokens = Vec::new();
-    for (idx, thread) in threads {
-        if let Some((new_tokens, new_index_tokens, new_index_ctor_tokens)) =
-            def_thr_token(thr, sv, idx, thread)
-        {
-            tokens.push(new_tokens);
-            index_tokens.push(new_index_tokens);
-            index_ctor_tokens.push(new_index_ctor_tokens);
-        }
-    }
-    quote! {
-        #(#index_attrs)*
-        #index_vis struct #index_ident {
-            #(#index_tokens),*
-        }
-
-        unsafe impl ::drone_core::token::Token for #index_ident {
-            #[inline]
-            unsafe fn take() -> Self {
-                Self {
-                    #(#index_ctor_tokens),*
-                }
-            }
-        }
-
-        unsafe impl ::drone_cortexm::thr::ThrTokens for #index_ident {}
-
-        #(#tokens)*
-    }
-}
-
 fn def_init(index: &Index, init: &Init) -> TokenStream2 {
     let Init { attrs: init_attrs, vis: init_vis, ident: init_ident } = init;
     let Index { ident: index_ident, .. } = index;
@@ -521,60 +466,48 @@ fn def_init(index: &Index, init: &Init) -> TokenStream2 {
     }
 }
 
-fn def_core_thr(thr: &Thr, local: &Local) -> TokenStream2 {
+fn def_core_thr(thr: &Thr, local: &Local, index: &Index, threads: &[Thread]) -> TokenStream2 {
     let Thr { attrs: thr_attrs, vis: thr_vis, ident: thr_ident, tokens: thr_tokens } = thr;
     let Local { attrs: local_attrs, vis: local_vis, ident: local_ident, tokens: local_tokens } =
         local;
+    let Index { attrs: index_attrs, vis: index_vis, ident: index_ident } = index;
+    let mut threads_tokens = Vec::new();
+    for thread in threads {
+        match thread {
+            Thread::Reset(spec) | Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
+                let ThreadSpec { attrs, vis, ident, .. } = spec;
+                threads_tokens.push(quote! {
+                    #(#attrs)* #vis #ident
+                });
+            }
+        }
+    }
     quote! {
-        ::drone_core::thr! {
-            array => THREADS;
-
+        ::drone_core::thr::pool! {
             #(#thr_attrs)*
             thread => #thr_vis #thr_ident { #thr_tokens };
 
             #(#local_attrs)*
             local => #local_vis #local_ident { #local_tokens };
+
+            #(#index_attrs)*
+            index => #index_vis #index_ident;
+
+            threads => {
+                #(#threads_tokens;)*
+            };
         }
     }
 }
 
-fn def_thr_token(
-    thr: &Thr,
-    sv: &Option<Sv>,
-    idx: &Option<usize>,
-    thread: &Thread,
-) -> Option<(TokenStream2, TokenStream2, TokenStream2)> {
-    let Thr { ident: thr_ident, .. } = thr;
+fn def_thr_token(sv: &Option<Sv>, thread: &Thread) -> Vec<TokenStream2> {
+    let mut tokens = Vec::new();
     match thread {
         Thread::Reset(spec) | Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
-            let ThreadSpec { attrs, vis, kind, ident } = spec;
+            let ThreadSpec { kind, ident, .. } = spec;
             match kind {
                 ThreadKind::Inner | ThreadKind::Outer(_) => {
-                    let mut tokens = Vec::new();
-                    let field_ident = format_ident!("{}", ident.to_string().to_snake_case());
                     let struct_ident = format_ident!("{}", ident.to_string().to_pascal_case());
-                    tokens.push(quote! {
-                        #(#attrs)*
-                        #[derive(Clone, Copy)]
-                        #vis struct #struct_ident {
-                            __priv: (),
-                        }
-
-                        unsafe impl ::drone_core::token::Token for #struct_ident {
-                            #[inline]
-                            unsafe fn take() -> Self {
-                                #struct_ident {
-                                    __priv: (),
-                                }
-                            }
-                        }
-
-                        unsafe impl ::drone_core::thr::ThrToken for #struct_ident {
-                            type Thr = #thr_ident;
-
-                            const THR_IDX: usize = #idx;
-                        }
-                    });
                     if let Some(Sv { path: sv_path }) = sv {
                         tokens.push(quote! {
                             impl ::drone_cortexm::thr::ThrSv for #struct_ident {
@@ -583,61 +516,56 @@ fn def_thr_token(
                         });
                     }
                     if let Thread::Interrupt(num, _) = thread {
-                        let num = *num as usize;
                         let nvic_block = format_ident!("NvicBlock{}", num / 32);
                         tokens.push(quote! {
                             impl ::drone_cortexm::thr::IntToken for #struct_ident {
                                 type NvicBlock = ::drone_cortexm::map::thr::#nvic_block;
 
-                                const INT_NUM: usize = #num;
+                                const INT_NUM: u16 = #num;
+                            }
+
+                            impl ::drone_core::thr::ThrExec for #struct_ident {
+                                #[inline]
+                                fn wakeup(self) {
+                                    unsafe {
+                                        <Self as ::drone_cortexm::thr::IntToken>::wakeup_unchecked();
+                                    }
+                                }
+
+                                #[inline]
+                                fn waker(self) -> ::core::task::Waker {
+                                    unsafe {
+                                        <Self as ::drone_cortexm::thr::IntToken>::waker_unchecked()
+                                    }
+                                }
                             }
                         });
                     }
-                    Some((
-                        quote!(#(#tokens)*),
-                        quote! {
-                            #(#attrs)*
-                            #vis #field_ident: #struct_ident
-                        },
-                        quote! {
-                            #field_ident: ::drone_core::token::Token::take()
-                        },
-                    ))
                 }
-                ThreadKind::Naked(_) => None,
+                ThreadKind::Naked(_) => {}
             }
         }
     }
+    tokens
 }
 
-fn def_handler(thr: &Thr, idx: &Option<usize>, kind: &ThreadKind) -> (TokenStream2, TokenStream2) {
+fn def_handler(thr: &Thr, idx: Option<u16>, kind: &ThreadKind) -> (TokenStream2, TokenStream2) {
     let Thr { ident: thr_ident, .. } = thr;
+    let def = |ident, path| {
+        quote! {
+            unsafe extern "C" fn #ident() {
+                unsafe { <#thr_ident as ::drone_core::thr::Thread>::call(#idx, #path) };
+            }
+        }
+    };
     match kind {
         ThreadKind::Inner => {
             let ident = format_ident!("thr_handler_{}", idx.unwrap());
-            (
-                quote! {
-                    unsafe extern "C" fn #ident() {
-                        unsafe {
-                            ::drone_cortexm::thr::thread_resume::<#thr_ident>(#idx);
-                        }
-                    }
-                },
-                quote!(#ident),
-            )
+            (def(&ident, quote!(::drone_core::thr::Thread::resume)), quote!(#ident))
         }
         ThreadKind::Outer(path) => {
             let ident = format_ident!("thr_handler_{}_outer", idx.unwrap());
-            (
-                quote! {
-                    unsafe extern "C" fn #ident() {
-                        unsafe {
-                            ::drone_cortexm::thr::thread_call::<#thr_ident>(#idx, #path);
-                        }
-                    }
-                },
-                quote!(#ident),
-            )
+            (def(&ident, quote!(#path)), quote!(#ident))
         }
         ThreadKind::Naked(path) => (quote!(), quote!(#path)),
     }

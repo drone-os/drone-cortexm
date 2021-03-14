@@ -1,16 +1,17 @@
 #![cfg_attr(feature = "std", allow(dead_code, unreachable_code))]
 
-use crate::{map::reg::scb, reg::prelude::*, thr::ThrTokens};
+use crate::{map::reg::scb, reg::prelude::*};
 use drone_core::token::Token;
 
 /// Threads initialization token.
 ///
 /// # Safety
 ///
-/// Must be defined only once for a particular set of threads.
+/// * Must be defined only once for a particular set of threads.
+/// * `ThrTokens` type must contain only thread tokens.
 pub unsafe trait ThrsInitToken: Token {
     /// The set of thread tokens.
-    type ThrTokens: ThrTokens;
+    type ThrTokens: Token;
 }
 
 /// A set of register tokens returned by [`init_extended`].
@@ -30,11 +31,11 @@ pub struct ThrInitExtended {
 /// # #![feature(const_fn_fn_ptr_basics)]
 /// # #![feature(proc_macro_hygiene)]
 /// # use drone_core::token::Token;
-/// # thr! {
+/// # thr::nvic! {
 /// #     thread => pub Thr {};
 /// #     local => pub ThrLocal {};
-/// #     vtable => Vtable;
 /// #     index => Thrs;
+/// #     vtable => Vtable;
 /// #     init => ThrsInit;
 /// #     threads => {};
 /// # }
@@ -92,11 +93,11 @@ pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExten
 /// # #![feature(const_fn_fn_ptr_basics)]
 /// # #![feature(proc_macro_hygiene)]
 /// # use drone_core::token::Token;
-/// # thr! {
+/// # thr::nvic! {
 /// #     thread => pub Thr {};
 /// #     local => pub ThrLocal {};
-/// #     vtable => Vtable;
 /// #     index => Thrs;
+/// #     vtable => Vtable;
 /// #     init => ThrsInit;
 /// #     threads => {};
 /// # }
