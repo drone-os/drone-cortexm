@@ -1,12 +1,11 @@
 use inflector::Inflector;
 use proc_macro::TokenStream;
-use proc_macro2::{Span, TokenStream as TokenStream2};
+use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
 use syn::{
     braced, parenthesized,
     parse::{Parse, ParseStream, Result},
-    parse_macro_input, token, AttrStyle, Attribute, ExprPath, Ident, LitInt, Token, VisPublic,
-    Visibility,
+    parse_macro_input, Attribute, ExprPath, Ident, LitInt, Token, Visibility,
 };
 
 struct Input {
@@ -60,7 +59,6 @@ struct Threads {
 }
 
 enum Thread {
-    Reset(ThreadSpec),
     Exception(ThreadSpec),
     Interrupt(u16, ThreadSpec),
 }
@@ -253,23 +251,6 @@ impl Parse for Threads {
     }
 }
 
-impl Thread {
-    fn reset() -> Self {
-        Self::Reset(ThreadSpec {
-            attrs: vec![Attribute {
-                pound_token: Token![#](Span::call_site()),
-                style: AttrStyle::Outer,
-                bracket_token: token::Bracket(Span::call_site()),
-                path: format_ident!("doc").into(),
-                tokens: quote!(= "Reset thread token."),
-            }],
-            vis: Visibility::Public(VisPublic { pub_token: Token![pub](Span::call_site()) }),
-            kind: ThreadKind::Inner,
-            ident: format_ident!("reset"),
-        })
-    }
-}
-
 impl Parse for ThreadKind {
     fn parse(input: ParseStream<'_>) -> Result<Self> {
         match input.fork().parse::<Ident>() {
@@ -294,16 +275,15 @@ impl Parse for ThreadKind {
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
     let Input { thr, local, index, vtable, init, sv, threads } = parse_macro_input!(input as Input);
-    let Threads { mut threads } = threads;
-    threads.insert(0, Thread::reset());
+    let Threads { threads } = threads;
     let (threads, naked_threads) = partition_threads(threads);
-    let def_core_thr = def_core_thr(&thr, &local, &index, &threads);
+    let def_thr_pool = def_thr_pool(&thr, &local, &index, &threads);
     let def_vtable = def_vtable(&thr, &vtable, &threads, &naked_threads);
     let def_init = def_init(&index, &init);
     let thr_tokens =
         threads.iter().flat_map(|thread| def_thr_token(&sv, thread)).collect::<Vec<_>>();
     let expanded = quote! {
-        #def_core_thr
+        #def_thr_pool
         #def_vtable
         #def_init
         #(#thr_tokens)*
@@ -319,7 +299,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
 
 fn partition_threads(threads: Vec<Thread>) -> (Vec<Thread>, Vec<Thread>) {
     threads.into_iter().partition(|thread| match thread {
-        Thread::Reset(spec) | Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
+        Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
             let ThreadSpec { kind, .. } = spec;
             match kind {
                 ThreadKind::Inner | ThreadKind::Outer(_) => true,
@@ -348,7 +328,6 @@ fn def_vtable(
         .chain(naked_threads.iter().map(|thread| (None, thread)))
     {
         match thread {
-            Thread::Reset(_) => {}
             Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
                 let ThreadSpec { kind, ident, .. } = spec;
                 let field_ident = format_ident!("{}", ident.to_string().to_snake_case());
@@ -466,7 +445,7 @@ fn def_init(index: &Index, init: &Init) -> TokenStream2 {
     }
 }
 
-fn def_core_thr(thr: &Thr, local: &Local, index: &Index, threads: &[Thread]) -> TokenStream2 {
+fn def_thr_pool(thr: &Thr, local: &Local, index: &Index, threads: &[Thread]) -> TokenStream2 {
     let Thr { attrs: thr_attrs, vis: thr_vis, ident: thr_ident, tokens: thr_tokens } = thr;
     let Local { attrs: local_attrs, vis: local_vis, ident: local_ident, tokens: local_tokens } =
         local;
@@ -474,7 +453,7 @@ fn def_core_thr(thr: &Thr, local: &Local, index: &Index, threads: &[Thread]) -> 
     let mut threads_tokens = Vec::new();
     for thread in threads {
         match thread {
-            Thread::Reset(spec) | Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
+            Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
                 let ThreadSpec { attrs, vis, ident, .. } = spec;
                 threads_tokens.push(quote! {
                     #(#attrs)* #vis #ident
@@ -503,7 +482,7 @@ fn def_core_thr(thr: &Thr, local: &Local, index: &Index, threads: &[Thread]) -> 
 fn def_thr_token(sv: &Option<Sv>, thread: &Thread) -> Vec<TokenStream2> {
     let mut tokens = Vec::new();
     match thread {
-        Thread::Reset(spec) | Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
+        Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
             let ThreadSpec { kind, ident, .. } = spec;
             match kind {
                 ThreadKind::Inner | ThreadKind::Outer(_) => {

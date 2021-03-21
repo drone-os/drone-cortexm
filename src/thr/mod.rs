@@ -108,7 +108,7 @@ pub use self::{
     root::{FutureRootExt, StreamRootExt, StreamRootWait},
 };
 
-/// Defines a thread pool driven by NVIC.
+/// Defines a thread pool driven by NVIC (Nested Vector Interrupt Controller).
 ///
 /// See [the module level documentation](self) for details.
 #[doc(inline)]
