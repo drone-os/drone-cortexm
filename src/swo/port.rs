@@ -88,12 +88,12 @@ impl PortWrite for u8 {
         #[cfg(not(feature = "std"))]
         unsafe {
             asm!(
-                "0: ldrexb {tmp}, [{address}]",
-                "   cmp {tmp}, #0",
-                "   itt ne",
-                "   strexbne {tmp}, {value}, [{address}]",
-                "   cmpne {tmp}, #1",
-                "   beq 0b",
+                "0:  ldrexb {tmp}, [{address}]",
+                "    cmp {tmp}, #0",
+                "    itt ne",
+                "    strexbne {tmp}, {value}, [{address}]",
+                "    cmpne {tmp}, #1",
+                "    beq 0b",
                 value = in(reg) value,
                 address = in(reg) address as *mut Self,
                 tmp = out(reg) _,
@@ -110,12 +110,12 @@ impl PortWrite for u16 {
         #[cfg(not(feature = "std"))]
         unsafe {
             asm!(
-                "0: ldrexh {tmp}, [{address}]",
-                "   cmp {tmp}, #0",
-                "   itt ne",
-                "   strexhne {tmp}, {value}, [{address}]",
-                "   cmpne {tmp}, #1",
-                "   beq 0b",
+                "0:  ldrexh {tmp}, [{address}]",
+                "    cmp {tmp}, #0",
+                "    itt ne",
+                "    strexhne {tmp}, {value}, [{address}]",
+                "    cmpne {tmp}, #1",
+                "    beq 0b",
                 value = in(reg) value,
                 address = in(reg) address as *mut Self,
                 tmp = out(reg) _,
@@ -132,12 +132,12 @@ impl PortWrite for u32 {
         #[cfg(not(feature = "std"))]
         unsafe {
             asm!(
-                "0: ldrex {tmp}, [{address}]",
-                "   cmp {tmp}, #0",
-                "   itt ne",
-                "   strexne {tmp}, {value}, [{address}]",
-                "   cmpne {tmp}, #1",
-                "   beq 0b",
+                "0:  ldrex {tmp}, [{address}]",
+                "    cmp {tmp}, #0",
+                "    itt ne",
+                "    strexne {tmp}, {value}, [{address}]",
+                "    cmpne {tmp}, #1",
+                "    beq 0b",
                 value = in(reg) value,
                 address = in(reg) address as *mut Self,
                 tmp = out(reg) _,

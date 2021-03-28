@@ -316,11 +316,14 @@ fn def_vtable(
     threads: &[Thread],
     naked_threads: &[Thread],
 ) -> TokenStream2 {
+    let Thr { ident: thr_ident, .. } = thr;
     let Vtable { attrs: vtable_attrs, vis: vtable_vis, ident: vtable_ident } = vtable;
+    let resume = format_ident!("{}_resume", thr_ident.to_string().to_snake_case());
     let mut tokens = Vec::new();
     let mut vtable_tokens = Vec::new();
     let mut vtable_ctor_tokens = Vec::new();
     let mut vtable_ctor_default_tokens = Vec::new();
+    let mut resume_tokens = None;
     for (idx, thread) in threads
         .iter()
         .enumerate()
@@ -331,11 +334,43 @@ fn def_vtable(
             Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
                 let ThreadSpec { kind, ident, .. } = spec;
                 let field_ident = format_ident!("{}", ident.to_string().to_snake_case());
-                let (handler, path) = def_handler(thr, idx, kind);
-                tokens.push(handler);
-                vtable_ctor_tokens.push(quote! {
-                    #field_ident: ::core::option::Option::Some(#path)
-                });
+                match kind {
+                    ThreadKind::Inner => {
+                        let ident = format_ident!("thr_handler_{}", idx.unwrap());
+                        resume_tokens.get_or_insert_with(|| {
+                            quote! {
+                                #[inline(never)]
+                                unsafe fn #resume(thr: &#thr_ident) {
+                                    unsafe { ::drone_core::thr::Thread::resume(thr) };
+                                }
+                            }
+                        });
+                        tokens.push(quote! {
+                            unsafe extern "C" fn #ident() {
+                                unsafe { <#thr_ident as ::drone_core::thr::Thread>::call(#idx, #resume) };
+                            }
+                        });
+                        vtable_ctor_tokens.push(quote! {
+                            #field_ident: ::core::option::Option::Some(#ident)
+                        });
+                    }
+                    ThreadKind::Outer(path) => {
+                        let ident = format_ident!("thr_handler_{}_outer", idx.unwrap());
+                        tokens.push(quote! {
+                            unsafe extern "C" fn #ident() {
+                                unsafe { <#thr_ident as ::drone_core::thr::Thread>::call(#idx, #path) };
+                            }
+                        });
+                        vtable_ctor_tokens.push(quote! {
+                            #field_ident: ::core::option::Option::Some(#ident)
+                        });
+                    }
+                    ThreadKind::Naked(path) => {
+                        vtable_ctor_tokens.push(quote! {
+                            #field_ident: ::core::option::Option::Some(#path)
+                        });
+                    }
+                }
                 if let Thread::Interrupt(num, _) = thread {
                     let num = *num as usize;
                     if vtable_tokens.len() < num + 1 {
@@ -417,6 +452,7 @@ fn def_vtable(
             }
         }
 
+        #resume_tokens
         #(#tokens)*
     }
 }
@@ -526,26 +562,4 @@ fn def_thr_token(sv: &Option<Sv>, thread: &Thread) -> Vec<TokenStream2> {
         }
     }
     tokens
-}
-
-fn def_handler(thr: &Thr, idx: Option<u16>, kind: &ThreadKind) -> (TokenStream2, TokenStream2) {
-    let Thr { ident: thr_ident, .. } = thr;
-    let def = |ident, path| {
-        quote! {
-            unsafe extern "C" fn #ident() {
-                unsafe { <#thr_ident as ::drone_core::thr::Thread>::call(#idx, #path) };
-            }
-        }
-    };
-    match kind {
-        ThreadKind::Inner => {
-            let ident = format_ident!("thr_handler_{}", idx.unwrap());
-            (def(&ident, quote!(::drone_core::thr::Thread::resume)), quote!(#ident))
-        }
-        ThreadKind::Outer(path) => {
-            let ident = format_ident!("thr_handler_{}_outer", idx.unwrap());
-            (def(&ident, quote!(#path)), quote!(#ident))
-        }
-        ThreadKind::Naked(path) => (quote!(), quote!(#path)),
-    }
 }

@@ -81,8 +81,8 @@ pub fn spin(cycles: u32) {
     #[cfg(not(feature = "std"))]
     unsafe {
         asm!(
-            "0: subs {0}, {0}, #3",
-            "   bhi 0b",
+            "0:  subs {0}, {0}, #3",
+            "    bhi 0b",
             inlateout(reg) cycles => _,
             options(nomem, nostack),
         );
