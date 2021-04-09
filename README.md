@@ -31,7 +31,7 @@ application level according to this table.
 ## Documentation
 
 - [Drone Book](https://book.drone-os.com/)
-- [API documentation](https://api.drone-os.com/drone-cortexm/0.12/)
+- [API documentation](https://api.drone-os.com/drone-cortexm/0.14/)
 
 ## Usage
 
@@ -39,7 +39,7 @@ Add the crate to your `Cargo.toml` dependencies:
 
 ```toml
 [dependencies]
-drone-cortexm = { version = "0.12.2", features = [...] }
+drone-cortexm = { version = "0.14.0", features = [...] }
 ```
 
 Add or extend `std` feature as follows:
