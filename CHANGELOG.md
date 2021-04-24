@@ -13,7 +13,10 @@ Possible log types:
 
 ### Unreleased
 
+### v0.14.1 (2021-04-24)
+
 - [fixed] Fixed thread field names corruption in `thr::nvic!` macro
+- [fixed] Fixed broken software interrupt wakeup
 
 ### v0.14.0 (2021-04-09)
 
