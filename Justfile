@@ -6,8 +6,6 @@ deps:
 	type cargo-readme >/dev/null || cargo +stable install cargo-readme
 	type drone >/dev/null || cargo install drone
 	rustup target add $(drone print target)
-	rustup component add clippy
-	rustup component add rustfmt
 
 # Reformat the source code
 fmt:

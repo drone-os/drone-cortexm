@@ -333,7 +333,7 @@ fn def_vtable(
         match thread {
             Thread::Exception(spec) | Thread::Interrupt(_, spec) => {
                 let ThreadSpec { kind, ident, .. } = spec;
-                let field_ident = format_ident!("{}", ident.to_string().to_snake_case());
+                let field_ident = format_ident!("{}", ident);
                 match kind {
                     ThreadKind::Inner => {
                         let ident = format_ident!("thr_handler_{}", idx.unwrap());
