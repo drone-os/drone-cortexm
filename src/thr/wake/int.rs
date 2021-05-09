@@ -16,7 +16,7 @@ impl WakeInt {
     }
 
     pub fn wakeup(&self) {
-        unsafe { write_volatile(NVIC_STIR as *mut usize, self.0 as usize) };
+        unsafe { write_volatile(NVIC_STIR as *mut u32, u32::from(self.0)) };
     }
 
     pub fn to_waker(&self) -> Waker {
