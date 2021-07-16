@@ -13,6 +13,7 @@
 //! | ARMv7E-M     | ARM® Cortex®-M4 r0p1   | `thumbv7em-none-eabi`       | `cortexm4_r0p1`            |
 //! | ARMv7E-M     | ARM® Cortex®-M4F r0p0  | `thumbv7em-none-eabihf`     | `cortexm4f_r0p0`           |
 //! | ARMv7E-M     | ARM® Cortex®-M4F r0p1  | `thumbv7em-none-eabihf`     | `cortexm4f_r0p1`           |
+//! | ARMv7E-M     | ARM® Cortex®-M7 r0p1   | `thumbv7em-none-eabihf`     | `cortexm7_r0p1`            |
 //! | ARMv8-M      | ARM® Cortex®-M33 r0p2  | `thumbv8m.main-none-eabi`   | `cortexm33_r0p2`           |
 //! | ARMv8-M      | ARM® Cortex®-M33 r0p3  | `thumbv8m.main-none-eabi`   | `cortexm33_r0p3`           |
 //! | ARMv8-M      | ARM® Cortex®-M33 r0p4  | `thumbv8m.main-none-eabi`   | `cortexm33_r0p4`           |
