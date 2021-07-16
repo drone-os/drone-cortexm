@@ -62,7 +62,10 @@ pub struct ThrInitExtended {
 #[inline]
 pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExtended) {
     let scb_ccr = unsafe { scb::Ccr::<Srt>::take() };
+    #[cfg(not(cortexm_core = "cortexm7_r0p1"))]
     scb_ccr.store(|r| r.set_stkalign().set_nonbasethrdena());
+    #[cfg(cortexm_core = "cortexm7_r0p1")]
+    scb_ccr.store(|r| r.set_nonbasethrdena());
     let scb::Ccr {
         stkalign,
         bfhfnmign: scb_ccr_bfhfnmign,
