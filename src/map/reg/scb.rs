@@ -129,7 +129,11 @@ reg! {
         traits => { RReg WReg };
         fields => {
             /// Force exception stacking start in double word aligned address.
+            #[cfg(not(cortexm_core = "cortexm_r0p1"))]
             STKALIGN => { offset => 9; width => 1; traits => { RRRegField WWRegField } };
+            /// Force exception stacking start in double word aligned address.
+            #[cfg(cortexm_core = "cortexm_r0p1")]
+            STKALIGN => { offset => 9; width => 1; traits => { RRRegField } };
             /// Ignore data bus fault during HardFault and NMI handlers.
             BFHFNMIGN => { offset => 8; width => 1; traits => { RRRegField WWRegField } };
             /// Trap on divide by 0.
