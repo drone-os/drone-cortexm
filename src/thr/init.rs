@@ -17,6 +17,10 @@ pub unsafe trait ThrsInitToken: Token {
 /// A set of register tokens returned by [`init_extended`].
 #[allow(missing_docs)]
 pub struct ThrInitExtended {
+    #[cfg(feature = "instruction-cache")]
+    pub scb_ccr_ic: scb::ccr::Ic<Srt>,
+    #[cfg(feature = "data-cache")]
+    pub scb_ccr_dc: scb::ccr::Dc<Srt>,
     pub scb_ccr_bfhfnmign: scb::ccr::Bfhfnmign<Srt>,
     pub scb_ccr_div_0_trp: scb::ccr::Div0Trp<Srt>,
     pub scb_ccr_unalign_trp: scb::ccr::UnalignTrp<Srt>,
@@ -62,8 +66,15 @@ pub struct ThrInitExtended {
 #[inline]
 pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExtended) {
     let scb_ccr = unsafe { scb::Ccr::<Srt>::take() };
+    #[cfg(not(cortexm_core = "cortexm7_r0p1"))]
     scb_ccr.store(|r| r.set_stkalign().set_nonbasethrdena());
+    #[cfg(cortexm_core = "cortexm7_r0p1")]
+    scb_ccr.store(|r| r.set_nonbasethrdena());
     let scb::Ccr {
+        #[cfg(feature = "instruction-cache")]
+        ic: scb_ccr_ic,
+        #[cfg(feature = "data-cache")]
+        dc: scb_ccr_dc,
         stkalign,
         bfhfnmign: scb_ccr_bfhfnmign,
         div_0_trp: scb_ccr_div_0_trp,
@@ -78,6 +89,10 @@ pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExten
     drop(stkalign);
     drop(nonbasethrdena);
     (unsafe { T::ThrTokens::take() }, ThrInitExtended {
+        #[cfg(feature = "instruction-cache")]
+        scb_ccr_ic,
+        #[cfg(feature = "data-cache")]
+        scb_ccr_dc,
         scb_ccr_bfhfnmign,
         scb_ccr_div_0_trp,
         scb_ccr_unalign_trp,

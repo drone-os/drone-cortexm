@@ -40,6 +40,8 @@ bit-band = []
 floating-point-unit = []
 memory-protection-unit = []
 security-extension = []
+instruction-cache = []
+data-cache = []
 
 [dependencies.drone-cortexm-macros]
 version = "=0.14.1"

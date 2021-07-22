@@ -235,7 +235,7 @@ macro_rules! atomic_bits {
                         $strex,
                         input = in(reg) self,
                         address = in(reg) address,
-                        status = lateout(reg) status,
+                        status = out(reg) status,
                         options(nostack, preserves_flags),
                     );
                 }
