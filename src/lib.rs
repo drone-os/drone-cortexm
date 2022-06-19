@@ -78,7 +78,6 @@ pub mod proc_loop;
 pub mod processor;
 pub mod reg;
 pub mod sv;
-pub mod swo;
 pub mod thr;
 
 mod rt;
