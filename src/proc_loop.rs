@@ -233,6 +233,7 @@ type CmdLoop<Sv, T> =
     fn(In<<T as ProcLoop>::Cmd, <T as ProcLoop>::ReqRes>, InnerYielder<Sv, T>) -> !;
 
 /// A wrapper for [`fib::FiberProc`] that runs the command loop `T`.
+#[allow(clippy::trait_duplication_in_bounds)]
 pub struct Fiber<Sv, T>(InnerFiber<Sv, T>)
 where
     Sv: SvCall<SwitchBackService>,
@@ -240,13 +241,14 @@ where
     T: ProcLoop<Context = Yielder<Sv, T>>;
 
 /// Yielder for [`Fiber`]'s [`fib::FiberProc`].
+#[allow(clippy::trait_duplication_in_bounds)]
 pub struct Yielder<Sv, T>(InnerYielder<Sv, T>)
 where
     Sv: SvCall<SwitchBackService>,
     Sv: SvCall<SwitchContextService>,
     T: ProcLoop<Context = Self>;
 
-#[allow(clippy::new_without_default)]
+#[allow(clippy::trait_duplication_in_bounds, clippy::new_without_default)]
 impl<Sv, T> Fiber<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
@@ -285,6 +287,7 @@ where
     }
 }
 
+#[allow(clippy::trait_duplication_in_bounds)]
 impl<Sv, T> Drop for Fiber<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
@@ -296,6 +299,7 @@ where
     }
 }
 
+#[allow(clippy::trait_duplication_in_bounds)]
 impl<Sv, T> fib::Fiber for Fiber<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
@@ -312,6 +316,7 @@ where
     }
 }
 
+#[allow(clippy::trait_duplication_in_bounds)]
 impl<Sv, T> Context<T::Req, T::ReqRes> for Yielder<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
@@ -329,6 +334,7 @@ where
     }
 }
 
+#[allow(clippy::trait_duplication_in_bounds)]
 impl<Sv, T> Clone for Yielder<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,
@@ -340,6 +346,7 @@ where
     }
 }
 
+#[allow(clippy::trait_duplication_in_bounds)]
 impl<Sv, T> Copy for Yielder<Sv, T>
 where
     Sv: SvCall<SwitchBackService>,

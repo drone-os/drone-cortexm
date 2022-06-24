@@ -1,4 +1,6 @@
 use crate::sv::{SvCall, SvService};
+#[cfg(not(feature = "std"))]
+use core::arch::asm;
 use core::mem::size_of;
 
 /// A service to switch to a process stack.
@@ -20,6 +22,7 @@ pub struct SwitchBackService {
 /// Extends [`Supervisor`](crate::sv::Supervisor) types with
 /// [`switch_context`](Switch::switch_context) and
 /// [`switch_back`](Switch::switch_back) methods.
+#[allow(clippy::trait_duplication_in_bounds)]
 pub trait Switch<T>
 where
     Self: SvCall<SwitchContextService>,
@@ -246,6 +249,7 @@ impl SvService for SwitchBackService {
     }
 }
 
+#[allow(clippy::trait_duplication_in_bounds)]
 impl<Sv, T> Switch<T> for Sv
 where
     Sv: SvCall<SwitchContextService>,

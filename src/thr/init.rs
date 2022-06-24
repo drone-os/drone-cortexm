@@ -58,7 +58,7 @@ pub struct ThrInitExtended {
 /// #     handler(unsafe { Regs::take() }, unsafe { ThrsInit::take() })
 /// # }
 /// ```
-#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::drop_non_drop, clippy::needless_pass_by_value)]
 #[inline]
 pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExtended) {
     let scb_ccr = unsafe { scb::Ccr::<Srt>::take() };
@@ -129,6 +129,8 @@ pub fn init<T: ThrsInitToken>(token: T) -> T::ThrTokens {
 #[cfg(feature = "memory-protection-unit")]
 mod mpu {
     use crate::{map::reg::mpu, reg::prelude::*};
+    #[cfg(not(feature = "std"))]
+    use core::arch::asm;
     use drone_core::token::Token;
 
     static MPU_RESET_TABLE: [u32; 16] = [

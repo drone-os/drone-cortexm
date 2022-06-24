@@ -2,6 +2,9 @@
 
 #![cfg_attr(feature = "std", allow(unused_variables, unreachable_code))]
 
+#[cfg(not(feature = "std"))]
+use core::arch::asm;
+
 /// Waits for interrupt.
 ///
 /// It is a hint instruction. It suspends execution, in the lowest power state
@@ -13,7 +16,7 @@ pub fn wait_for_int() {
     return unimplemented!();
     #[cfg(not(feature = "std"))]
     unsafe {
-        asm!("wfi", options(nomem, nostack, preserves_flags))
+        asm!("wfi", options(nomem, nostack, preserves_flags));
     }
 }
 

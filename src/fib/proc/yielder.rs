@@ -1,6 +1,6 @@
 use super::{Data, ProcData};
 use crate::{fib, sv::Switch};
-use core::{marker::PhantomData, mem::forget};
+use core::{marker::PhantomData, ptr};
 
 /// A zero-sized token that provides [`proc_yield`](Yielder::proc_yield) method
 /// to yield from [`FiberProc`](crate::fib::FiberProc).
@@ -45,9 +45,8 @@ where
     pub fn proc_yield(self, output: Y) -> I {
         unsafe {
             let mut data = Data::from_output(fib::Yielded(output));
-            let mut data_ptr = &mut data as *mut _;
+            let mut data_ptr = ptr::addr_of_mut!(data);
             Sv::switch_back(&mut data_ptr);
-            forget(data);
             data_ptr.read().into_input()
         }
     }

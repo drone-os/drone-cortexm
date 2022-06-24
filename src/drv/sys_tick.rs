@@ -152,7 +152,7 @@ impl<I: ThrToken> SysTick<I> {
 
     #[inline]
     pub fn ctrl(&self) -> &stk::Ctrl<Srt> {
-        &self.periph.stk_ctrl.as_sync()
+        self.periph.stk_ctrl.as_sync()
     }
 
     #[inline]

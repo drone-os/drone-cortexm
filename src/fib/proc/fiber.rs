@@ -197,7 +197,7 @@ where
     }
 }
 
-#[allow(clippy::unused_unit)]
+#[allow(clippy::unused_unit, clippy::mismatching_type_param_order)]
 impl<Sv, F> RootFiber for FiberProc<Sv, (), (), (), F>
 where
     Sv: Switch<ProcData<(), (), ()>>,

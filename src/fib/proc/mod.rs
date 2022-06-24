@@ -143,7 +143,7 @@ pub trait ThrFiberProc: ThrSv {
         F: Send + 'static,
         Self::Sv: Switch<ProcData<(), (), ()>>,
     {
-        self.add_fib(new_proc(stack_size, move |(), yielder| f(yielder)))
+        self.add_fib(new_proc(stack_size, move |(), yielder| f(yielder)));
     }
 
     /// Adds a stackful fiber for the closure `f` to the fiber chain, without
@@ -163,7 +163,7 @@ pub trait ThrFiberProc: ThrSv {
         F: Send + 'static,
         Self::Sv: Switch<ProcData<(), (), ()>>,
     {
-        self.add_fib(unsafe { new_proc_unchecked(stack_size, move |(), yielder| f(yielder)) })
+        self.add_fib(unsafe { new_proc_unchecked(stack_size, move |(), yielder| f(yielder)) });
     }
 
     /// Adds a stackful fiber for the closure `f` to the fiber chain, which will
@@ -180,7 +180,7 @@ pub trait ThrFiberProc: ThrSv {
         F: Send + 'static,
         Self::Sv: Switch<ProcData<(), (), ()>>,
     {
-        self.add_fib(new_proc_unprivileged(stack_size, move |(), yielder| f(yielder)))
+        self.add_fib(new_proc_unprivileged(stack_size, move |(), yielder| f(yielder)));
     }
 
     /// Adds a stackful fiber for the closure `f` to the fiber chain, which will
@@ -202,7 +202,7 @@ pub trait ThrFiberProc: ThrSv {
     {
         self.add_fib(unsafe {
             new_proc_unprivileged_unchecked(stack_size, move |(), yielder| f(yielder))
-        })
+        });
     }
 }
 

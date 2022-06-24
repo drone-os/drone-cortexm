@@ -105,6 +105,8 @@ pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
 #[doc(inline)]
 pub use drone_cortexm_macros::sv_pool as pool;
 
+#[cfg(not(feature = "std"))]
+use core::arch::asm;
 use core::mem::size_of;
 
 /// Generic supervisor.

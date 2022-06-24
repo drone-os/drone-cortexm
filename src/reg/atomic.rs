@@ -5,6 +5,8 @@ use crate::reg::{
     tag::RegAtomic,
     RReg, Reg, RegHold, RegRef, WReg, WRegAtomic,
 };
+#[cfg(not(feature = "std"))]
+use core::arch::asm;
 use drone_core::bitfield::Bitfield;
 
 /// Atomic operations for read-write register.

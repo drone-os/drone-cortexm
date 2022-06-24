@@ -1,4 +1,3 @@
-#![feature(const_fn_fn_ptr_basics)]
 #![feature(naked_functions)]
 #![no_implicit_prelude]
 
