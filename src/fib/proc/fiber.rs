@@ -54,9 +54,7 @@ where
             mpu::check();
         }
         let stack_bottom = unsafe { alloc::alloc(layout(stack_size)) };
-        if stack_bottom.is_null() {
-            panic!("Stack allocation failure");
-        }
+        assert!(!stack_bottom.is_null(), "Stack allocation failure");
         let stack_ptr =
             unsafe { Self::stack_init(stack_bottom, stack_size, unprivileged, unchecked, f) };
         Self {
@@ -265,9 +263,7 @@ mod mpu {
     pub(super) fn check() {
         #[cfg(feature = "std")]
         return;
-        if unsafe { mpu::Type::<Srt>::take().load().dregion() == 0 } {
-            panic!("MPU not present");
-        }
+        assert!(!unsafe { mpu::Type::<Srt>::take().load().dregion() == 0 }, "MPU not present");
     }
 
     pub(super) fn guard_size() -> usize {

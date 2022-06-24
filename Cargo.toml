@@ -5,8 +5,7 @@ members = ["macros"]
 name = "drone-cortexm"
 version = "0.15.0"
 authors = ["Valentine Valyaeff <valentine.valyaeff@gmail.com>"]
-edition = "2018"
-resolver = "2"
+edition = "2021"
 repository = "https://github.com/drone-os/drone-cortexm"
 homepage = "https://www.drone-os.com/"
 documentation = "https://api.drone-os.com/drone-cortexm/0.15/drone_cortexm/"
@@ -50,4 +49,4 @@ version = "0.15.0"
 path = "../drone-core"
 
 [dependencies]
-futures = { version = "0.3.0", default-features = false }
+futures = { version = "0.3.21", default-features = false }
