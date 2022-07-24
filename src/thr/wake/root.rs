@@ -1,4 +1,4 @@
-use crate::processor;
+use crate::cpu;
 use core::{
     ptr,
     task::{RawWaker, RawWakerVTable, Waker},
@@ -15,7 +15,7 @@ impl WakeRoot {
     }
 
     pub fn wait() {
-        processor::wait_for_event();
+        cpu::wait_for_event();
     }
 
     pub fn to_waker(&self) -> Waker {
@@ -40,5 +40,5 @@ unsafe fn wake(_data: *const ()) {
         cortexm_core = "cortexm3_r1p1",
         cortexm_core = "cortexm3_r2p0",
     ))]
-    processor::send_event();
+    cpu::send_event();
 }

@@ -1,6 +1,9 @@
-//! Common utility functions for working with ARM Cortex-M processors.
+//! ARM Cortex-M CPU management.
 
 #![cfg_attr(feature = "std", allow(unused_variables, unreachable_code))]
+
+#[doc(no_inline)]
+pub use drone_core::cpu::*;
 
 #[cfg(not(feature = "std"))]
 use core::arch::asm;
@@ -38,7 +41,7 @@ pub fn wait_for_event() {
     }
 }
 
-/// Sends event.
+/// Sends an event.
 ///
 /// It is a hint instruction. It causes an event to be signaled to all CPUs
 /// within the multiprocessor system.
@@ -51,28 +54,6 @@ pub fn send_event() {
     #[cfg(not(feature = "std"))]
     unsafe {
         asm!("sev", options(nomem, nostack, preserves_flags));
-    }
-}
-
-/// Requests system reset.
-///
-/// Generates a system reset request to the microcontroller's system reset
-/// control logic. Because the system reset control logic is not a part of the
-/// processor design, the exact timing of the reset is device-specific.
-///
-/// The debug logic is not affected.
-#[allow(clippy::empty_loop)]
-#[inline]
-pub fn self_reset() -> ! {
-    #[cfg(feature = "std")]
-    return unimplemented!();
-    #[cfg(not(feature = "std"))]
-    unsafe {
-        use crate::{map::reg::scb, reg::prelude::*};
-        use drone_core::token::Token;
-        asm!("dmb", "cpsid f", options(nomem, nostack, preserves_flags),);
-        scb::Aircr::<Urt>::take().store(|r| r.write_vectkey(0x05FA).set_sysresetreq());
-        loop {}
     }
 }
 
@@ -115,5 +96,40 @@ pub unsafe fn fpu_init(full_access: bool) {
                 0x5 // privileged access only
             } << 20,
         );
+    }
+}
+
+#[no_mangle]
+extern "C" fn drone_int_enable() {
+    #[cfg(feature = "std")]
+    return unimplemented!();
+    #[cfg(not(feature = "std"))]
+    unsafe {
+        asm!("cpsie i", options(nomem, nostack, preserves_flags));
+    }
+}
+
+#[no_mangle]
+extern "C" fn drone_int_disable() {
+    #[cfg(feature = "std")]
+    return unimplemented!();
+    #[cfg(not(feature = "std"))]
+    unsafe {
+        asm!("cpsid i", options(nomem, nostack, preserves_flags));
+    }
+}
+
+#[no_mangle]
+extern "C" fn drone_self_reset() -> ! {
+    #[cfg(feature = "std")]
+    return unimplemented!();
+    #[cfg(not(feature = "std"))]
+    unsafe {
+        use crate::{map::reg::scb, reg::prelude::*};
+        use drone_core::token::Token;
+        asm!("dmb", "cpsid f", options(nomem, nostack, preserves_flags),);
+        scb::Aircr::<Urt>::take().store(|r| r.write_vectkey(0x05FA).set_sysresetreq());
+        #[allow(clippy::empty_loop)]
+        loop {}
     }
 }
