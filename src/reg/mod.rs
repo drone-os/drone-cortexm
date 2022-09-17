@@ -1,11 +1,11 @@
 //! The Memory-Mapped Registers module.
 //!
 //! **NOTE** This module documentation should be viewed as a continuation of
-//! [the `drone_core` documentation](drone_core::reg).
+//! [the `drone_core` documentation](mod@drone_core::reg).
 //!
 //! # API
 //!
-//! These API tables extend [the `drone_core` API tables](drone_core::reg).
+//! These API tables extend [the `drone_core` API tables](mod@drone_core::reg).
 //!
 //! ## Field Token
 //!

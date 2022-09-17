@@ -1,7 +1,9 @@
 [![crates.io](https://img.shields.io/crates/v/drone-cortexm.svg)](https://crates.io/crates/drone-cortexm)
 ![maintenance](https://img.shields.io/badge/maintenance-actively--developed-brightgreen.svg)
 
-# drone-cortexm
+# Drone Cortex-M
+
+<!-- cargo-rdme start -->
 
 ARM® Cortex®-M platform crate for Drone, an Embedded Operating System.
 
@@ -31,7 +33,7 @@ application level according to this table.
 ## Documentation
 
 - [Drone Book](https://book.drone-os.com/)
-- [API documentation](https://api.drone-os.com/drone-cortexm/0.14/)
+- [API documentation](https://api.drone-os.com/drone-cortexm/0.15/)
 
 ## Usage
 
@@ -39,7 +41,7 @@ Add the crate to your `Cargo.toml` dependencies:
 
 ```toml
 [dependencies]
-drone-cortexm = { version = "0.14.1", features = [...] }
+drone-cortexm = { version = "0.15.0", features = [...] }
 ```
 
 Add or extend `std` feature as follows:
@@ -48,6 +50,8 @@ Add or extend `std` feature as follows:
 [features]
 std = ["drone-cortexm/std"]
 ```
+
+<!-- cargo-rdme end -->
 
 ## License
 

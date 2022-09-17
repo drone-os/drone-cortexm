@@ -39,6 +39,7 @@ bit-band = []
 floating-point-unit = []
 memory-protection-unit = []
 security-extension = []
+all = ["bit-band", "floating-point-unit", "memory-protection-unit", "security-extension"]
 
 [dependencies.drone-cortexm-macros]
 version = "=0.15.0"

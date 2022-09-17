@@ -169,8 +169,8 @@ pub unsafe fn sv_call<T: SvService, const NUM: u8>(service: &mut T) {
     }
 }
 
-/// This function is called by [`Sv::handler`] for the supervisor service
-/// `T`. Parameter `T` is based on the number `num` in the `SVC num`
+/// This function is called by [`Supervisor::handler`] for the supervisor
+/// service `T`. Parameter `T` is based on the number `num` in the `SVC num`
 /// instruction.
 ///
 /// # Safety

@@ -128,7 +128,8 @@ where
     unsafe { FiberProc::new(stack_size, true, true, f) }
 }
 
-/// Extends [`ThrToken`](crate::thr::ThrToken) types with `add_proc` methods.
+/// Extends [`ThrToken`](drone_core::thr::ThrToken) types with `add_proc`
+/// methods.
 pub trait ThrFiberProc: ThrSv {
     /// Adds a stackful fiber for the closure `f` to the fiber chain.
     ///

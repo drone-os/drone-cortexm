@@ -88,7 +88,6 @@
 //! * `debug` - Monitor.
 //! * `pend_sv` - Pendable request for system service.
 //! * `sys_tick` - System tick timer.
-//! ```
 
 pub mod prelude;
 
