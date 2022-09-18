@@ -52,7 +52,6 @@
 #![feature(never_type_fallback)]
 #![feature(prelude_import)]
 #![feature(proc_macro_hygiene)]
-#![feature(untagged_unions)]
 #![warn(missing_docs, unsafe_op_in_unsafe_fn)]
 #![warn(clippy::pedantic)]
 #![allow(

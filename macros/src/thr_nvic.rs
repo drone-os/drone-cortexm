@@ -1,4 +1,4 @@
-use inflector::Inflector;
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
@@ -522,7 +522,7 @@ fn def_thr_token(sv: &Option<Sv>, thread: &Thread) -> Vec<TokenStream2> {
             let ThreadSpec { kind, ident, .. } = spec;
             match kind {
                 ThreadKind::Inner | ThreadKind::Outer(_) => {
-                    let struct_ident = format_ident!("{}", ident.to_string().to_pascal_case());
+                    let struct_ident = format_ident!("{}", ident.to_string().to_upper_camel_case());
                     if let Some(Sv { path: sv_path }) = sv {
                         tokens.push(quote! {
                             impl ::drone_cortexm::thr::ThrSv for #struct_ident {

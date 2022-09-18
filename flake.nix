@@ -17,8 +17,8 @@
         rustFlags = ''--cfg drone_cortexm="cortexm4f_r0p1"'';
         rustChannel = {
           channel = "nightly";
-          date = "2022-06-18";
-          sha256 = "TX82NKIM6/V8rJ8CskbwizaDCvQeF0KvN3GkcY4XQzQ=";
+          date = "2022-09-18";
+          sha256 = "eYFYpSF2PBUJVzZGZrdtDMpVfHkypzTMLWotdEVq7eM=";
         };
 
         pkgs = nixpkgs.legacyPackages.${system};
