@@ -50,4 +50,8 @@ version = "0.15.0"
 path = "../drone-core"
 
 [dependencies]
-futures = { version = "0.3.21", default-features = false }
+futures = { version = "0.3.24", default-features = false }
+
+[build-dependencies.drone-config]
+version = "0.15.0"
+path = "../drone/config"

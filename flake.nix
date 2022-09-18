@@ -13,8 +13,8 @@
   outputs = { self, utils, nixpkgs, fenix }:
     utils.lib.eachDefaultSystem (system:
       let
-        target = "thumbv7em-none-eabihf";
-        cortexm_core = "cortexm4f_r0p1";
+        buildTarget = "thumbv7em-none-eabihf";
+        rustFlags = ''--cfg drone_cortexm="cortexm4f_r0p1"'';
         rustChannel = {
           channel = "nightly";
           date = "2022-06-18";
@@ -22,20 +22,20 @@
         };
 
         pkgs = nixpkgs.legacyPackages.${system};
-        rustToolchain = with fenix.packages.${system};
-          let toolchain = toolchainOf rustChannel; in
-          combine [
-            toolchain.rustc
-            toolchain.cargo
-            toolchain.clippy
-            toolchain.rust-src
-            (targets.${target}.toolchainOf rustChannel).rust-std
-          ];
-        rustFmt = (fenix.packages.${system}.toolchainOf rustChannel).rustfmt;
+        rustToolchain = with fenix.packages.${system}; combine
+          ((with toolchainOf rustChannel; [
+            rustc
+            cargo
+            clippy
+            rustfmt
+            rust-src
+          ]) ++ (with targets.${buildTarget}.toolchainOf rustChannel; [
+            rust-std
+          ]));
         rustAnalyzer = fenix.packages.${system}.rust-analyzer;
 
         crossEnv = {
-          CARGO_BUILD_TARGET = target;
+          CARGO_BUILD_TARGET = buildTarget;
         };
         nativeEnv = {
           CARGO_BUILD_TARGET = pkgs.stdenv.targetPlatform.config;
@@ -98,7 +98,6 @@
         mkShell = extraEnv: pkgs.mkShell ({
           nativeBuildInputs = [
             rustToolchain
-            rustFmt
             rustAnalyzer
             cargoRdme
             checkAll
@@ -107,7 +106,7 @@
             publishDocs
           ];
           RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
-          CARGO_BUILD_RUSTFLAGS = ''--cfg cortexm_core="${cortexm_core}"'';
+          CARGO_BUILD_RUSTFLAGS = rustFlags;
         } // extraEnv);
       in
       {

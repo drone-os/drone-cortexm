@@ -16,12 +16,12 @@ macro_rules! nvic_block {
 macro_rules! nvic_block_cortexm33 {
     ($name:ident, $number:expr, $doc:expr) => {
         #[cfg(any(
-            cortexm_core = "cortexm33_r0p2",
-            cortexm_core = "cortexm33_r0p3",
-            cortexm_core = "cortexm33_r0p4",
-            cortexm_core = "cortexm33f_r0p2",
-            cortexm_core = "cortexm33f_r0p3",
-            cortexm_core = "cortexm33f_r0p4",
+            drone_cortexm = "cortexm33_r0p2",
+            drone_cortexm = "cortexm33_r0p3",
+            drone_cortexm = "cortexm33_r0p4",
+            drone_cortexm = "cortexm33f_r0p2",
+            drone_cortexm = "cortexm33f_r0p3",
+            drone_cortexm = "cortexm33f_r0p4",
         ))]
         nvic_block!($name, $number, $doc);
     };

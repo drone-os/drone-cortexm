@@ -282,7 +282,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     let def_init = def_init(&index, &init);
     let thr_tokens =
         threads.iter().flat_map(|thread| def_thr_token(&sv, thread)).collect::<Vec<_>>();
-    let expanded = quote! {
+    quote! {
         #def_thr_pool
         #def_vtable
         #def_init
@@ -293,8 +293,8 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         ::drone_cortexm::reg::assert_taken!("mpu_rnr");
         ::drone_cortexm::reg::assert_taken!("mpu_rbar");
         ::drone_cortexm::reg::assert_taken!("mpu_rasr");
-    };
-    expanded.into()
+    }
+    .into()
 }
 
 fn partition_threads(threads: Vec<Thread>) -> (Vec<Thread>, Vec<Thread>) {

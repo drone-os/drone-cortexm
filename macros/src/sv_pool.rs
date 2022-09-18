@@ -130,7 +130,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
             }
         });
     }
-    let expanded = quote! {
+    quote! {
         #(#pool_attrs)*
         #pool_vis static #pool_ident: [#sv_ident; #service_counter] = [#(#pool_tokens),*];
 
@@ -163,6 +163,6 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         }
 
         #(#service_tokens)*
-    };
-    expanded.into()
+    }
+    .into()
 }
