@@ -3,7 +3,7 @@
 #![cfg_attr(feature = "std", allow(unused_variables, unreachable_code))]
 
 #[doc(no_inline)]
-pub use drone_core::cpu::*;
+pub use drone_core::platform::*;
 
 #[cfg(not(feature = "std"))]
 use core::arch::asm;
@@ -100,27 +100,38 @@ pub unsafe fn fpu_init(full_access: bool) {
 }
 
 #[no_mangle]
-extern "C" fn drone_int_enable() {
+extern "C" fn drone_save_and_disable_interrupts() -> u32 {
     #[cfg(feature = "std")]
     return unimplemented!();
     #[cfg(not(feature = "std"))]
     unsafe {
-        asm!("cpsie i", options(nomem, nostack, preserves_flags));
+        let status: u32;
+        asm!(
+            "mrs {status}, PRIMASK",
+            "cpsid i",
+            status = out(reg) status,
+            options(nomem, nostack, preserves_flags),
+        );
+        status
     }
 }
 
 #[no_mangle]
-extern "C" fn drone_int_disable() {
+extern "C" fn drone_restore_interrupts(status: u32) {
     #[cfg(feature = "std")]
     return unimplemented!();
     #[cfg(not(feature = "std"))]
     unsafe {
-        asm!("cpsid i", options(nomem, nostack, preserves_flags));
+        asm!(
+            "msr PRIMASK, {status}",
+            status = in(reg) status,
+            options(nomem, nostack, preserves_flags),
+        );
     }
 }
 
 #[no_mangle]
-extern "C" fn drone_self_reset() -> ! {
+extern "C" fn drone_reset() -> ! {
     #[cfg(feature = "std")]
     return unimplemented!();
     #[cfg(not(feature = "std"))]

@@ -4,6 +4,8 @@
 //!
 //! | Architecture | Core name              | Build target                | `drone_cortexm` Rust flag |
 //! |--------------|------------------------|-----------------------------|---------------------------|
+//! | ARMv6-M      | ARM® Cortex®-M0+ r0p0  | `thumbv6m-none-eabi`        | `cortexm0plus_r0p0`       |
+//! | ARMv6-M      | ARM® Cortex®-M0+ r0p1  | `thumbv6m-none-eabi`        | `cortexm0plus_r0p1`       |
 //! | ARMv7-M      | ARM® Cortex®-M3 r0p0   | `thumbv7m-none-eabi`        | `cortexm3_r0p0`           |
 //! | ARMv7-M      | ARM® Cortex®-M3 r1p0   | `thumbv7m-none-eabi`        | `cortexm3_r1p0`           |
 //! | ARMv7-M      | ARM® Cortex®-M3 r1p1   | `thumbv7m-none-eabi`        | `cortexm3_r1p1`           |
@@ -69,10 +71,10 @@
 
 extern crate alloc;
 
-pub mod cpu;
 pub mod drv;
 pub mod fib;
 pub mod map;
+pub mod platform;
 pub mod proc_loop;
 pub mod reg;
 pub mod sv;
