@@ -1,20 +1,18 @@
 //! Marker traits representing properties of memory-mapped registers.
 
+use drone_core::reg::marker as core_marker;
 #[doc(inline)]
 pub use drone_core::reg::marker::*;
 
+use crate::reg::field::{WRwRegFieldBitAtomic, WRwRegFieldBitsAtomic};
+use crate::reg::tag::{Crt, Srt};
+use crate::reg::RwRegAtomic;
 #[cfg(feature = "bit-band")]
 use crate::reg::{
     field::{RRRegFieldBitBand, WWRegFieldBitBand},
     tag::{RegTag, Urt},
     RegBitBand,
 };
-use crate::reg::{
-    field::{WRwRegFieldBitAtomic, WRwRegFieldBitsAtomic},
-    tag::{Crt, Srt},
-    RwRegAtomic,
-};
-use drone_core::reg::marker as core_marker;
 
 /// Synchronized read-write register.
 #[marker]

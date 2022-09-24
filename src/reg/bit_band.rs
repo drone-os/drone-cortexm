@@ -1,9 +1,8 @@
-use crate::reg::{
-    field::{RRRegFieldBit, WWRegFieldBit, WoWoRegFieldBit},
-    tag::{RegTag, Urt},
-    RReg, Reg, WReg, WoReg,
-};
 use core::ptr::{read_volatile, write_volatile};
+
+use crate::reg::field::{RRRegFieldBit, WWRegFieldBit, WoWoRegFieldBit};
+use crate::reg::tag::{RegTag, Urt};
+use crate::reg::{RReg, Reg, WReg, WoReg};
 
 /// The peripheral bit-band alias start.
 pub const BIT_BAND_BASE: usize = 0x4200_0000;
@@ -124,8 +123,9 @@ fn bit_band_addr<T: RegTag, R: RegBitBand<T>>(offset: usize) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use drone_core::reg;
+
+    use super::*;
 
     reg! {
         #[allow(dead_code)]

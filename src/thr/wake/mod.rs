@@ -1,4 +1,5 @@
 mod int;
 mod root;
 
-pub use self::{int::WakeInt, root::WakeRoot};
+pub use self::int::WakeInt;
+pub use self::root::WakeRoot;

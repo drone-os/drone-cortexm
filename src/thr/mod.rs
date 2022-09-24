@@ -9,7 +9,8 @@
 //! # #![feature(const_fn_fn_ptr_basics)]
 //! # #![feature(marker_trait_attr)]
 //! # fn main() {}
-//! use drone_cortexm::{map::thr::*, thr};
+//! use drone_cortexm::map::thr::*;
+//! use drone_cortexm::thr;
 //!
 //! thr::nvic! {
 //!     // See the `drone_core` documentation of `thr::pool!` macro for details.
@@ -97,24 +98,20 @@ mod nvic;
 mod root;
 mod wake;
 
+use drone_core::thr::ThrToken;
 #[doc(no_inline)]
 pub use drone_core::thr::*;
-
-pub use self::{
-    init::{init, init_extended, ThrInitExtended, ThrsInitToken},
-    int::IntToken,
-    nvic::{NvicBlock, NvicIabr, NvicIcer, NvicIcpr, NvicIser, NvicIspr, ThrNvic},
-    root::{FutureRootExt, StreamRootExt, StreamRootWait},
-};
-
 /// Defines a thread pool driven by NVIC (Nested Vector Interrupt Controller).
 ///
 /// See [the module level documentation](self) for details.
 #[doc(inline)]
 pub use drone_cortexm_macros::thr_nvic as nvic;
 
+pub use self::init::{init, init_extended, ThrInitExtended, ThrsInitToken};
+pub use self::int::IntToken;
+pub use self::nvic::{NvicBlock, NvicIabr, NvicIcer, NvicIcpr, NvicIser, NvicIspr, ThrNvic};
+pub use self::root::{FutureRootExt, StreamRootExt, StreamRootWait};
 use crate::sv::Supervisor;
-use drone_core::thr::ThrToken;
 
 /// A trait to assign a supervisor to threads.
 pub trait ThrSv: ThrToken {

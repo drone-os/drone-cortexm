@@ -1,13 +1,11 @@
 #![feature(naked_functions)]
 #![no_implicit_prelude]
 
-use ::drone_cortexm::{
-    sv,
-    sv::{Supervisor, SvService},
-    thr,
-    thr::Thread,
-};
-use ::std::{assert_eq, mem::size_of};
+use ::drone_cortexm::sv::{Supervisor, SvService};
+use ::drone_cortexm::thr::Thread;
+use ::drone_cortexm::{sv, thr};
+use ::std::assert_eq;
+use ::std::mem::size_of;
 
 struct FooService;
 

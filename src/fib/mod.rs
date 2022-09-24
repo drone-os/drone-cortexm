@@ -16,9 +16,8 @@
 //! ```
 //! # #![feature(const_fn_fn_ptr_basics)]
 //! # #![feature(naked_functions)]
-//! use drone_cortexm::{fib, sv};
-//!
 //! use drone_cortexm::sv::{SwitchBackService, SwitchContextService};
+//! use drone_cortexm::{fib, sv};
 //!
 //! // Stackful fibers need a supervisor.
 //! sv::pool! {
@@ -48,9 +47,10 @@
 //! [`token.add_proc(...)`](ThrFiberProc::add_proc),
 //! [`token.add_proc_unchecked(...)`](ThrFiberProc::add_proc_unchecked),
 //! [`token.add_proc_unprivileged(...)`](ThrFiberProc::add_proc_unprivileged),
-//! [`token.add_proc_unprivileged_unchecked(...)`](ThrFiberProc::add_proc_unprivileged_unchecked).
-//! Note that fibers that are directly attached to threads can't have input,
-//! yield and return values other than `()`.
+//! [`token.add_proc_unprivileged_unchecked(...
+//! )`](ThrFiberProc::add_proc_unprivileged_unchecked). Note that fibers that
+//! are directly attached to threads can't have input, yield and return values
+//! other than `()`.
 //!
 //! ```
 //! # #![feature(const_fn_fn_ptr_basics)]

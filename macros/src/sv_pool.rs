@@ -1,11 +1,8 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{
-    braced,
-    parse::{Parse, ParseStream, Result},
-    parse_macro_input, Attribute, Ident, LitInt, Token, Visibility,
-};
+use syn::parse::{Parse, ParseStream, Result};
+use syn::{braced, parse_macro_input, Attribute, Ident, LitInt, Token, Visibility};
 
 struct Input {
     pool: Pool,

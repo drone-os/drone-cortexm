@@ -9,7 +9,8 @@
 //! # #![feature(const_fn_fn_ptr_basics)]
 //! # #![feature(naked_functions)]
 //! # fn main() {}
-//! use drone_cortexm::{sv, sv::Supervisor, thr};
+//! use drone_cortexm::sv::Supervisor;
+//! use drone_cortexm::{sv, thr};
 //!
 //! sv::pool! {
 //!     /// Pool of services.
@@ -58,9 +59,8 @@
 //! # #![feature(const_fn_fn_ptr_basics)]
 //! # #![feature(naked_functions)]
 //! # #![feature(new_uninit)]
-//! use drone_cortexm::sv::{Switch, SwitchBackService, SwitchContextService};
-//!
 //! use drone_cortexm::sv;
+//! use drone_cortexm::sv::{Switch, SwitchBackService, SwitchContextService};
 //!
 //! sv::pool! {
 //!     /// Pool of services.
@@ -97,7 +97,9 @@
 
 mod switch;
 
-pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
+#[cfg(not(feature = "std"))]
+use core::arch::asm;
+use core::mem::size_of;
 
 /// Defines the supervisor type.
 ///
@@ -105,9 +107,7 @@ pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
 #[doc(inline)]
 pub use drone_cortexm_macros::sv_pool as pool;
 
-#[cfg(not(feature = "std"))]
-use core::arch::asm;
-use core::mem::size_of;
+pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
 
 /// Generic supervisor.
 pub trait Supervisor: Sized + 'static {

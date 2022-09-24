@@ -1,7 +1,8 @@
-use crate::sv::{SvCall, SvService};
 #[cfg(not(feature = "std"))]
 use core::arch::asm;
 use core::mem::size_of;
+
+use crate::sv::{SvCall, SvService};
 
 /// A service to switch to a process stack.
 ///
@@ -41,7 +42,8 @@ where
     /// # Safety
     ///
     /// * Must be called only from Process Stack.
-    /// * `T` must match the previous [`switch_context`](Switch::switch_context).
+    /// * `T` must match the previous
+    ///   [`switch_context`](Switch::switch_context).
     /// * `*data` must be word-aligned.
     unsafe fn switch_back(data: *mut *mut T);
 }

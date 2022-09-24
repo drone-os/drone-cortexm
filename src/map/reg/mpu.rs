@@ -1,5 +1,6 @@
-use crate::reg::prelude::*;
 use drone_core::reg;
+
+use crate::reg::prelude::*;
 
 reg! {
     /// The MPU Type Register indicates how many regions the MPU support.

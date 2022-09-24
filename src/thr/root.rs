@@ -1,12 +1,12 @@
-use crate::thr::wake::WakeRoot;
-use core::{
-    future::Future,
-    iter::FusedIterator,
-    marker::PhantomData,
-    pin::Pin,
-    task::{Context, Poll},
-};
+use core::future::Future;
+use core::iter::FusedIterator;
+use core::marker::PhantomData;
+use core::pin::Pin;
+use core::task::{Context, Poll};
+
 use futures::stream::Stream;
+
+use crate::thr::wake::WakeRoot;
 
 /// An extension trait for [`Future`] that provides
 /// [`root_wait`](FutureRootExt::root_wait) method.

@@ -12,11 +12,15 @@ mod inner {
     mod stk;
     mod tpiu;
 
+    pub use self::dwt::*;
     #[cfg(feature = "floating-point-unit")]
     pub use self::fpu::*;
+    pub use self::itm::*;
     #[cfg(feature = "memory-protection-unit")]
     pub use self::mpu::*;
-    pub use self::{dwt::*, itm::*, scb::*, stk::*, tpiu::*};
+    pub use self::scb::*;
+    pub use self::stk::*;
+    pub use self::tpiu::*;
 }
 
 use drone_core::reg;

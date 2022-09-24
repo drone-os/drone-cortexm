@@ -14,7 +14,6 @@ pub use drone_core::thr::prelude::*;
 
 #[doc(no_inline)]
 pub use crate::thr::IntToken;
-
 #[doc(no_inline)]
 pub use crate::{
     fib::ThrFiberProc as _,

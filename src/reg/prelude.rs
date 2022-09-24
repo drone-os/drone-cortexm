@@ -8,16 +8,15 @@
 //! use drone_cortexm::reg::prelude::*;
 //! ```
 
-#[cfg(feature = "bit-band")]
-#[doc(no_inline)]
-pub use crate::reg::RegBitBand;
-
 #[doc(no_inline)]
 pub use drone_core::reg::prelude::*;
 
 #[cfg(feature = "bit-band")]
 #[doc(no_inline)]
 pub use crate::reg::field::{RRRegFieldBitBand as _, WWRegFieldBitBand as _};
+#[cfg(feature = "bit-band")]
+#[doc(no_inline)]
+pub use crate::reg::RegBitBand;
 #[doc(no_inline)]
 pub use crate::reg::{
     field::{WRwRegFieldAtomic as _, WRwRegFieldBitAtomic as _, WRwRegFieldBitsAtomic as _},

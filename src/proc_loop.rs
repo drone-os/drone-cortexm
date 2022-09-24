@@ -11,15 +11,15 @@
 //! # #![feature(const_fn_fn_ptr_basics)]
 //! # #![feature(naked_functions)]
 //! # #![feature(never_type)]
-//! use core::{future::Future, pin::Pin, slice};
-//! use drone_core::ffi::{c_char, CString};
-//! use drone_cortexm::{
-//!     proc_loop::{self, Context as _, ProcLoop, Sess as _},
-//!     sv,
-//! };
-//! use futures::prelude::*;
+//! use core::future::Future;
+//! use core::pin::Pin;
+//! use core::slice;
 //!
+//! use drone_core::ffi::{c_char, CString};
+//! use drone_cortexm::proc_loop::{self, Context as _, ProcLoop, Sess as _};
+//! use drone_cortexm::sv;
 //! use drone_cortexm::sv::{SwitchBackService, SwitchContextService};
+//! use futures::prelude::*;
 //!
 //! // Stackful fibers need a supervisor.
 //! sv::pool! {
@@ -216,14 +216,13 @@
 //! # }
 //! ```
 
+use core::pin::Pin;
+
 #[doc(no_inline)]
 pub use drone_core::proc_loop::*;
 
-use crate::{
-    fib::{self, FiberState},
-    sv::{SvCall, SwitchBackService, SwitchContextService},
-};
-use core::pin::Pin;
+use crate::fib::{self, FiberState};
+use crate::sv::{SvCall, SwitchBackService, SwitchContextService};
 
 type InnerYielder<Sv, T> = fib::Yielder<Sv, InnerIn<T>, InnerOut<T>, !>;
 type InnerFiber<Sv, T> = fib::FiberProc<Sv, InnerIn<T>, InnerOut<T>, !, CmdLoop<Sv, T>>;

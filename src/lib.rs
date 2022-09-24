@@ -1,27 +1,29 @@
 //! ARM® Cortex®-M platform crate for Drone, an Embedded Operating System.
 //!
 //! # Supported Cores
-//!
-//! | Architecture | Core name              | Build target                | `drone_cortexm` Rust flag |
-//! |--------------|------------------------|-----------------------------|---------------------------|
-//! | ARMv6-M      | ARM® Cortex®-M0+ r0p0  | `thumbv6m-none-eabi`        | `cortexm0plus_r0p0`       |
-//! | ARMv6-M      | ARM® Cortex®-M0+ r0p1  | `thumbv6m-none-eabi`        | `cortexm0plus_r0p1`       |
-//! | ARMv7-M      | ARM® Cortex®-M3 r0p0   | `thumbv7m-none-eabi`        | `cortexm3_r0p0`           |
-//! | ARMv7-M      | ARM® Cortex®-M3 r1p0   | `thumbv7m-none-eabi`        | `cortexm3_r1p0`           |
-//! | ARMv7-M      | ARM® Cortex®-M3 r1p1   | `thumbv7m-none-eabi`        | `cortexm3_r1p1`           |
-//! | ARMv7-M      | ARM® Cortex®-M3 r2p0   | `thumbv7m-none-eabi`        | `cortexm3_r2p0`           |
-//! | ARMv7-M      | ARM® Cortex®-M3 r2p1   | `thumbv7m-none-eabi`        | `cortexm3_r2p1`           |
-//! | ARMv7E-M     | ARM® Cortex®-M4 r0p0   | `thumbv7em-none-eabi`       | `cortexm4_r0p0`           |
-//! | ARMv7E-M     | ARM® Cortex®-M4 r0p1   | `thumbv7em-none-eabi`       | `cortexm4_r0p1`           |
-//! | ARMv7E-M     | ARM® Cortex®-M4F r0p0  | `thumbv7em-none-eabihf`     | `cortexm4f_r0p0`          |
-//! | ARMv7E-M     | ARM® Cortex®-M4F r0p1  | `thumbv7em-none-eabihf`     | `cortexm4f_r0p1`          |
-//! | ARMv8-M      | ARM® Cortex®-M33 r0p2  | `thumbv8m.main-none-eabi`   | `cortexm33_r0p2`          |
-//! | ARMv8-M      | ARM® Cortex®-M33 r0p3  | `thumbv8m.main-none-eabi`   | `cortexm33_r0p3`          |
-//! | ARMv8-M      | ARM® Cortex®-M33 r0p4  | `thumbv8m.main-none-eabi`   | `cortexm33_r0p4`          |
-//! | ARMv8-M      | ARM® Cortex®-M33F r0p2 | `thumbv8m.main-none-eabihf` | `cortexm33f_r0p2`         |
-//! | ARMv8-M      | ARM® Cortex®-M33F r0p3 | `thumbv8m.main-none-eabihf` | `cortexm33f_r0p3`         |
-//! | ARMv8-M      | ARM® Cortex®-M33F r0p4 | `thumbv8m.main-none-eabihf` | `cortexm33f_r0p4`         |
-//!
+#![doc = "
+
+| Architecture | Core name              | Build target                | `drone_cortexm` Rust flag |
+|--------------|------------------------|-----------------------------|---------------------------|
+| ARMv6-M      | ARM® Cortex®-M0+ r0p0  | `thumbv6m-none-eabi`        | `cortexm0plus_r0p0`       |
+| ARMv6-M      | ARM® Cortex®-M0+ r0p1  | `thumbv6m-none-eabi`        | `cortexm0plus_r0p1`       |
+| ARMv7-M      | ARM® Cortex®-M3 r0p0   | `thumbv7m-none-eabi`        | `cortexm3_r0p0`           |
+| ARMv7-M      | ARM® Cortex®-M3 r1p0   | `thumbv7m-none-eabi`        | `cortexm3_r1p0`           |
+| ARMv7-M      | ARM® Cortex®-M3 r1p1   | `thumbv7m-none-eabi`        | `cortexm3_r1p1`           |
+| ARMv7-M      | ARM® Cortex®-M3 r2p0   | `thumbv7m-none-eabi`        | `cortexm3_r2p0`           |
+| ARMv7-M      | ARM® Cortex®-M3 r2p1   | `thumbv7m-none-eabi`        | `cortexm3_r2p1`           |
+| ARMv7E-M     | ARM® Cortex®-M4 r0p0   | `thumbv7em-none-eabi`       | `cortexm4_r0p0`           |
+| ARMv7E-M     | ARM® Cortex®-M4 r0p1   | `thumbv7em-none-eabi`       | `cortexm4_r0p1`           |
+| ARMv7E-M     | ARM® Cortex®-M4F r0p0  | `thumbv7em-none-eabihf`     | `cortexm4f_r0p0`          |
+| ARMv7E-M     | ARM® Cortex®-M4F r0p1  | `thumbv7em-none-eabihf`     | `cortexm4f_r0p1`          |
+| ARMv8-M      | ARM® Cortex®-M33 r0p2  | `thumbv8m.main-none-eabi`   | `cortexm33_r0p2`          |
+| ARMv8-M      | ARM® Cortex®-M33 r0p3  | `thumbv8m.main-none-eabi`   | `cortexm33_r0p3`          |
+| ARMv8-M      | ARM® Cortex®-M33 r0p4  | `thumbv8m.main-none-eabi`   | `cortexm33_r0p4`          |
+| ARMv8-M      | ARM® Cortex®-M33F r0p2 | `thumbv8m.main-none-eabihf` | `cortexm33f_r0p2`         |
+| ARMv8-M      | ARM® Cortex®-M33F r0p3 | `thumbv8m.main-none-eabihf` | `cortexm33f_r0p3`         |
+| ARMv8-M      | ARM® Cortex®-M33F r0p4 | `thumbv8m.main-none-eabihf` | `cortexm33f_r0p4`         |
+
+"]
 //! Rust target triple and `drone_cortexm` Rust flag should be set at the
 //! application level according to this table.
 //!
@@ -84,8 +86,7 @@ mod drone_core_macro_reexport {
     pub use drone_core::{reg, thr};
 }
 
-pub use drone_core_macro_reexport::*;
-
 #[prelude_import]
 #[allow(unused_imports)]
 use drone_core::prelude::*;
+pub use drone_core_macro_reexport::*;

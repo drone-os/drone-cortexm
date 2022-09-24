@@ -1,10 +1,13 @@
 mod fiber;
 mod yielder;
 
-pub use self::{fiber::FiberProc, yielder::Yielder};
-
-use crate::{fib::FiberState, sv::Switch, thr::ThrSv};
 use core::mem::ManuallyDrop;
+
+pub use self::fiber::FiberProc;
+pub use self::yielder::Yielder;
+use crate::fib::FiberState;
+use crate::sv::Switch;
+use crate::thr::ThrSv;
 
 pub union Data<I, O> {
     input: ManuallyDrop<I>,

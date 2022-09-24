@@ -1,7 +1,5 @@
-use core::{
-    ptr::write_volatile,
-    task::{RawWaker, RawWakerVTable, Waker},
-};
+use core::ptr::write_volatile;
+use core::task::{RawWaker, RawWakerVTable, Waker};
 
 const NVIC_STIR: usize = 0xE000_EF00;
 

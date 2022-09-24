@@ -1,12 +1,11 @@
 //! Generic timer.
 
-use core::{
-    fmt,
-    future::Future,
-    num::NonZeroUsize,
-    pin::Pin,
-    task::{Context, Poll},
-};
+use core::fmt;
+use core::future::Future;
+use core::num::NonZeroUsize;
+use core::pin::Pin;
+use core::task::{Context, Poll};
+
 use futures::stream::Stream;
 
 /// Error returned from [`Timer::interval`] on overflow.
