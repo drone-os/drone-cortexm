@@ -1,12 +1,12 @@
 [package]
 name = "drone-cortexm-macros"
-version = "0.15.0"
-authors = ["Valentyn Valiaiev <valentine.valyaeff@gmail.com>"]
-edition = "2021"
-repository = "https://github.com/drone-os/drone-cortexm"
-homepage = "https://www.drone-os.com/"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+homepage.workspace = true
+license.workspace = true
 documentation = "https://api.drone-os.com/drone-cortexm/0.15/drone_cortexm_macros/"
-license = "MIT OR Apache-2.0"
 description = """
 Procedural macros for drone-cortexm.
 """
@@ -14,11 +14,8 @@ Procedural macros for drone-cortexm.
 [lib]
 proc-macro = true
 
-[dependencies.drone-macros-core]
-version = "0.15.0"
-path = "../../drone-core/macros-core"
-
 [dependencies]
+drone-macros-core.workspace = true
 heck = "0.4.0"
 proc-macro2 = "1.0.43"
 quote = "1.0.21"

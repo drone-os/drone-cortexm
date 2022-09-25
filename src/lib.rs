@@ -1,7 +1,7 @@
 //! ARM® Cortex®-M platform crate for Drone, an Embedded Operating System.
 //!
 //! # Supported Cores
-#![doc = "
+#![doc /* flags */ = "
 
 | Architecture | Core name              | Build target                | `drone_cortexm` Rust flag |
 |--------------|------------------------|-----------------------------|---------------------------|

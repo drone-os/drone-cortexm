@@ -17,8 +17,8 @@
         rustFlags = ''--cfg drone_cortexm="cortexm4f_r0p1"'';
         rustChannel = {
           channel = "nightly";
-          date = "2022-09-18";
-          sha256 = "eYFYpSF2PBUJVzZGZrdtDMpVfHkypzTMLWotdEVq7eM=";
+          date = "2022-09-23";
+          sha256 = "lv8DWMZm/vmAfC8RF8nwMXKp2xiMxtsthqTEs7bWyms=";
         };
 
         pkgs = nixpkgs.legacyPackages.${system};
@@ -70,12 +70,14 @@
         updateVersions = pkgs.writeShellScriptBin "update-versions" ''
           sed -i "s/\(api\.drone-os\.com\/drone-cortexm\/\)[0-9]\+\(\.[0-9]\+\)\+/\1$(echo $1 | sed 's/\(.*\)\.[0-9]\+/\1/')/" \
             Cargo.toml macros/Cargo.toml src/lib.rs
-          sed -i "/\[.*\]/h;/version = \".*\"/{x;s/\[package\]/version = \"$1\"/;t;x}" \
-            Cargo.toml macros/Cargo.toml
+          sed -i "/\[.*\]/h;/version = \".*\"/{x;s/\[workspace.package\]/version = \"$1\"/;t;x}" \
+            Cargo.toml
           sed -i "/\[.*\]/h;/version = \"=.*\"/{x;s/\[.*drone-cortexm-.*\]/version = \"=$1\"/;t;x}" \
             Cargo.toml
           sed -i "/\[.*\]/h;/version = \".*\"/{x;s/\[.*drone\(-macros\)\?-core\]/version = \"$2\"/;t;x}" \
-            Cargo.toml macros/Cargo.toml
+            Cargo.toml
+          sed -i "/\[.*\]/h;/version = \".*\"/{x;s/\[.*drone-config\]/version = \"$3\"/;t;x}" \
+            Cargo.toml
           sed -i "s/\(drone-cortexm.*\)version = \"[^\"]\+\"/\1version = \"$1\"/" \
             src/lib.rs
         '';
