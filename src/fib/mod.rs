@@ -89,10 +89,9 @@
 
 mod proc;
 
-#[doc(no_inline)]
-pub use drone_core::fib::*;
-
 pub use self::proc::{
     new_proc, new_proc_unchecked, new_proc_unprivileged, new_proc_unprivileged_unchecked,
     FiberProc, ThrFiberProc, Yielder,
 };
+#[doc(no_inline)]
+pub use drone_core::fib::*;

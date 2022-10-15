@@ -14,7 +14,6 @@
 //! use core::future::Future;
 //! use core::pin::Pin;
 //! use core::slice;
-//!
 //! use drone_core::ffi::{c_char, CString};
 //! use drone_cortexm::proc_loop::{self, Context as _, ProcLoop, Sess as _};
 //! use drone_cortexm::sv;
@@ -216,13 +215,11 @@
 //! # }
 //! ```
 
-use core::pin::Pin;
-
-#[doc(no_inline)]
-pub use drone_core::proc_loop::*;
-
 use crate::fib::{self, FiberState};
 use crate::sv::{SvCall, SwitchBackService, SwitchContextService};
+use core::pin::Pin;
+#[doc(no_inline)]
+pub use drone_core::proc_loop::*;
 
 type InnerYielder<Sv, T> = fib::Yielder<Sv, InnerIn<T>, InnerOut<T>, !>;
 type InnerFiber<Sv, T> = fib::FiberProc<Sv, InnerIn<T>, InnerOut<T>, !, CmdLoop<Sv, T>>;

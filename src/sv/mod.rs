@@ -97,17 +97,15 @@
 
 mod switch;
 
+pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
 #[cfg(not(feature = "std"))]
 use core::arch::asm;
 use core::mem::size_of;
-
 /// Defines the supervisor type.
 ///
 /// See [the module level documentation](self) for details.
 #[doc(inline)]
 pub use drone_cortexm_macros::sv_pool as pool;
-
-pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
 
 /// Generic supervisor.
 pub trait Supervisor: Sized + 'static {

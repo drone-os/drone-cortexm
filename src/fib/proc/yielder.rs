@@ -1,9 +1,8 @@
-use core::marker::PhantomData;
-use core::ptr;
-
 use super::{Data, ProcData};
 use crate::fib;
 use crate::sv::Switch;
+use core::marker::PhantomData;
+use core::ptr;
 
 /// A zero-sized token that provides [`proc_yield`](Yielder::proc_yield) method
 /// to yield from [`FiberProc`](crate::fib::FiberProc).

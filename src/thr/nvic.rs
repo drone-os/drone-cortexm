@@ -1,7 +1,6 @@
+use crate::thr::IntToken;
 use core::marker::PhantomData;
 use core::ptr::{read_volatile, write_volatile};
-
-use crate::thr::IntToken;
 
 const NVIC_ISER: usize = 0xE000_E100;
 const NVIC_ICER: usize = 0xE000_E180;

@@ -1,8 +1,7 @@
+use crate::sv::{SvCall, SvService};
 #[cfg(not(feature = "std"))]
 use core::arch::asm;
 use core::mem::size_of;
-
-use crate::sv::{SvCall, SvService};
 
 /// A service to switch to a process stack.
 ///

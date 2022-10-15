@@ -1,7 +1,6 @@
+use crate::platform;
 use core::ptr;
 use core::task::{RawWaker, RawWakerVTable, Waker};
-
-use crate::platform;
 
 static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake, drop);
 

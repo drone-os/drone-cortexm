@@ -98,6 +98,11 @@ mod nvic;
 mod root;
 mod wake;
 
+pub use self::init::{init, init_extended, ThrInitExtended, ThrsInitToken};
+pub use self::int::IntToken;
+pub use self::nvic::{NvicBlock, NvicIabr, NvicIcer, NvicIcpr, NvicIser, NvicIspr, ThrNvic};
+pub use self::root::{FutureRootExt, StreamRootExt, StreamRootWait};
+use crate::sv::Supervisor;
 use drone_core::thr::ThrToken;
 #[doc(no_inline)]
 pub use drone_core::thr::*;
@@ -106,12 +111,6 @@ pub use drone_core::thr::*;
 /// See [the module level documentation](self) for details.
 #[doc(inline)]
 pub use drone_cortexm_macros::thr_nvic as nvic;
-
-pub use self::init::{init, init_extended, ThrInitExtended, ThrsInitToken};
-pub use self::int::IntToken;
-pub use self::nvic::{NvicBlock, NvicIabr, NvicIcer, NvicIcpr, NvicIser, NvicIspr, ThrNvic};
-pub use self::root::{FutureRootExt, StreamRootExt, StreamRootWait};
-use crate::sv::Supervisor;
 
 /// A trait to assign a supervisor to threads.
 pub trait ThrSv: ThrToken {

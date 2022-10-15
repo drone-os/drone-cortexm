@@ -1,13 +1,11 @@
 #![cfg_attr(feature = "std", allow(unreachable_code, unused_variables))]
 
-#[cfg(not(feature = "std"))]
-use core::arch::asm;
-
-use drone_core::bitfield::Bitfield;
-
 use crate::reg::field::{RegFieldBit, RegFieldBits, WWRegField, WWRegFieldBit, WWRegFieldBits};
 use crate::reg::tag::RegAtomic;
 use crate::reg::{RReg, Reg, RegHold, RegRef, WReg, WRegAtomic};
+#[cfg(not(feature = "std"))]
+use core::arch::asm;
+use drone_core::bitfield::Bitfield;
 
 /// Atomic operations for read-write register.
 // FIXME https://github.com/rust-lang/rust/issues/46397

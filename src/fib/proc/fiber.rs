@@ -1,16 +1,14 @@
 #![cfg_attr(feature = "std", allow(unreachable_code, unused_variables, unused_mut))]
 
+use super::{Data, ProcData, Yielder};
+use crate::fib::{Fiber, FiberState, RootFiber};
+use crate::sv::Switch;
+use ::alloc::alloc;
 use core::alloc::Layout;
 use core::cmp::max;
 use core::marker::{PhantomData, Unpin};
 use core::mem::{align_of, size_of};
 use core::pin::Pin;
-
-use ::alloc::alloc;
-
-use super::{Data, ProcData, Yielder};
-use crate::fib::{Fiber, FiberState, RootFiber};
-use crate::sv::Switch;
 
 /// Stackful fiber for [`FnMut`] closure.
 ///
@@ -253,11 +251,10 @@ unsafe fn layout(stack_size: usize) -> Layout {
 
 #[cfg(feature = "memory-protection-unit")]
 mod mpu {
-    use drone_core::bitfield::Bitfield;
-    use drone_core::token::Token;
-
     use crate::map::reg::mpu;
     use crate::reg::prelude::*;
+    use drone_core::bitfield::Bitfield;
+    use drone_core::token::Token;
 
     const GUARD_SIZE: u32 = 5;
 

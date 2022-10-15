@@ -45,9 +45,8 @@ mod atomic;
 #[cfg(feature = "bit-band")]
 mod bit_band;
 
-#[doc(no_inline)]
-pub use drone_core::reg::*;
-
 pub use self::atomic::RwRegAtomic;
 #[cfg(feature = "bit-band")]
 pub use self::bit_band::{RegBitBand, BIT_BAND_BASE, BIT_BAND_WIDTH};
+#[doc(no_inline)]
+pub use drone_core::reg::*;

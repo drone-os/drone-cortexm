@@ -4,7 +4,6 @@
 
 #[cfg(not(feature = "std"))]
 use core::arch::asm;
-
 #[doc(no_inline)]
 pub use drone_core::platform::*;
 
@@ -136,10 +135,9 @@ extern "C" fn drone_reset() -> ! {
     return unimplemented!();
     #[cfg(not(feature = "std"))]
     unsafe {
-        use drone_core::token::Token;
-
         use crate::map::reg::scb;
         use crate::reg::prelude::*;
+        use drone_core::token::Token;
         asm!("dmb", "cpsid f", options(nomem, nostack, preserves_flags),);
         scb::Aircr::<Urt>::take().store(|r| r.write_vectkey(0x05FA).set_sysresetreq());
         #[allow(clippy::empty_loop)]

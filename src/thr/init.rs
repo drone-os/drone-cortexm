@@ -1,9 +1,8 @@
 #![cfg_attr(feature = "std", allow(dead_code, unreachable_code))]
 
-use drone_core::token::Token;
-
 use crate::map::reg::scb;
 use crate::reg::prelude::*;
+use drone_core::token::Token;
 
 /// Threads initialization token.
 ///
@@ -131,13 +130,11 @@ pub fn init<T: ThrsInitToken>(token: T) -> T::ThrTokens {
 
 #[cfg(feature = "memory-protection-unit")]
 mod mpu {
-    #[cfg(not(feature = "std"))]
-    use core::arch::asm;
-
-    use drone_core::token::Token;
-
     use crate::map::reg::mpu;
     use crate::reg::prelude::*;
+    #[cfg(not(feature = "std"))]
+    use core::arch::asm;
+    use drone_core::token::Token;
 
     static MPU_RESET_TABLE: [u32; 16] = [
         rbar_reset(0),

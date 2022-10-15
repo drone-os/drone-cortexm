@@ -1,13 +1,5 @@
 //! SysTick timer.
 
-use core::num::NonZeroUsize;
-use core::pin::Pin;
-use core::ptr::write_volatile;
-
-use drone_core::bitfield::Bitfield;
-use drone_core::token::Token;
-use futures::stream::Stream;
-
 use crate::drv::timer::{Timer, TimerInterval, TimerOverflow, TimerSleep, TimerStop};
 use crate::fib;
 use crate::fib::Fiber;
@@ -16,6 +8,12 @@ use crate::map::reg::{scb, stk};
 use crate::reg::field::WWRegFieldBit;
 use crate::reg::prelude::*;
 use crate::thr::prelude::*;
+use core::num::NonZeroUsize;
+use core::pin::Pin;
+use core::ptr::write_volatile;
+use drone_core::bitfield::Bitfield;
+use drone_core::token::Token;
+use futures::stream::Stream;
 
 /// SysTick driver.
 pub struct SysTick<I: ThrToken> {
