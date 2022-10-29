@@ -1,5 +1,10 @@
+#![cfg_attr(
+    any(feature = "std", not(feature = "atomics")),
+    allow(unreachable_code, unused_variables, clippy::diverging_sub_expression)
+)]
+
 use crate::sv::{SvCall, SvService};
-#[cfg(not(feature = "std"))]
+#[cfg(not(any(feature = "std", not(feature = "atomics"))))]
 use core::arch::asm;
 use core::mem::size_of;
 
@@ -53,10 +58,13 @@ unsafe impl Send for SwitchBackService {}
 impl SvService for SwitchContextService {
     #[allow(clippy::too_many_lines)]
     unsafe extern "C" fn handler(&mut self) {
-        #[cfg(feature = "std")]
+        #[cfg(any(feature = "std", not(feature = "atomics")))]
         return unimplemented!();
         let Self { stack_ptr, data_ptr } = *self;
-        #[cfg(all(not(feature = "std"), feature = "floating-point-unit"))]
+        #[cfg(all(
+            not(any(feature = "std", not(feature = "atomics"))),
+            feature = "floating-point-unit"
+        ))]
         unsafe {
             asm!(
                 "    mrs      r3, control",
@@ -100,7 +108,10 @@ impl SvService for SwitchContextService {
                 options(noreturn),
             );
         }
-        #[cfg(all(not(feature = "std"), not(feature = "floating-point-unit")))]
+        #[cfg(all(
+            not(any(feature = "std", not(feature = "atomics"))),
+            not(feature = "floating-point-unit")
+        ))]
         unsafe {
             asm!(
                 "    mrs      r3, control",
@@ -141,10 +152,13 @@ impl SvService for SwitchContextService {
 impl SvService for SwitchBackService {
     #[allow(clippy::too_many_lines)]
     unsafe extern "C" fn handler(&mut self) {
-        #[cfg(feature = "std")]
+        #[cfg(any(feature = "std", not(feature = "atomics")))]
         return unimplemented!();
         let Self { data_ptr, data_size } = *self;
-        #[cfg(all(not(feature = "std"), feature = "floating-point-unit"))]
+        #[cfg(all(
+            not(any(feature = "std", not(feature = "atomics"))),
+            feature = "floating-point-unit"
+        ))]
         unsafe {
             asm!(
                 "    movw     r2, #0xED94",
@@ -200,7 +214,10 @@ impl SvService for SwitchBackService {
                 options(noreturn),
             );
         }
-        #[cfg(all(not(feature = "std"), not(feature = "floating-point-unit")))]
+        #[cfg(all(
+            not(any(feature = "std", not(feature = "atomics"))),
+            not(feature = "floating-point-unit")
+        ))]
         unsafe {
             asm!(
                 "    movw     r2, #0xED94",

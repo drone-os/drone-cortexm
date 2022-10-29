@@ -15,9 +15,4 @@ pub use crate::reg::field::{RRRegFieldBitBand as _, WWRegFieldBitBand as _};
 #[doc(no_inline)]
 pub use crate::reg::RegBitBand;
 #[doc(no_inline)]
-pub use crate::reg::{
-    field::{WRwRegFieldAtomic as _, WRwRegFieldBitAtomic as _, WRwRegFieldBitsAtomic as _},
-    RwRegAtomic as _,
-};
-#[doc(no_inline)]
 pub use drone_core::reg::prelude::*;
