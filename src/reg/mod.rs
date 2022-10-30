@@ -8,7 +8,9 @@
 //! These API tables extend [the `drone_core` API tables](mod@drone_core::reg).
 //!
 //! ## Field Token
-#![doc = "
+#![cfg_attr(
+    feature = "bit-band",
+    doc = "
 
 |                                                                   | Field Width | Field Mode | Register Mode | Tag |
 |------------------------------------------------------------------------|-----------|-------|------------|----------|
@@ -21,7 +23,8 @@
 | [`clear_bit_band`](field::WWRegFieldBitBand::clear_bit_band)           | one-bit   | write | write-only |          |
 | *or*                                                                   | one-bit   | write | write      | Urt      |
 
-"]
+"
+)]
 
 pub mod field;
 pub mod marker;

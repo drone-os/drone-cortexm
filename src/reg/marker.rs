@@ -13,6 +13,11 @@ pub use drone_core::reg::marker::*;
 #[cfg(feature = "bit-band")]
 mod bit_band {
     use super::*;
+    #[cfg(feature = "atomics")]
+    use crate::reg::field::WRwRegFieldBitAtomic;
+    #[cfg(not(feature = "atomics"))]
+    use crate::reg::field::WRwRegFieldBitSoftAtomic as WRwRegFieldBitAtomic;
+    use crate::reg::tag::{Crt, Srt};
 
     /// Bit-band read-write register.
     #[marker]
