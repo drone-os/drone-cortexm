@@ -30,6 +30,9 @@ thr::nvic! {
 
     vectors => pub Vectors;
 
+    #[repr(align(256))]
+    vtable => pub Vtable;
+
     init => pub ThrsInit;
 
     supervisor => Sv;

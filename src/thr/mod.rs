@@ -25,6 +25,11 @@
 //!     /// Collection of exception vectors.
 //!     vectors => pub Vectors;
 //!
+//!     // This item can be omitted if the vector table doesn't need to relocate into RAM.
+//!     /// Vector table type.
+//!     #[repr(align(256))] // depends on the VTOR register and can vary for different cores
+//!     vtable => pub Vtable;
+//!
 //!     /// Threads initialization token.
 //!     init => pub ThrsInit;
 //!
@@ -73,6 +78,7 @@
 //!
 //! // Define and export the actual collection of exception vectors with all handlers attached.
 //! #[no_mangle]
+//! #[link_section = ".vectors.VECTORS"]
 //! pub static VECTORS: Vectors = Vectors::new(reset);
 //! ```
 //!
@@ -128,7 +134,7 @@ pub unsafe fn relocate_vtable(dst: *mut usize, size: usize) {
     unsafe {
         let mut vtor = Vtor::<Urt>::take();
         let src = vtor.load().tbloff() as *const usize;
-        ptr::copy_nonoverlapping(src.add(1), dst, size >> 2);
-        vtor.store(|r| r.write_tbloff(dst.sub(1) as u32));
+        ptr::copy_nonoverlapping(src, dst, size >> 2);
+        vtor.store(|r| r.write_tbloff(dst as u32));
     }
 }

@@ -42,6 +42,7 @@
 //! }
 //!
 //! #[no_mangle]
+//! #[link_section = ".vectors.VECTORS"]
 //! pub static VECTORS: Vectors = Vectors::new(reset);
 //!
 //! unsafe extern "C" fn reset() -> ! {

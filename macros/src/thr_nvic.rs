@@ -12,6 +12,7 @@ struct Input {
     local: Local,
     index: Index,
     vectors: Vectors,
+    vtable: Option<Vtable>,
     init: Init,
     sv: Option<Sv>,
     threads: Threads,
@@ -38,6 +39,12 @@ struct Index {
 }
 
 struct Vectors {
+    attrs: Vec<Attribute>,
+    vis: Visibility,
+    ident: Ident,
+}
+
+struct Vtable {
     attrs: Vec<Attribute>,
     vis: Visibility,
     ident: Ident,
@@ -81,6 +88,7 @@ impl Parse for Input {
         let mut local = None;
         let mut index = None;
         let mut vectors = None;
+        let mut vtable = None;
         let mut init = None;
         let mut sv = None;
         let mut threads = None;
@@ -112,6 +120,12 @@ impl Parse for Input {
                 } else {
                     return Err(input.error("multiple `vectors` specifications"));
                 }
+            } else if ident == "vtable" {
+                if vtable.is_none() {
+                    vtable = Some(Vtable::parse(input, attrs)?);
+                } else {
+                    return Err(input.error("multiple `vtable` specifications"));
+                }
             } else if ident == "init" {
                 if init.is_none() {
                     init = Some(Init::parse(input, attrs)?);
@@ -142,6 +156,7 @@ impl Parse for Input {
             local: local.ok_or_else(|| input.error("missing `local` specification"))?,
             index: index.ok_or_else(|| input.error("missing `index` specification"))?,
             vectors: vectors.ok_or_else(|| input.error("missing `vectors` specification"))?,
+            vtable,
             init: init.ok_or_else(|| input.error("missing `init` specification"))?,
             sv,
             threads: threads.ok_or_else(|| input.error("missing `threads` specification"))?,
@@ -180,6 +195,14 @@ impl Index {
 }
 
 impl Vectors {
+    fn parse(input: ParseStream<'_>, attrs: Vec<Attribute>) -> Result<Self> {
+        let vis = input.parse()?;
+        let ident = input.parse()?;
+        Ok(Self { attrs, vis, ident })
+    }
+}
+
+impl Vtable {
     fn parse(input: ParseStream<'_>, attrs: Vec<Attribute>) -> Result<Self> {
         let vis = input.parse()?;
         let ident = input.parse()?;
@@ -273,18 +296,20 @@ impl Parse for ThreadKind {
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-    let Input { thr, local, index, vectors, init, sv, threads } =
+    let Input { thr, local, index, vectors, vtable, init, sv, threads } =
         parse_macro_input!(input as Input);
     let Threads { threads } = threads;
     let (threads, naked_threads) = partition_threads(threads);
     let def_thr_pool = def_thr_pool(&thr, &local, &index, &threads);
     let def_vectors = def_vectors(&thr, &vectors, &threads, &naked_threads);
+    let def_vtable = vtable.as_ref().map_or(quote!(), |vtable| def_vtable(&vectors, vtable));
     let def_init = def_init(&index, &init);
     let thr_tokens =
         threads.iter().flat_map(|thread| def_thr_token(&sv, thread)).collect::<Vec<_>>();
     quote! {
         #def_thr_pool
         #def_vectors
+        #def_vtable
         #def_init
         #(#thr_tokens)*
         ::drone_cortexm::reg::claim!("scb_ccr");
@@ -426,7 +451,7 @@ fn def_vectors(
         }
 
         impl #vectors_ident {
-            /// Creates a new vector table.
+            /// Creates a new collection of exception vectors.
             pub const fn new(reset: unsafe extern "C" fn() -> !) -> Self {
                 Self {
                     #(#vectors_ctor_tokens,)*
@@ -451,29 +476,51 @@ fn def_vectors(
                     }
                 }
             }
+        }
+
+        #resume_tokens
+        #(#tokens)*
+    }
+}
+
+fn def_vtable(vectors: &Vectors, vtable: &Vtable) -> TokenStream2 {
+    let Vectors { ident: vectors_ident, .. } = vectors;
+    let Vtable { attrs: vtable_attrs, vis: vtable_vis, ident: vtable_ident } = vtable;
+    quote! {
+        #(#vtable_attrs)*
+        #[repr(C)]
+        #vtable_vis struct #vtable_ident {
+            pub stack_pointer: usize,
+            pub vectors: #vectors_ident,
+        }
+
+        impl #vtable_ident {
+            /// Creates a new vector table with zero stack pointer.
+            pub const fn new(reset: unsafe extern "C" fn() -> !) -> Self {
+                Self {
+                    stack_pointer: 0,
+                    vectors: #vectors_ident::new(reset),
+                }
+            }
 
             /// Relocates the vector table to the location pointed by `&mut self`.
             ///
             /// # Safety
             ///
-            /// The address of `self` minus 4 bytes must be properly aligned
-            /// according to the number of implemented bits in the `VTOR`
-            /// register.
+            /// The type must be properly aligned according to the number of
+            /// implemented bits in the `VTOR` register.
             ///
             /// The function rewrites contents of VTOR register without taking
             /// into account register tokens.
-            pub unsafe fn relocate(&mut self) {
+            pub unsafe fn relocate(dst: *mut Self) {
                 unsafe {
                     ::drone_cortexm::thr::relocate_vtable(
-                        (self as *mut Self).cast(),
+                        dst.cast(),
                         ::core::mem::size_of::<Self>(),
                     );
                 }
             }
         }
-
-        #resume_tokens
-        #(#tokens)*
     }
 }
 
