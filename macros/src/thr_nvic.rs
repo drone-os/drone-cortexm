@@ -11,7 +11,7 @@ struct Input {
     thr: Thr,
     local: Local,
     index: Index,
-    vtable: Vtable,
+    vectors: Vectors,
     init: Init,
     sv: Option<Sv>,
     threads: Threads,
@@ -37,7 +37,7 @@ struct Index {
     ident: Ident,
 }
 
-struct Vtable {
+struct Vectors {
     attrs: Vec<Attribute>,
     vis: Visibility,
     ident: Ident,
@@ -80,7 +80,7 @@ impl Parse for Input {
         let mut thr = None;
         let mut local = None;
         let mut index = None;
-        let mut vtable = None;
+        let mut vectors = None;
         let mut init = None;
         let mut sv = None;
         let mut threads = None;
@@ -106,11 +106,11 @@ impl Parse for Input {
                 } else {
                     return Err(input.error("multiple `index` specifications"));
                 }
-            } else if ident == "vtable" {
-                if vtable.is_none() {
-                    vtable = Some(Vtable::parse(input, attrs)?);
+            } else if ident == "vectors" {
+                if vectors.is_none() {
+                    vectors = Some(Vectors::parse(input, attrs)?);
                 } else {
-                    return Err(input.error("multiple `vtable` specifications"));
+                    return Err(input.error("multiple `vectors` specifications"));
                 }
             } else if ident == "init" {
                 if init.is_none() {
@@ -141,7 +141,7 @@ impl Parse for Input {
             thr: thr.ok_or_else(|| input.error("missing `thread` specification"))?,
             local: local.ok_or_else(|| input.error("missing `local` specification"))?,
             index: index.ok_or_else(|| input.error("missing `index` specification"))?,
-            vtable: vtable.ok_or_else(|| input.error("missing `vtable` specification"))?,
+            vectors: vectors.ok_or_else(|| input.error("missing `vectors` specification"))?,
             init: init.ok_or_else(|| input.error("missing `init` specification"))?,
             sv,
             threads: threads.ok_or_else(|| input.error("missing `threads` specification"))?,
@@ -179,7 +179,7 @@ impl Index {
     }
 }
 
-impl Vtable {
+impl Vectors {
     fn parse(input: ParseStream<'_>, attrs: Vec<Attribute>) -> Result<Self> {
         let vis = input.parse()?;
         let ident = input.parse()?;
@@ -273,17 +273,18 @@ impl Parse for ThreadKind {
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-    let Input { thr, local, index, vtable, init, sv, threads } = parse_macro_input!(input as Input);
+    let Input { thr, local, index, vectors, init, sv, threads } =
+        parse_macro_input!(input as Input);
     let Threads { threads } = threads;
     let (threads, naked_threads) = partition_threads(threads);
     let def_thr_pool = def_thr_pool(&thr, &local, &index, &threads);
-    let def_vtable = def_vtable(&thr, &vtable, &threads, &naked_threads);
+    let def_vectors = def_vectors(&thr, &vectors, &threads, &naked_threads);
     let def_init = def_init(&index, &init);
     let thr_tokens =
         threads.iter().flat_map(|thread| def_thr_token(&sv, thread)).collect::<Vec<_>>();
     quote! {
         #def_thr_pool
-        #def_vtable
+        #def_vectors
         #def_init
         #(#thr_tokens)*
         ::drone_cortexm::reg::claim!("scb_ccr");
@@ -309,19 +310,19 @@ fn partition_threads(threads: Vec<Thread>) -> (Vec<Thread>, Vec<Thread>) {
 }
 
 #[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
-fn def_vtable(
+fn def_vectors(
     thr: &Thr,
-    vtable: &Vtable,
+    vectors: &Vectors,
     threads: &[Thread],
     naked_threads: &[Thread],
 ) -> TokenStream2 {
     let Thr { ident: thr_ident, .. } = thr;
-    let Vtable { attrs: vtable_attrs, vis: vtable_vis, ident: vtable_ident } = vtable;
+    let Vectors { attrs: vectors_attrs, vis: vectors_vis, ident: vectors_ident } = vectors;
     let resume = format_ident!("{}_resume", thr_ident.to_string().to_snake_case());
     let mut tokens = Vec::new();
-    let mut vtable_tokens = Vec::new();
-    let mut vtable_ctor_tokens = Vec::new();
-    let mut vtable_ctor_default_tokens = Vec::new();
+    let mut vectors_tokens = Vec::new();
+    let mut vectors_ctor_tokens = Vec::new();
+    let mut vectors_ctor_default_tokens = Vec::new();
     let mut resume_tokens = None;
     for (idx, thread) in threads
         .iter()
@@ -349,7 +350,7 @@ fn def_vtable(
                                 unsafe { <#thr_ident as ::drone_core::thr::Thread>::call(#idx, #resume) };
                             }
                         });
-                        vtable_ctor_tokens.push(quote! {
+                        vectors_ctor_tokens.push(quote! {
                             #field_ident: ::core::option::Option::Some(#ident)
                         });
                     }
@@ -360,38 +361,38 @@ fn def_vtable(
                                 unsafe { <#thr_ident as ::drone_core::thr::Thread>::call(#idx, #path) };
                             }
                         });
-                        vtable_ctor_tokens.push(quote! {
+                        vectors_ctor_tokens.push(quote! {
                             #field_ident: ::core::option::Option::Some(#ident)
                         });
                     }
                     ThreadKind::Naked(path) => {
-                        vtable_ctor_tokens.push(quote! {
+                        vectors_ctor_tokens.push(quote! {
                             #field_ident: ::core::option::Option::Some(#path)
                         });
                     }
                 }
                 if let Thread::Interrupt(num, _) = thread {
                     let num = *num as usize;
-                    if vtable_tokens.len() < num + 1 {
-                        vtable_tokens.resize(num + 1, None);
+                    if vectors_tokens.len() < num + 1 {
+                        vectors_tokens.resize(num + 1, None);
                     }
-                    vtable_tokens[num] = Some(quote! {
+                    vectors_tokens[num] = Some(quote! {
                         #field_ident: ::core::option::Option<unsafe extern "C" fn()>
                     });
-                    vtable_ctor_default_tokens.push(quote! {
+                    vectors_ctor_default_tokens.push(quote! {
                         #field_ident: ::core::option::Option::None
                     });
                 }
             }
         }
     }
-    let vtable_tokens = vtable_tokens
+    let vectors_tokens = vectors_tokens
         .into_iter()
         .enumerate()
         .map(|(i, tokens)| {
             tokens.unwrap_or_else(|| {
                 let field_ident = format_ident!("_int{}", i);
-                vtable_ctor_default_tokens.push(quote! {
+                vectors_ctor_default_tokens.push(quote! {
                     #field_ident: ::core::option::Option::None
                 });
                 quote! {
@@ -401,10 +402,10 @@ fn def_vtable(
         })
         .collect::<Vec<_>>();
     quote! {
-        #(#vtable_attrs)*
+        #(#vectors_attrs)*
         #[repr(C)]
         #[allow(dead_code)]
-        #vtable_vis struct #vtable_ident {
+        #vectors_vis struct #vectors_ident {
             reset: unsafe extern "C" fn() -> !,
             nmi: ::core::option::Option<unsafe extern "C" fn()>,
             hard_fault: ::core::option::Option<unsafe extern "C" fn()>,
@@ -421,14 +422,14 @@ fn def_vtable(
             _reserved2: [usize; 1],
             pend_sv: ::core::option::Option<unsafe extern "C" fn()>,
             sys_tick: ::core::option::Option<unsafe extern "C" fn()>,
-            #(#vtable_tokens),*
+            #(#vectors_tokens),*
         }
 
-        impl #vtable_ident {
+        impl #vectors_ident {
             /// Creates a new vector table.
             pub const fn new(reset: unsafe extern "C" fn() -> !) -> Self {
                 Self {
-                    #(#vtable_ctor_tokens,)*
+                    #(#vectors_ctor_tokens,)*
                     ..Self {
                         reset,
                         nmi: ::core::option::Option::None,
@@ -446,7 +447,7 @@ fn def_vtable(
                         _reserved2: [0; 1],
                         pend_sv: ::core::option::Option::None,
                         sys_tick: ::core::option::Option::None,
-                        #(#vtable_ctor_default_tokens,)*
+                        #(#vectors_ctor_default_tokens,)*
                     }
                 }
             }

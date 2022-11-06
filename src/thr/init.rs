@@ -36,7 +36,7 @@ pub struct ThrInitExtended {
 /// #     thread => pub Thr {};
 /// #     local => pub ThrLocal {};
 /// #     index => Thrs;
-/// #     vtable => Vtable;
+/// #     vectors => Vectors;
 /// #     init => ThrsInit;
 /// #     threads => {};
 /// # }
@@ -99,7 +99,7 @@ pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExten
 /// #     thread => pub Thr {};
 /// #     local => pub ThrLocal {};
 /// #     index => Thrs;
-/// #     vtable => Vtable;
+/// #     vectors => Vectors;
 /// #     init => ThrsInit;
 /// #     threads => {};
 /// # }

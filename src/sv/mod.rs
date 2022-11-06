@@ -30,7 +30,7 @@
 //!     thread => pub Thr {};
 //!     local => pub ThrLocal {};
 //!     index => pub Thrs;
-//!     vtable => pub Vtable;
+//!     vectors => pub Vectors;
 //!     init => pub ThrsInit;
 //!     supervisor => Sv;
 //!     threads => {
@@ -42,7 +42,7 @@
 //! }
 //!
 //! #[no_mangle]
-//! pub static VTABLE: Vtable = Vtable::new(reset);
+//! pub static VECTORS: Vectors = Vectors::new(reset);
 //!
 //! unsafe extern "C" fn reset() -> ! {
 //!     loop {}

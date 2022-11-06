@@ -28,7 +28,7 @@ thr::nvic! {
     #[allow(dead_code)]
     index => pub Thrs;
 
-    vtable => pub Vtable;
+    vectors => pub Vectors;
 
     init => pub ThrsInit;
 
@@ -75,12 +75,12 @@ fn new() {
     unsafe extern "C" fn reset() -> ! {
         loop {}
     }
-    Vtable::new(reset);
+    Vectors::new(reset);
 }
 
 #[test]
 fn size() {
     assert_eq!(Thr::COUNT, 3);
-    assert_eq!(size_of::<Vtable>(), 208);
+    assert_eq!(size_of::<Vectors>(), 208);
     assert_eq!(SERVICES.len(), 2);
 }

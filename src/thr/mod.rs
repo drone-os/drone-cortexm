@@ -22,8 +22,8 @@
 //!     // See the `drone_core` documentation of `thr::pool!` macro for details.
 //!     index => pub Thrs;
 //!
-//!     /// The vector table type.
-//!     vtable => pub Vtable;
+//!     /// Collection of exception vectors.
+//!     vectors => pub Vectors;
 //!
 //!     /// Threads initialization token.
 //!     init => pub ThrsInit;
@@ -71,9 +71,9 @@
 //! unsafe extern "C" fn sv_call_handler() {}
 //! unsafe fn adc1_handler(_thr: &Thr) {}
 //!
-//! // Define and export the actual vector table with all handlers attached.
+//! // Define and export the actual collection of exception vectors with all handlers attached.
 //! #[no_mangle]
-//! pub static VTABLE: Vtable = Vtable::new(reset);
+//! pub static VECTORS: Vectors = Vectors::new(reset);
 //! ```
 //!
 //! The list of all available non-interrupt exceptions:
