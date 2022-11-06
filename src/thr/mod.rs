@@ -30,9 +30,6 @@
 //!     #[repr(align(256))] // depends on the VTOR register and can vary for different cores
 //!     vtable => pub Vtable;
 //!
-//!     /// Threads initialization token.
-//!     init => pub ThrsInit;
-//!
 //!     // Threads configuration.
 //!     threads => {
 //!         // Threads for exceptions.
@@ -104,7 +101,7 @@ mod nvic;
 mod root;
 mod wake;
 
-pub use self::init::{init, init_extended, ThrInitExtended, ThrsInitToken};
+pub use self::init::{ThrInit, ThrInitExtended};
 pub use self::int::IntToken;
 pub use self::nvic::{NvicBlock, NvicIabr, NvicIcer, NvicIcpr, NvicIser, NvicIspr, ThrNvic};
 pub use self::root::{FutureRootExt, StreamRootExt, StreamRootWait};

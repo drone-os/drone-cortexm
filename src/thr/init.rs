@@ -1,21 +1,125 @@
-#![cfg_attr(feature = "std", allow(dead_code, unreachable_code))]
+#![cfg_attr(feature = "std", allow(dead_code, unreachable_code, unused_variables, unused_imports))]
 
+#[cfg(feature = "memory-protection-unit")]
+use crate::map::periph::mpu::MpuPeriph;
+use crate::map::periph::thr::ThrPeriph;
 use crate::map::reg::scb;
 use crate::reg::prelude::*;
 use drone_core::token::Token;
 
-/// Threads initialization token.
+/// A set of thread tokens.
 ///
 /// # Safety
 ///
-/// * Must be defined only once for a particular set of threads.
-/// * `ThrTokens` type must contain only thread tokens.
-pub unsafe trait ThrsInitToken: Token {
-    /// The set of thread tokens.
-    type ThrTokens: Token;
+/// Must contain only thread tokens.
+pub unsafe trait ThrInit: Token {
+    /// Initializes the thread system and returns a set of thread tokens.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # #![feature(proc_macro_hygiene)]
+    /// # use drone_core::token::Token;
+    /// # drone_cortexm::thr::nvic! {
+    /// #     thread => pub Thr {};
+    /// #     local => pub ThrLocal {};
+    /// #     index => Thrs;
+    /// #     vectors => Vectors;
+    /// #     threads => {};
+    /// # }
+    /// use drone_cortexm::cortexm_reg_tokens;
+    /// use drone_cortexm::map::periph::mpu::periph_mpu;
+    /// use drone_cortexm::map::periph::thr::periph_thr;
+    /// use drone_cortexm::reg::prelude::*;
+    /// use drone_cortexm::thr::prelude::*;
+    ///
+    /// cortexm_reg_tokens! {
+    ///     index => Regs;
+    /// }
+    ///
+    /// fn handler(reg: Regs) {
+    ///     let (thr, extended) = Thrs::init_extended(periph_mpu!(reg), periph_thr!(reg));
+    ///     extended.scb_ccr_div_0_trp.set_bit();
+    /// }
+    ///
+    /// # fn main() {
+    /// #     handler(unsafe { Regs::take() })
+    /// # }
+    /// ```
+    #[allow(clippy::drop_non_drop, clippy::needless_pass_by_value)]
+    #[inline]
+    fn init_extended(
+        #[cfg(feature = "memory-protection-unit")] mpu: MpuPeriph,
+        thr: ThrPeriph,
+    ) -> (Self, ThrInitExtended) {
+        let ThrPeriph { scb_ccr } = thr;
+        scb_ccr.store(|r| r.set_stkalign().set_nonbasethrdena());
+        let scb::Ccr {
+            stkalign,
+            bfhfnmign: scb_ccr_bfhfnmign,
+            div_0_trp: scb_ccr_div_0_trp,
+            unalign_trp: scb_ccr_unalign_trp,
+            usersetmpend: scb_ccr_usersetmpend,
+            nonbasethrdena,
+        } = scb_ccr;
+        #[cfg(feature = "memory-protection-unit")]
+        unsafe {
+            mpu::reset(&mpu);
+        }
+        drop(stkalign);
+        drop(nonbasethrdena);
+        (unsafe { Self::take() }, ThrInitExtended {
+            scb_ccr_bfhfnmign,
+            scb_ccr_div_0_trp,
+            scb_ccr_unalign_trp,
+            scb_ccr_usersetmpend,
+        })
+    }
+
+    /// Initializes the thread system and returns a set of thread tokens.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # #![feature(proc_macro_hygiene)]
+    /// # use drone_core::token::Token;
+    /// # drone_cortexm::thr::nvic! {
+    /// #     thread => pub Thr {};
+    /// #     local => pub ThrLocal {};
+    /// #     index => Thrs;
+    /// #     vectors => Vectors;
+    /// #     threads => {};
+    /// # }
+    /// use drone_cortexm::cortexm_reg_tokens;
+    /// use drone_cortexm::map::periph::mpu::periph_mpu;
+    /// use drone_cortexm::map::periph::thr::periph_thr;
+    /// use drone_cortexm::thr::prelude::*;
+    ///
+    /// cortexm_reg_tokens! {
+    ///     index => Regs;
+    /// }
+    ///
+    /// fn handler(reg: Regs) {
+    ///     let thr = Thrs::init(periph_mpu!(reg), periph_thr!(reg));
+    /// }
+    ///
+    /// # fn main() {
+    /// #     handler(unsafe { Regs::take() })
+    /// # }
+    /// ```
+    #[allow(clippy::needless_pass_by_value)]
+    #[inline]
+    fn init(#[cfg(feature = "memory-protection-unit")] mpu: MpuPeriph, thr: ThrPeriph) -> Self {
+        let (thr, _) = Self::init_extended(
+            #[cfg(feature = "memory-protection-unit")]
+            mpu,
+            thr,
+        );
+        thr
+    }
 }
 
-/// A set of register tokens returned by [`init_extended`].
+/// A set of register tokens returned by [`ThrInit::init_extended`].
 #[allow(missing_docs)]
 pub struct ThrInitExtended {
     pub scb_ccr_bfhfnmign: scb::ccr::Bfhfnmign<Srt>,
@@ -24,117 +128,14 @@ pub struct ThrInitExtended {
     pub scb_ccr_usersetmpend: scb::ccr::Usersetmpend<Srt>,
 }
 
-/// Initializes the thread system and returns a set of thread tokens.
-///
-/// # Examples
-///
-/// ```no_run
-/// # #![feature(const_fn_fn_ptr_basics)]
-/// # #![feature(proc_macro_hygiene)]
-/// # use drone_core::token::Token;
-/// # thr::nvic! {
-/// #     thread => pub Thr {};
-/// #     local => pub ThrLocal {};
-/// #     index => Thrs;
-/// #     vectors => Vectors;
-/// #     init => ThrsInit;
-/// #     threads => {};
-/// # }
-/// use drone_cortexm::reg::prelude::*;
-/// use drone_cortexm::{cortexm_reg_tokens, thr};
-///
-/// cortexm_reg_tokens! {
-///     index => Regs;
-///     exclude => {
-///         scb_ccr,
-///         mpu_type, mpu_ctrl, mpu_rnr, mpu_rbar, mpu_rasr,
-///     }
-/// }
-///
-/// fn handler(reg: Regs, thr_init: ThrsInit) {
-///     let (thr, extended) = thr::init_extended(thr_init);
-///     extended.scb_ccr_div_0_trp.set_bit();
-/// }
-///
-/// # fn main() {
-/// #     handler(unsafe { Regs::take() }, unsafe { ThrsInit::take() })
-/// # }
-/// ```
-#[allow(clippy::drop_non_drop, clippy::needless_pass_by_value)]
-#[inline]
-pub fn init_extended<T: ThrsInitToken>(_token: T) -> (T::ThrTokens, ThrInitExtended) {
-    let scb_ccr = unsafe { scb::Ccr::<Srt>::take() };
-    scb_ccr.store(|r| r.set_stkalign().set_nonbasethrdena());
-    let scb::Ccr {
-        stkalign,
-        bfhfnmign: scb_ccr_bfhfnmign,
-        div_0_trp: scb_ccr_div_0_trp,
-        unalign_trp: scb_ccr_unalign_trp,
-        usersetmpend: scb_ccr_usersetmpend,
-        nonbasethrdena,
-    } = scb_ccr;
-    #[cfg(feature = "memory-protection-unit")]
-    unsafe {
-        mpu::reset();
-    }
-    drop(stkalign);
-    drop(nonbasethrdena);
-    (unsafe { T::ThrTokens::take() }, ThrInitExtended {
-        scb_ccr_bfhfnmign,
-        scb_ccr_div_0_trp,
-        scb_ccr_unalign_trp,
-        scb_ccr_usersetmpend,
-    })
-}
-
-/// Initializes the thread system and returns a set of thread tokens.
-///
-/// # Examples
-///
-/// ```no_run
-/// # #![feature(const_fn_fn_ptr_basics)]
-/// # #![feature(proc_macro_hygiene)]
-/// # use drone_core::token::Token;
-/// # thr::nvic! {
-/// #     thread => pub Thr {};
-/// #     local => pub ThrLocal {};
-/// #     index => Thrs;
-/// #     vectors => Vectors;
-/// #     init => ThrsInit;
-/// #     threads => {};
-/// # }
-/// use drone_cortexm::{cortexm_reg_tokens, thr};
-///
-/// cortexm_reg_tokens! {
-///     index => Regs;
-///     exclude => {
-///         scb_ccr,
-///         mpu_type, mpu_ctrl, mpu_rnr, mpu_rbar, mpu_rasr,
-///     }
-/// }
-///
-/// fn handler(reg: Regs, thr_init: ThrsInit) {
-///     let thr = thr::init(thr_init);
-/// }
-///
-/// # fn main() {
-/// #     handler(unsafe { Regs::take() }, unsafe { ThrsInit::take() })
-/// # }
-/// ```
-#[allow(clippy::needless_pass_by_value)]
-#[inline]
-pub fn init<T: ThrsInitToken>(token: T) -> T::ThrTokens {
-    let (thr, _) = init_extended(token);
-    thr
-}
-
 #[cfg(feature = "memory-protection-unit")]
 mod mpu {
+    #[cfg(feature = "memory-protection-unit")]
+    use crate::map::periph::mpu::MpuPeriph;
     use crate::map::reg::mpu;
     use crate::reg::prelude::*;
     #[cfg(not(feature = "std"))]
     use core::arch::asm;
-    use drone_core::token::Token;
 
     static MPU_RESET_TABLE: [u32; 16] = [
         rbar_reset(0),
@@ -155,15 +156,13 @@ mod mpu {
         0,
     ];
 
-    pub(super) unsafe fn reset() {
+    pub(super) unsafe fn reset(mpu: &MpuPeriph) {
         #[cfg(feature = "std")]
         return unimplemented!();
-        let mpu_type = unsafe { mpu::Type::<Srt>::take() };
-        let mpu_ctrl = unsafe { mpu::Ctrl::<Srt>::take() };
-        if mpu_type.load().dregion() == 0 {
+        if mpu.mpu_type.load().dregion() == 0 {
             return;
         }
-        mpu_ctrl.reset();
+        mpu.mpu_ctrl.reset();
         #[cfg(not(feature = "std"))]
         unsafe {
             asm!(

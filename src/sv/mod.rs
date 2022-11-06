@@ -31,7 +31,6 @@
 //!     local => pub ThrLocal {};
 //!     index => pub Thrs;
 //!     vectors => pub Vectors;
-//!     init => pub ThrsInit;
 //!     supervisor => Sv;
 //!     threads => {
 //!         exceptions => {

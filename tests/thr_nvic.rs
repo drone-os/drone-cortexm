@@ -33,8 +33,6 @@ thr::nvic! {
     #[repr(align(256))]
     vtable => pub Vtable;
 
-    init => pub ThrsInit;
-
     supervisor => Sv;
 
     threads => {
