@@ -402,6 +402,7 @@ fn def_vtable(
         .collect::<Vec<_>>();
     quote! {
         #(#vtable_attrs)*
+        #[repr(C)]
         #[allow(dead_code)]
         #vtable_vis struct #vtable_ident {
             reset: unsafe extern "C" fn() -> !,
@@ -447,6 +448,25 @@ fn def_vtable(
                         sys_tick: ::core::option::Option::None,
                         #(#vtable_ctor_default_tokens,)*
                     }
+                }
+            }
+
+            /// Relocates the vector table to the location pointed by `&mut self`.
+            ///
+            /// # Safety
+            ///
+            /// The address of `self` minus 4 bytes must be properly aligned
+            /// according to the number of implemented bits in the `VTOR`
+            /// register.
+            ///
+            /// The function rewrites contents of VTOR register without taking
+            /// into account register tokens.
+            pub unsafe fn relocate(&mut self) {
+                unsafe {
+                    ::drone_cortexm::thr::relocate_vtable(
+                        (self as *mut Self).cast(),
+                        ::core::mem::size_of::<Self>(),
+                    );
                 }
             }
         }

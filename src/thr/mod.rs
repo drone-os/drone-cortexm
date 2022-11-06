@@ -102,10 +102,14 @@ pub use self::init::{init, init_extended, ThrInitExtended, ThrsInitToken};
 pub use self::int::IntToken;
 pub use self::nvic::{NvicBlock, NvicIabr, NvicIcer, NvicIcpr, NvicIser, NvicIspr, ThrNvic};
 pub use self::root::{FutureRootExt, StreamRootExt, StreamRootWait};
+use crate::map::reg::scb::Vtor;
+use crate::reg::prelude::*;
 use crate::sv::Supervisor;
+use core::ptr;
 use drone_core::thr::ThrToken;
 #[doc(no_inline)]
 pub use drone_core::thr::*;
+use drone_core::token::Token;
 /// Defines a thread pool driven by NVIC (Nested Vector Interrupt Controller).
 ///
 /// See [the module level documentation](self) for details.
@@ -116,4 +120,15 @@ pub use drone_cortexm_macros::thr_nvic as nvic;
 pub trait ThrSv: ThrToken {
     /// The supervisor.
     type Sv: Supervisor;
+}
+
+#[doc(hidden)]
+#[inline]
+pub unsafe fn relocate_vtable(dst: *mut usize, size: usize) {
+    unsafe {
+        let mut vtor = Vtor::<Urt>::take();
+        let src = vtor.load().tbloff() as *const usize;
+        ptr::copy_nonoverlapping(src.add(1), dst, size >> 2);
+        vtor.store(|r| r.write_tbloff(dst.sub(1) as u32));
+    }
 }

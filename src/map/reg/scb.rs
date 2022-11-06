@@ -64,8 +64,8 @@ reg! {
         reset => 0x0000_0000;
         traits => { RReg WReg };
         fields => {
-            /// Vector table base offset field.
-            TBLOFF => { offset => 9; width => 21; traits => { RRRegField WWRegField } };
+            /// Vector table base offset address.
+            TBLOFF => { offset => 0; width => 32; traits => { RRRegField WWRegField } };
         };
     };
 }

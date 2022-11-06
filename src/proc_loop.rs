@@ -8,13 +8,15 @@
 //! how it could be wrapped:
 //!
 //! ```
-//! # #![feature(const_fn_fn_ptr_basics)]
 //! # #![feature(naked_functions)]
 //! # #![feature(never_type)]
+//! extern crate alloc;
+//!
+//! use alloc::ffi::CString;
+//! use core::ffi::c_char;
 //! use core::future::Future;
 //! use core::pin::Pin;
 //! use core::slice;
-//! use drone_core::ffi::{c_char, CString};
 //! use drone_cortexm::proc_loop::{self, Context as _, ProcLoop, Sess as _};
 //! use drone_cortexm::sv;
 //! use drone_cortexm::sv::{SwitchBackService, SwitchContextService};
