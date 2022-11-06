@@ -144,3 +144,43 @@ extern "C" fn drone_reset() -> ! {
         loop {}
     }
 }
+
+#[no_mangle]
+extern "C" fn drone_data_section_init(load: *const usize, base: *mut usize, end: *const usize) {
+    #[cfg(feature = "std")]
+    return unimplemented!();
+    #[cfg(not(feature = "std"))]
+    unsafe {
+        asm!(
+            "   b 1f",
+            "0: ldm {load}!, {{{tmp}}}",
+            "   stm {base}!, {{{tmp}}}",
+            "1: cmp {base}, {end}",
+            "   blo 0b",
+            load = inout(reg) load => _,
+            base = inout(reg) base => _,
+            end = in(reg) end,
+            tmp = out(reg) _,
+            options(nostack),
+        );
+    }
+}
+
+#[no_mangle]
+extern "C" fn drone_zeroed_section_init(base: *mut usize, end: *const usize) {
+    #[cfg(feature = "std")]
+    return unimplemented!();
+    #[cfg(not(feature = "std"))]
+    unsafe {
+        asm!(
+            "   b 1f",
+            "0: stm {base}!, {{{zero}}}",
+            "1: cmp {base}, {end}",
+            "   blo 0b",
+            base = inout(reg) base => _,
+            end = in(reg) end,
+            zero = in(reg) 0,
+            options(nostack),
+        );
+    }
+}
