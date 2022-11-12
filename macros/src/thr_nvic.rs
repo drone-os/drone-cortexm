@@ -278,7 +278,7 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
     let Threads { threads } = threads;
     let (threads, naked_threads) = partition_threads(threads);
     let def_thr_pool = def_thr_pool(&thr, &local, &index, &threads);
-    let def_vectors = def_vectors(&thr, &vectors, &threads, &naked_threads);
+    let def_vectors = def_vectors(&thr, &vectors, &threads, &naked_threads, &vtable);
     let def_vtable = vtable.as_ref().map_or(quote!(), |vtable| def_vtable(&vectors, vtable));
     let thr_tokens =
         threads.iter().flat_map(|thread| def_thr_token(&sv, thread)).collect::<Vec<_>>();
@@ -309,6 +309,7 @@ fn def_vectors(
     vectors: &Vectors,
     threads: &[Thread],
     naked_threads: &[Thread],
+    vtable: &Option<Vtable>,
 ) -> TokenStream2 {
     let Thr { ident: thr_ident, .. } = thr;
     let Vectors { attrs: vectors_attrs, vis: vectors_vis, ident: vectors_ident } = vectors;
@@ -395,6 +396,29 @@ fn def_vectors(
             })
         })
         .collect::<Vec<_>>();
+    let vtable_tokens = vtable.as_ref().map(|Vtable { ident: vtable_ident, .. }| {
+        quote! {
+            impl #vectors_ident {
+                /// Copies vector table bytes from `src - 4` to `dst`.
+                ///
+                /// # Safety
+                ///
+                /// `src` and `dst` must be valid pointers. `src - 4` must be
+                /// the pointer at the top of the stack.
+                #[inline]
+                pub unsafe fn copy(src: *const Self, dst: *mut #vtable_ident) -> *const #vtable_ident {
+                    unsafe {
+                        ::core::ptr::copy_nonoverlapping(
+                            src.cast::<usize>().sub(1),
+                            dst.cast::<usize>(),
+                            ::core::mem::size_of::<#vtable_ident>() >> 2,
+                        );
+                        dst
+                    }
+                }
+            }
+        }
+    });
     quote! {
         #(#vectors_attrs)*
         #[repr(C)]
@@ -448,6 +472,7 @@ fn def_vectors(
         }
 
         #resume_tokens
+        #vtable_tokens
         #(#tokens)*
     }
 }
@@ -459,7 +484,9 @@ fn def_vtable(vectors: &Vectors, vtable: &Vtable) -> TokenStream2 {
         #(#vtable_attrs)*
         #[repr(C)]
         #vtable_vis struct #vtable_ident {
+            /// Pointer at the top of the stack.
             pub stack_pointer: usize,
+            /// Collection of exception vectors.
             pub vectors: #vectors_ident,
         }
 
@@ -481,12 +508,29 @@ fn def_vtable(vectors: &Vectors, vtable: &Vtable) -> TokenStream2 {
             ///
             /// The function rewrites contents of VTOR register without taking
             /// into account register tokens.
+            #[inline]
             pub unsafe fn relocate(dst: *mut Self) {
                 unsafe {
-                    ::drone_cortexm::thr::relocate_vtable(
-                        dst.cast(),
-                        ::core::mem::size_of::<Self>(),
+                    ::drone_cortexm::thr::relocate_vtable(|src| {
+                        Self::copy(src.cast(), dst).cast()
+                    });
+                }
+            }
+
+            /// Copies vector table bytes from `src` to `dst`.
+            ///
+            /// # Safety
+            ///
+            /// `src` and `dst` must be valid pointers.
+            #[inline]
+            pub unsafe fn copy(src: *const Self, dst: *mut Self) -> *const Self {
+                unsafe {
+                    ::core::ptr::copy_nonoverlapping(
+                        src.cast::<usize>(),
+                        dst.cast::<usize>(),
+                        ::core::mem::size_of::<Self>() >> 2,
                     );
+                    dst
                 }
             }
         }

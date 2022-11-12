@@ -146,7 +146,7 @@ extern "C" fn drone_reset() -> ! {
 }
 
 #[no_mangle]
-extern "C" fn drone_data_section_init(load: *const usize, base: *mut usize, end: *const usize) {
+extern "C" fn drone_data_mem_init(load: *const usize, base: *mut usize, end: *const usize) {
     #[cfg(feature = "std")]
     return unimplemented!();
     #[cfg(not(feature = "std"))]
@@ -167,7 +167,7 @@ extern "C" fn drone_data_section_init(load: *const usize, base: *mut usize, end:
 }
 
 #[no_mangle]
-extern "C" fn drone_zeroed_section_init(base: *mut usize, end: *const usize) {
+extern "C" fn drone_zeroed_mem_init(base: *mut usize, end: *const usize) {
     #[cfg(feature = "std")]
     return unimplemented!();
     #[cfg(not(feature = "std"))]

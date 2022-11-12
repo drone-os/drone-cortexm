@@ -108,7 +108,6 @@ pub use self::root::{FutureRootExt, StreamRootExt, StreamRootWait};
 use crate::map::reg::scb::Vtor;
 use crate::reg::prelude::*;
 use crate::sv::Supervisor;
-use core::ptr;
 use drone_core::thr::ThrToken;
 #[doc(no_inline)]
 pub use drone_core::thr::*;
@@ -127,11 +126,11 @@ pub trait ThrSv: ThrToken {
 
 #[doc(hidden)]
 #[inline]
-pub unsafe fn relocate_vtable(dst: *mut usize, size: usize) {
+pub unsafe fn relocate_vtable(copy: impl FnOnce(*const usize) -> *const usize) {
     unsafe {
         let mut vtor = Vtor::<Urt>::take();
         let src = vtor.load().tbloff() as *const usize;
-        ptr::copy_nonoverlapping(src, dst, size >> 2);
+        let dst = copy(src);
         vtor.store(|r| r.write_tbloff(dst as u32));
     }
 }
