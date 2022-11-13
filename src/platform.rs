@@ -1,8 +1,8 @@
 //! ARM Cortex-M CPU management.
 
-#![cfg_attr(feature = "std", allow(unused_variables, unreachable_code))]
+#![cfg_attr(feature = "host", allow(unused_variables, unreachable_code))]
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(feature = "host"))]
 use core::arch::asm;
 #[doc(no_inline)]
 pub use drone_core::platform::*;
@@ -14,9 +14,9 @@ pub use drone_core::platform::*;
 /// restoration, until a reset, asynchronous exception or other event occurs.
 #[inline]
 pub fn wait_for_int() {
-    #[cfg(feature = "std")]
+    #[cfg(feature = "host")]
     return unimplemented!();
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "host"))]
     unsafe {
         asm!("wfi", options(nomem, nostack, preserves_flags));
     }
@@ -32,9 +32,9 @@ pub fn wait_for_int() {
 /// See also [`send_event`].
 #[inline]
 pub fn wait_for_event() {
-    #[cfg(feature = "std")]
+    #[cfg(feature = "host")]
     return unimplemented!();
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "host"))]
     unsafe {
         asm!("wfe", options(nomem, nostack, preserves_flags));
     }
@@ -48,9 +48,9 @@ pub fn wait_for_event() {
 /// See also [`wait_for_event`].
 #[inline]
 pub fn send_event() {
-    #[cfg(feature = "std")]
+    #[cfg(feature = "host")]
     return unimplemented!();
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "host"))]
     unsafe {
         asm!("sev", options(nomem, nostack, preserves_flags));
     }
@@ -59,9 +59,9 @@ pub fn send_event() {
 /// Spins the `cycles` number of processor cycles in a tight loop.
 #[inline(always)]
 pub fn spin(cycles: u32) {
-    #[cfg(feature = "std")]
+    #[cfg(feature = "host")]
     return unimplemented!();
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "host"))]
     unsafe {
         asm!(
             "0:  subs {0}, {0}, #3",
@@ -100,9 +100,9 @@ pub unsafe fn fpu_init(full_access: bool) {
 
 #[no_mangle]
 extern "C" fn drone_save_and_disable_interrupts() -> u32 {
-    #[cfg(feature = "std")]
+    #[cfg(feature = "host")]
     return unimplemented!();
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "host"))]
     unsafe {
         let status: u32;
         asm!(
@@ -117,9 +117,9 @@ extern "C" fn drone_save_and_disable_interrupts() -> u32 {
 
 #[no_mangle]
 extern "C" fn drone_restore_interrupts(status: u32) {
-    #[cfg(feature = "std")]
+    #[cfg(feature = "host")]
     return unimplemented!();
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "host"))]
     unsafe {
         asm!(
             "msr PRIMASK, {status}",
@@ -131,9 +131,9 @@ extern "C" fn drone_restore_interrupts(status: u32) {
 
 #[no_mangle]
 extern "C" fn drone_reset() -> ! {
-    #[cfg(feature = "std")]
+    #[cfg(feature = "host")]
     return unimplemented!();
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "host"))]
     unsafe {
         use crate::map::reg::scb;
         use crate::reg::prelude::*;
@@ -147,9 +147,9 @@ extern "C" fn drone_reset() -> ! {
 
 #[no_mangle]
 extern "C" fn drone_data_mem_init(load: *const usize, base: *mut usize, end: *const usize) {
-    #[cfg(feature = "std")]
+    #[cfg(feature = "host")]
     return unimplemented!();
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "host"))]
     unsafe {
         asm!(
             "   b 1f",
@@ -168,9 +168,9 @@ extern "C" fn drone_data_mem_init(load: *const usize, base: *mut usize, end: *co
 
 #[no_mangle]
 extern "C" fn drone_zeroed_mem_init(base: *mut usize, end: *const usize) {
-    #[cfg(feature = "std")]
+    #[cfg(feature = "host")]
     return unimplemented!();
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "host"))]
     unsafe {
         asm!(
             "   b 1f",

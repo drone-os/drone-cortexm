@@ -41,11 +41,11 @@
 //! drone-cortexm = { version = "0.15.0", features = [...] }
 //! ```
 //!
-//! Add or extend `std` feature as follows:
+//! Add or extend `host` feature as follows:
 //!
 //! ```toml
 //! [features]
-//! std = ["drone-cortexm/std"]
+//! host = ["drone-cortexm/host"]
 //! ```
 
 #![feature(asm_const)]
@@ -69,7 +69,7 @@
     clippy::shadow_unrelated,
     clippy::type_repetition_in_bounds
 )]
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "host"), no_std)]
 
 extern crate alloc;
 

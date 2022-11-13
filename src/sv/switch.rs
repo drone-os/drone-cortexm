@@ -1,10 +1,10 @@
 #![cfg_attr(
-    any(feature = "std", not(feature = "atomics")),
+    any(feature = "host", not(feature = "atomics")),
     allow(unreachable_code, unused_variables, clippy::diverging_sub_expression)
 )]
 
 use crate::sv::{SvCall, SvService};
-#[cfg(not(any(feature = "std", not(feature = "atomics"))))]
+#[cfg(not(any(feature = "host", not(feature = "atomics"))))]
 use core::arch::asm;
 use core::mem::size_of;
 
@@ -58,11 +58,11 @@ unsafe impl Send for SwitchBackService {}
 impl SvService for SwitchContextService {
     #[allow(clippy::too_many_lines)]
     unsafe extern "C" fn handler(&mut self) {
-        #[cfg(any(feature = "std", not(feature = "atomics")))]
+        #[cfg(any(feature = "host", not(feature = "atomics")))]
         return unimplemented!();
         let Self { stack_ptr, data_ptr } = *self;
         #[cfg(all(
-            not(any(feature = "std", not(feature = "atomics"))),
+            not(any(feature = "host", not(feature = "atomics"))),
             feature = "floating-point-unit"
         ))]
         unsafe {
@@ -109,7 +109,7 @@ impl SvService for SwitchContextService {
             );
         }
         #[cfg(all(
-            not(any(feature = "std", not(feature = "atomics"))),
+            not(any(feature = "host", not(feature = "atomics"))),
             not(feature = "floating-point-unit")
         ))]
         unsafe {
@@ -152,11 +152,11 @@ impl SvService for SwitchContextService {
 impl SvService for SwitchBackService {
     #[allow(clippy::too_many_lines)]
     unsafe extern "C" fn handler(&mut self) {
-        #[cfg(any(feature = "std", not(feature = "atomics")))]
+        #[cfg(any(feature = "host", not(feature = "atomics")))]
         return unimplemented!();
         let Self { data_ptr, data_size } = *self;
         #[cfg(all(
-            not(any(feature = "std", not(feature = "atomics"))),
+            not(any(feature = "host", not(feature = "atomics"))),
             feature = "floating-point-unit"
         ))]
         unsafe {
@@ -215,7 +215,7 @@ impl SvService for SwitchBackService {
             );
         }
         #[cfg(all(
-            not(any(feature = "std", not(feature = "atomics"))),
+            not(any(feature = "host", not(feature = "atomics"))),
             not(feature = "floating-point-unit")
         ))]
         unsafe {

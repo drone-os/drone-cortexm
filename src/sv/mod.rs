@@ -95,14 +95,14 @@
 //! ```
 
 #![cfg_attr(
-    any(feature = "std", not(feature = "atomics")),
+    any(feature = "host", not(feature = "atomics")),
     allow(unreachable_code, unused_variables, clippy::diverging_sub_expression)
 )]
 
 mod switch;
 
 pub use self::switch::{Switch, SwitchBackService, SwitchContextService};
-#[cfg(not(any(feature = "std", not(feature = "atomics"))))]
+#[cfg(not(any(feature = "host", not(feature = "atomics"))))]
 use core::arch::asm;
 use core::mem::size_of;
 /// Defines the supervisor type.
@@ -150,9 +150,9 @@ pub trait SvService: Sized + Send + 'static {
 /// This function should not be called directly.
 #[inline(always)]
 pub unsafe fn sv_call<T: SvService, const NUM: u8>(service: &mut T) {
-    #[cfg(any(feature = "std", not(feature = "atomics")))]
+    #[cfg(any(feature = "host", not(feature = "atomics")))]
     return unimplemented!();
-    #[cfg(not(any(feature = "std", not(feature = "atomics"))))]
+    #[cfg(not(any(feature = "host", not(feature = "atomics"))))]
     unsafe {
         if size_of::<T>() == 0 {
             asm!(

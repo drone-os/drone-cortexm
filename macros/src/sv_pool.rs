@@ -135,12 +135,12 @@ pub fn proc_macro(input: TokenStream) -> TokenStream {
         #sv_vis struct #sv_ident(unsafe extern "C" fn(*mut *mut u8));
 
         impl ::drone_cortexm::sv::Supervisor for #sv_ident {
-            #[cfg_attr(not(feature = "std"), naked)]
+            #[cfg_attr(not(feature = "host"), naked)]
             unsafe extern "C" fn handler() {
-                #[cfg_attr(feature = "std", allow(unreachable_code))]
-                #[cfg(feature = "std")]
+                #[cfg_attr(feature = "host", allow(unreachable_code))]
+                #[cfg(feature = "host")]
                 return ::std::unimplemented!();
-                #[cfg(not(feature = "std"))]
+                #[cfg(not(feature = "host"))]
                 unsafe {
                     asm!(
                         "tst lr, #4",

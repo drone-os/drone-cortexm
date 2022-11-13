@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "std", allow(dead_code, unreachable_code, unused_variables, unused_imports))]
+#![cfg_attr(feature = "host", allow(dead_code, unreachable_code, unused_variables, unused_imports))]
 
 #[cfg(feature = "memory-protection-unit")]
 use crate::map::periph::mpu::MpuPeriph;
@@ -132,7 +132,7 @@ pub unsafe trait ThrsInitToken: Token {
     }
 }
 
-/// A set of register tokens returned by [`ThrInit::init_extended`].
+/// A set of register tokens returned by [`ThrsInitToken::init_extended`].
 #[allow(missing_docs)]
 pub struct ThrInitExtended {
     pub scb_ccr_bfhfnmign: scb::ccr::Bfhfnmign<Srt>,
@@ -147,7 +147,7 @@ mod mpu {
     use crate::map::periph::mpu::MpuPeriph;
     use crate::map::reg::mpu;
     use crate::reg::prelude::*;
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "host"))]
     use core::arch::asm;
 
     static MPU_RESET_TABLE: [u32; 16] = [
@@ -170,13 +170,13 @@ mod mpu {
     ];
 
     pub(super) unsafe fn reset(mpu: &MpuPeriph) {
-        #[cfg(feature = "std")]
+        #[cfg(feature = "host")]
         return unimplemented!();
         if mpu.mpu_type.load().dregion() == 0 {
             return;
         }
         mpu.mpu_ctrl.reset();
-        #[cfg(not(feature = "std"))]
+        #[cfg(not(feature = "host"))]
         unsafe {
             asm!(
                 "ldmia r0!, {{r2, r3, r4, r5, r8, r9, r10, r11}}",

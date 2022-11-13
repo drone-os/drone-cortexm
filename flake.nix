@@ -62,7 +62,7 @@
           cargo fmt --all --check
           cargo clippy --workspace --exclude drone-cortexm-macros --features all -- --deny warnings
           nix develop '.#native' -c cargo clippy --package drone-cortexm-macros -- --deny warnings
-          nix develop '.#native' -c cargo test --workspace --features all,std
+          nix develop '.#native' -c cargo test --workspace --features all,host
           RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --workspace --exclude drone-cortexm-macros --features all
           RUSTDOCFLAGS='-D warnings' nix develop '.#native' -c cargo doc --no-deps --package drone-cortexm-macros
         '';

@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "std", allow(unreachable_code, unused_variables, unused_mut))]
+#![cfg_attr(feature = "host", allow(unreachable_code, unused_variables, unused_mut))]
 
 use super::{Data, ProcData, Yielder};
 use crate::fib::{Fiber, FiberState, RootFiber};
@@ -180,7 +180,7 @@ where
     type Yield = Y;
 
     fn resume(mut self: Pin<&mut Self>, input: I) -> FiberState<Y, R> {
-        #[cfg(feature = "std")]
+        #[cfg(feature = "host")]
         return unimplemented!();
         unsafe {
             let data_ptr = self.data_ptr();
@@ -259,7 +259,7 @@ mod mpu {
     const GUARD_SIZE: u32 = 5;
 
     pub(super) fn check() {
-        #[cfg(feature = "std")]
+        #[cfg(feature = "host")]
         return;
         assert!(!unsafe { mpu::Type::<Srt>::take().load().dregion() == 0 }, "MPU not present");
     }
