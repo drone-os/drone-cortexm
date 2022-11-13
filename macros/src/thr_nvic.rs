@@ -131,7 +131,7 @@ impl Parse for Input {
                     return Err(input.error("multiple `threads` specifications"));
                 }
             } else {
-                return Err(input.error(format!("unknown key: `{}`", ident)));
+                return Err(input.error(format!("unknown key: `{ident}`")));
             }
             if !input.is_empty() {
                 input.parse::<Token![;]>()?;
@@ -240,7 +240,7 @@ impl Parse for Threads {
                     }
                 }
             } else {
-                return Err(input2.error(format!("Unexpected ident `{}`", ident)));
+                return Err(input2.error(format!("Unexpected ident `{ident}`")));
             }
             if !input2.is_empty() {
                 input2.parse::<Token![;]>()?;
