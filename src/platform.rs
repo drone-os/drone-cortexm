@@ -56,7 +56,7 @@ pub fn send_event() {
     }
 }
 
-/// Spins the `cycles` number of processor cycles in a loop.
+/// Spins the `cycles` number of processor cycles in a tight loop.
 #[inline(always)]
 pub fn spin(cycles: u32) {
     #[cfg(feature = "std")]

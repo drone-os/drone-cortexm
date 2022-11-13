@@ -10,7 +10,7 @@
 //! ```
 
 #[doc(no_inline)]
-pub use crate::thr::{IntToken, ThrInit};
+pub use crate::thr::{IntToken, ThrsInitToken as _};
 #[doc(no_inline)]
 pub use crate::{
     fib::ThrFiberProc as _,

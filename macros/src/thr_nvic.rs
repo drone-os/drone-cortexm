@@ -13,6 +13,7 @@ struct Input {
     index: Index,
     vectors: Vectors,
     vtable: Option<Vtable>,
+    init: Init,
     sv: Option<Sv>,
     threads: Threads,
 }
@@ -44,6 +45,12 @@ struct Vectors {
 }
 
 struct Vtable {
+    attrs: Vec<Attribute>,
+    vis: Visibility,
+    ident: Ident,
+}
+
+struct Init {
     attrs: Vec<Attribute>,
     vis: Visibility,
     ident: Ident,
@@ -82,6 +89,7 @@ impl Parse for Input {
         let mut index = None;
         let mut vectors = None;
         let mut vtable = None;
+        let mut init = None;
         let mut sv = None;
         let mut threads = None;
         while !input.is_empty() {
@@ -118,6 +126,12 @@ impl Parse for Input {
                 } else {
                     return Err(input.error("multiple `vtable` specifications"));
                 }
+            } else if ident == "init" {
+                if init.is_none() {
+                    init = Some(Init::parse(input, attrs)?);
+                } else {
+                    return Err(input.error("multiple `init` specifications"));
+                }
             } else if attrs.is_empty() && ident == "supervisor" {
                 if sv.is_none() {
                     sv = Some(input.parse()?);
@@ -143,6 +157,7 @@ impl Parse for Input {
             index: index.ok_or_else(|| input.error("missing `index` specification"))?,
             vectors: vectors.ok_or_else(|| input.error("missing `vectors` specification"))?,
             vtable,
+            init: init.ok_or_else(|| input.error("missing `init` specification"))?,
             sv,
             threads: threads.ok_or_else(|| input.error("missing `threads` specification"))?,
         })
@@ -188,6 +203,14 @@ impl Vectors {
 }
 
 impl Vtable {
+    fn parse(input: ParseStream<'_>, attrs: Vec<Attribute>) -> Result<Self> {
+        let vis = input.parse()?;
+        let ident = input.parse()?;
+        Ok(Self { attrs, vis, ident })
+    }
+}
+
+impl Init {
     fn parse(input: ParseStream<'_>, attrs: Vec<Attribute>) -> Result<Self> {
         let vis = input.parse()?;
         let ident = input.parse()?;
@@ -273,19 +296,21 @@ impl Parse for ThreadKind {
 }
 
 pub fn proc_macro(input: TokenStream) -> TokenStream {
-    let Input { thr, local, index, vectors, vtable, sv, threads } =
+    let Input { thr, local, index, vectors, vtable, init, sv, threads } =
         parse_macro_input!(input as Input);
     let Threads { threads } = threads;
     let (threads, naked_threads) = partition_threads(threads);
     let def_thr_pool = def_thr_pool(&thr, &local, &index, &threads);
     let def_vectors = def_vectors(&thr, &vectors, &threads, &naked_threads, &vtable);
     let def_vtable = vtable.as_ref().map_or(quote!(), |vtable| def_vtable(&vectors, vtable));
+    let def_init = def_init(&index, &init);
     let thr_tokens =
         threads.iter().flat_map(|thread| def_thr_token(&sv, thread)).collect::<Vec<_>>();
     quote! {
         #def_thr_pool
         #def_vectors
         #def_vtable
+        #def_init
         #(#thr_tokens)*
     }
     .into()
@@ -568,8 +593,30 @@ fn def_thr_pool(thr: &Thr, local: &Local, index: &Index, threads: &[Thread]) -> 
                 #(#threads_tokens;)*
             };
         }
+    }
+}
 
-        unsafe impl ::drone_cortexm::thr::ThrInit for #index_ident {}
+fn def_init(index: &Index, init: &Init) -> TokenStream2 {
+    let Init { attrs: init_attrs, vis: init_vis, ident: init_ident } = init;
+    let Index { ident: index_ident, .. } = index;
+    quote! {
+        #(#init_attrs)*
+        #init_vis struct #init_ident {
+            __priv: (),
+        }
+
+        unsafe impl ::drone_core::token::Token for #init_ident {
+            #[inline]
+            unsafe fn take() -> Self {
+                Self {
+                    __priv: (),
+                }
+            }
+        }
+
+        unsafe impl ::drone_cortexm::thr::ThrsInitToken for #init_ident {
+            type ThrTokens = #index_ident;
+        }
     }
 }
 

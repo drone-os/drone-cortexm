@@ -7,12 +7,16 @@ use crate::map::reg::scb;
 use crate::reg::prelude::*;
 use drone_core::token::Token;
 
-/// A set of thread tokens.
+/// Threads initialization token.
 ///
 /// # Safety
 ///
-/// Must contain only thread tokens.
-pub unsafe trait ThrInit: Token {
+/// * Must be defined only once for a particular set of threads.
+/// * `ThrTokens` associated type must contain only thread tokens.
+pub unsafe trait ThrsInitToken: Token {
+    /// The set of thread tokens.
+    type ThrTokens: Token;
+
     /// Initializes the thread system and returns a set of thread tokens.
     ///
     /// # Examples
@@ -25,33 +29,37 @@ pub unsafe trait ThrInit: Token {
     /// #     local => pub ThrLocal {};
     /// #     index => Thrs;
     /// #     vectors => Vectors;
+    /// #     init => ThrsInit;
     /// #     threads => {};
     /// # }
     /// use drone_cortexm::cortexm_reg_tokens;
-    /// use drone_cortexm::map::periph::mpu::periph_mpu;
-    /// use drone_cortexm::map::periph::thr::periph_thr;
+    /// use drone_cortexm::map::periph::mpu::{periph_mpu, MpuPeriph};
+    /// use drone_cortexm::map::periph::thr::{periph_thr, ThrPeriph};
     /// use drone_cortexm::reg::prelude::*;
     /// use drone_cortexm::thr::prelude::*;
+    /// use drone_cortexm::thr::ThrInitExtended;
     ///
     /// cortexm_reg_tokens! {
     ///     index => Regs;
     /// }
     ///
-    /// fn handler(reg: Regs) {
-    ///     let (thr, extended) = Thrs::init_extended(periph_mpu!(reg), periph_thr!(reg));
+    /// fn handler(reg: Regs, thr: ThrsInit) {
+    ///     let (thr, extended) = thr.init_extended(periph_mpu!(reg), periph_thr!(reg));
     ///     extended.scb_ccr_div_0_trp.set_bit();
     /// }
     ///
-    /// # fn main() {
-    /// #     handler(unsafe { Regs::take() })
-    /// # }
+    /// fn main() {
+    ///     handler(unsafe { Regs::take() }, unsafe { ThrsInit::take() });
+    /// }
     /// ```
-    #[allow(clippy::drop_non_drop, clippy::needless_pass_by_value)]
+    #[allow(clippy::drop_non_drop)]
     #[inline]
+    #[must_use]
     fn init_extended(
+        self,
         #[cfg(feature = "memory-protection-unit")] mpu: MpuPeriph,
         thr: ThrPeriph,
-    ) -> (Self, ThrInitExtended) {
+    ) -> (Self::ThrTokens, ThrInitExtended) {
         let ThrPeriph { scb_ccr } = thr;
         scb_ccr.store(|r| r.set_stkalign().set_nonbasethrdena());
         let scb::Ccr {
@@ -68,7 +76,7 @@ pub unsafe trait ThrInit: Token {
         }
         drop(stkalign);
         drop(nonbasethrdena);
-        (unsafe { Self::take() }, ThrInitExtended {
+        (unsafe { Self::ThrTokens::take() }, ThrInitExtended {
             scb_ccr_bfhfnmign,
             scb_ccr_div_0_trp,
             scb_ccr_unalign_trp,
@@ -88,29 +96,34 @@ pub unsafe trait ThrInit: Token {
     /// #     local => pub ThrLocal {};
     /// #     index => Thrs;
     /// #     vectors => Vectors;
+    /// #     init => ThrsInit;
     /// #     threads => {};
     /// # }
     /// use drone_cortexm::cortexm_reg_tokens;
-    /// use drone_cortexm::map::periph::mpu::periph_mpu;
-    /// use drone_cortexm::map::periph::thr::periph_thr;
+    /// use drone_cortexm::map::periph::mpu::{periph_mpu, MpuPeriph};
+    /// use drone_cortexm::map::periph::thr::{periph_thr, ThrPeriph};
     /// use drone_cortexm::thr::prelude::*;
     ///
     /// cortexm_reg_tokens! {
     ///     index => Regs;
     /// }
     ///
-    /// fn handler(reg: Regs) {
-    ///     let thr = Thrs::init(periph_mpu!(reg), periph_thr!(reg));
+    /// fn handler(reg: Regs, thr: ThrsInit) {
+    ///     let thr = thr.init(periph_mpu!(reg), periph_thr!(reg));
     /// }
     ///
-    /// # fn main() {
-    /// #     handler(unsafe { Regs::take() })
-    /// # }
+    /// fn main() {
+    ///     handler(unsafe { Regs::take() }, unsafe { ThrsInit::take() });
+    /// }
     /// ```
-    #[allow(clippy::needless_pass_by_value)]
     #[inline]
-    fn init(#[cfg(feature = "memory-protection-unit")] mpu: MpuPeriph, thr: ThrPeriph) -> Self {
-        let (thr, _) = Self::init_extended(
+    #[must_use]
+    fn init(
+        self,
+        #[cfg(feature = "memory-protection-unit")] mpu: MpuPeriph,
+        thr: ThrPeriph,
+    ) -> Self::ThrTokens {
+        let (thr, _) = self.init_extended(
             #[cfg(feature = "memory-protection-unit")]
             mpu,
             thr,
