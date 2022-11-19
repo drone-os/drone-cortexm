@@ -3,7 +3,7 @@
 use crate::drv::timer::{Timer, TimerInterval, TimerOverflow, TimerSleep, TimerStop};
 use crate::fib;
 use crate::fib::Fiber;
-use crate::map::periph::sys_tick::SysTickPeriph;
+use crate::map::periph;
 use crate::map::reg::{scb, stk};
 use crate::reg::field::WWRegFieldBit;
 use crate::reg::prelude::*;
@@ -79,7 +79,7 @@ impl<I: ThrToken> TimerStop for SysTick<I> {
 impl<I: ThrToken> SysTick<I> {
     /// Creates a new driver from the peripheral.
     #[inline]
-    pub fn new(periph: SysTickPeriph, int: I) -> Self {
+    pub fn new(periph: periph::SysTick, int: I) -> Self {
         let periph = SysTickDiverged {
             scb_icsr_pendstclr: periph.scb_icsr_pendstclr.into_copy(),
             scb_icsr_pendstset: periph.scb_icsr_pendstset,

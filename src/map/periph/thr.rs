@@ -3,11 +3,11 @@
 use drone_core::periph;
 
 periph::singular! {
-    #[doc(hidden)]
-    pub macro periph_thr_inner;
+    /// Extracts Drone thread register tokens.
+    pub macro periph_thr;
 
     /// Registers for Drone threads.
-    pub struct ThrPeriph;
+    pub struct Thr;
 
     crate::map::reg;
     crate::map::periph::thr;
@@ -16,17 +16,3 @@ periph::singular! {
         CCR;
     }
 }
-
-// Workaround the `macro_expanded_macro_exports_accessed_by_absolute_paths`
-// error.
-#[doc(hidden)]
-#[macro_export]
-macro_rules! periph_thr {
-    ($($tt:tt)*) => {
-        $crate::periph_thr_inner!($($tt)*);
-    };
-}
-
-/// Extracts Drone thread register tokens.
-#[doc(inline)]
-pub use crate::periph_thr;
