@@ -1,6 +1,6 @@
 //! SysTick timer.
 
-use crate::drv::timer::{Timer, TimerInterval, TimerOverflow, TimerSleep, TimerStop};
+use crate::drv::timer::{Interval, Overflow, Sleep, Stop, Timer};
 use crate::fib;
 use crate::fib::Fiber;
 use crate::map::periph;
@@ -17,13 +17,13 @@ use futures::stream::Stream;
 
 /// SysTick driver.
 pub struct SysTick<I: ThrToken> {
-    periph: SysTickDiverged,
+    periph: Converted,
     int: I,
 }
 
-/// SysTick diverged peripheral.
+/// Converted SysTick peripheral.
 #[allow(missing_docs)]
-pub struct SysTickDiverged {
+pub struct Converted {
     pub scb_icsr_pendstclr: scb::icsr::Pendstclr<Crt>,
     pub scb_icsr_pendstset: scb::icsr::Pendstset<Srt>,
     pub stk_ctrl: stk::Ctrl<Crt>,
@@ -34,7 +34,7 @@ pub struct SysTickDiverged {
 impl<I: ThrToken> Timer for SysTick<I> {
     type Stop = Self;
 
-    fn sleep(&mut self, duration: u32) -> TimerSleep<'_, Self> {
+    fn sleep(&mut self, duration: u32) -> Sleep<'_, Self> {
         let ctrl = self.periph.stk_ctrl;
         let pendstclr = self.periph.scb_icsr_pendstclr;
         let fut = Box::pin(self.int.add_future(fib::new_fn(move || {
@@ -50,26 +50,23 @@ impl<I: ThrToken> Timer for SysTick<I> {
         schedule(&self.periph.stk_load, &self.periph.stk_val, duration);
         let mut ctrl_val = self.periph.stk_ctrl.load();
         self.periph.stk_ctrl.store_val(enable(&mut ctrl_val).val());
-        TimerSleep::new(self, fut)
+        Sleep::new(self, fut)
     }
 
-    fn interval(
-        &mut self,
-        duration: u32,
-    ) -> TimerInterval<'_, Self, Result<NonZeroUsize, TimerOverflow>> {
+    fn interval(&mut self, duration: u32) -> Interval<'_, Self, Result<NonZeroUsize, Overflow>> {
         self.interval_stream(duration, |int, ctrl| {
-            Box::pin(int.add_pulse_try_stream(|| Err(TimerOverflow), Self::interval_fib(ctrl)))
+            Box::pin(int.add_pulse_try_stream(|| Err(Overflow), Self::interval_fib(ctrl)))
         })
     }
 
-    fn interval_skip(&mut self, duration: u32) -> TimerInterval<'_, Self, NonZeroUsize> {
+    fn interval_skip(&mut self, duration: u32) -> Interval<'_, Self, NonZeroUsize> {
         self.interval_stream(duration, |int, ctrl| {
             Box::pin(int.add_saturating_pulse_stream(Self::interval_fib(ctrl)))
         })
     }
 }
 
-impl<I: ThrToken> TimerStop for SysTick<I> {
+impl<I: ThrToken> Stop for SysTick<I> {
     fn stop(&mut self) {
         let mut ctrl_val = self.periph.stk_ctrl.load();
         self.periph.stk_ctrl.store_val(disable(&mut ctrl_val).val());
@@ -80,7 +77,7 @@ impl<I: ThrToken> SysTick<I> {
     /// Creates a new driver from the peripheral.
     #[inline]
     pub fn new(periph: periph::SysTick, int: I) -> Self {
-        let periph = SysTickDiverged {
+        let periph = Converted {
             scb_icsr_pendstclr: periph.scb_icsr_pendstclr.into_copy(),
             scb_icsr_pendstset: periph.scb_icsr_pendstset,
             stk_ctrl: periph.stk_ctrl.into_copy(),
@@ -90,19 +87,19 @@ impl<I: ThrToken> SysTick<I> {
         Self { periph, int }
     }
 
-    /// Creates a new driver from the diverged peripheral.
+    /// Creates a new driver from the converted peripheral.
     ///
     /// # Safety
     ///
     /// Some of the `Crt` register tokens can be still in use.
     #[inline]
-    pub unsafe fn from_diverged(periph: SysTickDiverged, int: I) -> Self {
+    pub unsafe fn from_converted(periph: Converted, int: I) -> Self {
         Self { periph, int }
     }
 
-    /// Releases the peripheral.
+    /// Releases the converted peripheral.
     #[inline]
-    pub fn free(self) -> SysTickDiverged {
+    pub fn free(self) -> Converted {
         self.periph
     }
 
@@ -128,12 +125,12 @@ impl<I: ThrToken> SysTick<I> {
         &'a mut self,
         duration: u32,
         f: impl FnOnce(I, stk::Ctrl<Crt>) -> Pin<Box<dyn Stream<Item = T> + Send + 'a>>,
-    ) -> TimerInterval<'a, Self, T> {
+    ) -> Interval<'a, Self, T> {
         let stream = f(self.int, self.periph.stk_ctrl);
         schedule(&self.periph.stk_load, &self.periph.stk_val, duration);
         let mut ctrl_val = self.periph.stk_ctrl.load();
         self.periph.stk_ctrl.store_val(enable(&mut ctrl_val).val());
-        TimerInterval::new(self, stream)
+        Interval::new(self, stream)
     }
 
     fn interval_fib<T>(
